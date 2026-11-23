@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ClassLevel, RawCharacterState } from '../types/character';
 import { AbilityKey, Ruleset } from '../types/core';
 

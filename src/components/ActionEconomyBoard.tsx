@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ResolvedActivity, ResolvedCharacterSheet } from '../types/character';
 import { ActionEconomy, RollMode } from '../types/core';
 import { parse5eToolsEntries } from '../engine/tags';

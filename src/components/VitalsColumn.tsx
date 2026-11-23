@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ResolvedCharacterSheet } from '../types/character';
 import { AbilityKey, RecoveryTrigger, SkillKey, STANDARD_CONDITIONS } from '../types/core';
 import { SKILL_ABILITY_MAP } from '../engine/rules-math';

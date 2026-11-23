@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import './styles/tokens.css';
 import './styles/layout.css';
 import { useSheetStore } from './state/useSheetStore';
@@ -75,8 +75,8 @@ const SEED_CHARACTER: RawCharacterState = {
       requiresAttunement: true,
       attuned: false,
       modifiers: [
-        { id: 'cloak-ac', target: 'ac.bonus', value: 1 },
-        { id: 'cloak-save', target: 'save.all', value: 1 },
+        { target: 'ac.bonus', value: 1 },
+        { target: 'save.all', value: 1 },
       ],
       activities: [],
       entries: ['Grants +1 AC and +1 to all saving throws while attuned.'],

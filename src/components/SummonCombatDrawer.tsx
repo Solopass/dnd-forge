@@ -442,11 +442,11 @@ export function CommandPalette({
               rows={7}
               value={pasteText}
               onChange={(e) => setPasteText(e.target.value)}
-              placeholder={'### Owlbear
+              placeholder={`### Owlbear
 Armor Class: 13
 Hit Points: 59
 16 (+3) 12 (+1) 17 (+3) 3 (-4) 12 (+1) 7 (-2)
-Claws. +7 to hit, 2d8 + 5 slashing damage'}
+Claws. +7 to hit, 2d8 + 5 slashing damage`}
               style={{
                 width: '100%',
                 background: 'var(--bg-base)',

@@ -11,6 +11,7 @@ import {
 } from './components/SummonCombatDrawer';
 import { CharacterBuilderDrawer } from './components/CharacterBuilderDrawer';
 import { EquipmentSpellDrawer } from './components/EquipmentSpellDrawer';
+import { NewCharacterModal } from './components/NewCharacterModal';
 import { evaluateDiceExpression } from './engine/dice';
 import { exportFullBundle } from './storage/db';
 import { RawCharacterState } from './types/character';
@@ -164,6 +165,7 @@ export function App() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [gearOpen, setGearOpen] = useState(false);
+  const [newCharOpen, setNewCharOpen] = useState(false);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -207,8 +209,8 @@ export function App() {
           </select>
           <button
             type="button"
-            className="btn"
-            onClick={() => void store.createNewCharacter(`Hero ${store.characterList.length + 1}`)}
+            className="btn btn-primary"
+            onClick={() => setNewCharOpen(true)}
           >
             + New Char
           </button>
@@ -242,6 +244,7 @@ export function App() {
           onRollInitiative={store.rollCharacterInitiative}
           onToggleCondition={store.toggleCondition}
           onTakeRest={store.takeRest}
+          onSpendHitDie={store.spendHitDie}
           onRollCheck={(label, mod) => {
             const sign = mod >= 0 ? '+' : '';
             const res = evaluateDiceExpression(`1d20${sign}${mod}`, store.rollMode);
@@ -290,9 +293,18 @@ export function App() {
       <CharacterBuilderDrawer
         isOpen={builderOpen}
         character={store.rawChar}
+        canDelete={store.characterList.length > 1}
         onClose={() => setBuilderOpen(false)}
         onUpdateCharacter={store.persistCharacter}
+        onDuplicateCharacter={store.duplicateCharacter}
+        onDeleteCharacter={() => store.deleteCharacter(store.rawChar.id)}
         onLog={store.appendLog}
+      />
+
+      <NewCharacterModal
+        isOpen={newCharOpen}
+        onClose={() => setNewCharOpen(false)}
+        onCreate={store.createCharacterFromPreset}
       />
 
       <EquipmentSpellDrawer

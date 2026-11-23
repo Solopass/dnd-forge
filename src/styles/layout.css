@@ -215,3 +215,128 @@ dialog.forge-dialog::backdrop {
     background: var(--scrollbar-track);
   }
 }
+
+/* Reusable form, grid & pip utilities */
+.forge-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.forge-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.forge-row-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.forge-row-end {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.forge-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.forge-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.forge-ability-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 8px;
+}
+
+.forge-ability-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.forge-skill-pill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+  gap: 6px;
+}
+
+.forge-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.forge-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.forge-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.forge-input {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+  font-size: 12px;
+}
+
+.forge-list-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.forge-muted {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.pip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.pip {
+  width: 14px;
+  height: 14px;
+  min-block-size: 14px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--accent-blue);
+  background: transparent;
+  cursor: pointer;
+}
+
+.pip.filled {
+  background: var(--accent-blue);
+}

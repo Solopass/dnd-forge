@@ -22,6 +22,11 @@ import { adapt5eToolsPayload } from '../engine/five-tools-adapter';
 import { parseDndBeyondPdfBuffer } from '../engine/ddb-pdf-importer';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
 import {
+  buildCharacterFromPreset,
+  NewCharacterPresetInput,
+  syncClassResourcePools,
+} from '../engine/classes';
+import {
   buildSearchTokens,
   db,
   importBackupBundle,
@@ -112,7 +117,16 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   const persistCharacter = useCallback((updater: (prev: RawCharacterState) => RawCharacterState) => {
     setRawChar((prev) => {
       const drafted = updater(prev);
-      const syncedResources = syncSpellSlotPools(drafted.classes, drafted.resources);
+      const totalAbilities = {
+        str: drafted.baseAbilities.str + drafted.bonusAbilities.str,
+        dex: drafted.baseAbilities.dex + drafted.bonusAbilities.dex,
+        con: drafted.baseAbilities.con + drafted.bonusAbilities.con,
+        int: drafted.baseAbilities.int + drafted.bonusAbilities.int,
+        wis: drafted.baseAbilities.wis + drafted.bonusAbilities.wis,
+        cha: drafted.baseAbilities.cha + drafted.bonusAbilities.cha,
+      };
+      const withClassPools = syncClassResourcePools(drafted.classes, drafted.resources, totalAbilities);
+      const syncedResources = syncSpellSlotPools(drafted.classes, withClassPools);
       const next = { ...drafted, resources: syncedResources };
       void saveCharacter(next);
       setCharacterList((list) =>
@@ -153,6 +167,51 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
       appendLog(`Created new character "${fresh.name}".`, 'info');
     },
     [appendLog]
+  );
+
+  const createCharacterFromPreset = useCallback(
+    async (input: Omit<NewCharacterPresetInput, 'id'>) => {
+      const id = `char-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`;
+      const fresh = buildCharacterFromPreset({ ...input, id });
+      await saveCharacter(fresh);
+      setCharacterList((prev) => [...prev, fresh]);
+      setRawChar(fresh);
+      appendLog(
+        `Created Lvl ${input.level} ${input.speciesName} ${input.className} "${fresh.name}".`,
+        'info'
+      );
+    },
+    [appendLog]
+  );
+
+  const duplicateCharacter = useCallback(async () => {
+    const id = `char-${Date.now().toString(36)}`;
+    const copy: RawCharacterState = {
+      ...structuredClone(rawChar),
+      id,
+      name: `${rawChar.name} (Copy)`,
+    };
+    await saveCharacter(copy);
+    setCharacterList((prev) => [...prev, copy]);
+    setRawChar(copy);
+    appendLog(`Duplicated character as "${copy.name}".`, 'info');
+  }, [rawChar, appendLog]);
+
+  const deleteCharacter = useCallback(
+    async (characterId: string) => {
+      if (characterList.length <= 1) {
+        appendLog('Cannot delete the only remaining character.', 'warn');
+        return;
+      }
+      await db.characters.delete(characterId);
+      const remaining = characterList.filter((c) => c.id !== characterId);
+      setCharacterList(remaining);
+      if (rawChar.id === characterId && remaining[0]) {
+        setRawChar(remaining[0]);
+      }
+      appendLog('Deleted character from local storage.', 'warn');
+    },
+    [characterList, rawChar.id, appendLog]
   );
 
   const setStatOverride = useCallback(
@@ -329,6 +388,30 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     },
     [persistCharacter, appendLog]
   );
+
+  const spendHitDie = useCallback(() => {
+    const hitDicePool = rawChar.resources.find((r) => r.id === 'hit_dice');
+    if (!hitDicePool || hitDicePool.current <= 0) {
+      appendLog('No Hit Dice remaining.', 'warn');
+      return;
+    }
+    const primaryDie = rawChar.classes[0]?.hitDie ?? 8;
+    const conMod = resolvedSheet.abilities.con.modifier;
+    const sign = conMod >= 0 ? '+' : '';
+    const roll = evaluateDiceExpression(`1d${primaryDie}${sign}${conMod}`, 'normal');
+    const healed = Math.max(1, roll.total);
+    persistCharacter((prev) => ({
+      ...prev,
+      hp: {
+        ...prev.hp,
+        current: Math.min(prev.hp.max, prev.hp.current + healed),
+      },
+      resources: prev.resources.map((r) =>
+        r.id === 'hit_dice' ? { ...r, current: Math.max(0, r.current - 1) } : r
+      ),
+    }));
+    appendLog(`Spent Hit Die (1d${primaryDie}${sign}${conMod}): healed ${healed} HP.`, 'roll');
+  }, [rawChar.resources, rawChar.classes, resolvedSheet.abilities.con.modifier, persistCharacter, appendLog]);
 
   const toggleItemEquipped = useCallback(
     (itemId: string) => {
@@ -787,6 +870,10 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     characterList,
     switchCharacter,
     createNewCharacter,
+    createCharacterFromPreset,
+    duplicateCharacter,
+    deleteCharacter,
+    spendHitDie,
     persistCharacter,
     resolvedSheet,
     encounter,

@@ -1,11 +1,7 @@
-import * as pdfjsLib from 'pdfjs-dist';
-import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { ClassLevel, RawCharacterState } from '../types/character';
 import { AbilityKey, SkillKey } from '../types/core';
 import { CompendiumEntity } from '../types/compendium';
 import { createBlankCharacter, syncSpellSlotPools } from './rules-math';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 export interface PdfImportSummary {
   character: RawCharacterState;
@@ -244,6 +240,10 @@ export function buildCharacterFromDdbFields(
  * extracts all AcroForm annotations + text items, and returns a populated RawCharacterState.
  */
 export async function parseDndBeyondPdfBuffer(arrayBuffer: ArrayBuffer, fileName?: string): Promise<PdfImportSummary> {
+  const pdfjsLib = await import('pdfjs-dist');
+  const { default: pdfWorkerUrl } = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+
   const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) });
   const pdf = await loadingTask.promise;
   const fields: Record<string, string> = {};

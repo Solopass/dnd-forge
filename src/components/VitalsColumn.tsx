@@ -15,6 +15,7 @@ interface VitalsColumnProps {
   onRollInitiative: () => void;
   onToggleCondition: (cond: string) => void;
   onTakeRest: (type: 'short_rest' | 'long_rest') => void;
+  onSpendHitDie: () => void;
 }
 
 const ABILITIES: AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
@@ -39,6 +40,7 @@ export function VitalsColumn({
   onRollInitiative,
   onToggleCondition,
   onTakeRest,
+  onSpendHitDie,
 }: VitalsColumnProps) {
   const [inspectAc, setInspectAc] = useState(false);
   const [acInput, setAcInput] = useState('');
@@ -180,6 +182,9 @@ export function VitalsColumn({
           <button type="button" className="btn" style={{ flex: 1 }} onClick={() => onTakeRest('short_rest')}>
             Short Rest
           </button>
+          <button type="button" className="btn" style={{ flex: 1 }} onClick={onSpendHitDie}>
+            Spend Hit Die
+          </button>
           <button type="button" className="btn" style={{ flex: 1 }} onClick={() => onTakeRest('long_rest')}>
             Long Rest
           </button>
@@ -187,6 +192,7 @@ export function VitalsColumn({
 
         <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
           <select
+            aria-label="Condition to toggle"
             value={selectedCondition}
             onChange={(e) => setSelectedCondition(e.target.value)}
             style={{ flex: 1, background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', padding: '3px 6px' }}
@@ -266,16 +272,34 @@ export function VitalsColumn({
         {sheet.resources.map((pool) => (
           <div
             key={pool.id}
-            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0' }}
+            style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '4px 0', borderBottom: '1px solid var(--border-subtle)' }}
           >
-            <span>{pool.name}</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              <button type="button" className="btn" onClick={() => onAdjustResource(pool.id, -1)}>-</button>
-              <span className="tabular" style={{ minWidth: 38, textAlign: 'center' }}>
-                {pool.current}/{pool.max}
-              </span>
-              <button type="button" className="btn" onClick={() => onAdjustResource(pool.id, 1)}>+</button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>{pool.name}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <button type="button" className="btn" onClick={() => onAdjustResource(pool.id, -1)}>-</button>
+                <span className="tabular" style={{ minWidth: 38, textAlign: 'center' }}>
+                  {pool.current}/{pool.max}
+                </span>
+                <button type="button" className="btn" onClick={() => onAdjustResource(pool.id, 1)}>+</button>
+              </div>
             </div>
+            {pool.max > 0 && pool.max <= 10 && (
+              <div className="pip-row">
+                {Array.from({ length: pool.max }, (_, idx) => {
+                  const filled = idx < pool.current;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      className={`pip ${filled ? 'filled' : ''}`}
+                      aria-label={`${pool.name} slot ${idx + 1} of ${pool.max}`}
+                      onClick={() => onAdjustResource(pool.id, filled ? -1 : 1)}
+                    />
+                  );
+                })}
+              </div>
+            )}
           </div>
         ))}
         <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>

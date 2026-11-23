@@ -1,58 +1,49 @@
 import { useState } from 'react';
+import { CLASS_DEFINITIONS, computeFixedMaxHp } from '../engine/classes';
+import { SKILL_ABILITY_MAP } from '../engine/rules-math';
 import { ClassLevel, RawCharacterState } from '../types/character';
-import { AbilityKey, Ruleset } from '../types/core';
+import { AbilityKey, Ruleset, SkillKey } from '../types/core';
 import { ModalDialog } from './ModalDialog';
 
 interface CharacterBuilderDrawerProps {
   isOpen: boolean;
   character: RawCharacterState;
+  canDelete: boolean;
   onClose: () => void;
   onUpdateCharacter: (updater: (prev: RawCharacterState) => RawCharacterState) => void;
+  onDuplicateCharacter: () => Promise<void>;
+  onDeleteCharacter: () => Promise<void>;
   onLog: (msg: string, tone?: 'info' | 'warn') => void;
 }
 
 const ABILITY_ORDER: AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
-
-const CLASS_PRESETS: Array<{
-  className: string;
-  hitDie: 6 | 8 | 10 | 12;
-  casterProgression: ClassLevel['casterProgression'];
-}> = [
-  { className: 'Artificer', hitDie: 8, casterProgression: 'half_up' },
-  { className: 'Barbarian', hitDie: 12, casterProgression: 'none' },
-  { className: 'Bard', hitDie: 8, casterProgression: 'full' },
-  { className: 'Blood Hunter', hitDie: 10, casterProgression: 'pact' },
-  { className: 'Cleric', hitDie: 8, casterProgression: 'full' },
-  { className: 'Druid', hitDie: 8, casterProgression: 'full' },
-  { className: 'Fighter', hitDie: 10, casterProgression: 'none' },
-  { className: 'Monk', hitDie: 8, casterProgression: 'none' },
-  { className: 'Paladin', hitDie: 10, casterProgression: 'half' },
-  { className: 'Ranger', hitDie: 10, casterProgression: 'half' },
-  { className: 'Rogue', hitDie: 8, casterProgression: 'none' },
-  { className: 'Sorcerer', hitDie: 6, casterProgression: 'full' },
-  { className: 'Warlock', hitDie: 8, casterProgression: 'pact' },
-  { className: 'Wizard', hitDie: 6, casterProgression: 'full' },
-];
+const SKILL_KEYS = Object.keys(SKILL_ABILITY_MAP) as SkillKey[];
 
 export function CharacterBuilderDrawer({
   isOpen,
   character,
+  canDelete,
   onClose,
   onUpdateCharacter,
+  onDuplicateCharacter,
+  onDeleteCharacter,
   onLog,
 }: CharacterBuilderDrawerProps) {
   const [selectedNewClass, setSelectedNewClass] = useState('Wizard');
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const setRuleset = (ruleset: Ruleset) => {
     onUpdateCharacter((prev) => ({ ...prev, ruleset }));
     onLog(`Switched character ruleset to ${ruleset}.`);
   };
 
-  const updateBaseScore = (key: AbilityKey, value: number) => {
-    const clamped = Math.max(1, Math.min(30, value));
+  const updateAbility = (bucket: 'baseAbilities' | 'bonusAbilities', key: AbilityKey, value: number) => {
+    const min = bucket === 'baseAbilities' ? 1 : -10;
+    const max = bucket === 'baseAbilities' ? 30 : 20;
+    const clamped = Math.max(min, Math.min(max, value));
     onUpdateCharacter((prev) => ({
       ...prev,
-      baseAbilities: { ...prev.baseAbilities, [key]: clamped },
+      [bucket]: { ...prev[bucket], [key]: clamped },
     }));
   };
 
@@ -63,64 +54,122 @@ export function CharacterBuilderDrawer({
           cls.className === className ? { ...cls, level: Math.max(0, cls.level + delta) } : cls
         )
         .filter((cls) => cls.level > 0);
-      return { ...prev, classes: updated };
+      const nextClasses = updated.length > 0 ? updated : prev.classes;
+      const conScore = prev.baseAbilities.con + prev.bonusAbilities.con;
+      const newMaxHp = computeFixedMaxHp(nextClasses, conScore);
+      const hpDiff = newMaxHp - prev.hp.max;
+      return {
+        ...prev,
+        classes: nextClasses,
+        hp: {
+          ...prev.hp,
+          max: newMaxHp,
+          current: Math.max(1, Math.min(newMaxHp, prev.hp.current + hpDiff)),
+        },
+      };
     });
     onLog(`Adjusted ${className} level by ${delta > 0 ? `+${delta}` : delta}.`);
   };
 
+  const updateSubclass = (className: string, subclassName: string) => {
+    onUpdateCharacter((prev) => ({
+      ...prev,
+      classes: prev.classes.map((cls) =>
+        cls.className === className ? { ...cls, subclassName } : cls
+      ),
+    }));
+  };
+
   const addMulticlass = () => {
-    const preset = CLASS_PRESETS.find((p) => p.className === selectedNewClass);
+    const preset = CLASS_DEFINITIONS.find((p) => p.className === selectedNewClass);
     if (!preset) return;
     onUpdateCharacter((prev) => {
       const exists = prev.classes.some((c) => c.className === preset.className);
-      if (exists) {
-        return {
-          ...prev,
-          classes: prev.classes.map((c) =>
+      const nextClasses: ClassLevel[] = exists
+        ? prev.classes.map((c) =>
             c.className === preset.className ? { ...c, level: c.level + 1 } : c
-          ),
-        };
-      }
+          )
+        : [
+            ...prev.classes,
+            {
+              className: preset.className,
+              level: 1,
+              hitDie: preset.hitDie,
+              casterProgression: preset.casterProgression,
+            },
+          ];
+      const conScore = prev.baseAbilities.con + prev.bonusAbilities.con;
+      const newMaxHp = computeFixedMaxHp(nextClasses, conScore);
+      const hpDiff = newMaxHp - prev.hp.max;
       return {
         ...prev,
-        classes: [
-          ...prev.classes,
-          {
-            className: preset.className,
-            level: 1,
-            hitDie: preset.hitDie,
-            casterProgression: preset.casterProgression,
-          },
-        ],
+        classes: nextClasses,
+        hp: {
+          ...prev.hp,
+          max: newMaxHp,
+          current: Math.max(1, Math.min(newMaxHp, prev.hp.current + hpDiff)),
+        },
       };
     });
     onLog(`Added ${preset.className} level.`);
   };
 
+  const toggleSaveProf = (key: AbilityKey) => {
+    onUpdateCharacter((prev) => {
+      const has = prev.saveProficiencies.includes(key);
+      return {
+        ...prev,
+        saveProficiencies: has
+          ? prev.saveProficiencies.filter((s) => s !== key)
+          : [...prev.saveProficiencies, key],
+      };
+    });
+  };
+
+  const cycleSkillProf = (skill: SkillKey) => {
+    onUpdateCharacter((prev) => {
+      const cur = prev.skillProficiencies[skill] ?? 0;
+      const next: 0 | 1 | 2 = cur === 0 ? 1 : cur === 1 ? 2 : 0;
+      return {
+        ...prev,
+        skillProficiencies: { ...prev.skillProficiencies, [skill]: next },
+      };
+    });
+  };
+
   return (
     <ModalDialog
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => {
+        setConfirmDelete(false);
+        onClose();
+      }}
       title="Character Builder & Multiclass Level-Up"
     >
-      <div className="card" style={{ marginBottom: 10 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'center' }}>
-          <input
-            aria-label="Character name"
-            type="text"
-            value={character.name}
-            onChange={(e) => onUpdateCharacter((prev) => ({ ...prev, name: e.target.value }))}
-            placeholder="Character Name"
-            style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', padding: '5px 8px' }}
-          />
-          <input
-            aria-label="Species or lineage"
-            type="text"
-            value={character.species}
-            onChange={(e) => onUpdateCharacter((prev) => ({ ...prev, species: e.target.value }))}
-            placeholder="Species / Lineage"
-            style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', padding: '5px 8px' }}
-          />
+      <div className="forge-stack">
+        <div className="card forge-grid-3" style={{ alignItems: 'end' }}>
+          <label className="forge-field">
+            <span className="forge-label">CHARACTER NAME</span>
+            <input
+              type="text"
+              className="forge-input"
+              value={character.name}
+              onChange={(e) => onUpdateCharacter((prev) => ({ ...prev, name: e.target.value }))}
+              placeholder="Character Name"
+            />
+          </label>
+          <label className="forge-field">
+            <span className="forge-label">SPECIES / LINEAGE</span>
+            <input
+              type="text"
+              className="forge-input"
+              value={character.species}
+              onChange={(e) => onUpdateCharacter((prev) => ({ ...prev, species: e.target.value }))}
+              placeholder="Species / Lineage"
+            />
+          </label>
+          <div className="forge-field">
+            <span className="forge-label">RULESET</span>
             <div className="pill-row">
               {(['2014', '2024', 'homebrew'] as Ruleset[]).map((rs) => (
                 <button
@@ -136,27 +185,26 @@ export function CharacterBuilderDrawer({
           </div>
         </div>
 
-        <div className="card" style={{ marginBottom: 10 }}>
-          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>
-            CLASSES &amp; MULTICLASS PROGRESSION
-          </div>
+        <div className="card">
+          <div className="forge-section-label">CLASSES &amp; MULTICLASS PROGRESSION</div>
           {character.classes.map((cls) => (
-            <div
-              key={cls.className}
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '5px 0',
-                borderBottom: '1px solid var(--border-subtle)',
-              }}
-            >
-              <span>
-                <strong>{cls.className}</strong>{' '}
-                {cls.subclassName ? `(${cls.subclassName})` : ''} — Level{' '}
-                <span className="tabular">{cls.level}</span> (d{cls.hitDie})
-              </span>
-              <div style={{ display: 'flex', gap: 4 }}>
+            <div key={cls.className} className="forge-list-row">
+              <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+                <strong>{cls.className}</strong>
+                <input
+                  aria-label={`${cls.className} subclass`}
+                  type="text"
+                  className="forge-input"
+                  value={cls.subclassName ?? ''}
+                  onChange={(e) => updateSubclass(cls.className, e.target.value)}
+                  placeholder="Subclass (optional)"
+                  style={{ width: 150, padding: '3px 6px' }}
+                />
+                <span className="forge-muted">
+                  Lvl <span className="tabular">{cls.level}</span> (d{cls.hitDie})
+                </span>
+              </div>
+              <div className="forge-row">
                 <button type="button" className="btn" onClick={() => adjustClassLevel(cls.className, -1)}>
                   -1
                 </button>
@@ -167,14 +215,14 @@ export function CharacterBuilderDrawer({
             </div>
           ))}
 
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          <div className="forge-row" style={{ marginTop: 8 }}>
             <select
               aria-label="Select class to add"
+              className="forge-input"
               value={selectedNewClass}
               onChange={(e) => setSelectedNewClass(e.target.value)}
-              style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', padding: '4px 8px' }}
             >
-              {CLASS_PRESETS.map((p) => (
+              {CLASS_DEFINITIONS.map((p) => (
                 <option key={p.className} value={p.className}>
                   {p.className} (d{p.hitDie})
                 </option>
@@ -186,27 +234,116 @@ export function CharacterBuilderDrawer({
           </div>
         </div>
 
-        <div className="card">
-          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>
-            BASE ABILITY SCORES (PRE-ASI)
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 8 }}>
-            {ABILITY_ORDER.map((key) => (
-              <label key={key} style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11 }}>
-                <span style={{ textTransform: 'uppercase', color: 'var(--text-secondary)' }}>{key}</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={30}
-                  value={character.baseAbilities[key]}
-                  onChange={(e) => updateBaseScore(key, Number.parseInt(e.target.value, 10) || 10)}
-                  className="tabular"
-                  style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', padding: '4px 6px' }}
-                />
-              </label>
-            ))}
+        <div className="card forge-stack">
+          <div className="forge-section-label">ABILITY SCORES (BASE + ASI / BONUS) &amp; SAVE PROFICIENCIES</div>
+          <div className="forge-ability-grid">
+            {ABILITY_ORDER.map((key) => {
+              const saveActive = character.saveProficiencies.includes(key);
+              return (
+                <div key={key} className="forge-ability-edit">
+                  <div className="forge-row-between">
+                    <span className="forge-label">{key.toUpperCase()}</span>
+                    <button
+                      type="button"
+                      className={`pill ${saveActive ? 'active' : ''}`}
+                      onClick={() => toggleSaveProf(key)}
+                      title="Toggle saving throw proficiency"
+                    >
+                      {saveActive ? 'Save ★' : 'Save'}
+                    </button>
+                  </div>
+                  <input
+                    aria-label={`${key.toUpperCase()} base score`}
+                    type="number"
+                    min={1}
+                    max={30}
+                    value={character.baseAbilities[key]}
+                    onChange={(e) => updateAbility('baseAbilities', key, Number.parseInt(e.target.value, 10) || 10)}
+                    className="forge-input tabular"
+                  />
+                  <input
+                    aria-label={`${key.toUpperCase()} bonus ASI`}
+                    type="number"
+                    min={-10}
+                    max={20}
+                    value={character.bonusAbilities[key]}
+                    onChange={(e) => updateAbility('bonusAbilities', key, Number.parseInt(e.target.value, 10) || 0)}
+                    className="forge-input tabular"
+                    title="Bonus / ASI"
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
+
+        <div className="card">
+          <div className="forge-section-label">SKILL PROFICIENCIES (CLICK TO CYCLE: NONE → PROF → EXPERTISE)</div>
+          <div className="forge-skill-pill-grid">
+            {SKILL_KEYS.map((sk) => {
+              const rank = character.skillProficiencies[sk] ?? 0;
+              const badge = rank === 2 ? '★★' : rank === 1 ? '●' : '○';
+              return (
+                <button
+                  key={sk}
+                  type="button"
+                  className={`pill ${rank > 0 ? 'active' : ''}`}
+                  onClick={() => cycleSkillProf(sk)}
+                  style={{ textAlign: 'left', display: 'flex', justifyContent: 'space-between', gap: 6 }}
+                >
+                  <span>{sk.replace(/_/g, ' ')}</span>
+                  <span className="tabular">{badge}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="forge-row-between">
+          <button
+            type="button"
+            className="btn"
+            onClick={async () => {
+              await onDuplicateCharacter();
+              onClose();
+            }}
+          >
+            Duplicate Character
+          </button>
+
+          {canDelete && (
+            <div className="forge-row">
+              {!confirmDelete ? (
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  Delete Character
+                </button>
+              ) : (
+                <>
+                  <span className="forge-muted">Confirm delete?</span>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={async () => {
+                      await onDeleteCharacter();
+                      setConfirmDelete(false);
+                      onClose();
+                    }}
+                  >
+                    Yes, Delete
+                  </button>
+                  <button type="button" className="btn" onClick={() => setConfirmDelete(false)}>
+                    Cancel
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </ModalDialog>
   );
 }

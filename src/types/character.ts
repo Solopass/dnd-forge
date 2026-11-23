@@ -23,6 +23,7 @@ export interface ResourcePool {
   max: number;
   recovery: RecoveryTrigger;
   isAutoSpellSlot?: boolean;
+  isAutoClassPool?: boolean;
 }
 
 export interface CharacterOverrides {

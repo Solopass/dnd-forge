@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { CombatEncounterState } from '../types/combat';
 import { Activity, CompendiumEntity } from '../types/compendium';
 import { STANDARD_CONDITIONS } from '../types/core';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
 import { ConsoleLine } from '../state/useSheetStore';
+import { ModalDialog } from './ModalDialog';
 
 interface SummonDrawerProps {
   encounter: CombatEncounterState;
@@ -259,38 +260,17 @@ export function CommandPalette({
   onImportJsonText,
 }: CommandPaletteProps) {
   const [tab, setTab] = useState<'search' | 'packs' | 'pdf' | 'markdown' | 'json'>('search');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | CompendiumEntity['category']>('all');
   const [query, setQuery] = useState('');
   const [pasteText, setPasteText] = useState('');
-  const previousFocusRef = useRef<HTMLElement | null>(null);
 
-  useEffect(() => {
-    if (isOpen) {
-      previousFocusRef.current = document.activeElement as HTMLElement | null;
-    } else if (previousFocusRef.current) {
-      previousFocusRef.current.focus();
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        e.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
-  const matches = searchCompendium(query);
+  const matches = searchCompendium(query).filter(
+    (item) => categoryFilter === 'all' || item.category === categoryFilter
+  );
 
   return (
-    <div className="palette-backdrop" onClick={onClose}>
-      <div className="palette-modal card" onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <div className="pill-row">
+    <ModalDialog isOpen={isOpen} onClose={onClose} title="Compendium, SRD Packs & Importers">
+      <div className="pill-row" style={{ marginBottom: 10 }}>
             <button
               type="button"
               className={`pill ${tab === 'search' ? 'active' : ''}`}
@@ -326,20 +306,17 @@ export function CommandPalette({
             >
               5e.tools / Backup JSON
             </button>
-          </div>
-          <button type="button" className="btn" onClick={onClose}>
-            Esc
-          </button>
         </div>
 
         {tab === 'search' && (
           <div>
             <input
               autoFocus
+              aria-label="Search compendium"
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search local spells, weapons, monsters, homebrew..."
+              placeholder="Search local spells, weapons, armor, feats, monsters..."
               style={{
                 width: '100%',
                 background: 'var(--bg-base)',
@@ -349,6 +326,18 @@ export function CommandPalette({
                 marginBottom: 8,
               }}
             />
+            <div className="pill-row" style={{ marginBottom: 8 }}>
+              {(['all', 'spell', 'weapon', 'armor', 'feat', 'monster'] as const).map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  className={`pill ${categoryFilter === cat ? 'active' : ''}`}
+                  onClick={() => setCategoryFilter(cat)}
+                >
+                  {cat.toUpperCase()}
+                </button>
+              ))}
+            </div>
             <div style={{ maxHeight: 280, overflowY: 'auto' }}>
               {matches.map((item) => (
                 <div
@@ -492,8 +481,7 @@ Claws. +7 to hit, 2d8 + 5 slashing damage`}
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </ModalDialog>
   );
 }
 
@@ -505,7 +493,7 @@ interface StatusConsoleProps {
 export function StatusConsole({ lines, onRollExpression }: StatusConsoleProps) {
   const [diceInput, setDiceInput] = useState('');
 
-  const handleRollSubmit = (e: React.FormEvent) => {
+  const handleRollSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!diceInput.trim()) return;
     onRollExpression('Custom Roll', diceInput.trim());
@@ -515,8 +503,11 @@ export function StatusConsole({ lines, onRollExpression }: StatusConsoleProps) {
   return (
     <footer className="status-console-shell" aria-live="polite">
       <form className="status-console-bar" onSubmit={handleRollSubmit}>
-        <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>DICE CONSOLE:</span>
+        <label htmlFor="dice-console-input" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+          DICE CONSOLE:
+        </label>
         <input
+          id="dice-console-input"
           type="text"
           value={diceInput}
           onChange={(e) => setDiceInput(e.target.value)}

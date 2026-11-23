@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { ClassLevel, RawCharacterState } from '../types/character';
 import { AbilityKey, Ruleset } from '../types/core';
+import { ModalDialog } from './ModalDialog';
 
 interface CharacterBuilderDrawerProps {
   isOpen: boolean;
@@ -22,9 +23,13 @@ const CLASS_PRESETS: Array<{
   { className: 'Bard', hitDie: 8, casterProgression: 'full' },
   { className: 'Blood Hunter', hitDie: 10, casterProgression: 'pact' },
   { className: 'Cleric', hitDie: 8, casterProgression: 'full' },
+  { className: 'Druid', hitDie: 8, casterProgression: 'full' },
   { className: 'Fighter', hitDie: 10, casterProgression: 'none' },
+  { className: 'Monk', hitDie: 8, casterProgression: 'none' },
   { className: 'Paladin', hitDie: 10, casterProgression: 'half' },
+  { className: 'Ranger', hitDie: 10, casterProgression: 'half' },
   { className: 'Rogue', hitDie: 8, casterProgression: 'none' },
+  { className: 'Sorcerer', hitDie: 6, casterProgression: 'full' },
   { className: 'Warlock', hitDie: 8, casterProgression: 'pact' },
   { className: 'Wizard', hitDie: 6, casterProgression: 'full' },
 ];
@@ -37,28 +42,6 @@ export function CharacterBuilderDrawer({
   onLog,
 }: CharacterBuilderDrawerProps) {
   const [selectedNewClass, setSelectedNewClass] = useState('Wizard');
-  const previousFocusRef = useRef<HTMLElement | null>(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      previousFocusRef.current = document.activeElement as HTMLElement | null;
-    } else if (previousFocusRef.current) {
-      previousFocusRef.current.focus();
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        e.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
 
   const setRuleset = (ruleset: Ruleset) => {
     onUpdateCharacter((prev) => ({ ...prev, ruleset }));
@@ -115,35 +98,29 @@ export function CharacterBuilderDrawer({
   };
 
   return (
-    <div className="palette-backdrop" onClick={onClose}>
-      <div
-        className="palette-modal card"
-        style={{ width: 'min(720px, 94vw)' }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <strong>Character Builder &amp; Multiclass Level-Up</strong>
-          <button type="button" className="btn" onClick={onClose}>
-            Done (Esc)
-          </button>
-        </div>
-
-        <div className="card" style={{ marginBottom: 10 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'center' }}>
-            <input
-              type="text"
-              value={character.name}
-              onChange={(e) => onUpdateCharacter((prev) => ({ ...prev, name: e.target.value }))}
-              placeholder="Character Name"
-              style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', padding: '5px 8px' }}
-            />
-            <input
-              type="text"
-              value={character.species}
-              onChange={(e) => onUpdateCharacter((prev) => ({ ...prev, species: e.target.value }))}
-              placeholder="Species / Lineage"
-              style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', padding: '5px 8px' }}
-            />
+    <ModalDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Character Builder & Multiclass Level-Up"
+    >
+      <div className="card" style={{ marginBottom: 10 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, alignItems: 'center' }}>
+          <input
+            aria-label="Character name"
+            type="text"
+            value={character.name}
+            onChange={(e) => onUpdateCharacter((prev) => ({ ...prev, name: e.target.value }))}
+            placeholder="Character Name"
+            style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', padding: '5px 8px' }}
+          />
+          <input
+            aria-label="Species or lineage"
+            type="text"
+            value={character.species}
+            onChange={(e) => onUpdateCharacter((prev) => ({ ...prev, species: e.target.value }))}
+            placeholder="Species / Lineage"
+            style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', padding: '5px 8px' }}
+          />
             <div className="pill-row">
               {(['2014', '2024', 'homebrew'] as Ruleset[]).map((rs) => (
                 <button
@@ -192,6 +169,7 @@ export function CharacterBuilderDrawer({
 
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <select
+              aria-label="Select class to add"
               value={selectedNewClass}
               onChange={(e) => setSelectedNewClass(e.target.value)}
               style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', padding: '4px 8px' }}
@@ -229,7 +207,6 @@ export function CharacterBuilderDrawer({
             ))}
           </div>
         </div>
-      </div>
-    </div>
+    </ModalDialog>
   );
 }

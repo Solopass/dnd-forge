@@ -1,4 +1,6 @@
 :root {
+  color-scheme: dark;
+
   --bg-base: #0d1117;
   --bg-surface: #161b22;
   --bg-elevated: #21262d;
@@ -25,6 +27,12 @@
 
   --z-drawer: 40;
   --z-palette: 100;
+
+  --scrollbar-track: #0d1117;
+  --scrollbar-thumb: #30363d;
+
+  accent-color: var(--accent-blue);
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
 * {
@@ -44,4 +52,21 @@ body {
 .tabular {
   font-variant-numeric: tabular-nums;
   font-family: var(--font-mono);
+}
+
+:where(a:any-link, button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+}
+
+.visually-hidden:where(:not(:focus-within, :active)) {
+  position: absolute !important;
+  clip-path: inset(50%) !important;
+  overflow: hidden !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  white-space: nowrap !important;
 }

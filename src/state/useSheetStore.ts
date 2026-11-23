@@ -85,7 +85,14 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
           await saveEncounter(initialEncounter);
         }
         const storedItems = await db.compendium.toArray();
-        if (active && storedItems.length > 0) {
+        const storedIds = new Set(storedItems.map((i) => i.id));
+        const basePackEntities = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities);
+        const missingBaseEntities = basePackEntities.filter((e) => !storedIds.has(e.id));
+        if (missingBaseEntities.length > 0) {
+          await upsertCompendiumEntities(missingBaseEntities);
+          const refreshed = await db.compendium.toArray();
+          if (active) setCompendium(refreshed);
+        } else if (active && storedItems.length > 0) {
           setCompendium(storedItems);
         }
       } catch (err) {
@@ -767,10 +774,10 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   const searchCompendium = useCallback(
     (query: string): CompendiumEntity[] => {
       const q = query.trim().toLowerCase();
-      if (!q) return compendium.slice(0, 30);
+      if (!q) return compendium.slice(0, 120);
       return compendium
         .filter((item) => buildSearchTokens(item).includes(q))
-        .slice(0, 30);
+        .slice(0, 120);
     },
     [compendium]
   );

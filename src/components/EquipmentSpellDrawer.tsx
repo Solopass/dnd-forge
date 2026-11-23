@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
 import { CompendiumEntity } from '../types/compendium';
+import { ModalDialog } from './ModalDialog';
 
 interface EquipmentSpellDrawerProps {
   isOpen: boolean;
@@ -22,40 +22,16 @@ export function EquipmentSpellDrawer({
   onToggleAttuned,
   onRemoveItem,
 }: EquipmentSpellDrawerProps) {
-  const previousFocusRef = useRef<HTMLElement | null>(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      previousFocusRef.current = document.activeElement as HTMLElement | null;
-    } else if (previousFocusRef.current) {
-      previousFocusRef.current.focus();
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        e.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
-
   return (
-    <div className="palette-backdrop" onClick={onClose}>
-      <div className="palette-modal card" onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <strong>
-            Equipment, Attunement (<span className="tabular">{attunementCount}/3</span>) &amp; Spell Preparation
-          </strong>
-          <button type="button" className="btn" onClick={onClose}>
-            Close (Esc)
-          </button>
-        </div>
+    <ModalDialog
+      isOpen={isOpen}
+      onClose={onClose}
+      title={
+        <>
+          Equipment, Attunement (<span className="tabular">{attunementCount}/3</span>) &amp; Spell Preparation
+        </>
+      }
+    >
 
         {items.map((item) => (
           <div
@@ -117,7 +93,6 @@ export function EquipmentSpellDrawer({
             </div>
           </div>
         ))}
-      </div>
-    </div>
+    </ModalDialog>
   );
 }

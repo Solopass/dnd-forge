@@ -108,11 +108,17 @@ describe('5e Rules Pipeline, D&D Beyond PDF Importer, SRD Packs & Combat State M
     expect(result.character.items.some((i) => i.name === 'Hex')).toBe(true);
   });
 
-  it('provides built-in SRD & 2024 content packs ready to install', () => {
-    expect(BUILTIN_CONTENT_PACKS.length).toBeGreaterThanOrEqual(3);
+  it('provides built-in SRD & 2024 base set content packs across all core categories', () => {
+    expect(BUILTIN_CONTENT_PACKS.length).toBeGreaterThanOrEqual(5);
     const allEntities = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities);
-    expect(allEntities.some((e) => e.name === 'Fireball')).toBe(true);
-    expect(allEntities.some((e) => e.name === 'Owlbear')).toBe(true);
+    expect(allEntities.length).toBeGreaterThanOrEqual(90);
+    expect(allEntities.some((e) => e.category === 'spell' && e.name === 'Fireball')).toBe(true);
+    expect(allEntities.some((e) => e.category === 'weapon' && e.name === 'Longsword')).toBe(true);
+    expect(allEntities.some((e) => e.category === 'armor' && e.name === 'Plate Armor')).toBe(true);
+    expect(allEntities.some((e) => e.category === 'shield' && e.name === 'Shield (+2 AC)')).toBe(true);
+    expect(allEntities.some((e) => e.category === 'feat' && e.name === 'Action Surge')).toBe(true);
+    expect(allEntities.some((e) => e.category === 'monster' && e.name === 'Owlbear')).toBe(true);
+    expect(allEntities.some((e) => e.ruleset === '2024' && e.name === 'Greatsword (Graze)')).toBe(true);
   });
 
   it('computes multiclass spell slots and recovers resources on short/long rests', () => {

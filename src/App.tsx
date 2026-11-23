@@ -194,6 +194,7 @@ export function App() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <strong>D&amp;D FORGE // LOCAL VTT</strong>
           <select
+            aria-label="Active character"
             value={store.rawChar.id}
             onChange={(e) => void store.switchCharacter(e.target.value)}
             style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', padding: '3px 8px' }}
@@ -213,7 +214,7 @@ export function App() {
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           <button type="button" className="btn" onClick={() => setBuilderOpen(true)}>
             Build / Level Up
           </button>
@@ -229,7 +230,7 @@ export function App() {
         </div>
       </header>
 
-      <div className="workspace-grid">
+      <main className="workspace-grid">
         <VitalsColumn
           sheet={store.resolvedSheet}
           onAdjustHp={store.adjustHp}
@@ -268,7 +269,7 @@ export function App() {
           onDropConcentration={store.dropConcentration}
           onAddMonster={store.addMonsterToEncounter}
         />
-      </div>
+      </main>
 
       <StatusConsole
         lines={store.consoleLines}

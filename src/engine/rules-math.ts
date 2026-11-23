@@ -1,0 +1,485 @@
+import {
+  AbilityKey,
+  ActionEconomy,
+  OverridableStat,
+  SkillKey,
+  StatModifier,
+} from '../types/core';
+import {
+  AcFormulaRule,
+  CompendiumEntity,
+} from '../types/compendium';
+import {
+  ClassLevel,
+  RawCharacterState,
+  ResolvedActivity,
+  ResolvedCharacterSheet,
+  ResourcePool,
+} from '../types/character';
+
+export const SKILL_ABILITY_MAP: Record<SkillKey, AbilityKey> = {
+  acrobatics: 'dex',
+  animal_handling: 'wis',
+  arcana: 'int',
+  athletics: 'str',
+  deception: 'cha',
+  history: 'int',
+  insight: 'wis',
+  intimidation: 'cha',
+  investigation: 'int',
+  medicine: 'wis',
+  nature: 'int',
+  perception: 'wis',
+  performance: 'cha',
+  persuasion: 'cha',
+  religion: 'int',
+  sleight_of_hand: 'dex',
+  stealth: 'dex',
+  survival: 'wis',
+};
+
+const ALL_ABILITIES: AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+
+const MULTICLASS_SLOT_TABLE: Record<number, number[]> = {
+  0: [],
+  1: [2],
+  2: [3],
+  3: [4, 2],
+  4: [4, 3],
+  5: [4, 3, 2],
+  6: [4, 3, 3],
+  7: [4, 3, 3, 1],
+  8: [4, 3, 3, 2],
+  9: [4, 3, 3, 3, 1],
+  10: [4, 3, 3, 3, 2],
+  11: [4, 3, 3, 3, 2, 1],
+  12: [4, 3, 3, 3, 2, 1],
+  13: [4, 3, 3, 3, 2, 1, 1],
+  14: [4, 3, 3, 3, 2, 1, 1],
+  15: [4, 3, 3, 3, 2, 1, 1, 1],
+  16: [4, 3, 3, 3, 2, 1, 1, 1],
+  17: [4, 3, 3, 3, 2, 1, 1, 1, 1],
+  18: [4, 3, 3, 3, 3, 1, 1, 1, 1],
+  19: [4, 3, 3, 3, 3, 2, 1, 1, 1],
+  20: [4, 3, 3, 3, 3, 2, 2, 1, 1],
+};
+
+export function createBlankCharacter(id: string, name: string): RawCharacterState {
+  return {
+    id,
+    name,
+    ruleset: '2014',
+    species: 'Human',
+    background: 'Adventurer',
+    classes: [{ className: 'Fighter', level: 1, hitDie: 10, casterProgression: 'none' }],
+    baseAbilities: { str: 15, dex: 14, con: 14, int: 10, wis: 12, cha: 8 },
+    bonusAbilities: { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 },
+    saveProficiencies: ['str', 'con'],
+    skillProficiencies: {
+      acrobatics: 0, animal_handling: 0, arcana: 0, athletics: 1, deception: 0,
+      history: 0, insight: 0, intimidation: 0, investigation: 0, medicine: 0,
+      nature: 0, perception: 1, performance: 0, persuasion: 0, religion: 0,
+      sleight_of_hand: 0, stealth: 0, survival: 0,
+    },
+    hp: { current: 12, max: 12, temp: 0 },
+    deathSaves: { successes: 0, failures: 0 },
+    exhaustion: 0,
+    conditions: [],
+    resources: [{ id: 'second_wind', name: 'Second Wind', current: 1, max: 1, recovery: 'short_rest' }],
+    items: [],
+    overrides: {},
+  };
+}
+
+export function computeEffectiveCasterLevel(classes: ClassLevel[]): number {
+  const nonPactClasses = classes.filter((c) => c.casterProgression !== 'pact' && c.casterProgression !== 'none');
+  if (nonPactClasses.length === 1) {
+    const single = nonPactClasses[0]!;
+    if (single.casterProgression === 'full') return single.level;
+    if (single.casterProgression === 'half_up') return Math.ceil(single.level / 2);
+    if (single.casterProgression === 'half') return single.level >= 2 ? Math.ceil(single.level / 2) : 0;
+    if (single.casterProgression === 'third') return single.level >= 3 ? Math.ceil(single.level / 3) : 0;
+  }
+
+  let total = 0;
+  for (const cls of nonPactClasses) {
+    if (cls.casterProgression === 'full') total += cls.level;
+    else if (cls.casterProgression === 'half_up') total += Math.ceil(cls.level / 2);
+    else if (cls.casterProgression === 'half') total += Math.floor(cls.level / 2);
+    else if (cls.casterProgression === 'third') total += Math.floor(cls.level / 3);
+  }
+  return Math.min(20, total);
+}
+
+export function syncSpellSlotPools(classes: ClassLevel[], existingPools: ResourcePool[]): ResourcePool[] {
+  const casterLevel = computeEffectiveCasterLevel(classes);
+  const slotCounts = MULTICLASS_SLOT_TABLE[casterLevel] ?? [];
+  const preservedCustom = existingPools.filter((p) => !p.isAutoSpellSlot);
+  const previousSlotMap = new Map(
+    existingPools.filter((p) => p.isAutoSpellSlot).map((p) => [p.id, p])
+  );
+
+  const generatedSlots: ResourcePool[] = slotCounts.map((maxCount, idx) => {
+    const level = idx + 1;
+    const id = `spell_slot_${level}`;
+    const prev = previousSlotMap.get(id);
+    const ordinal = level === 1 ? '1st' : level === 2 ? '2nd' : level === 3 ? '3rd' : `${level}th`;
+    return {
+      id,
+      name: `${ordinal}-Level Slots`,
+      current: prev ? Math.min(maxCount, prev.current) : maxCount,
+      max: maxCount,
+      recovery: 'long_rest',
+      isAutoSpellSlot: true,
+    };
+  });
+
+  const pactLevel = classes
+    .filter((c) => c.casterProgression === 'pact')
+    .reduce((sum, c) => sum + c.level, 0);
+
+  if (pactLevel > 0) {
+    const pactCount = pactLevel >= 17 ? 4 : pactLevel >= 11 ? 3 : pactLevel >= 2 ? 2 : 1;
+    const pactSlotRank = Math.min(5, Math.ceil(pactLevel / 2));
+    const prevPact = previousSlotMap.get('pact_slot');
+    generatedSlots.push({
+      id: 'pact_slot',
+      name: `Pact Slots (Lvl ${pactSlotRank})`,
+      current: prevPact ? Math.min(pactCount, prevPact.current) : pactCount,
+      max: pactCount,
+      recovery: 'short_rest',
+      isAutoSpellSlot: true,
+    });
+  }
+
+  return [...generatedSlots, ...preservedCustom];
+}
+
+export function applyRestRecovery(
+  raw: RawCharacterState,
+  restType: 'short_rest' | 'long_rest'
+): RawCharacterState {
+  const nextHp =
+    restType === 'long_rest'
+      ? { ...raw.hp, current: raw.hp.max }
+      : raw.hp;
+
+  const nextExhaustion =
+    restType === 'long_rest' && raw.exhaustion > 0
+      ? raw.exhaustion - 1
+      : raw.exhaustion;
+
+  const nextResources = raw.resources.map((pool) => {
+    const recovers =
+      pool.recovery === 'short_rest' ||
+      (restType === 'long_rest' && (pool.recovery === 'long_rest' || pool.recovery === 'dawn'));
+    return recovers ? { ...pool, current: pool.max } : pool;
+  });
+
+  return {
+    ...raw,
+    hp: nextHp,
+    deathSaves: { successes: 0, failures: 0 },
+    exhaustion: nextExhaustion,
+    resources: nextResources,
+  };
+}
+
+export function computeAbilityModifier(score: number): number {
+  return Math.floor((score - 10) / 2);
+}
+
+export function computeProficiencyBonus(totalLevel: number): number {
+  if (totalLevel < 1) return 2;
+  return Math.floor((totalLevel - 1) / 4) + 2;
+}
+
+function buildOverridable(
+  base: number,
+  modifiers: StatModifier[],
+  override: number | null | undefined
+): OverridableStat<number> {
+  const modSum = modifiers.reduce((sum, m) => sum + m.value, 0);
+  const computed = base + modSum;
+  const resolvedOverride = override ?? null;
+  return {
+    base,
+    modifiers,
+    override: resolvedOverride,
+    final: resolvedOverride !== null ? resolvedOverride : computed,
+  };
+}
+
+function evaluateAcFormula(
+  rule: AcFormulaRule,
+  abilityMods: Record<AbilityKey, number>
+): number {
+  const rawDex = abilityMods.dex;
+  const cappedDex =
+    rule.dexCap === null ? rawDex : Math.min(rawDex, rule.dexCap);
+  const extraMod = rule.extraAbility ? abilityMods[rule.extraAbility] : 0;
+  return rule.base + cappedDex + extraMod;
+}
+
+export function isEntityActive(item: CompendiumEntity): boolean {
+  if (item.category === 'armor' || item.category === 'shield' || item.category === 'weapon') {
+    return Boolean(item.equipped);
+  }
+  if (item.category === 'spell' && (item.spellLevel ?? 0) > 0) {
+    if (!item.alwaysPrepared && item.prepared === false) {
+      return false;
+    }
+  }
+  if (item.requiresAttunement && !item.attuned) {
+    return false;
+  }
+  return item.equipped !== false;
+}
+
+export function resolveFormulaVariables(
+  formula: string,
+  abilityMods: Record<AbilityKey, number>,
+  profBonus: number,
+  attackAbility?: AbilityKey
+): string {
+  const modVal = attackAbility ? abilityMods[attackAbility] : 0;
+  return formula
+    .replace(/@prof/gi, String(profBonus))
+    .replace(/@mod/gi, String(modVal))
+    .replace(/@str/gi, String(abilityMods.str))
+    .replace(/@dex/gi, String(abilityMods.dex))
+    .replace(/@con/gi, String(abilityMods.con))
+    .replace(/@int/gi, String(abilityMods.int))
+    .replace(/@wis/gi, String(abilityMods.wis))
+    .replace(/@cha/gi, String(abilityMods.cha));
+}
+
+function evaluateSimpleMath(expr: string): number {
+  const tokens = expr.replace(/\s+/g, '').match(/[+-]?\d+/g);
+  if (!tokens) return 0;
+  return tokens.reduce((sum, tok) => sum + Number.parseInt(tok, 10), 0);
+}
+
+export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacterSheet {
+  const totalLevel = raw.classes.reduce((sum, cls) => sum + cls.level, 0);
+  const profStat = buildOverridable(
+    computeProficiencyBonus(totalLevel),
+    [],
+    raw.overrides.proficiencyBonus
+  );
+
+  const abilityModifiers = {} as Record<AbilityKey, number>;
+  const resolvedAbilities = {} as ResolvedCharacterSheet['abilities'];
+
+  for (const key of ALL_ABILITIES) {
+    const base = raw.baseAbilities[key];
+    const mods: StatModifier[] = [];
+    if (raw.bonusAbilities[key] !== 0) {
+      mods.push({
+        id: `asi-${key}`,
+        source: 'Species / ASI / Feats',
+        value: raw.bonusAbilities[key],
+      });
+    }
+    const scoreStat = buildOverridable(base, mods, raw.overrides.abilities?.[key]);
+    const mod = computeAbilityModifier(scoreStat.final);
+    abilityModifiers[key] = mod;
+    resolvedAbilities[key] = {
+      score: scoreStat,
+      modifier: mod,
+      save: buildOverridable(mod, [], null),
+    };
+  }
+
+  const activeItems = raw.items.filter(isEntityActive);
+  const attunementCount = raw.items.filter((i) => i.requiresAttunement && i.attuned).length;
+  const wearingArmor = activeItems.some((item) => item.category === 'armor');
+
+  let bestFormulaAc = 10 + abilityModifiers.dex;
+  let bestFormulaSource = 'Unarmored (10 + DEX)';
+
+  for (const item of activeItems) {
+    if (!item.acFormula) continue;
+    if (item.acFormula.requiresUnarmored && wearingArmor) continue;
+    const candidateAc = evaluateAcFormula(item.acFormula, abilityModifiers);
+    if (candidateAc > bestFormulaAc) {
+      bestFormulaAc = candidateAc;
+      bestFormulaSource = item.name;
+    }
+  }
+
+  const acFlatModifiers: StatModifier[] = [];
+  const saveAllModifiers: StatModifier[] = [];
+  const speedModifiers: StatModifier[] = [];
+
+  for (const item of activeItems) {
+    if (item.acFlatBonus && item.acFlatBonus !== 0) {
+      acFlatModifiers.push({
+        id: `ac-flat-${item.id}`,
+        source: item.name,
+        value: item.acFlatBonus,
+      });
+    }
+    for (const mod of item.modifiers ?? []) {
+      if (mod.target === 'ac.bonus') {
+        acFlatModifiers.push({ id: `mod-${item.id}-ac`, source: item.name, value: mod.value });
+      } else if (mod.target === 'save.all') {
+        saveAllModifiers.push({ id: `mod-${item.id}-save`, source: item.name, value: mod.value });
+      } else if (mod.target === 'speed.walk') {
+        speedModifiers.push({ id: `mod-${item.id}-speed`, source: item.name, value: mod.value });
+      }
+    }
+  }
+
+  const acStat = {
+    ...buildOverridable(bestFormulaAc, acFlatModifiers, raw.overrides.ac),
+    activeFormulaSource: bestFormulaSource,
+  };
+
+  for (const key of ALL_ABILITIES) {
+    const isProf = raw.saveProficiencies.includes(key);
+    const saveMods: StatModifier[] = [...saveAllModifiers];
+    if (isProf) {
+      saveMods.push({
+        id: `save-prof-${key}`,
+        source: 'Proficiency',
+        value: profStat.final,
+      });
+    }
+    resolvedAbilities[key].save = buildOverridable(
+      abilityModifiers[key],
+      saveMods,
+      raw.overrides.saves?.[key]
+    );
+  }
+
+  const resolvedSkills = {} as Record<SkillKey, OverridableStat<number>>;
+  (Object.keys(SKILL_ABILITY_MAP) as SkillKey[]).forEach((skillKey) => {
+    const abilityKey = SKILL_ABILITY_MAP[skillKey];
+    const profMultiplier = raw.skillProficiencies[skillKey] ?? 0;
+    const skillMods: StatModifier[] = [];
+    if (profMultiplier > 0) {
+      skillMods.push({
+        id: `skill-prof-${skillKey}`,
+        source: profMultiplier === 2 ? 'Expertise' : profMultiplier === 0.5 ? 'Half-Proficiency' : 'Proficiency',
+        value: Math.floor(profStat.final * profMultiplier),
+      });
+    }
+    resolvedSkills[skillKey] = buildOverridable(
+      abilityModifiers[abilityKey],
+      skillMods,
+      raw.overrides.skills?.[skillKey]
+    );
+  });
+
+  const actionsByEconomy: Record<ActionEconomy, ResolvedActivity[]> = {
+    action: [],
+    bonus_action: [],
+    reaction: [],
+    free: [],
+    special: [],
+  };
+
+  for (const item of activeItems) {
+    for (const act of item.activities) {
+      const resolvedAttack = act.attackBonusFormula
+        ? evaluateSimpleMath(
+            resolveFormulaVariables(
+              act.attackBonusFormula,
+              abilityModifiers,
+              profStat.final,
+              act.attackAbility
+            )
+          )
+        : null;
+
+      const resolvedDc = act.saveDcFormula
+        ? evaluateSimpleMath(
+            resolveFormulaVariables(
+              act.saveDcFormula,
+              abilityModifiers,
+              profStat.final,
+              act.attackAbility
+            )
+          )
+        : null;
+
+      const resolvedDamage = act.damageFormula
+        ? resolveFormulaVariables(
+            act.damageFormula,
+            abilityModifiers,
+            profStat.final,
+            act.attackAbility
+          )
+        : null;
+
+      const resolvedDescription = act.description
+        ? resolveFormulaVariables(
+            act.description,
+            abilityModifiers,
+            profStat.final,
+            act.attackAbility
+          )
+        : undefined;
+
+      actionsByEconomy[act.actionEconomy].push({
+        ...act,
+        parentItemId: item.id,
+        parentItemName: item.name,
+        concentration: Boolean(item.concentration),
+        computedAttackBonus: resolvedAttack,
+        computedSaveDc: resolvedDc,
+        computedDamage: resolvedDamage,
+        resolvedDescription,
+      });
+    }
+  }
+
+  const primaryCastingAbility: AbilityKey | null =
+    raw.classes.some((c) => c.className.toLowerCase() === 'artificer' || c.className.toLowerCase() === 'wizard')
+      ? 'int'
+      : raw.classes.some((c) => ['cleric', 'druid', 'ranger'].includes(c.className.toLowerCase()))
+      ? 'wis'
+      : raw.classes.some((c) => ['bard', 'paladin', 'sorcerer', 'warlock'].includes(c.className.toLowerCase()))
+      ? 'cha'
+      : null;
+
+  const castingMod = primaryCastingAbility ? abilityModifiers[primaryCastingAbility] : 0;
+
+  return {
+    id: raw.id,
+    name: raw.name,
+    ruleset: raw.ruleset,
+    totalLevel,
+    proficiencyBonus: profStat,
+    abilities: resolvedAbilities,
+    skills: resolvedSkills,
+    passivePerception: 10 + resolvedSkills.perception.final,
+    passiveInvestigation: 10 + resolvedSkills.investigation.final,
+    passiveInsight: 10 + resolvedSkills.insight.final,
+    ac: acStat,
+    initiative: buildOverridable(abilityModifiers.dex, [], raw.overrides.initiative),
+    speed: buildOverridable(30, speedModifiers, raw.overrides.speed),
+    attunementCount,
+    spellcasting: {
+      primaryAbility: primaryCastingAbility,
+      effectiveCasterLevel: computeEffectiveCasterLevel(raw.classes),
+      saveDc: buildOverridable(
+        8 + profStat.final + castingMod,
+        [],
+        raw.overrides.spellSaveDc
+      ),
+      attackBonus: buildOverridable(
+        profStat.final + castingMod,
+        [],
+        raw.overrides.spellAttackBonus
+      ),
+    },
+    hp: raw.hp,
+    deathSaves: raw.deathSaves,
+    exhaustion: raw.exhaustion,
+    conditions: raw.conditions,
+    resources: raw.resources,
+    actionsByEconomy,
+  };
+}

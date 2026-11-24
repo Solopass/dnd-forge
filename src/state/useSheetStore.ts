@@ -7,9 +7,10 @@ import {
   applyRestRecovery,
   computeCharacterSheet,
   createBlankCharacter,
+  resolveResourcePoolForCost,
   syncSpellSlotPools,
 } from '../engine/rules-math';
-import { evaluateDiceExpression } from '../engine/dice';
+import { doubleDiceForCrit, evaluateDiceExpression } from '../engine/dice';
 import {
   advanceTurn,
   applyEffectWithConcentrationCheck,
@@ -48,6 +49,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   const [encounter, setEncounter] = useState<CombatEncounterState>(initialEncounter);
   const [compendium, setCompendium] = useState<CompendiumEntity[]>(initialCharacter.items);
   const [rollMode, setRollMode] = useState<RollMode>('normal');
+  const [pendingConcDc, setPendingConcDc] = useState<number | null>(null);
   const [consoleLines, setConsoleLines] = useState<ConsoleLine[]>([
     {
       id: 'init-1',
@@ -89,16 +91,11 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         } else {
           await saveEncounter(initialEncounter);
         }
-        const storedItems = await db.compendium.toArray();
-        const storedIds = new Set(storedItems.map((i) => i.id));
         const basePackEntities = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities);
-        const missingBaseEntities = basePackEntities.filter((e) => !storedIds.has(e.id));
-        if (missingBaseEntities.length > 0) {
-          await upsertCompendiumEntities(missingBaseEntities);
-          const refreshed = await db.compendium.toArray();
-          if (active) setCompendium(refreshed);
-        } else if (active && storedItems.length > 0) {
-          setCompendium(storedItems);
+        await upsertCompendiumEntities(basePackEntities);
+        const refreshed = await db.compendium.toArray();
+        if (active && refreshed.length > 0) {
+          setCompendium(refreshed);
         }
       } catch (err) {
         appendLog(`Storage hydration warning: ${String(err)}`, 'warn');
@@ -151,6 +148,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
       const found = characterList.find((c) => c.id === characterId) ?? (await db.characters.get(characterId));
       if (found) {
         setRawChar(found);
+        setPendingConcDc(null);
         appendLog(`Switched active sheet to ${found.name}.`, 'info');
       }
     },
@@ -164,6 +162,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
       await saveCharacter(fresh);
       setCharacterList((prev) => [...prev, fresh]);
       setRawChar(fresh);
+      setPendingConcDc(null);
       appendLog(`Created new character "${fresh.name}".`, 'info');
     },
     [appendLog]
@@ -176,6 +175,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
       await saveCharacter(fresh);
       setCharacterList((prev) => [...prev, fresh]);
       setRawChar(fresh);
+      setPendingConcDc(null);
       appendLog(
         `Created Lvl ${input.level} ${input.speciesName} ${input.className} "${fresh.name}".`,
         'info'
@@ -194,6 +194,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     await saveCharacter(copy);
     setCharacterList((prev) => [...prev, copy]);
     setRawChar(copy);
+    setPendingConcDc(null);
     appendLog(`Duplicated character as "${copy.name}".`, 'info');
   }, [rawChar, appendLog]);
 
@@ -208,6 +209,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
       setCharacterList(remaining);
       if (rawChar.id === characterId && remaining[0]) {
         setRawChar(remaining[0]);
+        setPendingConcDc(null);
       }
       appendLog('Deleted character from local storage.', 'warn');
     },
@@ -232,27 +234,38 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
 
   const adjustHp = useCallback(
     (delta: number) => {
-      persistCharacter((prev) => {
-        let remainingDelta = delta;
-        let nextTemp = prev.hp.temp;
-        let nextCurrent = prev.hp.current;
-
-        if (remainingDelta < 0) {
-          const dmg = Math.abs(remainingDelta);
+      const computeAdjusted = (hp: RawCharacterState['hp']) => {
+        let nextTemp = hp.temp;
+        let nextCurrent = hp.current;
+        if (delta < 0) {
+          const dmg = Math.abs(delta);
           const absorbed = Math.min(nextTemp, dmg);
           nextTemp -= absorbed;
-          const leftover = dmg - absorbed;
-          nextCurrent = Math.max(0, nextCurrent - leftover);
+          nextCurrent = Math.max(0, nextCurrent - (dmg - absorbed));
         } else {
-          nextCurrent = Math.min(prev.hp.max, nextCurrent + remainingDelta);
+          nextCurrent = Math.min(hp.max, nextCurrent + delta);
         }
+        return { ...hp, current: nextCurrent, temp: nextTemp };
+      };
 
+      const nextHp = computeAdjusted(rawChar.hp);
+      persistCharacter((prev) => {
+        const updated = computeAdjusted(prev.hp);
         return {
           ...prev,
-          hp: { ...prev.hp, current: nextCurrent, temp: nextTemp },
-          deathSaves: nextCurrent > 0 ? { successes: 0, failures: 0 } : prev.deathSaves,
+          hp: updated,
+          deathSaves: updated.current > 0 ? { successes: 0, failures: 0 } : prev.deathSaves,
         };
       });
+
+      persistEncounter((prev) => ({
+        ...prev,
+        combatants: prev.combatants.map((c) =>
+          c.id === rawChar.id
+            ? { ...c, hp: { ...c.hp, current: nextHp.current, temp: nextHp.temp } }
+            : c
+        ),
+      }));
 
       if (delta < 0) {
         const dc = Math.max(10, Math.floor(Math.abs(delta) / 2));
@@ -260,15 +273,16 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
           (e) => e.sourceCombatantId === rawChar.id && e.isConcentration
         );
         if (hasActiveConc) {
+          setPendingConcDc(dc);
           appendLog(
-            `Took ${Math.abs(delta)} damage while concentrating -> Roll DC ${dc} CON Save!`,
+            `Concentration Check required: DC ${dc} CON save! (took ${Math.abs(delta)} damage)`,
             'warn'
           );
         }
       }
       appendLog(`HP adjusted by ${delta >= 0 ? `+${delta}` : delta}.`, 'info');
     },
-    [persistCharacter, encounter.activeEffects, rawChar.id, appendLog]
+    [rawChar.hp, rawChar.id, encounter.activeEffects, persistCharacter, persistEncounter, appendLog]
   );
 
   const setTempHp = useCallback(
@@ -278,10 +292,29 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         ...prev,
         hp: { ...prev.hp, temp: clamped },
       }));
+      persistEncounter((prev) => ({
+        ...prev,
+        combatants: prev.combatants.map((c) =>
+          c.id === rawChar.id ? { ...c, hp: { ...c.hp, temp: clamped } } : c
+        ),
+      }));
       appendLog(`Set Temp HP to ${clamped}.`, 'info');
+    },
+    [rawChar.id, persistCharacter, persistEncounter, appendLog]
+  );
+
+  const setExhaustion = useCallback(
+    (level: number) => {
+      const clamped = Math.max(0, Math.min(6, level));
+      persistCharacter((prev) => ({ ...prev, exhaustion: clamped }));
+      appendLog(`Set Exhaustion level to ${clamped}.`, clamped > 0 ? 'warn' : 'info');
     },
     [persistCharacter, appendLog]
   );
+
+  const clearConsoleLog = useCallback(() => {
+    setConsoleLines([]);
+  }, []);
 
   const updateDeathSaves = useCallback(
     (kind: 'successes' | 'failures', count: number) => {
@@ -570,9 +603,11 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
 
   const triggerCombatantActivity = useCallback(
     (combatantName: string, act: Activity) => {
+      let attackIsCrit = false;
       if (act.attackBonusFormula) {
         const sign = act.attackBonusFormula.startsWith('+') || act.attackBonusFormula.startsWith('-') ? '' : '+';
         const atk = evaluateDiceExpression(`1d20${sign}${act.attackBonusFormula}`, rollMode);
+        attackIsCrit = atk.isCrit;
         const tag = atk.isCrit ? ' [CRIT!]' : atk.isFumble ? ' [FUMBLE]' : '';
         appendLog(
           `${combatantName} — ${act.name} Attack: ${atk.total}${tag}`,
@@ -580,10 +615,12 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         );
       }
       if (act.damageFormula) {
-        const dmg = evaluateDiceExpression(act.damageFormula, 'normal');
+        const dmgExpr = attackIsCrit ? doubleDiceForCrit(act.damageFormula) : act.damageFormula;
+        const dmg = evaluateDiceExpression(dmgExpr, 'normal');
+        const critTag = attackIsCrit ? ' [CRIT DICE DOUBLED]' : '';
         appendLog(
-          `${combatantName} — ${act.name} Damage: ${dmg.total} ${act.damageType ?? ''}`,
-          'roll'
+          `${combatantName} — ${act.name} Damage: ${dmg.total} ${act.damageType ?? ''}${critTag}`,
+          attackIsCrit ? 'crit' : 'roll'
         );
       }
     },
@@ -592,17 +629,39 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
 
   const triggerActivity = useCallback(
     (activity: ResolvedActivity) => {
+      let spentNote = '';
+      let effectiveSlotLevel = activity.resourceCost?.amount ?? 4;
+
       if (activity.resourceCost) {
-        const pool = rawChar.resources.find((r) => r.id === activity.resourceCost?.poolId);
-        if (pool && pool.current < activity.resourceCost.amount) {
-          appendLog(`Insufficient ${pool.name} to use ${activity.name}.`, 'warn');
+        const resolution = resolveResourcePoolForCost(
+          rawChar.resources,
+          rawChar.classes,
+          activity.resourceCost.poolId,
+          activity.resourceCost.amount
+        );
+        if ('error' in resolution) {
+          appendLog(`${resolution.error} (${activity.name})`, 'warn');
           return;
         }
-        if (pool) {
+        if (resolution.note) {
+          spentNote = ` (${resolution.note})`;
+        }
+        const slotMatch = resolution.poolId.match(/^spell_slot_(\d+)$/);
+        if (slotMatch && slotMatch[1]) {
+          effectiveSlotLevel = Number.parseInt(slotMatch[1], 10);
+        } else if (resolution.poolId === 'pact_slot') {
+          const pactLevel = rawChar.classes
+            .filter((c) => c.casterProgression === 'pact')
+            .reduce((sum, c) => sum + c.level, 0);
+          effectiveSlotLevel = Math.min(5, Math.ceil(pactLevel / 2));
+        }
+
+        const hasPool = rawChar.resources.some((r) => r.id === resolution.poolId);
+        if (hasPool) {
           persistCharacter((prev) => ({
             ...prev,
             resources: prev.resources.map((r) =>
-              r.id === pool.id
+              r.id === resolution.poolId
                 ? { ...r, current: Math.max(0, r.current - (activity.resourceCost?.amount ?? 1)) }
                 : r
             ),
@@ -610,27 +669,34 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         }
       }
 
+      let attackIsCrit = false;
       if (activity.computedAttackBonus !== null) {
         const sign = activity.computedAttackBonus >= 0 ? '+' : '';
         const atk = evaluateDiceExpression(`1d20${sign}${activity.computedAttackBonus}`, rollMode);
+        attackIsCrit = atk.isCrit;
         const tag = atk.isCrit ? ' [CRIT!]' : atk.isFumble ? ' [FUMBLE]' : '';
         appendLog(
-          `${activity.name} Attack (${atk.mode}): ${atk.total}${tag} [${atk.terms.map((t) => t.kept.join(',')).join('+')}]`,
+          `${activity.name}${spentNote} Attack (${atk.mode}): ${atk.total}${tag} [${atk.terms.map((t) => t.kept.join(',')).join('+')}]`,
           atk.isCrit ? 'crit' : 'roll'
         );
       }
 
       if (activity.computedDamage) {
-        const dmg = evaluateDiceExpression(activity.computedDamage, 'normal');
+        const dmgExpr = attackIsCrit ? doubleDiceForCrit(activity.computedDamage) : activity.computedDamage;
+        const dmg = evaluateDiceExpression(dmgExpr, 'normal');
+        const critTag = attackIsCrit ? ' [CRIT DICE DOUBLED]' : '';
+        const kindLabel = activity.type === 'heal' ? 'Healing' : 'Damage';
         appendLog(
-          `${activity.name} Damage: ${dmg.total} ${activity.damageType ?? ''} (${activity.computedDamage})`,
-          'roll'
+          `${activity.name}${activity.computedAttackBonus === null ? spentNote : ''} ${kindLabel}: ${dmg.total} ${activity.damageType ?? ''} (${dmgExpr})${critTag}`,
+          attackIsCrit ? 'crit' : 'roll'
         );
+      } else if (spentNote) {
+        appendLog(`Cast ${activity.name}${spentNote}.`, 'info');
       }
 
       if (activity.computedSaveDc !== null && activity.saveAbility) {
         appendLog(
-          `${activity.name}: Target makes DC ${activity.computedSaveDc} ${activity.saveAbility.toUpperCase()} saving throw.`,
+          `${activity.name}${spentNote}: Target makes DC ${activity.computedSaveDc} ${activity.saveAbility.toUpperCase()} saving throw.`,
           'info'
         );
       }
@@ -656,7 +722,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
                 ownerId: rawChar.id,
                 initiative: 0,
                 dexModifier: 0,
-                ac: 13 + (activity.resourceCost?.amount ?? 4),
+                ac: 13 + effectiveSlotLevel,
                 hp: { current: 40, max: 40, temp: 0 },
                 conditions: [],
                 actions: [
@@ -666,7 +732,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
                     type: 'attack',
                     actionEconomy: 'action',
                     attackBonusFormula: `+${resolvedSheet.spellcasting.attackBonus.final}`,
-                    damageFormula: `1d8+4+${activity.resourceCost?.amount ?? 4}`,
+                    damageFormula: `1d8+4+${effectiveSlotLevel}`,
                     damageType: 'bludgeoning',
                   },
                 ],
@@ -676,7 +742,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
           }
           return updated;
         });
-        appendLog(`Active effect started: ${activity.parentItemName}`, 'info');
+        appendLog(`Active effect started: ${activity.parentItemName}${spentNote}`, 'info');
       }
     },
     [rawChar, resolvedSheet.spellcasting.attackBonus.final, rollMode, persistCharacter, persistEncounter, appendLog]
@@ -695,6 +761,10 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
 
   const adjustCombatantHp = useCallback(
     (combatantId: string, delta: number) => {
+      if (combatantId === rawChar.id) {
+        adjustHp(delta);
+        return;
+      }
       persistEncounter((prev) => ({
         ...prev,
         combatants: prev.combatants.map((c) => {
@@ -719,7 +789,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         }),
       }));
     },
-    [persistEncounter]
+    [rawChar.id, adjustHp, persistEncounter]
   );
 
   const setCombatantInitiative = useCallback(
@@ -765,9 +835,33 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   const dropConcentration = useCallback(
     (sourceId: string) => {
       persistEncounter((prev) => dropConcentrationForCombatant(prev, sourceId, 'Dropped concentration'));
+      setPendingConcDc(null);
       appendLog('Concentration dropped and linked summons dismissed.', 'warn');
     },
     [persistEncounter, appendLog]
+  );
+
+  const rollConcentrationSave = useCallback(
+    (dc?: number) => {
+      const targetDc = dc ?? pendingConcDc ?? 10;
+      const conSaveMod = resolvedSheet.abilities.con.save.final;
+      const sign = conSaveMod >= 0 ? '+' : '';
+      const hasWarCaster = rawChar.items.some((i) => i.name.toLowerCase().includes('war caster'));
+      const saveRollMode: RollMode = hasWarCaster ? 'advantage' : 'normal';
+      const res = evaluateDiceExpression(`1d20${sign}${conSaveMod}`, saveRollMode);
+      const passed = res.total >= targetDc;
+      appendLog(
+        `Concentration Save vs DC ${targetDc} (${saveRollMode}): ${res.total} -> ${passed ? 'MAINTAINED' : 'FAILED'}`,
+        passed ? 'crit' : 'warn'
+      );
+      if (!passed) {
+        persistEncounter((prev) =>
+          dropConcentrationForCombatant(prev, rawChar.id, 'Failed concentration save')
+        );
+      }
+      setPendingConcDc(null);
+    },
+    [pendingConcDc, resolvedSheet.abilities.con.save.final, rawChar.items, rawChar.id, persistEncounter, appendLog]
   );
 
   const resetEncounter = useCallback(() => {
@@ -779,6 +873,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
       combatants: prev.combatants.filter((c) => c.kind === 'pc'),
       log: [],
     }));
+    setPendingConcDc(null);
     appendLog('Reset encounter to Round 1 (kept PCs).', 'info');
   }, [persistEncounter, appendLog]);
 
@@ -880,11 +975,14 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     compendium,
     rollMode,
     setRollMode,
+    pendingConcDc,
     consoleLines,
     appendLog,
+    clearConsoleLog,
     setStatOverride,
     adjustHp,
     setTempHp,
+    setExhaustion,
     updateDeathSaves,
     adjustResourcePool,
     addCustomResourcePool,
@@ -907,6 +1005,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     toggleCombatantCondition,
     removeCombatant,
     dropConcentration,
+    rollConcentrationSave,
     resetEncounter,
     addMonsterToEncounter,
     importMarkdownHomebrew,

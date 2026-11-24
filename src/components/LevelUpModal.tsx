@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { CLASS_DEFINITIONS, getClassDefinition, getSubclassPresets } from '../engine/classes';
 import { evaluateDiceExpression } from '../engine/dice';
 import { computeAbilityModifier, computeEffectiveCasterLevel } from '../engine/rules-math';
@@ -48,6 +48,19 @@ export function LevelUpModal({
   const [spellFilter, setSpellFilter] = useState('');
   const [showAllClassSpells, setShowAllClassSpells] = useState(false);
   const [matchCharRulesetOnly, setMatchCharRulesetOnly] = useState(true);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setSelectedClass(character.classes[0]?.className ?? 'Fighter');
+    setHpMode('fixed');
+    setRolledHpDie(null);
+    setSubclassInput('');
+    setSelectedFeatId('');
+    setFeatFilter('');
+    setSelectedSpellIds([]);
+    setSpellFilter('');
+    setShowAllClassSpells(false);
+  }, [isOpen, character.id]);
 
   const classDef = getClassDefinition(selectedClass) ?? CLASS_DEFINITIONS[0]!;
   const existingEntry = character.classes.find(

@@ -894,6 +894,7 @@ export function DmHubModal({
                   Link a GitHub repo (<code>owner/repo</code>) for this campaign&apos;s binder entries, custom DLC, and characters. Use Pack Path to keep multiple campaigns in one shared repo.
                 </div>
                 <form
+                  key={`${campaign.id}-${campaign.externalRepo?.lastSyncedAt ?? 'unsynced'}`}
                   className="forge-row"
                   style={{ flexWrap: 'wrap', gap: 6 }}
                   onSubmit={(e) => {

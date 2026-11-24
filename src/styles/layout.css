@@ -1702,3 +1702,21 @@ button.stat-tile:hover {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* Center Stage unified scroll: Battlemap above Actions & Sheet without extra box */
+.center-stage-pane > .pane {
+  height: auto;
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  flex-shrink: 0;
+}
+
+.center-battlemap-slot {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  padding: 8px;
+}

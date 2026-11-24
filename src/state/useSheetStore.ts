@@ -125,7 +125,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     {
       id: 'init-1',
       timestamp: new Date().toLocaleTimeString(),
-      text: 'D&D Forge v0.6 ready. Press Ctrl+K for Compendium Packs, D&D Beyond PDF Import, or JSON/Markdown ingestion.',
+      text: 'Sidereroll v0.7 ready. Press Ctrl+K for Compendium Packs, D&D Beyond PDF Import, or JSON/Markdown ingestion.',
       tone: 'info',
     },
   ]);
@@ -1646,7 +1646,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
             'info'
           );
         } else {
-          appendLog('JSON recognized, but no D&D Forge entities, characters, or 5e.tools arrays were found.', 'warn');
+          appendLog('JSON recognized, but no Sidereroll entities, characters, or 5e.tools arrays were found.', 'warn');
         }
       } catch (err) {
         appendLog(`JSON import failed: ${String(err)}`, 'warn');
@@ -2148,12 +2148,39 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     }
 
     if (msg.type === 'token_move' && liveStatus.role === 'host') {
-      persistEncounter((prev) => ({
-        ...prev,
-        combatants: prev.combatants.map((c) =>
+      persistEncounter((prev) => {
+        const nextCombatants = prev.combatants.map((c) =>
           c.id === msg.combatantId && c.kind === 'pc' ? { ...c, x: msg.x, y: msg.y } : c
-        ),
-      }));
+        );
+        if (prev.map?.dynamicVision && prev.map?.autoRevealFog && prev.map.fogCells?.length) {
+          const visible = computeVisibleCells(
+            nextCombatants,
+            prev.map.cols,
+            prev.map.rows,
+            prev.map.gridFeet,
+            prev.map.terrainCells
+          );
+          const nextFog = prev.map.fogCells.filter((cell) => !visible.has(cell));
+          return {
+            ...prev,
+            combatants: nextCombatants,
+            map: { ...prev.map, fogCells: nextFog },
+          };
+        }
+        return { ...prev, combatants: nextCombatants };
+      });
+      return;
+    }
+
+    if (msg.type === 'target_attack' && liveStatus.role === 'host') {
+      targetAttackCombatants(
+        msg.attackerName,
+        msg.targetIds,
+        msg.activity,
+        msg.customBonus,
+        msg.weaponMastery,
+        msg.attackerAbilityMod
+      );
     }
   };
 
@@ -2292,7 +2319,14 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     const session = liveSessionRef.current;
     if (!session || liveStatus.role === 'idle' || isApplyingRemoteRef.current) return;
     if (liveStatus.role === 'host') {
-      const digest = JSON.stringify({ id: encounter.id, round: encounter.round, turn: encounter.activeTurnIndex, combatants: encounter.combatants, effects: encounter.activeEffects });
+      const digest = JSON.stringify({
+        id: encounter.id,
+        round: encounter.round,
+        turn: encounter.activeTurnIndex,
+        combatants: encounter.combatants,
+        effects: encounter.activeEffects,
+        map: encounter.map,
+      });
       if (digest !== lastBroadcastDigestRef.current) {
         lastBroadcastDigestRef.current = digest;
         session.broadcast({
@@ -3102,6 +3136,23 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
       }
       const targets = encounter.combatants.filter((c) => targetIds.includes(c.id));
       if (targets.length === 0) return;
+
+      if (liveStatus.role === 'player') {
+        const session = liveSessionRef.current;
+        if (session) {
+          session.broadcast({
+            type: 'target_attack',
+            senderId: session.senderId,
+            senderName: rawChar.name,
+            attackerName,
+            targetIds,
+            activity,
+            customBonus,
+            weaponMastery,
+            attackerAbilityMod,
+          });
+        }
+      }
 
       const outcomes = targets.map((t) =>
         resolveTargetAttack(

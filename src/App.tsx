@@ -633,7 +633,7 @@ export function App() {
         <div className="topbar-brand">
           <span className="topbar-brand-badge">
             <span className="topbar-brand-dot" aria-hidden="true" />
-            D&amp;D FORGE
+            SIDEREROLL
           </span>
           <select
             aria-label="Active character"
@@ -1087,8 +1087,8 @@ export function App() {
             data-active-tab={mobileTab}
           >
             {vitalsNode}
-            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, gap: 8 }}>
-              <div className="subpanel forge-row-between" style={{ padding: '5px 10px', flexWrap: 'wrap', gap: 6 }}>
+            <div className="pane center-stage-pane" style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, gap: 10, padding: '10px 12px' }}>
+              <div className="subpanel forge-row-between" style={{ padding: '5px 10px', flexWrap: 'wrap', gap: 6, flexShrink: 0 }}>
                 <div className="pill-row">
                   <button
                     type="button"
@@ -1108,14 +1108,14 @@ export function App() {
                     type="button"
                     className={`pill ${centerStage === 'auto' ? 'active' : ''}`}
                     onClick={() => setCenterStage('auto')}
-                    title="Automatically show Battlemap in the center when combat is active"
+                    title="Automatically show Battlemap above Actions & Sheet when combat is active"
                   >
                     Auto
                   </button>
                 </div>
               </div>
-              {showCenterBattlemap ? (
-                <div className="pane" style={{ padding: 10 }}>
+              {showCenterBattlemap && (
+                <div className="center-battlemap-slot" style={{ flexShrink: 0 }}>
                   <Suspense fallback={null}>
                     <BattlemapModal
                       isOpen
@@ -1126,9 +1126,8 @@ export function App() {
                     />
                   </Suspense>
                 </div>
-              ) : (
-                actionBoardNode
               )}
+              {actionBoardNode}
             </div>
             {showClassicCombat && combatDrawerNode}
           </div>

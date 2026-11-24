@@ -1,6 +1,6 @@
 # Custom Content Drop-In & AI Formatting Guide
 
-Drop any `.json` file into the matching subfolder below and **D&D Forge** will automatically load it on startup (no TypeScript or code edits needed):
+Drop any `.json` file into the matching subfolder below and **Sidereroll** will automatically load it on startup (no TypeScript or code edits needed):
 
 | What you are adding | Drop `.json` file into |
 | :--- | :--- |
@@ -19,7 +19,7 @@ Reference templates live in `src/custom-content/_templates/` (they are **not** a
 Paste this prompt along with any raw D&D 5e stat block, item, spell, feat, or character sheet into any AI:
 
 ```text
-Convert the following D&D 5e content into a single valid JSON object matching D&D Forge's schema.
+Convert the following D&D 5e content into a single valid JSON object matching Sidereroll's schema.
 Rules:
 1. Output ONLY raw JSON (no markdown fences, no commentary).
 2. Include a unique kebab-case "id" (e.g. "custom-mob-shadow-drake").

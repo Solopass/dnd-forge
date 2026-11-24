@@ -235,7 +235,7 @@ export function LiveTableModal({
         {tab === 'local' && (
           <div className="card forge-stack">
             <div className="forge-muted">
-              Instant same-browser / second-window sync via <code>BroadcastChannel</code>. Open D&amp;D Forge in another tab on the same device and join with the same room code to sync rolls, encounters, and HP live.
+              Instant same-browser / second-window sync via <code>BroadcastChannel</code>. Open Sidereroll in another tab on the same device and join with the same room code to sync rolls, encounters, and HP live.
             </div>
             <div className="forge-row" style={{ flexWrap: 'wrap' }}>
               <label className="forge-row" style={{ flex: 1 }}>

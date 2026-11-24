@@ -13,7 +13,7 @@ export const BUILTIN_THEMES: ThemeDefinition[] = [
   {
     id: 'obsidian-forge',
     name: 'Obsidian Forge',
-    author: 'D&D Forge',
+    author: 'Sidereroll',
     description: 'Deep slate obsidian with arcane sapphire and warm amber accents.',
     colorScheme: 'dark',
     builtIn: true,
@@ -48,7 +48,7 @@ export const BUILTIN_THEMES: ThemeDefinition[] = [
   {
     id: 'crimson-keep',
     name: 'Crimson Keep',
-    author: 'D&D Forge',
+    author: 'Sidereroll',
     description: 'Classic tabletop charcoal with crimson steel and antique brass.',
     colorScheme: 'dark',
     builtIn: true,
@@ -83,7 +83,7 @@ export const BUILTIN_THEMES: ThemeDefinition[] = [
   {
     id: 'parchment-grimoire',
     name: 'Parchment Grimoire',
-    author: 'D&D Forge',
+    author: 'Sidereroll',
     description: 'Warm aged vellum with deep sepia ink and burgundy wax seals.',
     colorScheme: 'light',
     builtIn: true,
@@ -118,7 +118,7 @@ export const BUILTIN_THEMES: ThemeDefinition[] = [
   {
     id: 'astral-spelljammer',
     name: 'Astral Spelljammer',
-    author: 'D&D Forge',
+    author: 'Sidereroll',
     description: 'Deep cosmic indigo with violet nebula glass and cyan starlight.',
     colorScheme: 'dark',
     builtIn: true,
@@ -153,7 +153,7 @@ export const BUILTIN_THEMES: ThemeDefinition[] = [
   {
     id: 'feywild-emerald',
     name: 'Feywild Emerald',
-    author: 'D&D Forge',
+    author: 'Sidereroll',
     description: 'Deep enchanted forest moss with emerald canopies and sunlit gold.',
     colorScheme: 'dark',
     builtIn: true,
@@ -188,7 +188,7 @@ export const BUILTIN_THEMES: ThemeDefinition[] = [
   {
     id: 'underdark-neon',
     name: 'Underdark Neon',
-    author: 'D&D Forge',
+    author: 'Sidereroll',
     description: 'Pitch obsidian cavern with electric magenta and bioluminescent teal.',
     colorScheme: 'dark',
     builtIn: true,
@@ -223,7 +223,7 @@ export const BUILTIN_THEMES: ThemeDefinition[] = [
   {
     id: 'icewind-frost',
     name: 'Icewind Frost',
-    author: 'D&D Forge',
+    author: 'Sidereroll',
     description: 'Crisp glacial light slate with cobalt ice and silver trim.',
     colorScheme: 'light',
     builtIn: true,
@@ -258,7 +258,7 @@ export const BUILTIN_THEMES: ThemeDefinition[] = [
   {
     id: 'high-contrast-tactical',
     name: 'High-Contrast Tactical',
-    author: 'D&D Forge',
+    author: 'Sidereroll',
     description: 'WCAG AAA 7:1+ contrast dark mode with crisp borders and zero clutter.',
     colorScheme: 'dark',
     builtIn: true,

@@ -1038,7 +1038,7 @@ Claws. +7 to hit, 2d8 + 5 slashing damage`}
               style={{ color: 'var(--text-primary)' }}
             />
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8 }}>
-              Supports both D&amp;D Forge full backup bundles and 5e.tools JSON datasets (<code>spell</code>, <code>item</code>, <code>feat</code>, <code>monster</code>) for importing expansion books and DLC content.
+              Supports both Sidereroll full backup bundles and 5e.tools JSON datasets (<code>spell</code>, <code>item</code>, <code>feat</code>, <code>monster</code>) for importing expansion books and DLC content.
             </div>
           </div>
         )}

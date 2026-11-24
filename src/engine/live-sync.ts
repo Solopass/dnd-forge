@@ -1,5 +1,7 @@
 import { RawCharacterState } from '../types/character';
 import { CombatEncounterState } from '../types/combat';
+import { Activity } from '../types/compendium';
+import { WeaponMastery } from '../types/core';
 
 export type LiveTableRole = 'idle' | 'host' | 'player';
 
@@ -86,6 +88,17 @@ export type LiveTableMessage =
       combatantId: string;
       x: number;
       y: number;
+    }
+  | {
+      type: 'target_attack';
+      senderId: string;
+      senderName: string;
+      attackerName: string;
+      targetIds: string[];
+      activity: Activity;
+      customBonus?: number;
+      weaponMastery?: WeaponMastery;
+      attackerAbilityMod?: number;
     };
 
 const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

@@ -1,5 +1,5 @@
 import { WildShapeForm } from '../types/character';
-import { AcFormulaRule, CompendiumEntity, PassiveModifierRule } from '../types/compendium';
+import { AcFormulaRule, CompendiumEntity, CreatureSize, MonsterStatMeta, PassiveModifierRule } from '../types/compendium';
 import { AbilityKey, ActionEconomy, Ruleset } from '../types/core';
 
 export interface ContentPack {
@@ -192,15 +192,45 @@ function makeMonster(
     damageFormula: string;
     damageType: string;
   }>,
-  notes: string
+  notes: string,
+  extraMeta?: Partial<MonsterStatMeta>
 ): CompendiumEntity {
+  let inferredSize: CreatureSize = extraMeta?.size ?? 'medium';
+  if (!extraMeta?.size) {
+    const low = notes.toLowerCase();
+    if (low.includes('gargantuan')) inferredSize = 'gargantuan';
+    else if (low.includes('huge')) inferredSize = 'huge';
+    else if (low.includes('large')) inferredSize = 'large';
+    else if (low.includes('tiny')) inferredSize = 'tiny';
+    else if (low.includes('small')) inferredSize = 'small';
+  }
+  const rechargeAtk = attacks.find((a) => /recharge\s*(\d+)/i.test(a.name));
+  const rechargeMatch = rechargeAtk?.name.match(/recharge\s*(\d+)/i);
+  const inferredRecharge =
+    extraMeta?.rechargeAbility ??
+    (rechargeAtk && rechargeMatch?.[1]
+      ? { name: rechargeAtk.name, minRoll: Number.parseInt(rechargeMatch[1], 10) }
+      : undefined);
+  const inferredLegendary =
+    extraMeta?.legendaryActionsMax ??
+    (notes.toLowerCase().includes('legendary action') ? 3 : undefined);
+
   return {
     id,
     name,
     source: 'SRD 5.1',
     ruleset: '2014',
     category: 'monster',
-    monsterMeta: { ac, hp, dexModifier, cr },
+    monsterMeta: {
+      ac,
+      hp,
+      dexModifier,
+      cr,
+      size: inferredSize,
+      legendaryActionsMax: inferredLegendary,
+      rechargeAbility: inferredRecharge,
+      ...extraMeta,
+    },
     activities: attacks.map((atk, idx) => ({
       id: `mob-${id}-${idx}`,
       name: atk.name,
@@ -740,7 +770,7 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
       ], 'Pack Tactics. Target makes DC 11 STR save or knocked Prone.'),
       makeMonster('srd-mob-dire-wolf', 'Dire Wolf', 14, 37, 2, '1', [
         { name: 'Bite', type: 'attack', bonusOrDc: '+5', damageFormula: '2d6+3', damageType: 'piercing' },
-      ], 'Pack Tactics. Target makes DC 13 STR save or knocked Prone.'),
+      ], 'Pack Tactics. Target makes DC 13 STR save or knocked Prone.', { size: 'large', speeds: '50 ft', skills: 'Perception +3, Stealth +4', senses: 'Passive Perception 13' }),
       makeMonster('srd-mob-orc', 'Orc', 13, 15, 1, '1/2', [
         { name: 'Greataxe', type: 'attack', bonusOrDc: '+5', damageFormula: '1d12+3', damageType: 'slashing' },
         { name: 'Javelin', type: 'attack', bonusOrDc: '+5', damageFormula: '1d6+3', damageType: 'piercing' },
@@ -752,7 +782,7 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
       makeMonster('srd-mob-gelatinous-cube', 'Gelatinous Cube', 6, 84, -4, '2', [
         { name: 'Pseudopod', type: 'attack', bonusOrDc: '+4', damageFormula: '3d6', damageType: 'acid' },
         { name: 'Engulf (DC 12 DEX)', type: 'save', bonusOrDc: '12', saveAbility: 'dex', damageFormula: '6d6', damageType: 'acid' },
-      ], 'Transparent (DC 15 Perception). Engulfs creatures in its space.'),
+      ], 'Transparent (DC 15 Perception). Engulfs creatures in its space.', { size: 'large', speeds: '15 ft', senses: 'Blindsight 60 ft' }),
       makeMonster('srd-mob-mimic', 'Mimic', 12, 58, 1, '2', [
         { name: 'Pseudopod', type: 'attack', bonusOrDc: '+5', damageFormula: '1d8+3', damageType: 'bludgeoning' },
         { name: 'Bite', type: 'attack', bonusOrDc: '+5', damageFormula: '1d8+3+1d8', damageType: 'piercing + acid' },
@@ -760,29 +790,29 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
       makeMonster('srd-mob-ogre', 'Ogre', 11, 59, -1, '2', [
         { name: 'Greatclub', type: 'attack', bonusOrDc: '+6', damageFormula: '2d8+4', damageType: 'bludgeoning' },
         { name: 'Javelin', type: 'attack', bonusOrDc: '+6', damageFormula: '2d6+4', damageType: 'piercing' },
-      ], 'Large giant.'),
+      ], 'Large giant.', { size: 'large', speeds: '40 ft', senses: 'Darkvision 60 ft' }),
       makeMonster('srd-mob-owlbear', 'Owlbear', 13, 59, 1, '3', [
         { name: 'Beak', type: 'attack', bonusOrDc: '+7', damageFormula: '1d10+5', damageType: 'piercing' },
         { name: 'Claws', type: 'attack', bonusOrDc: '+7', damageFormula: '2d8+5', damageType: 'slashing' },
-      ], 'Multiattack: The owlbear makes two attacks: one with its beak and one with its claws.'),
+      ], 'Multiattack: The owlbear makes two attacks: one with its beak and one with its claws.', { size: 'large', speeds: '40 ft', skills: 'Perception +3', senses: 'Darkvision 60 ft' }),
       makeMonster('srd-mob-troll', 'Troll', 15, 84, 1, '5', [
         { name: 'Bite', type: 'attack', bonusOrDc: '+7', damageFormula: '1d6+4', damageType: 'piercing' },
         { name: 'Claw', type: 'attack', bonusOrDc: '+7', damageFormula: '2d6+4', damageType: 'slashing' },
-      ], 'Regeneration 10 HP/turn unless it took acid or fire damage.'),
+      ], 'Regeneration 10 HP/turn unless it took acid or fire damage.', { size: 'large', speeds: '30 ft', skills: 'Perception +2', senses: 'Darkvision 60 ft' }),
       makeMonster('srd-mob-vampire-spawn', 'Vampire Spawn', 15, 82, 3, '5', [
         { name: 'Claws', type: 'attack', bonusOrDc: '+6', damageFormula: '2d4+3', damageType: 'slashing' },
         { name: 'Bite', type: 'attack', bonusOrDc: '+6', damageFormula: '1d6+3+2d6', damageType: 'piercing + necrotic' },
-      ], 'Regeneration 10 HP/turn; Spider Climb.'),
+      ], 'Regeneration 10 HP/turn; Spider Climb.', { saves: 'DEX +6, WIS +3', resistances: ['necrotic', 'nonmagical B/P/S'] }),
       makeMonster('srd-mob-young-red-dragon', 'Young Red Dragon', 18, 178, 0, '10', [
         { name: 'Bite', type: 'attack', bonusOrDc: '+10', damageFormula: '2d10+6+1d6', damageType: 'piercing + fire' },
         { name: 'Claw', type: 'attack', bonusOrDc: '+10', damageFormula: '2d6+6', damageType: 'slashing' },
         { name: 'Fire Breath (Recharge 5-6)', type: 'save', bonusOrDc: '17', saveAbility: 'dex', damageFormula: '16d6', damageType: 'fire' },
-      ], 'Multiattack (1 Bite, 2 Claws). Fire Breath (Recharge 5-6): DC 17 DEX save, 16d6 fire damage.'),
+      ], 'Multiattack (1 Bite, 2 Claws). Fire Breath (Recharge 5-6): DC 17 DEX save, 16d6 fire damage.', { size: 'large', speeds: '40 ft, Climb 40 ft, Fly 80 ft', saves: 'DEX +4, CON +9, WIS +4, CHA +8', skills: 'Perception +8, Stealth +4', immunities: ['fire'], senses: 'Blindsight 30 ft, Darkvision 120 ft' }),
       makeMonster('srd-mob-adult-black-dragon', 'Adult Black Dragon', 19, 195, 2, '14', [
         { name: 'Bite', type: 'attack', bonusOrDc: '+11', damageFormula: '2d10+6+1d8', damageType: 'piercing + acid' },
         { name: 'Claw', type: 'attack', bonusOrDc: '+11', damageFormula: '2d6+6', damageType: 'slashing' },
         { name: 'Acid Breath (Recharge 5-6)', type: 'save', bonusOrDc: '18', saveAbility: 'dex', damageFormula: '12d8', damageType: 'acid' },
-      ], 'Legendary Resistance (3/day). Multiattack + Legendary Actions.'),
+      ], 'Legendary Resistance (3/day). Multiattack + Legendary Actions.', { size: 'huge', speeds: '40 ft, Fly 80 ft, Swim 40 ft', saves: 'DEX +7, CON +10, WIS +6, CHA +8', skills: 'Perception +11, Stealth +7', immunities: ['acid'], senses: 'Blindsight 60 ft, Darkvision 120 ft', legendaryActionsMax: 3 }),
       makeMonster('srd-mob-bandit', 'Bandit', 12, 11, 1, '1/8', [
         { name: 'Scimitar', type: 'attack', bonusOrDc: '+3', damageFormula: '1d6+1', damageType: 'slashing' },
         { name: 'Light Crossbow', type: 'attack', bonusOrDc: '+3', damageFormula: '1d8+1', damageType: 'piercing' },
@@ -812,7 +842,7 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
       makeMonster('srd-mob-hill-giant', 'Hill Giant', 13, 105, -1, '5', [
         { name: 'Greatclub', type: 'attack', bonusOrDc: '+8', damageFormula: '3d8+5', damageType: 'bludgeoning' },
         { name: 'Rock', type: 'attack', bonusOrDc: '+8', damageFormula: '3d10+5', damageType: 'bludgeoning' },
-      ], 'Multiattack: The giant makes two greatclub attacks.'),
+      ], 'Multiattack: The giant makes two greatclub attacks.', { size: 'huge', speeds: '40 ft', skills: 'Perception +2' }),
       makeMonster('srd-mob-mage', 'Mage', 12, 40, 2, '6', [
         { name: 'Fire Bolt', type: 'attack', bonusOrDc: '+6', damageFormula: '2d10', damageType: 'fire' },
         { name: 'Fireball (3rd)', type: 'save', bonusOrDc: '14', saveAbility: 'dex', damageFormula: '8d6', damageType: 'fire' },
@@ -822,7 +852,7 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
         { name: 'Paralyzing Touch', type: 'attack', bonusOrDc: '+12', damageFormula: '3d6', damageType: 'cold' },
         { name: 'Disintegrate (6th)', type: 'save', bonusOrDc: '20', saveAbility: 'dex', damageFormula: '10d6+40', damageType: 'force' },
         { name: 'Disrupt Life (Legendary)', type: 'save', bonusOrDc: '18', saveAbility: 'con', damageFormula: '6d6', damageType: 'necrotic' },
-      ], 'Legendary Resistance (3/day). Turn Immunity; immune to poison and nonmagical B/P/S. 18th-level Wizard (DC 20).'),
+      ], 'Legendary Resistance (3/day). Turn Immunity; immune to poison and nonmagical B/P/S. 18th-level Wizard (DC 20).', { size: 'medium', speeds: '30 ft', saves: 'CON +10, INT +12, WIS +9', skills: 'Arcana +19, History +12, Insight +9, Perception +9', resistances: ['cold', 'lightning', 'necrotic'], immunities: ['poison', 'nonmagical B/P/S'], senses: 'Truesight 120 ft', legendaryActionsMax: 3 }),
     ],
   },
   {
@@ -1125,26 +1155,26 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
       makeMonster('srd-beast-brown-bear', 'Brown Bear', 11, 34, 0, '1', [
         { name: 'Bite', type: 'attack', bonusOrDc: '+6', damageFormula: '1d8+4', damageType: 'piercing' },
         { name: 'Claws', type: 'attack', bonusOrDc: '+6', damageFormula: '2d6+4', damageType: 'slashing' },
-      ], 'Speed 40 ft, Climb 30 ft. Multiattack (1 Bite, 1 Claws). Keen Smell.'),
+      ], 'Speed 40 ft, Climb 30 ft. Multiattack (1 Bite, 1 Claws). Keen Smell.', { size: 'large', speeds: '40 ft, Climb 30 ft' }),
       makeMonster('srd-beast-giant-spider', 'Giant Spider', 14, 26, 3, '1', [
         { name: 'Bite', type: 'attack', bonusOrDc: '+5', damageFormula: '1d8+3+2d8', damageType: 'piercing + poison' },
         { name: 'Web (Recharge 5-6)', type: 'attack', bonusOrDc: '+5', damageFormula: '0', damageType: 'restrained' },
-      ], 'Speed 30 ft, Climb 30 ft. Spider Climb, Web Sense.'),
+      ], 'Speed 30 ft, Climb 30 ft. Spider Climb, Web Sense.', { size: 'large', speeds: '30 ft, Climb 30 ft' }),
       makeMonster('srd-beast-giant-eagle', 'Giant Eagle', 13, 26, 3, '1', [
         { name: 'Beak', type: 'attack', bonusOrDc: '+5', damageFormula: '1d6+3', damageType: 'piercing' },
         { name: 'Talons', type: 'attack', bonusOrDc: '+5', damageFormula: '2d6+3', damageType: 'slashing' },
-      ], 'Speed 10 ft, Fly 80 ft. Multiattack, Keen Sight.'),
+      ], 'Speed 10 ft, Fly 80 ft. Multiattack, Keen Sight.', { size: 'large', speeds: '10 ft, Fly 80 ft' }),
       makeMonster('srd-beast-giant-octopus', 'Giant Octopus', 11, 52, 1, '1', [
         { name: 'Tentacles', type: 'attack', bonusOrDc: '+5', damageFormula: '2d6+3', damageType: 'bludgeoning' },
-      ], 'Speed 10 ft, Swim 60 ft. Grapple DC 16, Ink Cloud.'),
+      ], 'Speed 10 ft, Swim 60 ft. Grapple DC 16, Ink Cloud.', { size: 'large', speeds: '10 ft, Swim 60 ft' }),
       makeMonster('srd-beast-polar-bear', 'Polar Bear', 12, 42, 0, '2', [
         { name: 'Bite', type: 'attack', bonusOrDc: '+7', damageFormula: '1d8+5', damageType: 'piercing' },
         { name: 'Claws', type: 'attack', bonusOrDc: '+7', damageFormula: '2d6+5', damageType: 'slashing' },
-      ], 'Speed 40 ft, Swim 30 ft. Multiattack, Keen Smell.'),
+      ], 'Speed 40 ft, Swim 30 ft. Multiattack, Keen Smell.', { size: 'large', speeds: '40 ft, Swim 30 ft' }),
       makeMonster('srd-beast-giant-ape', 'Giant Ape', 12, 157, 2, '7', [
         { name: 'Fist', type: 'attack', bonusOrDc: '+9', damageFormula: '3d10+6', damageType: 'bludgeoning' },
         { name: 'Rock', type: 'attack', bonusOrDc: '+9', damageFormula: '7d6+6', damageType: 'bludgeoning' },
-      ], 'Speed 40 ft, Climb 40 ft. Multiattack (2 Fist attacks).'),
+      ], 'Speed 40 ft, Climb 40 ft. Multiattack (2 Fist attacks).', { size: 'huge', speeds: '40 ft, Climb 40 ft' }),
     ],
   },
 ];

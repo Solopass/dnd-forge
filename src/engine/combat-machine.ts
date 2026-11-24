@@ -140,7 +140,10 @@ export function applyEffectWithConcentrationCheck(
   };
 }
 
-export function advanceTurn(state: CombatEncounterState): CombatEncounterState {
+export function advanceTurn(
+  state: CombatEncounterState,
+  rollD6: () => number = () => Math.floor(Math.random() * 6) + 1
+): CombatEncounterState {
   if (state.combatants.length === 0) return state;
 
   const endingCombatant = state.combatants[state.activeTurnIndex];
@@ -177,14 +180,10 @@ export function advanceTurn(state: CombatEncounterState): CombatEncounterState {
     const updatedEffects: ActiveEffect[] = [];
     for (const eff of nextEffects) {
       let currentEff = eff;
-      if (
-        eff.expiration === 'rounds_remaining' &&
-        eff.sourceCombatantId === startingCombatant.id &&
-        eff.roundsRemaining !== undefined
-      ) {
+      if (eff.sourceCombatantId === startingCombatant.id && eff.roundsRemaining !== undefined) {
         const nextRemaining = eff.roundsRemaining - 1;
         if (nextRemaining <= 0) {
-          nextLog.push(makeLog(nextRound, `Effect expired: ${eff.name}`));
+          nextLog.push(makeLog(nextRound, `Effect expired (${eff.name} timer reached 0 rounds)`));
           eff.linkedSummonIds?.forEach((id) => expiredSummons.add(id));
           continue;
         }
@@ -209,20 +208,47 @@ export function advanceTurn(state: CombatEncounterState): CombatEncounterState {
 
     nextCombatants = nextCombatants
       .filter((c) => !expiredSummons.has(c.id))
-      .map((c) =>
-        c.id === startingCombatant.id
-          ? {
-              ...c,
-              turnEconomyUsed: {
-                action: false,
-                bonus_action: false,
-                reaction: false,
-                free: false,
-                special: false,
-              },
-            }
-          : c
-      );
+      .map((c) => {
+        if (c.id !== startingCombatant.id) return c;
+
+        const restoredLa = c.legendaryActions
+          ? { current: c.legendaryActions.max, max: c.legendaryActions.max }
+          : undefined;
+        if (c.legendaryActions && c.legendaryActions.current < c.legendaryActions.max) {
+          nextLog.push(
+            makeLog(nextRound, `${c.name}: Legendary Actions restored (${c.legendaryActions.max}/${c.legendaryActions.max})`)
+          );
+        }
+
+        const nextRecharges = c.rechargeStates?.map((r) => {
+          if (r.available) return r;
+          const rolled = rollD6();
+          const refreshed = rolled >= r.minRoll;
+          nextLog.push(
+            makeLog(
+              nextRound,
+              refreshed
+                ? `${c.name}: ${r.name} recharged! (rolled ${rolled})`
+                : `${c.name}: ${r.name} still recharging (rolled ${rolled}, need ${r.minRoll}+)`,
+              refreshed ? 'crit' : 'info'
+            )
+          );
+          return refreshed ? { ...r, available: true } : r;
+        });
+
+        return {
+          ...c,
+          legendaryActions: restoredLa,
+          rechargeStates: nextRecharges,
+          turnEconomyUsed: {
+            action: false,
+            bonus_action: false,
+            reaction: false,
+            free: false,
+            special: false,
+          },
+        };
+      });
 
     nextLog.push(makeLog(nextRound, `Turn started: ${startingCombatant.name}`));
   }
@@ -235,4 +261,18 @@ export function advanceTurn(state: CombatEncounterState): CombatEncounterState {
     activeEffects: nextEffects,
     log: nextLog,
   };
+}
+
+export function rollAllInitiativeOrder(
+  combatants: CombatantNode[],
+  rollD20: () => number = () => Math.floor(Math.random() * 20) + 1
+): CombatantNode[] {
+  const updated = combatants.map((c) => {
+    if (c.ownerId) return c;
+    return {
+      ...c,
+      initiative: rollD20() + c.dexModifier,
+    };
+  });
+  return sortInitiativeOrder(updated);
 }

@@ -1,5 +1,5 @@
 import { ActionEconomy } from './core';
-import { Activity } from './compendium';
+import { Activity, CreatureSize, MonsterStatMeta } from './compendium';
 
 export type ExpirationTrigger =
   | 'start_of_source_turn'
@@ -29,6 +29,8 @@ export interface CombatantNode {
   ownerId?: string;
   characterId?: string;
   cr?: string;
+  size?: CreatureSize;
+  hidden?: boolean;
   x?: number;
   y?: number;
   tokenColor?: string;
@@ -42,7 +44,17 @@ export interface CombatantNode {
   };
   conditions: string[];
   actions?: Activity[];
+  legendaryActions?: { current: number; max: number };
+  rechargeStates?: Array<{ name: string; minRoll: number; available: boolean }>;
+  monsterMeta?: MonsterStatMeta;
+  notes?: string;
   turnEconomyUsed: Record<ActionEconomy, boolean>;
+}
+
+export interface TerrainCell {
+  x: number;
+  y: number;
+  kind: 'wall' | 'difficult' | 'water';
 }
 
 export interface BattlemapTemplate {
@@ -76,5 +88,11 @@ export interface CombatEncounterState {
     rows: number;
     gridFeet: number;
     templates: BattlemapTemplate[];
+    fogCells?: string[];
+    terrainCells?: TerrainCell[];
+    gridOpacity?: number;
+    imageScale?: number;
+    imageOffsetX?: number;
+    imageOffsetY?: number;
   };
 }

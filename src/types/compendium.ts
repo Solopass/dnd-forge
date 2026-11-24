@@ -48,11 +48,24 @@ export interface PassiveModifierRule {
   condition?: string;
 }
 
+export type CreatureSize = 'tiny' | 'small' | 'medium' | 'large' | 'huge' | 'gargantuan';
+
 export interface MonsterStatMeta {
   ac: number;
   hp: number;
   dexModifier: number;
   cr?: string;
+  size?: CreatureSize;
+  speeds?: string;
+  saves?: string;
+  skills?: string;
+  resistances?: string[];
+  immunities?: string[];
+  vulnerabilities?: string[];
+  senses?: string;
+  legendaryActionsMax?: number;
+  rechargeAbility?: { name: string; minRoll: number };
+  traits?: string[];
 }
 
 export interface CompendiumEntity {

@@ -13,6 +13,7 @@ import { ModalDialog } from './ModalDialog';
 interface BattlemapModalProps {
   isOpen: boolean;
   embedded?: boolean;
+  embeddedFull?: boolean;
   encounter: CombatEncounterState;
   playerView: boolean;
   onTogglePlayerView: () => void;
@@ -81,6 +82,7 @@ function getInitials(name: string): string {
 export function BattlemapModal({
   isOpen,
   embedded = false,
+  embeddedFull = false,
   encounter,
   playerView,
   onTogglePlayerView,
@@ -703,66 +705,76 @@ export function BattlemapModal({
     return svgGrid;
   }
 
-  return (
-    <ModalDialog
-      isOpen={isOpen}
-      wide
-      onClose={onClose}
-      title={`${encounter.name} — Tactical VTT Battlemap (${playerView ? 'Player View' : 'DM View'})`}
-    >
-      <div className="forge-stack">
-        <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
-          <div className="pill-row">
-            {(
-              [
-                ['move', 'Move'],
-                ['target', 'Target'],
-                ['measure', 'Measure'],
-                ['ping', 'Ping'],
-                ['sketch', 'Sketch'],
-                ['sphere', 'Sphere 20ft'],
-                ['cone', 'Cone 15ft'],
-                ['line', 'Line 30ft'],
-                ['cube', 'Cube 20ft'],
-                ['fog_paint', 'Fog Paint'],
-                ['fog_reveal', 'Fog Reveal'],
-                ['wall', 'Wall'],
-                ['difficult', 'Difficult'],
-                ['erase_terrain', 'Erase Terrain'],
-              ] as const
-            ).map(([m, label]) => (
-              <button
-                key={m}
-                type="button"
-                className={`pill ${mode === m ? 'active' : ''}`}
-                onClick={() => setMode(m)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+  const fullVttContent = (
+    <div className="forge-stack">
+      <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+        <div className="toolbar-group">
+          {(
+            [
+              ['move', 'Move'],
+              ['target', 'Target'],
+              ['measure', 'Measure'],
+              ['ping', 'Ping'],
+              ['sketch', 'Sketch'],
+            ] as const
+          ).map(([m, label]) => (
+            <button
+              key={m}
+              type="button"
+              className={`pill ${mode === m ? 'active' : ''}`}
+              onClick={() => setMode(m)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
-          <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+        <div className="toolbar-group">
+          {(
+            [
+              ['sphere', 'Sphere 20ft'],
+              ['cone', 'Cone 15ft'],
+              ['line', 'Line 30ft'],
+              ['cube', 'Cube 20ft'],
+              ['fog_paint', 'Fog Paint'],
+              ['fog_reveal', 'Fog Reveal'],
+              ['wall', 'Wall'],
+              ['difficult', 'Difficult'],
+              ['erase_terrain', 'Erase'],
+            ] as const
+          ).map(([m, label]) => (
             <button
+              key={m}
               type="button"
-              className={`pill ${playerView ? 'active' : ''}`}
-              aria-pressed={playerView}
-              onClick={onTogglePlayerView}
+              className={`pill ${mode === m ? 'active' : ''}`}
+              onClick={() => setMode(m)}
             >
-              {playerView ? 'Player View ON' : 'Player View OFF'}
+              {label}
             </button>
-            {onOpenPopOutPlayer && (
-              <button type="button" className="btn" onClick={onOpenPopOutPlayer}>
-                Pop-Out Player Screen
-              </button>
-            )}
-            <button
-              type="button"
-              className="btn"
-              onClick={() => setZoom((z) => Math.max(0.75, Number((z - 0.25).toFixed(2))))}
-            >
-              Zoom -
+          ))}
+        </div>
+
+        <div className="toolbar-group">
+          <button
+            type="button"
+            className={`pill ${playerView ? 'active' : ''}`}
+            aria-pressed={playerView}
+            onClick={onTogglePlayerView}
+          >
+            {playerView ? 'Player View ON' : 'Player View OFF'}
+          </button>
+          {onOpenPopOutPlayer && (
+            <button type="button" className="btn" onClick={onOpenPopOutPlayer}>
+              Pop-Out Player Screen
             </button>
+          )}
+          <button
+            type="button"
+            className="btn"
+            onClick={() => setZoom((z) => Math.max(0.75, Number((z - 0.25).toFixed(2))))}
+          >
+            Zoom -
+          </button>
             <span className="badge tabular">{Math.round(zoom * 100)}%</span>
             <button
               type="button"
@@ -1059,6 +1071,20 @@ export function BattlemapModal({
 
         {svgGrid}
       </div>
+  );
+
+  if (embeddedFull) {
+    return fullVttContent;
+  }
+
+  return (
+    <ModalDialog
+      isOpen={isOpen}
+      wide
+      onClose={onClose}
+      title={`${encounter.name} — Tactical VTT Battlemap (${playerView ? 'Player View' : 'DM View'})`}
+    >
+      {fullVttContent}
     </ModalDialog>
   );
 }

@@ -3,9 +3,11 @@ import { ResolvedCharacterSheet, WildShapeForm } from '../types/character';
 import { AbilityKey, RecoveryTrigger, SkillKey, STANDARD_CONDITIONS } from '../types/core';
 import { SKILL_ABILITY_MAP } from '../engine/rules-math';
 import { WILD_SHAPE_BEAST_FORMS } from '../engine/srd-packs';
+import { UiMode } from '../engine/ui-mode';
 
 interface VitalsColumnProps {
   sheet: ResolvedCharacterSheet;
+  layoutVariant?: UiMode;
   isDruid?: boolean;
   onAdjustHp: (delta: number) => void;
   onSetTempHp: (temp: number) => void;
@@ -46,6 +48,7 @@ function getHpBarClass(current: number, max: number): string {
 
 export function VitalsColumn({
   sheet,
+  layoutVariant = 'classic',
   isDruid,
   onAdjustHp,
   onSetTempHp,
@@ -519,7 +522,10 @@ export function VitalsColumn({
       </div>
 
       <div className="card">
-        <div className="forge-section-label">ABILITIES &amp; SAVING THROWS</div>
+        <div className="card-header">
+          <div className="forge-section-label">ABILITIES &amp; SAVING THROWS</div>
+          <span className="badge">{layoutVariant === 'classic' ? '5e Sheet' : 'Command'}</span>
+        </div>
         <div className="ability-grid">
           {ABILITIES.map((key) => {
             const ab = sheet.abilities[key];
@@ -528,14 +534,28 @@ export function VitalsColumn({
             const saveSign = ab.save.final >= 0 ? '+' : '';
             const isSaveProf = ab.save.modifiers.some((m) => m.id.startsWith('save-prof-'));
             return (
-              <div key={key} className="ability-tile">
+              <div
+                key={key}
+                className="ability-tile"
+                style={
+                  layoutVariant === 'classic'
+                    ? { borderColor: isSaveProf ? 'var(--accent-gold)' : 'var(--border-subtle)' }
+                    : undefined
+                }
+              >
                 <div className="ability-tile-head">
                   <strong>{key}</strong>
-                  <span className="tabular">{ab.score.final}</span>
+                  <span className="badge tabular" style={{ padding: '0 5px' }}>{ab.score.final}</span>
                 </div>
-                <div className="ability-tile-mod tabular">
+                <button
+                  type="button"
+                  className="ability-tile-mod tabular"
+                  style={{ background: 'transparent', border: 0, color: 'inherit', cursor: 'pointer', width: '100%' }}
+                  onClick={() => onRollCheck(`${key.toUpperCase()} Check`, checkMod)}
+                  title={`Roll ${key.toUpperCase()} ability check`}
+                >
                   {modSign}{checkMod}
-                </div>
+                </button>
                 <div className="ability-tile-actions">
                   <button
                     type="button"
@@ -562,7 +582,9 @@ export function VitalsColumn({
       </div>
 
       <div className="card">
-        <div className="forge-section-label">RESOURCE POOLS</div>
+        <div className="card-header">
+          <div className="forge-section-label">RESOURCE POOLS</div>
+        </div>
         {sheet.resources.map((pool) => (
           <div key={pool.id} className="forge-list-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
             <div className="forge-row-between">

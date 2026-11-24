@@ -30,6 +30,7 @@ import { ModalDialog } from './ModalDialog';
 
 interface DmHubModalProps {
   isOpen: boolean;
+  embedded?: boolean;
   onClose: () => void;
   campaign: CampaignRecord;
   campaignList: CampaignRecord[];
@@ -73,6 +74,7 @@ const CATEGORIES: Array<{ key: 'all' | CampaignCategory; label: string }> = [
 
 export function DmHubModal({
   isOpen,
+  embedded = false,
   onClose,
   campaign,
   campaignList,
@@ -202,79 +204,82 @@ export function DmHubModal({
     );
   });
 
-  return (
-    <ModalDialog isOpen={isOpen} wide onClose={onClose} title="DM Campaign Hub & Session Prep">
-      <div className="forge-stack">
-        <div className="card forge-row-between" style={{ flexWrap: 'wrap', gap: 8 }}>
-          <div className="forge-row" style={{ flexWrap: 'wrap' }}>
-            <select
-              aria-label="Active campaign"
-              className="forge-input"
-              value={campaign.id}
-              onChange={(e) => void onSwitchCampaign(e.target.value)}
-              style={{ fontWeight: 700 }}
-            >
-              {campaignList.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} ({c.entries.length} notes)
-                </option>
-              ))}
-            </select>
-            <input
-              aria-label="New campaign name"
-              type="text"
-              className="forge-input"
-              value={newCampName}
-              onChange={(e) => setNewCampName(e.target.value)}
-              placeholder="New campaign name..."
-              style={{ width: 170 }}
-            />
-            <button
-              type="button"
-              className="btn"
-              onClick={() => {
-                if (!newCampName.trim()) return;
-                void onCreateCampaign(newCampName, 'Homebrew');
-                setNewCampName('');
-              }}
-            >
-              + New Campaign
-            </button>
-            {campaignList.length > 1 && (
-              <button
-                type="button"
-                className="btn btn-danger"
-                onClick={() => void onDeleteCampaign(campaign.id)}
-              >
-                Del
-              </button>
-            )}
-          </div>
-          <div className="forge-row" style={{ flexWrap: 'wrap' }}>
-            <span className="tabular forge-muted" style={{ fontSize: 12 }}>
-              {formatWorldClock(campaign.clock)} • {campaign.clock.weather}
-            </span>
-            {onPrintPacket && (
-              <button type="button" className="btn" onClick={onPrintPacket}>
-                Print Session Packet
-              </button>
-            )}
-          </div>
-        </div>
+  const dmTabs = [
+    ['binder', 'Campaign Binder'],
+    ['clock', 'World Clock'],
+    ['loot', 'Loot & Shops'],
+    ['dmscreen', 'DM Screen'],
+    ['xp', 'Party XP & Milestones'],
+    ['improv', 'Improv'],
+    ['worldmap', 'World Map'],
+    ['soundboard', 'Soundboard'],
+  ] as const;
 
+  const topCampaignBar = (
+    <div className="card forge-row-between" style={{ flexWrap: 'wrap', gap: 8 }}>
+      <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+        <select
+          aria-label="Active campaign"
+          className="forge-input"
+          value={campaign.id}
+          onChange={(e) => void onSwitchCampaign(e.target.value)}
+          style={{ fontWeight: 700 }}
+        >
+          {campaignList.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name} ({c.entries.length} notes)
+            </option>
+          ))}
+        </select>
+        <input
+          aria-label="New campaign name"
+          type="text"
+          className="forge-input"
+          value={newCampName}
+          onChange={(e) => setNewCampName(e.target.value)}
+          placeholder="New campaign name..."
+          style={{ width: 170 }}
+        />
+        <button
+          type="button"
+          className="btn"
+          onClick={() => {
+            if (!newCampName.trim()) return;
+            void onCreateCampaign(newCampName, 'Homebrew');
+            setNewCampName('');
+          }}
+        >
+          + New Campaign
+        </button>
+        {campaignList.length > 1 && (
+          <button
+            type="button"
+            className="btn btn-danger"
+            onClick={() => void onDeleteCampaign(campaign.id)}
+          >
+            Del
+          </button>
+        )}
+      </div>
+      <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+        <span className="tabular forge-muted" style={{ fontSize: 12 }}>
+          {formatWorldClock(campaign.clock)} • {campaign.clock.weather}
+        </span>
+        {onPrintPacket && (
+          <button type="button" className="btn" onClick={onPrintPacket}>
+            Print Session Packet
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  const hubContent = (
+    <div className="forge-stack">
+      {!embedded && topCampaignBar}
+      {!embedded && (
         <div className="pill-row">
-          {(
-            [
-              ['binder', 'Campaign Binder'],
-              ['clock', 'World Clock'],
-              ['loot', 'Loot & Shops'],
-              ['dmscreen', 'DM Screen'],
-              ['xp', 'Party XP & Milestones'],
-              ['improv', 'Improv'],
-              ['worldmap', 'World Map'],
-              ['soundboard', 'Soundboard'],
-            ] as const
-          ).map(([k, label]) => (
+          {dmTabs.map(([k, label]) => (
             <button
               key={k}
               type="button"
@@ -285,6 +290,7 @@ export function DmHubModal({
             </button>
           ))}
         </div>
+      )}
 
         {tab === 'binder' && (
           <div className="forge-grid-2" style={{ alignItems: 'start' }}>
@@ -1306,7 +1312,35 @@ export function DmHubModal({
             </div>
           </div>
         )}
+    </div>
+  );
+
+  if (embedded) {
+    return (
+      <div className="forge-stack">
+        {topCampaignBar}
+        <div className="dm-studio-shell">
+          <nav className="card dm-studio-nav" aria-label="DM Studio sections">
+            {dmTabs.map(([k, label]) => (
+              <button
+                key={k}
+                type="button"
+                className={`unified-rail-btn ${tab === k ? 'active' : ''}`}
+                onClick={() => setTab(k)}
+              >
+                <span>{label}</span>
+              </button>
+            ))}
+          </nav>
+          <div>{hubContent}</div>
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <ModalDialog isOpen={isOpen} wide onClose={onClose} title="DM Campaign Hub & Session Prep">
+      {hubContent}
     </ModalDialog>
   );
 }

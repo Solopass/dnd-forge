@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { ResolvedActivity, ResolvedCharacterSheet } from '../types/character';
 import { ActionEconomy, RollMode } from '../types/core';
+import { UiMode } from '../engine/ui-mode';
 import { parse5eToolsEntries } from '../engine/tags';
 import { scaleDiceForUpcast } from '../engine/dice';
 
 interface ActionEconomyBoardProps {
   sheet: ResolvedCharacterSheet;
+  layoutVariant?: UiMode;
   rollMode: RollMode;
   onChangeRollMode: (mode: RollMode) => void;
   onTriggerActivity: (activity: ResolvedActivity, slotLevelOverride?: number, asRitual?: boolean) => void;
   onRollInlineExpression: (label: string, expression: string) => void;
+  onOpenGearDrawer?: () => void;
+  onOpenBuilderDrawer?: () => void;
 }
 
 const ECONOMY_SECTIONS: Array<{ key: Exclude<ActionEconomy, 'special'>; label: string }> = [
@@ -56,14 +60,21 @@ function formatActivityActionLabel(act: ResolvedActivity, overrideDamage?: strin
 
 export function ActionEconomyBoard({
   sheet,
+  layoutVariant = 'classic',
   rollMode,
   onChangeRollMode,
   onTriggerActivity,
   onRollInlineExpression,
+  onOpenGearDrawer,
+  onOpenBuilderDrawer,
 }: ActionEconomyBoardProps) {
+  const [beyondTab, setBeyondTab] = useState<'actions' | 'spells' | 'inventory' | 'features'>('actions');
   const [filter, setFilter] = useState<'all' | 'attack' | 'save' | 'heal' | 'summon' | 'concentration'>('all');
   const [search, setSearch] = useState('');
   const [upcastOverrides, setUpcastOverrides] = useState<Record<string, number>>({});
+
+  const isSpellActivity = (act: ResolvedActivity): boolean =>
+    Boolean(act.spellMeta || act.resourceCost?.poolId.startsWith('spell_slot_'));
 
   const matchesFilter = (act: ResolvedActivity): boolean => {
     const q = search.trim().toLowerCase();
@@ -114,55 +125,174 @@ export function ActionEconomyBoard({
 
   return (
     <main className="pane" aria-label="Action Economy Dashboard">
-      <div className="card forge-stack">
-        <div className="forge-row-between" style={{ flexWrap: 'wrap' }}>
-          <div className="pill-row">
-            {(['all', 'attack', 'save', 'heal', 'summon', 'concentration'] as const).map((pill) => (
-              <button
-                key={pill}
-                type="button"
-                className={`pill ${filter === pill ? 'active' : ''}`}
-                onClick={() => setFilter(pill)}
-              >
-                {pill === 'concentration' ? 'CONC' : pill.toUpperCase()}
-              </button>
-            ))}
-          </div>
-
-          <div className="pill-row">
-            {(['disadvantage', 'normal', 'advantage'] as RollMode[]).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                className={`pill ${rollMode === mode ? 'active' : ''}`}
-                onClick={() => onChangeRollMode(mode)}
-              >
-                {mode === 'disadvantage' ? 'DIS' : mode === 'advantage' ? 'ADV' : 'FLAT'}
-              </button>
-            ))}
-          </div>
+      {layoutVariant === 'classic' && (
+        <div className="beyond-tabs" role="tablist" aria-label="Character sheet sections">
+          {(
+            [
+              ['actions', 'Actions'],
+              ['spells', 'Spells'],
+              ['inventory', 'Inventory'],
+              ['features', 'Features & Notes'],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={beyondTab === key}
+              className={`beyond-tab ${beyondTab === key ? 'active' : ''}`}
+              onClick={() => setBeyondTab(key)}
+            >
+              {label}
+            </button>
+          ))}
         </div>
+      )}
 
-        <input
-          aria-label="Filter actions and spells"
-          type="text"
-          className="forge-input"
-          placeholder="Filter actions, spells, features..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
+      {(layoutVariant === 'unified' || beyondTab === 'actions' || beyondTab === 'spells') && (
+        <div className="card forge-stack">
+          <div className="forge-row-between" style={{ flexWrap: 'wrap' }}>
+            <div className="pill-row">
+              {(['all', 'attack', 'save', 'heal', 'summon', 'concentration'] as const).map((pill) => (
+                <button
+                  key={pill}
+                  type="button"
+                  className={`pill ${filter === pill ? 'active' : ''}`}
+                  onClick={() => setFilter(pill)}
+                >
+                  {pill === 'concentration' ? 'CONC' : pill.toUpperCase()}
+                </button>
+              ))}
+            </div>
 
-      {ECONOMY_SECTIONS.map(({ key, label }) => {
+            <div className="pill-row">
+              {(['disadvantage', 'normal', 'advantage'] as RollMode[]).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  className={`pill ${rollMode === mode ? 'active' : ''}`}
+                  onClick={() => onChangeRollMode(mode)}
+                >
+                  {mode === 'disadvantage' ? 'DIS' : mode === 'advantage' ? 'ADV' : 'FLAT'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <input
+            aria-label="Filter actions and spells"
+            type="text"
+            className="forge-input"
+            placeholder="Filter actions, spells, features..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      )}
+
+      {layoutVariant === 'classic' && beyondTab === 'spells' && (
+        <section className="card forge-stack">
+          <div className="card-header">
+            <div className="forge-section-label">SPELLCASTING</div>
+            <div className="pill-row tabular">
+              <span className="badge">Save DC {sheet.spellcasting.saveDc.final}</span>
+              <span className="badge">Atk +{sheet.spellcasting.attackBonus.final}</span>
+              <span className="badge">
+                Prepared {sheet.spellcasting.preparedCount}/{sheet.spellcasting.maxPrepared}
+              </span>
+            </div>
+          </div>
+          {ECONOMY_SECTIONS.flatMap((s) =>
+            (s.key === 'free'
+              ? [...sheet.actionsByEconomy.free, ...sheet.actionsByEconomy.special]
+              : sheet.actionsByEconomy[s.key]
+            ).filter((act) => isSpellActivity(act) && matchesFilter(act))
+          ).map((act) => (
+            <div key={act.id} className="forge-list-row">
+              <div>
+                <strong>{act.name}</strong>{' '}
+                {act.concentration && <span className="conc-badge">CONC</span>}
+                {act.ritual && <span className="ritual-badge">RITUAL</span>}
+                {act.resourceCost && (
+                  <span className="cost-badge">{formatResourceBadge(act.resourceCost.poolId)}</span>
+                )}
+                {act.spellMeta && (
+                  <div className="forge-muted" style={{ fontSize: 10 }}>
+                    {[act.spellMeta.castingTime, act.spellMeta.range, act.spellMeta.duration]
+                      .filter(Boolean)
+                      .join(' • ')}
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                className="btn btn-primary tabular forge-nowrap"
+                onClick={() => onTriggerActivity(act)}
+              >
+                {formatActivityActionLabel(act, act.computedDamage)}
+              </button>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {layoutVariant === 'classic' && beyondTab === 'inventory' && (
+        <section className="card forge-stack">
+          <div className="card-header">
+            <div className="forge-section-label">EQUIPMENT &amp; ATTUNEMENT</div>
+            {onOpenGearDrawer && (
+              <button type="button" className="btn btn-primary" onClick={onOpenGearDrawer}>
+                Manage Gear &amp; Currency
+              </button>
+            )}
+          </div>
+          <div className="pill-row">
+            <span className="badge tabular">Attuned: {sheet.attunementCount} / 3</span>
+            <span className="badge tabular">AC: {sheet.ac.final}</span>
+            <span className="badge tabular">Speed: {sheet.speed.final} ft</span>
+          </div>
+          <div className="forge-muted">
+            Click <strong>Manage Gear &amp; Currency</strong> to equip armor/weapons, attune magic items, track gold pieces, or craft homebrew gear.
+          </div>
+        </section>
+      )}
+
+      {layoutVariant === 'classic' && beyondTab === 'features' && (
+        <section className="card forge-stack">
+          <div className="card-header">
+            <div className="forge-section-label">FEATURES, SENSES &amp; PROFICIENCIES</div>
+            {onOpenBuilderDrawer && (
+              <button type="button" className="btn btn-primary" onClick={onOpenBuilderDrawer}>
+                Open Character Builder
+              </button>
+            )}
+          </div>
+          <div className="pill-row">
+            <span className="badge tabular">Proficiency +{sheet.proficiencyBonus.final}</span>
+            <span className="badge tabular">Passive Perception {sheet.passivePerception}</span>
+            <span className="badge tabular">Initiative {sheet.initiative.final >= 0 ? `+${sheet.initiative.final}` : sheet.initiative.final}</span>
+          </div>
+          <div className="forge-muted">
+            All class features, feats, saving throws, and custom character notes are editable in the Character Builder or Gear &amp; Notes drawer.
+          </div>
+        </section>
+      )}
+
+      {(layoutVariant === 'unified' || beyondTab === 'actions') &&
+        ECONOMY_SECTIONS.map(({ key, label }) => {
         const pool =
           key === 'free'
             ? [...sheet.actionsByEconomy.free, ...sheet.actionsByEconomy.special]
             : sheet.actionsByEconomy[key];
-        const items = pool.filter(matchesFilter);
+        const items = pool.filter(
+          (act) => matchesFilter(act) && (layoutVariant === 'unified' || !isSpellActivity(act))
+        );
         return (
           <section key={key} className="card">
-            <div className="forge-section-label">
-              {label.toUpperCase()} ({items.length})
+            <div className="card-header">
+              <div className="forge-section-label">
+                {label.toUpperCase()} ({items.length})
+              </div>
             </div>
             {items.length === 0 ? (
               <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>No matching actions.</div>

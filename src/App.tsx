@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import './styles/tokens.css';
 import './styles/layout.css';
 import { useSheetStore } from './state/useSheetStore';
@@ -15,12 +15,18 @@ import { NewCharacterModal } from './components/NewCharacterModal';
 import { BattlemapModal } from './components/BattlemapModal';
 import { SettingsModal } from './components/SettingsModal';
 import { LevelUpModal } from './components/LevelUpModal';
-import { LiveTableModal } from './components/LiveTableModal';
 import { DmHubModal } from './components/DmHubModal';
 import { MonsterStatblockModal } from './components/MonsterStatblockModal';
-import { EncounterBuilderModal } from './components/EncounterBuilderModal';
 import { ToastStack } from './components/ToastStack';
+
+const LiveTableModal = lazy(() =>
+  import('./components/LiveTableModal').then((m) => ({ default: m.LiveTableModal }))
+);
+const EncounterBuilderModal = lazy(() =>
+  import('./components/EncounterBuilderModal').then((m) => ({ default: m.EncounterBuilderModal }))
+);
 import { BUILTIN_CONTENT_PACKS } from './engine/srd-packs';
+import { applyUiMode, readStoredUiMode, UiMode } from './engine/ui-mode';
 import { evaluateDiceExpression } from './engine/dice';
 import { exportFullBundle } from './storage/db';
 import { RawCharacterState } from './types/character';
@@ -184,11 +190,18 @@ export function App() {
   const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
   const [playerView, setPlayerView] = useState(false);
   const [inspectedCombatantId, setInspectedCombatantId] = useState<string | null>(null);
+  const [uiMode, setUiMode] = useState<UiMode>(readStoredUiMode);
+  const [unifiedView, setUnifiedView] = useState<'sheet' | 'dm' | 'vtt'>('sheet');
+  const [showClassicCombat, setShowClassicCombat] = useState(true);
   const [mobileTab, setMobileTab] = useState<'vitals' | 'actions' | 'combat'>('vitals');
   const inspectedCombatant =
     inspectedCombatantId ? (store.encounter.combatants.find((c) => c.id === inspectedCombatantId) ?? null) : null;
   const [consoleSize, setConsoleSize] = useState<'normal' | 'expanded' | 'collapsed'>('normal');
   const mobileTablistRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    applyUiMode(uiMode);
+  }, [uiMode]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -250,16 +263,203 @@ export function App() {
       ? 'app-shell console-expanded'
       : 'app-shell';
 
+  const charLevel = store.rawChar.classes.reduce((s, x) => s + x.level, 0);
+  const classSummary = store.rawChar.classes.map((c) => `${c.className} ${c.level}`).join(' / ') || 'Adventurer';
+
+  const vitalsNode = (
+    <VitalsColumn
+      sheet={store.resolvedSheet}
+      layoutVariant={uiMode}
+      isDruid={store.rawChar.classes.some((c) => c.className.toLowerCase() === 'druid')}
+      onAdjustHp={store.adjustHp}
+      onSetTempHp={store.setTempHp}
+      onSetExhaustion={store.setExhaustion}
+      onUpdateDeathSaves={store.updateDeathSaves}
+      onRollDeathSave={store.rollDeathSave}
+      onToggleInspiration={store.toggleInspiration}
+      onToggleDefense={store.toggleDefense}
+      onEnterWildShape={store.enterWildShape}
+      onRevertWildShape={store.revertWildShape}
+      onAdjustResource={store.adjustResourcePool}
+      onAddResource={store.addCustomResourcePool}
+      onSetAcOverride={(val) => store.setStatOverride('ac', val)}
+      onRollInitiative={store.rollCharacterInitiative}
+      onToggleCondition={store.toggleCondition}
+      onTakeRest={store.takeRest}
+      onSpendHitDie={store.spendHitDie}
+      onRollCheck={(label, mod) => {
+        const sign = mod >= 0 ? '+' : '';
+        const res = evaluateDiceExpression(`1d20${sign}${mod}`, store.rollMode);
+        store.appendLog(`${label} (${res.mode}): ${res.total}`, res.isCrit ? 'crit' : 'roll');
+      }}
+    />
+  );
+
+  const actionBoardNode = (
+    <ActionEconomyBoard
+      sheet={store.resolvedSheet}
+      layoutVariant={uiMode}
+      rollMode={store.rollMode}
+      onChangeRollMode={store.setRollMode}
+      onTriggerActivity={store.triggerActivity}
+      onRollInlineExpression={store.rollInlineExpression}
+      onOpenGearDrawer={() => setGearOpen(true)}
+      onOpenBuilderDrawer={() => setBuilderOpen(true)}
+    />
+  );
+
+  const combatDrawerNode = (
+    <SummonCombatDrawer
+      encounter={store.encounter}
+      encounterList={store.encounterList}
+      partyLevels={store.characterList.map((c) => c.classes.reduce((s, x) => s + x.level, 0))}
+      pendingConcDc={store.pendingConcDc}
+      onSwitchEncounter={store.switchEncounter}
+      onCreateEncounter={store.createEncounter}
+      onDuplicateEncounter={store.duplicateEncounter}
+      onDeleteEncounter={store.deleteEncounter}
+      onAddPartyToEncounter={store.addPartyToEncounter}
+      onOpenBattlemap={() => (uiMode === 'unified' ? setUnifiedView('vtt') : setBattlemapOpen(true))}
+      onNextTurn={store.stepCombatTurn}
+      onResetEncounter={store.resetEncounter}
+      onAdjustCombatantHp={store.adjustCombatantHp}
+      onSetCombatantInitiative={store.setCombatantInitiative}
+      onToggleCombatantCondition={store.toggleCombatantCondition}
+      onToggleCombatantEconomy={store.toggleCombatantEconomy}
+      onRemoveCombatant={store.removeCombatant}
+      playerView={playerView}
+      onTogglePlayerView={() => setPlayerView((v) => !v)}
+      onRollAllInitiative={store.rollAllInitiative}
+      onInspectCombatant={setInspectedCombatantId}
+      onToggleCombatantHidden={store.toggleCombatantHidden}
+      onSetCombatantSize={store.setCombatantSize}
+      onAdjustLegendary={store.adjustLegendaryActions}
+      onToggleOrRollRecharge={store.toggleOrRollRecharge}
+      onAddTimedEffect={store.addTimedCombatEffect}
+      onTriggerCombatantActivity={store.triggerCombatantActivity}
+      onDropConcentration={store.dropConcentration}
+      onRollConcentrationSave={store.rollConcentrationSave}
+      selectedTargetIds={selectedTargetIds}
+      onToggleTarget={(id) =>
+        setSelectedTargetIds((prev) =>
+          prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+        )
+      }
+      onClearTargets={() => setSelectedTargetIds([])}
+      onTargetAttack={store.targetAttackCombatants}
+      onTargetSave={store.targetSaveCombatants}
+      onOpenEncounterBuilder={() => setEncounterBuilderOpen(true)}
+      onAddMonster={store.addMonsterToEncounter}
+    />
+  );
+
+  const sharedBattlemapProps = {
+    encounter: store.encounter,
+    playerView,
+    onTogglePlayerView: () => setPlayerView((v) => !v),
+    onMoveToken: store.moveCombatantToken,
+    onSetMapImage: store.setEncounterMapImage,
+    onAddTemplate: store.addMapTemplate,
+    onClearTemplates: store.clearMapTemplates,
+    onToggleFogCells: store.toggleFogCells,
+    onFillAllFog: store.fillAllFog,
+    onClearAllFog: store.clearAllFog,
+    onSetTerrainCell: store.setTerrainCell,
+    onClearTerrain: store.clearTerrain,
+    onUpdateMapSettings: store.updateEncounterMapSettings,
+    onNextTurn: store.stepCombatTurn,
+    scenes: store.scenes,
+    onSaveScene: store.saveCurrentMapAsScene,
+    onLoadScene: store.loadSceneToEncounter,
+    onDeleteScene: store.deleteScene,
+    onAddSketchStroke: store.addMapSketchStroke,
+    onClearSketches: store.clearMapSketches,
+    activePings: store.activePings,
+    onPing: store.broadcastMapPing,
+    selectedTargetIds,
+    onToggleTarget: (id: string) =>
+      setSelectedTargetIds((prev) =>
+        prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      ),
+    onSetTokenPortrait: store.setCombatantPortrait,
+    onSetTokenVision: store.setCombatantVision,
+    onOpenPopOutPlayer: () => {
+      window.open('?player=1', 'dnd-forge-player-display', 'width=1280,height=800');
+    },
+  };
+
+  const sharedDmHubProps = {
+    campaign: store.campaign,
+    campaignList: store.campaignList,
+    characterList: store.characterList,
+    activeCharacterName: store.rawChar.name,
+    activeCharacterGp: store.rawChar.currency?.gp ?? 0,
+    encounter: store.encounter,
+    onSwitchCampaign: store.switchCampaign,
+    onCreateCampaign: store.createCampaign,
+    onDeleteCampaign: store.deleteCampaign,
+    onUpsertEntry: store.upsertCampaignEntry,
+    onDeleteEntry: store.deleteCampaignEntry,
+    onAdvanceClock: store.advanceCampaignClock,
+    onAddTimer: store.addClockTimer,
+    onSetWeather: store.setCampaignWeather,
+    onAddPartyLoot: store.addPartyLoot,
+    onDistributeGold: store.distributeGoldToParty,
+    onBuyShopItem: store.buyShopItemForActiveCharacter,
+    onAwardXp: store.awardPartyXp,
+    onMilestoneLevelUp: store.triggerPartyMilestoneLevelUp,
+    onRollExpression: store.rollInlineExpression,
+    activeSharedHandout: store.activeSharedHandout,
+    onShareHandout: store.shareHandoutToPlayers,
+    onHideHandout: store.hideSharedHandout,
+    onSetWorldMapImage: store.setWorldMapImage,
+    onUpsertWorldMapPin: store.upsertWorldMapPin,
+    onDeleteWorldMapPin: store.deleteWorldMapPin,
+    onSpawnImprovEncounter: (enc: { monsters: Array<{ name: string; count: number }> }) => {
+      const allMobs = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities).filter(
+        (e) => e.category === 'monster'
+      );
+      for (const entry of enc.monsters) {
+        const match = allMobs.find((m) => m.name === entry.name);
+        if (match?.monsterMeta) {
+          for (let i = 0; i < entry.count; i++) {
+            store.addMonsterToEncounter(
+              match.name,
+              match.monsterMeta.ac,
+              match.monsterMeta.hp,
+              match.monsterMeta.dexModifier,
+              match.activities,
+              match.monsterMeta.cr,
+              match.monsterMeta,
+              match.entries.join(' ')
+            );
+          }
+        }
+      }
+      setDmHubOpen(false);
+    },
+    onPrintPacket: () => {
+      document.body.classList.add('print-session-mode');
+      const cleanup = () => document.body.classList.remove('print-session-mode');
+      window.addEventListener('afterprint', cleanup, { once: true });
+      window.print();
+      setTimeout(cleanup, 1500);
+    },
+  };
+
   return (
     <div className={shellClass}>
       <header className="topbar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <strong>D&amp;D FORGE // LOCAL VTT</strong>
+        <div className="topbar-brand">
+          <span className="topbar-brand-badge">
+            <span className="topbar-brand-dot" aria-hidden="true" />
+            D&amp;D FORGE
+          </span>
           <select
             aria-label="Active character"
             value={store.rawChar.id}
             onChange={(e) => void store.switchCharacter(e.target.value)}
-            style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', padding: '3px 8px' }}
+            style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', borderRadius: 4, padding: '4px 8px', fontSize: 12 }}
           >
             {store.characterList.map((c) => (
               <option key={c.id} value={c.id}>
@@ -269,20 +469,64 @@ export function App() {
           </select>
           <button
             type="button"
-            className="btn btn-primary"
+            className="btn btn-brand"
             onClick={() => setNewCharOpen(true)}
           >
-            + New Char
+            + New
+          </button>
+          <button type="button" className="btn btn-primary" onClick={() => setLevelUpOpen(true)}>
+            Level Up
           </button>
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        <div className="topbar-center">
+          <div className="mode-switcher" role="group" aria-label="Interface layout mode">
+            <button
+              type="button"
+              className={`mode-switcher-btn ${uiMode === 'classic' ? 'active' : ''}`}
+              aria-pressed={uiMode === 'classic'}
+              onClick={() => setUiMode('classic')}
+            >
+              Beyond Classic
+            </button>
+            <button
+              type="button"
+              className={`mode-switcher-btn ${uiMode === 'unified' ? 'active' : ''}`}
+              aria-pressed={uiMode === 'unified'}
+              onClick={() => setUiMode('unified')}
+            >
+              Unified Command
+            </button>
+          </div>
+        </div>
+
+        <div className="topbar-actions">
+          <button type="button" className="btn" onClick={() => setPaletteOpen(true)} title="Compendium, Packs & PDF Import (Ctrl+K)">
+            Packs (Ctrl+K)
+          </button>
+          {uiMode === 'classic' && (
+            <>
+              <button type="button" className="btn" onClick={() => setDmHubOpen(true)}>
+                DM Hub
+              </button>
+              <button type="button" className="btn" onClick={() => setBattlemapOpen(true)}>
+                Battlemap
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            className={`btn ${store.liveStatus.role !== 'idle' ? 'btn-primary' : ''}`}
+            onClick={() => setLiveTableOpen(true)}
+          >
+            Live Table{store.liveStatus.role !== 'idle' ? ` (${store.liveStatus.peers.length + 1})` : ''}
+          </button>
           <button
             type="button"
             className="btn"
             disabled={!store.canUndo}
             onClick={store.undo}
-            title="Undo last sheet or combat change (Ctrl+Z)"
+            title="Undo (Ctrl+Z)"
           >
             Undo
           </button>
@@ -291,155 +535,167 @@ export function App() {
             className="btn"
             disabled={!store.canRedo}
             onClick={store.redo}
-            title="Redo change (Ctrl+Y)"
+            title="Redo (Ctrl+Y)"
           >
             Redo
           </button>
-          <button type="button" className="btn btn-primary" onClick={() => setLevelUpOpen(true)}>
-            Level Up
-          </button>
-          <button type="button" className="btn" onClick={() => setBuilderOpen(true)}>
-            Build / Stats
-          </button>
-          <button type="button" className="btn" onClick={() => setGearOpen(true)}>
-            Gear &amp; Spells ({store.resolvedSheet.attunementCount}/3 Attuned)
-          </button>
-          <button type="button" className="btn" onClick={() => setPaletteOpen(true)}>
-            Packs / PDF / Import (Ctrl+K)
-          </button>
-          <button type="button" className="btn" onClick={() => setDmHubOpen(true)}>
-            DM Hub
-          </button>
-          <button type="button" className="btn" onClick={() => setBattlemapOpen(true)}>
-            Battlemap
-          </button>
-          <button
-            type="button"
-            className={`btn ${store.liveStatus.role !== 'idle' ? 'btn-primary' : ''}`}
-            onClick={() => setLiveTableOpen(true)}
-          >
-            Live Table{store.liveStatus.role !== 'idle' ? ` (${store.liveStatus.peers.length + 1})` : ''}
-          </button>
           <button type="button" className="btn" onClick={() => setSettingsOpen(true)}>
-            Theme / Print
+            Settings
           </button>
         </div>
       </header>
 
-      <div className="mobile-tab-bar" role="tablist" aria-label="Workspace panels" ref={mobileTablistRef}>
-        {(
-          [
-            { key: 'vitals', label: 'Vitals & Skills' },
-            { key: 'actions', label: 'Actions & Spells' },
-            { key: 'combat', label: 'Combat & Encounter' },
-          ] as const
-        ).map((tab, idx, arr) => (
-          <button
-            key={tab.key}
-            type="button"
-            role="tab"
-            id={`tab-${tab.key}`}
-            className="mobile-tab"
-            aria-selected={mobileTab === tab.key}
-            tabIndex={mobileTab === tab.key ? 0 : -1}
-            onClick={() => setMobileTab(tab.key)}
-            onKeyDown={(e) => {
-              let nextIdx: number | null = null;
-              if (e.key === 'ArrowRight') nextIdx = (idx + 1) % arr.length;
-              else if (e.key === 'ArrowLeft') nextIdx = (idx - 1 + arr.length) % arr.length;
-              else if (e.key === 'Home') nextIdx = 0;
-              else if (e.key === 'End') nextIdx = arr.length - 1;
-              if (nextIdx !== null && arr[nextIdx]) {
-                e.preventDefault();
-                setMobileTab(arr[nextIdx]!.key);
-                const buttons = mobileTablistRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
-                buttons?.[nextIdx]?.focus();
-              }
-            }}
+      {uiMode === 'classic' && (
+        <div className="beyond-hero-banner">
+          <div className="beyond-hero-identity">
+            <div className="beyond-crest" aria-hidden="true">
+              {store.rawChar.name.slice(0, 2).toUpperCase()}
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 15, lineHeight: 1.15 }}>
+                {store.rawChar.name}
+              </div>
+              <div className="forge-muted" style={{ fontSize: 11 }}>
+                {store.rawChar.species} • {classSummary} • Level {charLevel}
+              </div>
+            </div>
+          </div>
+          <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+            <button type="button" className="btn" onClick={() => store.takeRest('short_rest')}>
+              Short Rest
+            </button>
+            <button type="button" className="btn" onClick={() => store.takeRest('long_rest')}>
+              Long Rest
+            </button>
+            <button type="button" className="btn" onClick={() => setBuilderOpen(true)}>
+              Build / Stats
+            </button>
+            <button type="button" className="btn" onClick={() => setGearOpen(true)}>
+              Gear &amp; Spells ({store.resolvedSheet.attunementCount}/3)
+            </button>
+            <button
+              type="button"
+              className={`pill ${showClassicCombat ? 'active' : ''}`}
+              aria-pressed={showClassicCombat}
+              onClick={() => setShowClassicCombat((v) => !v)}
+            >
+              Combat Rail {showClassicCombat ? 'ON' : 'OFF'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {uiMode === 'classic' ? (
+        <>
+          <div className="mobile-tab-bar" role="tablist" aria-label="Workspace panels" ref={mobileTablistRef}>
+            {(
+              [
+                { key: 'vitals', label: 'Vitals & Skills' },
+                { key: 'actions', label: 'Actions & Spells' },
+                { key: 'combat', label: 'Combat & Encounter' },
+              ] as const
+            ).map((tab, idx, arr) => (
+              <button
+                key={tab.key}
+                type="button"
+                role="tab"
+                id={`tab-${tab.key}`}
+                className="mobile-tab"
+                aria-selected={mobileTab === tab.key}
+                tabIndex={mobileTab === tab.key ? 0 : -1}
+                onClick={() => setMobileTab(tab.key)}
+                onKeyDown={(e) => {
+                  let nextIdx: number | null = null;
+                  if (e.key === 'ArrowRight') nextIdx = (idx + 1) % arr.length;
+                  else if (e.key === 'ArrowLeft') nextIdx = (idx - 1 + arr.length) % arr.length;
+                  else if (e.key === 'Home') nextIdx = 0;
+                  else if (e.key === 'End') nextIdx = arr.length - 1;
+                  if (nextIdx !== null && arr[nextIdx]) {
+                    e.preventDefault();
+                    setMobileTab(arr[nextIdx]!.key);
+                    const buttons = mobileTablistRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+                    buttons?.[nextIdx]?.focus();
+                  }
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div
+            className={`workspace-grid ${!showClassicCombat ? 'classic-no-combat' : ''}`}
+            data-active-tab={mobileTab}
           >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+            {vitalsNode}
+            {actionBoardNode}
+            {showClassicCombat && combatDrawerNode}
+          </div>
+        </>
+      ) : (
+        <div className="unified-shell">
+          <nav className="unified-rail" aria-label="Unified workspace navigation">
+            <button
+              type="button"
+              className={`unified-rail-btn ${unifiedView === 'sheet' ? 'active' : ''}`}
+              onClick={() => setUnifiedView('sheet')}
+            >
+              <span>Play Sheet</span>
+              <span className="badge">Lvl {charLevel}</span>
+            </button>
+            <button
+              type="button"
+              className={`unified-rail-btn ${unifiedView === 'dm' ? 'active' : ''}`}
+              onClick={() => setUnifiedView('dm')}
+            >
+              <span>DM Studio</span>
+              <span className="badge">{store.campaign.entries.length}</span>
+            </button>
+            <button
+              type="button"
+              className={`unified-rail-btn ${unifiedView === 'vtt' ? 'active' : ''}`}
+              onClick={() => setUnifiedView('vtt')}
+            >
+              <span>Tactical VTT</span>
+              <span className="badge">Rnd {store.encounter.round}</span>
+            </button>
+            <hr style={{ width: '100%', border: 0, borderTop: '1px solid var(--border-subtle)', margin: '4px 0' }} />
+            <button type="button" className="unified-rail-btn" onClick={() => setBuilderOpen(true)}>
+              <span>Build &amp; Stats</span>
+            </button>
+            <button type="button" className="unified-rail-btn" onClick={() => setGearOpen(true)}>
+              <span>Gear &amp; Spells</span>
+              <span className="badge">{store.resolvedSheet.attunementCount}/3</span>
+            </button>
+            <button type="button" className="unified-rail-btn" onClick={() => setEncounterBuilderOpen(true)}>
+              <span>Encounter Forge</span>
+            </button>
+            <button type="button" className="unified-rail-btn" onClick={() => setPaletteOpen(true)}>
+              <span>Compendium / PDF</span>
+            </button>
+          </nav>
 
-      <div className="workspace-grid" data-active-tab={mobileTab}>
-        <VitalsColumn
-          sheet={store.resolvedSheet}
-          isDruid={store.rawChar.classes.some((c) => c.className.toLowerCase() === 'druid')}
-          onAdjustHp={store.adjustHp}
-          onSetTempHp={store.setTempHp}
-          onSetExhaustion={store.setExhaustion}
-          onUpdateDeathSaves={store.updateDeathSaves}
-          onRollDeathSave={store.rollDeathSave}
-          onToggleInspiration={store.toggleInspiration}
-          onToggleDefense={store.toggleDefense}
-          onEnterWildShape={store.enterWildShape}
-          onRevertWildShape={store.revertWildShape}
-          onAdjustResource={store.adjustResourcePool}
-          onAddResource={store.addCustomResourcePool}
-          onSetAcOverride={(val) => store.setStatOverride('ac', val)}
-          onRollInitiative={store.rollCharacterInitiative}
-          onToggleCondition={store.toggleCondition}
-          onTakeRest={store.takeRest}
-          onSpendHitDie={store.spendHitDie}
-          onRollCheck={(label, mod) => {
-            const sign = mod >= 0 ? '+' : '';
-            const res = evaluateDiceExpression(`1d20${sign}${mod}`, store.rollMode);
-            store.appendLog(`${label} (${res.mode}): ${res.total}`, res.isCrit ? 'crit' : 'roll');
-          }}
-        />
-
-        <ActionEconomyBoard
-          sheet={store.resolvedSheet}
-          rollMode={store.rollMode}
-          onChangeRollMode={store.setRollMode}
-          onTriggerActivity={store.triggerActivity}
-          onRollInlineExpression={store.rollInlineExpression}
-        />
-
-        <SummonCombatDrawer
-          encounter={store.encounter}
-          encounterList={store.encounterList}
-          partyLevels={store.characterList.map((c) => c.classes.reduce((s, x) => s + x.level, 0))}
-          pendingConcDc={store.pendingConcDc}
-          onSwitchEncounter={store.switchEncounter}
-          onCreateEncounter={store.createEncounter}
-          onDuplicateEncounter={store.duplicateEncounter}
-          onDeleteEncounter={store.deleteEncounter}
-          onAddPartyToEncounter={store.addPartyToEncounter}
-          onOpenBattlemap={() => setBattlemapOpen(true)}
-          onNextTurn={store.stepCombatTurn}
-          onResetEncounter={store.resetEncounter}
-          onAdjustCombatantHp={store.adjustCombatantHp}
-          onSetCombatantInitiative={store.setCombatantInitiative}
-          onToggleCombatantCondition={store.toggleCombatantCondition}
-          onToggleCombatantEconomy={store.toggleCombatantEconomy}
-          onRemoveCombatant={store.removeCombatant}
-          playerView={playerView}
-          onTogglePlayerView={() => setPlayerView((v) => !v)}
-          onRollAllInitiative={store.rollAllInitiative}
-          onInspectCombatant={setInspectedCombatantId}
-          onToggleCombatantHidden={store.toggleCombatantHidden}
-          onSetCombatantSize={store.setCombatantSize}
-          onAdjustLegendary={store.adjustLegendaryActions}
-          onToggleOrRollRecharge={store.toggleOrRollRecharge}
-          onAddTimedEffect={store.addTimedCombatEffect}
-          onTriggerCombatantActivity={store.triggerCombatantActivity}
-          onDropConcentration={store.dropConcentration}
-          onRollConcentrationSave={store.rollConcentrationSave}
-          selectedTargetIds={selectedTargetIds}
-          onToggleTarget={(id) =>
-            setSelectedTargetIds((prev) =>
-              prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-            )
-          }
-          onClearTargets={() => setSelectedTargetIds([])}
-          onTargetAttack={store.targetAttackCombatants}
-          onTargetSave={store.targetSaveCombatants}
-          onOpenEncounterBuilder={() => setEncounterBuilderOpen(true)}
-          onAddMonster={store.addMonsterToEncounter}
-        />
-      </div>
+          <div className="unified-main-with-combat">
+            {unifiedView === 'sheet' && (
+              <div className="unified-sheet-split">
+                {vitalsNode}
+                {actionBoardNode}
+              </div>
+            )}
+            {unifiedView === 'dm' && (
+              <div className="pane" style={{ padding: 14 }}>
+                <DmHubModal isOpen embedded onClose={() => setUnifiedView('sheet')} {...sharedDmHubProps} />
+              </div>
+            )}
+            {unifiedView === 'vtt' && (
+              <div className="pane" style={{ padding: 14 }}>
+                <BattlemapModal isOpen embeddedFull onClose={() => setUnifiedView('sheet')} {...sharedBattlemapProps} />
+              </div>
+            )}
+            {combatDrawerNode}
+          </div>
+        </div>
+      )}
 
       <StatusConsole
         lines={store.consoleLines}
@@ -488,22 +744,24 @@ export function App() {
         onApplyLevelUp={store.applyLevelUpPlan}
       />
 
-      <LiveTableModal
-        isOpen={liveTableOpen}
-        onClose={() => setLiveTableOpen(false)}
-        activeCharacter={store.rawChar}
-        liveStatus={store.liveStatus}
-        onHostLocalRoom={store.hostLocalTable}
-        onJoinLocalRoom={store.joinLocalTable}
-        onCreateWebRtcInvite={store.createWebRtcInvite}
-        onAcceptWebRtcInvite={store.acceptWebRtcInvite}
-        onCompleteWebRtcLink={store.completeWebRtcLink}
-        onDisconnect={store.disconnectLiveTable}
-        onPushEncounter={store.pushEncounterToPeers}
-        onShareCharacterToPeers={store.shareActiveCharacterToPeers}
-        onImportCharacter={store.importSingleCharacter}
-        onLog={store.appendLog}
-      />
+      <Suspense fallback={null}>
+        <LiveTableModal
+          isOpen={liveTableOpen}
+          onClose={() => setLiveTableOpen(false)}
+          activeCharacter={store.rawChar}
+          liveStatus={store.liveStatus}
+          onHostLocalRoom={store.hostLocalTable}
+          onJoinLocalRoom={store.joinLocalTable}
+          onCreateWebRtcInvite={store.createWebRtcInvite}
+          onAcceptWebRtcInvite={store.acceptWebRtcInvite}
+          onCompleteWebRtcLink={store.completeWebRtcLink}
+          onDisconnect={store.disconnectLiveTable}
+          onPushEncounter={store.pushEncounterToPeers}
+          onShareCharacterToPeers={store.shareActiveCharacterToPeers}
+          onImportCharacter={store.importSingleCharacter}
+          onLog={store.appendLog}
+        />
+      </Suspense>
 
       <EquipmentSpellDrawer
         isOpen={gearOpen}
@@ -527,127 +785,42 @@ export function App() {
 
       <BattlemapModal
         isOpen={battlemapOpen}
-        encounter={store.encounter}
-        playerView={playerView}
-        onTogglePlayerView={() => setPlayerView((v) => !v)}
         onClose={() => setBattlemapOpen(false)}
-        onMoveToken={store.moveCombatantToken}
-        onSetMapImage={store.setEncounterMapImage}
-        onAddTemplate={store.addMapTemplate}
-        onClearTemplates={store.clearMapTemplates}
-        onToggleFogCells={store.toggleFogCells}
-        onFillAllFog={store.fillAllFog}
-        onClearAllFog={store.clearAllFog}
-        onSetTerrainCell={store.setTerrainCell}
-        onClearTerrain={store.clearTerrain}
-        onUpdateMapSettings={store.updateEncounterMapSettings}
-        onNextTurn={store.stepCombatTurn}
-        scenes={store.scenes}
-        onSaveScene={store.saveCurrentMapAsScene}
-        onLoadScene={store.loadSceneToEncounter}
-        onDeleteScene={store.deleteScene}
-        onAddSketchStroke={store.addMapSketchStroke}
-        onClearSketches={store.clearMapSketches}
-        activePings={store.activePings}
-        onPing={store.broadcastMapPing}
-        selectedTargetIds={selectedTargetIds}
-        onToggleTarget={(id) =>
-          setSelectedTargetIds((prev) =>
-            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-          )
-        }
-        onSetTokenPortrait={store.setCombatantPortrait}
-        onSetTokenVision={store.setCombatantVision}
-        onOpenPopOutPlayer={() => {
-          window.open('?player=1', 'dnd-forge-player-display', 'width=1280,height=800');
-        }}
+        {...sharedBattlemapProps}
       />
 
       <DmHubModal
         isOpen={dmHubOpen}
         onClose={() => setDmHubOpen(false)}
-        campaign={store.campaign}
-        campaignList={store.campaignList}
-        characterList={store.characterList}
-        activeCharacterName={store.rawChar.name}
-        activeCharacterGp={store.rawChar.currency?.gp ?? 0}
-        encounter={store.encounter}
-        onSwitchCampaign={store.switchCampaign}
-        onCreateCampaign={store.createCampaign}
-        onDeleteCampaign={store.deleteCampaign}
-        onUpsertEntry={store.upsertCampaignEntry}
-        onDeleteEntry={store.deleteCampaignEntry}
-        onAdvanceClock={store.advanceCampaignClock}
-        onAddTimer={store.addClockTimer}
-        onSetWeather={store.setCampaignWeather}
-        onAddPartyLoot={store.addPartyLoot}
-        onDistributeGold={store.distributeGoldToParty}
-        onBuyShopItem={store.buyShopItemForActiveCharacter}
-        onAwardXp={store.awardPartyXp}
-        onMilestoneLevelUp={store.triggerPartyMilestoneLevelUp}
-        onRollExpression={store.rollInlineExpression}
-        activeSharedHandout={store.activeSharedHandout}
-        onShareHandout={store.shareHandoutToPlayers}
-        onHideHandout={store.hideSharedHandout}
-        onSetWorldMapImage={store.setWorldMapImage}
-        onUpsertWorldMapPin={store.upsertWorldMapPin}
-        onDeleteWorldMapPin={store.deleteWorldMapPin}
-        onSpawnImprovEncounter={(enc) => {
-          const allMobs = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities).filter(
-            (e) => e.category === 'monster'
-          );
-          for (const entry of enc.monsters) {
-            const match = allMobs.find((m) => m.name === entry.name);
-            if (match?.monsterMeta) {
-              for (let i = 0; i < entry.count; i++) {
-                store.addMonsterToEncounter(
-                  match.name,
-                  match.monsterMeta.ac,
-                  match.monsterMeta.hp,
-                  match.monsterMeta.dexModifier,
-                  match.activities,
-                  match.monsterMeta.cr,
-                  match.monsterMeta,
-                  match.entries.join(' ')
-                );
-              }
-            }
-          }
-          setDmHubOpen(false);
-        }}
-        onPrintPacket={() => {
-          document.body.classList.add('print-session-mode');
-          const cleanup = () => document.body.classList.remove('print-session-mode');
-          window.addEventListener('afterprint', cleanup, { once: true });
-          window.print();
-          setTimeout(cleanup, 1500);
-        }}
+        {...sharedDmHubProps}
       />
 
-      <EncounterBuilderModal
-        isOpen={encounterBuilderOpen}
-        onClose={() => setEncounterBuilderOpen(false)}
-        partyLevels={store.characterList.map((c) => c.classes.reduce((s, cl) => s + cl.level, 0))}
-        compendiumMonsters={store.compendium.filter((e) => e.category === 'monster')}
-        onSpawnMonsters={(monsters) => {
-          for (const m of monsters) {
-            if (!m.monsterMeta) continue;
-            store.addMonsterToEncounter(
-              m.name,
-              m.monsterMeta.ac,
-              m.monsterMeta.hp,
-              m.monsterMeta.dexModifier,
-              m.activities,
-              m.monsterMeta.cr,
-              m.monsterMeta,
-              m.entries.join(' ')
-            );
-          }
-        }}
-        onCreateCustomMonster={(entity) => {
-          void store.createHomebrewEntity(entity, false);
-        }}
-      />
+      <Suspense fallback={null}>
+        <EncounterBuilderModal
+          isOpen={encounterBuilderOpen}
+          onClose={() => setEncounterBuilderOpen(false)}
+          partyLevels={store.characterList.map((c) => c.classes.reduce((s, cl) => s + cl.level, 0))}
+          compendiumMonsters={store.compendium.filter((e) => e.category === 'monster')}
+          onSpawnMonsters={(monsters) => {
+            for (const m of monsters) {
+              if (!m.monsterMeta) continue;
+              store.addMonsterToEncounter(
+                m.name,
+                m.monsterMeta.ac,
+                m.monsterMeta.hp,
+                m.monsterMeta.dexModifier,
+                m.activities,
+                m.monsterMeta.cr,
+                m.monsterMeta,
+                m.entries.join(' ')
+              );
+            }
+          }}
+          onCreateCustomMonster={(entity) => {
+            void store.createHomebrewEntity(entity, false);
+          }}
+        />
+      </Suspense>
 
       <MonsterStatblockModal
         combatant={inspectedCombatant}
@@ -661,6 +834,8 @@ export function App() {
       <SettingsModal
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
+        uiMode={uiMode}
+        onChangeUiMode={setUiMode}
         onExportBackup={handleExport}
         onExportActiveCharacter={handleExportActiveCharacter}
       />

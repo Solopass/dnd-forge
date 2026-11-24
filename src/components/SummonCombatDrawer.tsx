@@ -232,8 +232,8 @@ export function SummonCombatDrawer({
 
       {!playerView && (
         <div className="card forge-stack">
-          <div className="forge-row-between">
-            <div className="forge-section-label">QUICK ADD SRD OR CUSTOM MONSTER</div>
+          <div className="card-header">
+            <div className="forge-section-label">QUICK ADD &amp; TARGETING</div>
             <button type="button" className="btn btn-primary" onClick={onOpenEncounterBuilder}>
               Builder / Forge
             </button>

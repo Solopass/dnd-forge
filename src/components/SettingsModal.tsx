@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { isSoundEnabled, playTableSound, setSoundEnabled } from '../engine/sound';
+import { applyUiMode, readStoredUiMode, UiMode } from '../engine/ui-mode';
 import { ModalDialog } from './ModalDialog';
 
 type SchemeChoice = 'system' | 'light' | 'dark';
@@ -7,6 +8,8 @@ type SchemeChoice = 'system' | 'light' | 'dark';
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  uiMode?: UiMode;
+  onChangeUiMode?: (mode: UiMode) => void;
   onExportBackup: () => Promise<void>;
   onExportActiveCharacter: () => void;
 }
@@ -32,10 +35,19 @@ function readStoredContrast(): boolean {
 export function SettingsModal({
   isOpen,
   onClose,
+  uiMode,
+  onChangeUiMode,
   onExportBackup,
   onExportActiveCharacter,
 }: SettingsModalProps) {
   const [scheme, setScheme] = useState<SchemeChoice>(readStoredScheme);
+  const [localUiMode, setLocalUiMode] = useState<UiMode>(readStoredUiMode);
+  const effectiveUiMode = uiMode ?? localUiMode;
+  const setUiMode = (next: UiMode) => {
+    setLocalUiMode(next);
+    applyUiMode(next);
+    onChangeUiMode?.(next);
+  };
   const [highContrast, setHighContrast] = useState<boolean>(readStoredContrast);
   const [soundOn, setSoundOn] = useState<boolean>(isSoundEnabled);
   const [systemIsDark, setSystemIsDark] = useState<boolean>(() =>
@@ -98,7 +110,35 @@ export function SettingsModal({
     <ModalDialog isOpen={isOpen} onClose={onClose} title="Appearance, Print & Backup Settings">
       <div className="forge-stack">
         <div className="card forge-stack">
-          <div className="forge-section-label">COLOR THEME</div>
+          <div className="card-header">
+            <div className="forge-section-label">INTERFACE LAYOUT</div>
+            <span className="badge">{effectiveUiMode === 'classic' ? 'D&D Beyond Classic' : 'Unified Command'}</span>
+          </div>
+          <div className="pill-row">
+            <button
+              type="button"
+              className={`pill ${effectiveUiMode === 'classic' ? 'active' : ''}`}
+              onClick={() => setUiMode('classic')}
+            >
+              D&amp;D Beyond Classic (Default)
+            </button>
+            <button
+              type="button"
+              className={`pill ${effectiveUiMode === 'unified' ? 'active' : ''}`}
+              onClick={() => setUiMode('unified')}
+            >
+              Unified Command Studio
+            </button>
+          </div>
+          <div className="forge-muted">
+            Classic mimics the familiar D&amp;D Beyond character sheet with modal DM/VTT tools. Unified embeds DM Studio &amp; Tactical VTT directly in the main canvas with a left workspace rail.
+          </div>
+        </div>
+
+        <div className="card forge-stack">
+          <div className="card-header">
+            <div className="forge-section-label">COLOR THEME &amp; ACCESSIBILITY</div>
+          </div>
           <div className="pill-row">
             <button
               type="button"
@@ -158,7 +198,9 @@ export function SettingsModal({
         </div>
 
         <div className="card forge-stack">
-          <div className="forge-section-label">PRINT &amp; DATA EXPORT</div>
+          <div className="card-header">
+            <div className="forge-section-label">PRINT &amp; DATA EXPORT</div>
+          </div>
           <div className="forge-row" style={{ flexWrap: 'wrap' }}>
             <button
               type="button"

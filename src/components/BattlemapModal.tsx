@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState } from 'react';
 import { getQualitativeHealthLabel, sizeToGridCells } from '../engine/dm-tools';
+import { BUILTIN_MAP_PRESETS } from '../engine/map-presets';
 import { computeVisibleCells } from '../engine/vtt-vision';
+import { EyeIcon } from './Icons';
 import {
   BattlemapScene,
   CombatantNode,
@@ -801,8 +803,10 @@ export function BattlemapModal({
             type="button"
             className={`pill ${playerView ? 'active' : ''}`}
             aria-pressed={playerView}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
             onClick={onTogglePlayerView}
           >
+            <EyeIcon size={13} />
             {playerView ? 'Player View ON' : 'Player View OFF'}
           </button>
           {onOpenPopOutPlayer && (
@@ -881,6 +885,21 @@ export function BattlemapModal({
         <div className="subpanel forge-stack" style={{ padding: 10 }}>
           <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
             <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+              <select
+                aria-label="Load preset battlemap"
+                className="forge-input"
+                value=""
+                onChange={(e) => {
+                  const preset = BUILTIN_MAP_PRESETS.find((p) => p.id === e.target.value);
+                  if (preset) onSetMapImage(preset.dataUrl);
+                }}
+                style={{ padding: '3px 6px', fontSize: 11 }}
+              >
+                <option value="">Preset Maps...</option>
+                {BUILTIN_MAP_PRESETS.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
               <label className="btn" style={{ cursor: 'pointer' }}>
                 Upload Map
                 <input

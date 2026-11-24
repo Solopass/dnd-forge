@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { applyUiMode, readStoredUiMode, UI_MODE_STORAGE_KEY } from '../ui-mode';
+import { BUILTIN_MAP_PRESETS } from '../map-presets';
 
-describe('Dual UI Mode Persistence (Classic vs Unified)', () => {
+describe('Dual UI Mode Persistence & Map Presets', () => {
   it('defaults to classic mode and persists classic/unified toggles safely', () => {
     const store = new Map<string, string>();
     const prevStorage = globalThis.localStorage;
@@ -26,6 +27,14 @@ describe('Dual UI Mode Persistence (Classic vs Unified)', () => {
         configurable: true,
         value: prevStorage,
       });
+    }
+  });
+
+  it('provides built-in SVG data-URI battlemap presets', () => {
+    expect(BUILTIN_MAP_PRESETS).toHaveLength(3);
+    for (const preset of BUILTIN_MAP_PRESETS) {
+      expect(preset.name.length).toBeGreaterThan(2);
+      expect(preset.dataUrl.startsWith('data:image/svg+xml;utf8,')).toBe(true);
     }
   });
 });

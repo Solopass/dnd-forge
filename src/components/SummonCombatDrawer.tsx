@@ -6,6 +6,7 @@ import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
 import { getQualitativeHealthLabel } from '../engine/dm-tools';
 import { evaluateEncounterDifficulty } from '../engine/encounter-math';
 import { ConsoleLine } from '../state/useSheetStore';
+import { DiceIcon } from './Icons';
 import { ModalDialog } from './ModalDialog';
 
 interface SummonDrawerProps {
@@ -44,6 +45,7 @@ interface SummonDrawerProps {
   onTargetAttack: (attackerName: string, targetIds: string[], act: Activity) => void;
   onTargetSave: (attackerName: string, targetIds: string[], act: Activity) => void;
   onOpenEncounterBuilder: () => void;
+  hideBattlemapButton?: boolean;
   onAddMonster: (
     name: string,
     ac: number,
@@ -100,8 +102,11 @@ export function SummonCombatDrawer({
   onTargetAttack,
   onTargetSave,
   onOpenEncounterBuilder,
+  hideBattlemapButton = false,
   onAddMonster,
 }: SummonDrawerProps) {
+  const [showAddCreature, setShowAddCreature] = useState(false);
+  const [showEffectForm, setShowEffectForm] = useState(false);
   const [mobName, setMobName] = useState('');
   const [mobAc, setMobAc] = useState('14');
   const [mobHp, setMobHp] = useState('32');
@@ -217,9 +222,11 @@ export function SummonCombatDrawer({
             >
               {playerView ? 'Player View' : 'DM View'}
             </button>
-            <button type="button" className="btn" onClick={onOpenBattlemap}>
-              Battlemap
-            </button>
+            {!hideBattlemapButton && (
+              <button type="button" className="btn" onClick={onOpenBattlemap}>
+                Battlemap
+              </button>
+            )}
             <button type="button" className="btn" onClick={onResetEncounter} title="Clear monsters/summons and reset to Round 1">
               Reset
             </button>
@@ -233,10 +240,19 @@ export function SummonCombatDrawer({
       {!playerView && (
         <div className="card forge-stack">
           <div className="card-header">
-            <div className="forge-section-label">QUICK ADD &amp; TARGETING</div>
-            <button type="button" className="btn btn-primary" onClick={onOpenEncounterBuilder}>
-              Builder / Forge
-            </button>
+            <div className="forge-section-label">ENCOUNTER CONTROLS</div>
+            <div className="forge-row">
+              <button
+                type="button"
+                className={`pill ${showAddCreature ? 'active' : ''}`}
+                onClick={() => setShowAddCreature((v) => !v)}
+              >
+                {showAddCreature ? 'Hide Add' : '+ Add Creature'}
+              </button>
+              <button type="button" className="btn btn-primary" onClick={onOpenEncounterBuilder}>
+                Builder / Forge
+              </button>
+            </div>
           </div>
           {selectedTargetIds.length > 0 && (
             <div className="subpanel forge-row-between" style={{ padding: '4px 8px' }}>
@@ -252,7 +268,9 @@ export function SummonCombatDrawer({
               </button>
             </div>
           )}
-          <div className="forge-row">
+          {showAddCreature && (
+            <>
+              <div className="forge-row">
             <select
               aria-label="Quick add SRD monster"
               className="forge-input"
@@ -351,6 +369,8 @@ export function SummonCombatDrawer({
               </button>
             </div>
           </div>
+            </>
+          )}
           {encounter.combatants.length <= 1 && (
             <button
               type="button"
@@ -379,8 +399,19 @@ export function SummonCombatDrawer({
       )}
 
       <div className="card forge-stack">
-        <div className="forge-section-label" style={{ color: 'var(--accent-amber)' }}>
-          ACTIVE EFFECTS &amp; ROUND TIMERS ({encounter.activeEffects.length})
+        <div className="forge-row-between">
+          <div className="forge-section-label" style={{ color: 'var(--accent-amber)' }}>
+            ACTIVE EFFECTS &amp; TIMERS ({encounter.activeEffects.length})
+          </div>
+          {!playerView && (
+            <button
+              type="button"
+              className={`pill ${showEffectForm ? 'active' : ''}`}
+              onClick={() => setShowEffectForm((v) => !v)}
+            >
+              {showEffectForm ? 'Hide' : '+ Timer'}
+            </button>
+          )}
         </div>
         {encounter.activeEffects.map((eff) => (
           <div
@@ -414,7 +445,7 @@ export function SummonCombatDrawer({
             )}
           </div>
         ))}
-        {!playerView && (
+        {!playerView && showEffectForm && (
           <div className="forge-row">
             <input
               aria-label="Timed effect name"
@@ -1006,8 +1037,8 @@ export function StatusConsole({
     <footer className="status-console-shell">
       <div className="status-console-bar">
         <form className="forge-row" onSubmit={handleRollSubmit}>
-          <label htmlFor="dice-console-input" className="forge-label">
-            DICE CONSOLE:
+          <label htmlFor="dice-console-input" className="forge-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            <DiceIcon size={14} /> DICE TRAY
           </label>
           <input
             id="dice-console-input"
@@ -1016,9 +1047,9 @@ export function StatusConsole({
             onChange={(e) => setDiceInput(e.target.value)}
             placeholder="2d6+4, 4d6kh3, 1d20+9..."
             className="forge-input tabular"
-            style={{ width: 200, padding: '2px 8px' }}
+            style={{ width: 190, padding: '3px 8px' }}
           />
-          <button type="submit" className="btn btn-primary">
+          <button type="submit" className="btn btn-brand">
             Roll
           </button>
         </form>

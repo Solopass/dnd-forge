@@ -147,40 +147,42 @@ export function VitalsColumn({
           </div>
         </div>
 
-        <div className="stat-strip">
-          <button
-            type="button"
-            className="stat-tile"
-            onClick={() => setInspectAc((v) => !v)}
-            title="Click to inspect AC math or set override"
-          >
-            <span className="stat-tile-label">AC</span>
-            <span className="stat-tile-val tabular">{sheet.ac.final}</span>
-          </button>
-          <button
-            type="button"
-            className="stat-tile"
-            onClick={onRollInitiative}
-            title="Roll Initiative and join Active Combat"
-          >
-            <span className="stat-tile-label">INIT</span>
-            <span className="stat-tile-val tabular">{initSign}{sheet.initiative.final}</span>
-          </button>
-          <div className="stat-tile">
-            <span className="stat-tile-label">SPEED</span>
-            <span className="stat-tile-val tabular">{sheet.speed.final}ft</span>
+        {layoutVariant !== 'classic' && (
+          <div className="stat-strip">
+            <button
+              type="button"
+              className="stat-tile"
+              onClick={() => setInspectAc((v) => !v)}
+              title="Click to inspect AC math or set override"
+            >
+              <span className="stat-tile-label">AC</span>
+              <span className="stat-tile-val tabular">{sheet.ac.final}</span>
+            </button>
+            <button
+              type="button"
+              className="stat-tile"
+              onClick={onRollInitiative}
+              title="Roll Initiative and join Active Combat"
+            >
+              <span className="stat-tile-label">INIT</span>
+              <span className="stat-tile-val tabular">{initSign}{sheet.initiative.final}</span>
+            </button>
+            <div className="stat-tile">
+              <span className="stat-tile-label">SPEED</span>
+              <span className="stat-tile-val tabular">{sheet.speed.final}ft</span>
+            </div>
+            <div className="stat-tile">
+              <span className="stat-tile-label">
+                {sheet.spellcasting.primaryAbility ? 'SPELL DC' : 'PROF'}
+              </span>
+              <span className="stat-tile-val tabular">
+                {sheet.spellcasting.primaryAbility
+                  ? sheet.spellcasting.saveDc.final
+                  : `+${sheet.proficiencyBonus.final}`}
+              </span>
+            </div>
           </div>
-          <div className="stat-tile">
-            <span className="stat-tile-label">
-              {sheet.spellcasting.primaryAbility ? 'SPELL DC' : 'PROF'}
-            </span>
-            <span className="stat-tile-val tabular">
-              {sheet.spellcasting.primaryAbility
-                ? sheet.spellcasting.saveDc.final
-                : `+${sheet.proficiencyBonus.final}`}
-            </span>
-          </div>
-        </div>
+        )}
 
         {inspectAc && (
           <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}>
@@ -535,65 +537,59 @@ export function VitalsColumn({
         )}
       </div>
 
-      <div className="card">
-        <div className="card-header">
-          <div className="forge-section-label">ABILITIES &amp; SAVING THROWS</div>
-          <span className="badge">{layoutVariant === 'classic' ? '5e Sheet' : 'Command'}</span>
-        </div>
-        <div className="ability-grid">
-          {ABILITIES.map((key) => {
-            const ab = sheet.abilities[key];
-            const checkMod = ab.modifier + exhaustionCheckPenalty;
-            const modSign = checkMod >= 0 ? '+' : '';
-            const saveSign = ab.save.final >= 0 ? '+' : '';
-            const isSaveProf = ab.save.modifiers.some((m) => m.id.startsWith('save-prof-'));
-            return (
-              <div
-                key={key}
-                className="ability-tile"
-                style={
-                  layoutVariant === 'classic'
-                    ? { borderColor: isSaveProf ? 'var(--accent-gold)' : 'var(--border-subtle)' }
-                    : undefined
-                }
-              >
-                <div className="ability-tile-head">
-                  <strong>{key}</strong>
-                  <span className="badge tabular" style={{ padding: '0 5px' }}>{ab.score.final}</span>
-                </div>
-                <button
-                  type="button"
-                  className="ability-tile-mod tabular"
-                  style={{ background: 'transparent', border: 0, color: 'inherit', cursor: 'pointer', width: '100%' }}
-                  onClick={() => onRollCheck(`${key.toUpperCase()} Check`, checkMod)}
-                  title={`Roll ${key.toUpperCase()} ability check`}
-                >
-                  {modSign}{checkMod}
-                </button>
-                <div className="ability-tile-actions">
+      {layoutVariant !== 'classic' && (
+        <div className="card">
+          <div className="card-header">
+            <div className="forge-section-label">ABILITIES &amp; SAVING THROWS</div>
+            <span className="badge">Command</span>
+          </div>
+          <div className="ability-grid">
+            {ABILITIES.map((key) => {
+              const ab = sheet.abilities[key];
+              const checkMod = ab.modifier + exhaustionCheckPenalty;
+              const modSign = checkMod >= 0 ? '+' : '';
+              const saveSign = ab.save.final >= 0 ? '+' : '';
+              const isSaveProf = ab.save.modifiers.some((m) => m.id.startsWith('save-prof-'));
+              return (
+                <div key={key} className="ability-tile">
+                  <div className="ability-tile-head">
+                    <strong>{key}</strong>
+                    <span className="badge tabular" style={{ padding: '0 5px' }}>{ab.score.final}</span>
+                  </div>
                   <button
                     type="button"
-                    className="btn tabular"
+                    className="ability-tile-mod tabular"
+                    style={{ background: 'transparent', border: 0, color: 'inherit', cursor: 'pointer', width: '100%' }}
                     onClick={() => onRollCheck(`${key.toUpperCase()} Check`, checkMod)}
                     title={`Roll ${key.toUpperCase()} ability check`}
                   >
-                    Chk
+                    {modSign}{checkMod}
                   </button>
-                  <button
-                    type="button"
-                    className={`btn tabular ${isSaveProf ? 'btn-primary' : ''}`}
-                    onClick={() => onRollCheck(`${key.toUpperCase()} Save`, ab.save.final)}
-                    title={`Roll ${key.toUpperCase()} saving throw`}
-                  >
-                    {isSaveProf ? '★' : ''}
-                    {saveSign}{ab.save.final}
-                  </button>
+                  <div className="ability-tile-actions">
+                    <button
+                      type="button"
+                      className="btn tabular"
+                      onClick={() => onRollCheck(`${key.toUpperCase()} Check`, checkMod)}
+                      title={`Roll ${key.toUpperCase()} ability check`}
+                    >
+                      Chk
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn tabular ${isSaveProf ? 'btn-primary' : ''}`}
+                      onClick={() => onRollCheck(`${key.toUpperCase()} Save`, ab.save.final)}
+                      title={`Roll ${key.toUpperCase()} saving throw`}
+                    >
+                      {isSaveProf ? '★' : ''}
+                      {saveSign}{ab.save.final}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="card">
         <div className="card-header">

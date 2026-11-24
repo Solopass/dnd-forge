@@ -4,13 +4,7 @@ import './styles/layout.css';
 import { useSheetStore } from './state/useSheetStore';
 import { VitalsColumn } from './components/VitalsColumn';
 import { ActionEconomyBoard } from './components/ActionEconomyBoard';
-import {
-  CommandPalette,
-  StatusConsole,
-  SummonCombatDrawer,
-} from './components/SummonCombatDrawer';
-import { CharacterBuilderDrawer } from './components/CharacterBuilderDrawer';
-import { EquipmentSpellDrawer } from './components/EquipmentSpellDrawer';
+import { SummonCombatDrawer, CommandPalette, StatusConsole } from './components/SummonCombatDrawer';
 import { NewCharacterModal } from './components/NewCharacterModal';
 import { BattlemapModal } from './components/BattlemapModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -18,6 +12,23 @@ import { LevelUpModal } from './components/LevelUpModal';
 import { DmHubModal } from './components/DmHubModal';
 import { MonsterStatblockModal } from './components/MonsterStatblockModal';
 import { ToastStack } from './components/ToastStack';
+
+const CharacterBuilderDrawer = lazy(() =>
+  import('./components/CharacterBuilderDrawer').then((m) => ({ default: m.CharacterBuilderDrawer }))
+);
+const EquipmentSpellDrawer = lazy(() =>
+  import('./components/EquipmentSpellDrawer').then((m) => ({ default: m.EquipmentSpellDrawer }))
+);
+import {
+  BackpackIcon,
+  BookIcon,
+  MapIcon,
+  RedoIcon,
+  SettingsIcon,
+  ShieldIcon,
+  SwordsIcon,
+  UndoIcon,
+} from './components/Icons';
 
 const LiveTableModal = lazy(() =>
   import('./components/LiveTableModal').then((m) => ({ default: m.LiveTableModal }))
@@ -148,6 +159,33 @@ const SEED_CHARACTER: RawCharacterState = {
         },
       ],
       entries: ['You call forth the spirit of a construct.'],
+    },
+    {
+      id: 'feat-arcane-armor',
+      name: 'Arcane Armor (Guardian)',
+      source: 'TCE',
+      ruleset: '2014',
+      category: 'feature',
+      activities: [],
+      entries: ['Your armor removes STR requirements, serves as a spellcasting focus, and deploys Thunder Gauntlets.'],
+    },
+    {
+      id: 'feat-extra-attack',
+      name: 'Extra Attack',
+      source: 'PHB',
+      ruleset: '2014',
+      category: 'feature',
+      activities: [],
+      entries: ['You can attack twice, rather than once, whenever you take the Attack action on your turn.'],
+    },
+    {
+      id: 'feat-flash-of-genius',
+      name: 'Flash of Genius',
+      source: 'TCE',
+      ruleset: '2014',
+      category: 'feature',
+      activities: [],
+      entries: ['Reaction: Add your INT modifier (+5) to an ability check or saving throw within 30 ft.'],
     },
   ],
   overrides: {},
@@ -352,6 +390,7 @@ export function App() {
       onTargetAttack={store.targetAttackCombatants}
       onTargetSave={store.targetSaveCombatants}
       onOpenEncounterBuilder={() => setEncounterBuilderOpen(true)}
+      hideBattlemapButton={uiMode === 'unified' && unifiedView === 'vtt'}
       onAddMonster={store.addMonsterToEncounter}
     />
   );
@@ -532,7 +571,7 @@ export function App() {
             title="Undo (Ctrl+Z)"
             aria-label="Undo"
           >
-            ↶
+            <UndoIcon />
           </button>
           <button
             type="button"
@@ -542,10 +581,10 @@ export function App() {
             title="Redo (Ctrl+Y)"
             aria-label="Redo"
           >
-            ↷
+            <RedoIcon />
           </button>
-          <button type="button" className="btn" onClick={() => setSettingsOpen(true)}>
-            Settings
+          <button type="button" className="btn" onClick={() => setSettingsOpen(true)} title="Settings & Theme">
+            <SettingsIcon />
           </button>
         </div>
       </header>
@@ -586,6 +625,78 @@ export function App() {
             >
               Combat Rail {showClassicCombat ? 'ON' : 'OFF'}
             </button>
+          </div>
+        </div>
+      )}
+
+      {uiMode === 'classic' && (
+        <div className="beyond-ability-bar" aria-label="Ability scores and combat vitals">
+          <div className="beyond-ability-strip">
+            {(['str', 'dex', 'con', 'int', 'wis', 'cha'] as const).map((key) => {
+              const ab = store.resolvedSheet.abilities[key];
+              const modSign = ab.modifier >= 0 ? '+' : '';
+              const saveSign = ab.save.final >= 0 ? '+' : '';
+              const isSaveProf = ab.save.modifiers.some((m) => m.id.startsWith('save-prof-'));
+              return (
+                <div
+                  key={key}
+                  className="ability-tile"
+                  style={{ borderColor: isSaveProf ? 'var(--accent-gold)' : 'var(--border-subtle)' }}
+                >
+                  <div className="ability-tile-head">
+                    <strong>{key}</strong>
+                    <span className="badge tabular" style={{ padding: '0 4px' }}>{ab.score.final}</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="ability-tile-mod tabular"
+                    style={{ background: 'transparent', border: 0, color: 'inherit', cursor: 'pointer', width: '100%' }}
+                    onClick={() => {
+                      const s = ab.modifier >= 0 ? '+' : '';
+                      const res = evaluateDiceExpression(`1d20${s}${ab.modifier}`, store.rollMode);
+                      store.appendLog(`${key.toUpperCase()} Check (${res.mode}): ${res.total}`, res.isCrit ? 'crit' : 'roll');
+                    }}
+                  >
+                    {modSign}{ab.modifier}
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn tabular ${isSaveProf ? 'btn-primary' : ''}`}
+                    style={{ width: '100%', padding: '1px 4px', fontSize: 10 }}
+                    onClick={() => {
+                      const s = ab.save.final >= 0 ? '+' : '';
+                      const res = evaluateDiceExpression(`1d20${s}${ab.save.final}`, store.rollMode);
+                      store.appendLog(`${key.toUpperCase()} Save (${res.mode}): ${res.total}`, res.isCrit ? 'crit' : 'roll');
+                    }}
+                  >
+                    {isSaveProf ? '★ ' : 'Sv '}
+                    {saveSign}{ab.save.final}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          <div className="beyond-combat-strip">
+            <div className="beyond-stat-box beyond-stat-shield">
+              <span className="stat-tile-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                <ShieldIcon size={11} /> AC
+              </span>
+              <span className="stat-tile-val tabular">{store.resolvedSheet.ac.final}</span>
+            </div>
+            <button type="button" className="beyond-stat-box" onClick={store.rollCharacterInitiative} style={{ cursor: 'pointer' }}>
+              <span className="stat-tile-label">INIT</span>
+              <span className="stat-tile-val tabular">
+                {store.resolvedSheet.initiative.final >= 0 ? `+${store.resolvedSheet.initiative.final}` : store.resolvedSheet.initiative.final}
+              </span>
+            </button>
+            <div className="beyond-stat-box">
+              <span className="stat-tile-label">SPEED</span>
+              <span className="stat-tile-val tabular">{store.resolvedSheet.speed.final}ft</span>
+            </div>
+            <div className="beyond-stat-box">
+              <span className="stat-tile-label">PROF</span>
+              <span className="stat-tile-val tabular">+{store.resolvedSheet.proficiencyBonus.final}</span>
+            </div>
           </div>
         </div>
       )}
@@ -645,7 +756,7 @@ export function App() {
               className={`unified-rail-btn ${unifiedView === 'sheet' ? 'active' : ''}`}
               onClick={() => setUnifiedView('sheet')}
             >
-              <span>Play Sheet</span>
+              <span className="forge-row" style={{ gap: 6 }}><SwordsIcon size={14} /> Play Sheet</span>
               <span className="badge">Lvl {charLevel}</span>
             </button>
             <button
@@ -653,7 +764,7 @@ export function App() {
               className={`unified-rail-btn ${unifiedView === 'dm' ? 'active' : ''}`}
               onClick={() => setUnifiedView('dm')}
             >
-              <span>DM Studio</span>
+              <span className="forge-row" style={{ gap: 6 }}><BookIcon size={14} /> DM Studio</span>
               <span className="badge">{store.campaign.entries.length}</span>
             </button>
             <button
@@ -661,7 +772,7 @@ export function App() {
               className={`unified-rail-btn ${unifiedView === 'vtt' ? 'active' : ''}`}
               onClick={() => setUnifiedView('vtt')}
             >
-              <span>Tactical VTT</span>
+              <span className="forge-row" style={{ gap: 6 }}><MapIcon size={14} /> Tactical VTT</span>
               <span className="badge">Rnd {store.encounter.round}</span>
             </button>
             <hr style={{ width: '100%', border: 0, borderTop: '1px solid var(--border-subtle)', margin: '4px 0' }} />
@@ -669,7 +780,7 @@ export function App() {
               <span>Build &amp; Stats</span>
             </button>
             <button type="button" className="unified-rail-btn" onClick={() => setGearOpen(true)}>
-              <span>Gear &amp; Spells</span>
+              <span className="forge-row" style={{ gap: 6 }}><BackpackIcon size={14} /> Gear &amp; Spells</span>
               <span className="badge">{store.resolvedSheet.attunementCount}/3</span>
             </button>
             <button type="button" className="unified-rail-btn" onClick={() => setEncounterBuilderOpen(true)}>
@@ -723,18 +834,20 @@ export function App() {
         onImportJsonText={store.importJsonFilePayload}
       />
 
-      <CharacterBuilderDrawer
-        isOpen={builderOpen}
-        character={store.rawChar}
-        canDelete={store.characterList.length > 1}
-        onClose={() => setBuilderOpen(false)}
-        onUpdateCharacter={store.persistCharacter}
-        onApplySubclassGrants={store.applySubclassGrants}
-        onOpenLevelUp={() => setLevelUpOpen(true)}
-        onDuplicateCharacter={store.duplicateCharacter}
-        onDeleteCharacter={() => store.deleteCharacter(store.rawChar.id)}
-        onLog={store.appendLog}
-      />
+      <Suspense fallback={null}>
+        <CharacterBuilderDrawer
+          isOpen={builderOpen}
+          character={store.rawChar}
+          canDelete={store.characterList.length > 1}
+          onClose={() => setBuilderOpen(false)}
+          onUpdateCharacter={store.persistCharacter}
+          onApplySubclassGrants={store.applySubclassGrants}
+          onOpenLevelUp={() => setLevelUpOpen(true)}
+          onDuplicateCharacter={store.duplicateCharacter}
+          onDeleteCharacter={() => store.deleteCharacter(store.rawChar.id)}
+          onLog={store.appendLog}
+        />
+      </Suspense>
 
       <NewCharacterModal
         isOpen={newCharOpen}
@@ -768,25 +881,27 @@ export function App() {
         />
       </Suspense>
 
-      <EquipmentSpellDrawer
-        isOpen={gearOpen}
-        items={store.rawChar.items}
-        attunementCount={store.resolvedSheet.attunementCount}
-        strScore={store.resolvedSheet.abilities.str.score.final}
-        preparedCount={store.resolvedSheet.spellcasting.preparedCount}
-        maxPrepared={store.resolvedSheet.spellcasting.maxPrepared}
-        currency={store.rawChar.currency}
-        notes={store.rawChar.notes}
-        onClose={() => setGearOpen(false)}
-        onToggleEquipped={store.toggleItemEquipped}
-        onTogglePrepared={store.toggleItemPrepared}
-        onToggleAttuned={store.toggleItemAttuned}
-        onUpdateQuantity={store.updateItemQuantity}
-        onRemoveItem={store.removeSheetItem}
-        onUpdateCurrency={store.updateCurrency}
-        onUpdateNotes={store.updateCharacterNotes}
-        onCreateHomebrew={store.createHomebrewEntity}
-      />
+      <Suspense fallback={null}>
+        <EquipmentSpellDrawer
+          isOpen={gearOpen}
+          items={store.rawChar.items}
+          attunementCount={store.resolvedSheet.attunementCount}
+          strScore={store.resolvedSheet.abilities.str.score.final}
+          preparedCount={store.resolvedSheet.spellcasting.preparedCount}
+          maxPrepared={store.resolvedSheet.spellcasting.maxPrepared}
+          currency={store.rawChar.currency}
+          notes={store.rawChar.notes}
+          onClose={() => setGearOpen(false)}
+          onToggleEquipped={store.toggleItemEquipped}
+          onTogglePrepared={store.toggleItemPrepared}
+          onToggleAttuned={store.toggleItemAttuned}
+          onUpdateQuantity={store.updateItemQuantity}
+          onRemoveItem={store.removeSheetItem}
+          onUpdateCurrency={store.updateCurrency}
+          onUpdateNotes={store.updateCharacterNotes}
+          onCreateHomebrew={store.createHomebrewEntity}
+        />
+      </Suspense>
 
       <BattlemapModal
         isOpen={battlemapOpen}

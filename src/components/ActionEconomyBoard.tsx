@@ -4,6 +4,7 @@ import { ActionEconomy, RollMode } from '../types/core';
 import { UiMode } from '../engine/ui-mode';
 import { parse5eToolsEntries } from '../engine/tags';
 import { scaleDiceForUpcast } from '../engine/dice';
+import { BackpackIcon, ScrollIcon, SparklesIcon, SwordsIcon } from './Icons';
 
 interface ActionEconomyBoardProps {
   sheet: ResolvedCharacterSheet;
@@ -135,21 +136,23 @@ export function ActionEconomyBoard({
         <div className="beyond-tabs" role="tablist" aria-label="Character sheet sections">
           {(
             [
-              ['actions', 'Actions'],
-              ['spells', 'Spells'],
-              ['inventory', 'Inventory'],
-              ['features', 'Features & Notes'],
+              ['actions', 'Actions', <SwordsIcon key="i-a" size={13} />],
+              ['spells', 'Spells', <SparklesIcon key="i-s" size={13} />],
+              ['inventory', 'Inventory', <BackpackIcon key="i-i" size={13} />],
+              ['features', 'Features & Notes', <ScrollIcon key="i-f" size={13} />],
             ] as const
-          ).map(([key, label]) => (
+          ).map(([key, label, icon]) => (
             <button
               key={key}
               type="button"
               role="tab"
               aria-selected={beyondTab === key}
               className={`beyond-tab ${beyondTab === key ? 'active' : ''}`}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
               onClick={() => setBeyondTab(key)}
             >
-              {label}
+              {icon}
+              <span>{label}</span>
             </button>
           ))}
         </div>

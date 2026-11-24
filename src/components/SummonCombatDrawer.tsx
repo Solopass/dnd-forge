@@ -290,62 +290,91 @@ export function SummonCombatDrawer({
               +Spawn
             </button>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 44px 48px 46px auto', gap: 4 }}>
+          <div className="forge-stack" style={{ gap: 6 }}>
             <input
               aria-label="Enemy or NPC name"
               type="text"
-              placeholder="Custom NPC/Monster"
+              placeholder="Custom NPC/Monster name..."
               value={mobName}
               onChange={(e) => setMobName(e.target.value)}
               className="forge-input"
-              style={{ padding: '3px 6px' }}
+              style={{ padding: '4px 8px', width: '100%' }}
             />
-            <input
-              aria-label="Enemy AC"
-              type="number"
-              title="AC"
-              value={mobAc}
-              onChange={(e) => setMobAc(e.target.value)}
-              className="forge-input tabular"
-              style={{ padding: '3px 4px' }}
-            />
-            <input
-              aria-label="Enemy HP"
-              type="number"
-              title="HP"
-              value={mobHp}
-              onChange={(e) => setMobHp(e.target.value)}
-              className="forge-input tabular"
-              style={{ padding: '3px 4px' }}
-            />
-            <input
-              aria-label="Enemy CR"
-              type="text"
-              title="CR (e.g. 1/4, 3)"
-              value={mobCr}
-              onChange={(e) => setMobCr(e.target.value)}
-              className="forge-input tabular"
-              style={{ padding: '3px 4px' }}
-            />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 4 }}>
+              <input
+                aria-label="Enemy AC"
+                type="number"
+                title="AC"
+                placeholder="AC"
+                value={mobAc}
+                onChange={(e) => setMobAc(e.target.value)}
+                className="forge-input tabular"
+                style={{ padding: '3px 6px', minWidth: 0 }}
+              />
+              <input
+                aria-label="Enemy HP"
+                type="number"
+                title="HP"
+                placeholder="HP"
+                value={mobHp}
+                onChange={(e) => setMobHp(e.target.value)}
+                className="forge-input tabular"
+                style={{ padding: '3px 6px', minWidth: 0 }}
+              />
+              <input
+                aria-label="Enemy CR"
+                type="text"
+                title="CR (e.g. 1/4, 3)"
+                placeholder="CR"
+                value={mobCr}
+                onChange={(e) => setMobCr(e.target.value)}
+                className="forge-input tabular"
+                style={{ padding: '3px 6px', minWidth: 0 }}
+              />
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  if (!mobName.trim()) return;
+                  onAddMonster(
+                    mobName.trim(),
+                    Number.parseInt(mobAc, 10) || 12,
+                    Number.parseInt(mobHp, 10) || 20,
+                    1,
+                    undefined,
+                    mobCr.trim() || '1'
+                  );
+                  setMobName('');
+                }}
+              >
+                +Add
+              </button>
+            </div>
+          </div>
+          {encounter.combatants.length <= 1 && (
             <button
               type="button"
               className="btn"
               onClick={() => {
-                if (!mobName.trim()) return;
-                onAddMonster(
-                  mobName.trim(),
-                  Number.parseInt(mobAc, 10) || 12,
-                  Number.parseInt(mobHp, 10) || 20,
-                  1,
-                  undefined,
-                  mobCr.trim() || '1'
-                );
-                setMobName('');
+                const goblin = srdMonsters.find((m) => m.name === 'Goblin');
+                if (!goblin?.monsterMeta) return;
+                for (let i = 0; i < 2; i++) {
+                  onAddMonster(
+                    goblin.name,
+                    goblin.monsterMeta.ac,
+                    goblin.monsterMeta.hp,
+                    goblin.monsterMeta.dexModifier,
+                    goblin.activities,
+                    goblin.monsterMeta.cr,
+                    goblin.monsterMeta,
+                    goblin.entries.join(' ')
+                  );
+                }
               }}
             >
-              +Add
+              Quick Demo: Spawn 2× Goblin
             </button>
-          </div>
+          )}
         </div>
       )}
 
@@ -501,16 +530,6 @@ export function SummonCombatDrawer({
                 <span className="tabular forge-muted">
                   • AC {hideHp ? '?' : node.ac}
                 </span>
-                {!playerView && (
-                  <button
-                    type="button"
-                    className={`pill ${selectedTargetIds.includes(node.id) ? 'active' : ''}`}
-                    onClick={() => onToggleTarget(node.id)}
-                    title="Select as attack/spell target"
-                  >
-                    {selectedTargetIds.includes(node.id) ? 'Targeted' : 'Target'}
-                  </button>
-                )}
                 {!playerView && node.kind !== 'pc' && (
                   <button
                     type="button"

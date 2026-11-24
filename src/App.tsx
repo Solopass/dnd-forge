@@ -298,11 +298,14 @@ export function App() {
   const actionBoardNode = (
     <ActionEconomyBoard
       sheet={store.resolvedSheet}
+      rawChar={store.rawChar}
       layoutVariant={uiMode}
       rollMode={store.rollMode}
       onChangeRollMode={store.setRollMode}
       onTriggerActivity={store.triggerActivity}
       onRollInlineExpression={store.rollInlineExpression}
+      onToggleEquipped={store.toggleItemEquipped}
+      onToggleAttuned={store.toggleItemAttuned}
       onOpenGearDrawer={() => setGearOpen(true)}
       onOpenBuilderDrawer={() => setBuilderOpen(true)}
     />
@@ -527,8 +530,9 @@ export function App() {
             disabled={!store.canUndo}
             onClick={store.undo}
             title="Undo (Ctrl+Z)"
+            aria-label="Undo"
           >
-            Undo
+            ↶
           </button>
           <button
             type="button"
@@ -536,8 +540,9 @@ export function App() {
             disabled={!store.canRedo}
             onClick={store.redo}
             title="Redo (Ctrl+Y)"
+            aria-label="Redo"
           >
-            Redo
+            ↷
           </button>
           <button type="button" className="btn" onClick={() => setSettingsOpen(true)}>
             Settings

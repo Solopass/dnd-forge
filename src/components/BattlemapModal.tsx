@@ -730,30 +730,72 @@ export function BattlemapModal({
         </div>
 
         <div className="toolbar-group">
-          {(
-            [
-              ['sphere', 'Sphere 20ft'],
-              ['cone', 'Cone 15ft'],
-              ['line', 'Line 30ft'],
-              ['cube', 'Cube 20ft'],
-              ['fog_paint', 'Fog Paint'],
-              ['fog_reveal', 'Fog Reveal'],
-              ['wall', 'Wall'],
-              ['difficult', 'Difficult'],
-              ['erase_terrain', 'Erase'],
-            ] as const
-          ).map(([m, label]) => (
-            <button
-              key={m}
-              type="button"
-              className={`pill ${mode === m ? 'active' : ''}`}
-              onClick={() => setMode(m)}
-            >
-              {label}
+          <select
+            aria-label="AoE template tool"
+            className="forge-input"
+            value={mode === 'sphere' || mode === 'cone' || mode === 'line' || mode === 'cube' ? mode : ''}
+            onChange={(e) => {
+              const v = e.target.value as MapMode | '';
+              if (v) setMode(v);
+            }}
+            style={{ padding: '3px 6px', fontSize: 11 }}
+          >
+            <option value="">AoE Template...</option>
+            <option value="sphere">Sphere 20ft</option>
+            <option value="cone">Cone 15ft</option>
+            <option value="line">Line 30ft</option>
+            <option value="cube">Cube 20ft</option>
+          </select>
+          <select
+            aria-label="Fog and terrain brush"
+            className="forge-input"
+            value={
+              mode === 'fog_paint' || mode === 'fog_reveal' || mode === 'wall' || mode === 'difficult' || mode === 'erase_terrain'
+                ? mode
+                : ''
+            }
+            onChange={(e) => {
+              const v = e.target.value as MapMode | '';
+              if (v) setMode(v);
+            }}
+            style={{ padding: '3px 6px', fontSize: 11 }}
+          >
+            <option value="">Fog / Terrain...</option>
+            <option value="fog_paint">Fog Paint</option>
+            <option value="fog_reveal">Fog Reveal</option>
+            <option value="wall">Wall</option>
+            <option value="difficult">Difficult Terrain</option>
+            <option value="erase_terrain">Erase Terrain</option>
+          </select>
+          <button type="button" className="btn" onClick={onFillAllFog}>Fog All</button>
+          {fogCells.length > 0 && (
+            <button type="button" className="btn" onClick={onClearAllFog}>
+              Clear Fog ({fogCells.length})
             </button>
-          ))}
+          )}
+          {terrainCells.length > 0 && (
+            <button type="button" className="btn" onClick={onClearTerrain}>
+              Clear Terrain ({terrainCells.length})
+            </button>
+          )}
+          {templates.length > 0 && (
+            <button type="button" className="btn" onClick={onClearTemplates}>
+              Clear AoE ({templates.length})
+            </button>
+          )}
+          {sketches.length > 0 && (
+            <button type="button" className="btn" onClick={onClearSketches}>
+              Clear Sketch ({sketches.length})
+            </button>
+          )}
         </div>
 
+        <button type="button" className="btn btn-primary" onClick={onNextTurn}>
+          Next Turn (Rnd {encounter.round})
+        </button>
+      </div>
+
+      <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
         <div className="toolbar-group">
           <button
             type="button"
@@ -765,9 +807,30 @@ export function BattlemapModal({
           </button>
           {onOpenPopOutPlayer && (
             <button type="button" className="btn" onClick={onOpenPopOutPlayer}>
-              Pop-Out Player Screen
+              Pop-Out Screen
             </button>
           )}
+          <button
+            type="button"
+            className={`pill ${dynamicVision ? 'active' : ''}`}
+            aria-pressed={dynamicVision}
+            onClick={() => onUpdateMapSettings({ dynamicVision: !dynamicVision })}
+          >
+            Vision {dynamicVision ? 'ON' : 'OFF'}
+          </button>
+          {dynamicVision && (
+            <button
+              type="button"
+              className={`pill ${autoRevealFog ? 'active' : ''}`}
+              aria-pressed={autoRevealFog}
+              onClick={() => onUpdateMapSettings({ autoRevealFog: !autoRevealFog })}
+            >
+              Auto-Reveal {autoRevealFog ? 'ON' : 'OFF'}
+            </button>
+          )}
+        </div>
+
+        <div className="toolbar-group">
           <button
             type="button"
             className="btn"
@@ -775,175 +838,130 @@ export function BattlemapModal({
           >
             Zoom -
           </button>
-            <span className="badge tabular">{Math.round(zoom * 100)}%</span>
-            <button
-              type="button"
-              className="btn"
-              onClick={() => setZoom((z) => Math.min(2, Number((z + 0.25).toFixed(2))))}
-            >
-              Zoom +
-            </button>
-            <button
-              type="button"
-              className={`btn ${showCalibrate ? 'btn-primary' : ''}`}
-              onClick={() => setShowCalibrate((s) => !s)}
-            >
-              Calibrate Grid
-            </button>
-          </div>
-        </div>
-
-        <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
-          <div className="forge-row" style={{ flexWrap: 'wrap' }}>
-            <label className="btn" style={{ cursor: 'pointer' }}>
-              Upload Map
-              <input
-                type="file"
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={(e) => {
-                  handleFileDataUrl(e.target.files?.[0], (url) => onSetMapImage(url));
-                  e.target.value = '';
-                }}
-              />
-            </label>
-            {encounter.map?.imageDataUrl && (
-              <button type="button" className="btn" onClick={() => onSetMapImage(undefined)}>
-                Clear Map
-              </button>
-            )}
-            <button type="button" className="btn" onClick={onFillAllFog}>
-              Fog All
-            </button>
-            {fogCells.length > 0 && (
-              <button type="button" className="btn" onClick={onClearAllFog}>
-                Clear Fog ({fogCells.length})
-              </button>
-            )}
-            {terrainCells.length > 0 && (
-              <button type="button" className="btn" onClick={onClearTerrain}>
-                Clear Terrain ({terrainCells.length})
-              </button>
-            )}
-            {templates.length > 0 && (
-              <button type="button" className="btn" onClick={onClearTemplates}>
-                Clear AoE ({templates.length})
-              </button>
-            )}
-            {sketches.length > 0 && (
-              <button type="button" className="btn" onClick={onClearSketches}>
-                Clear Sketch ({sketches.length})
-              </button>
-            )}
-            <button
-              type="button"
-              className={`pill ${dynamicVision ? 'active' : ''}`}
-              aria-pressed={dynamicVision}
-              onClick={() => onUpdateMapSettings({ dynamicVision: !dynamicVision })}
-            >
-              Dynamic Vision {dynamicVision ? 'ON' : 'OFF'}
-            </button>
-            {dynamicVision && (
-              <button
-                type="button"
-                className={`pill ${autoRevealFog ? 'active' : ''}`}
-                aria-pressed={autoRevealFog}
-                onClick={() => onUpdateMapSettings({ autoRevealFog: !autoRevealFog })}
-              >
-                Auto-Reveal Fog {autoRevealFog ? 'ON' : 'OFF'}
-              </button>
-            )}
-          </div>
-
-          <button type="button" className="btn btn-primary" onClick={onNextTurn}>
-            Next Turn (Rnd {encounter.round})
+          <span className="badge tabular">{Math.round(zoom * 100)}%</span>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => setZoom((z) => Math.min(2, Number((z + 0.25).toFixed(2))))}
+          >
+            Zoom +
+          </button>
+          <button
+            type="button"
+            className={`btn ${showCalibrate ? 'btn-primary' : ''}`}
+            onClick={() => setShowCalibrate((s) => !s)}
+          >
+            Map, Scenes &amp; Grid
           </button>
         </div>
 
-        {/* Scene Library & Sketch Color Bar */}
-        <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
-          {onSaveScene && (
-            <div className="forge-row" style={{ flexWrap: 'wrap' }}>
-              <input
-                type="text"
-                className="input"
-                style={{ width: 140 }}
-                placeholder="Scene name..."
-                value={sceneNameInput}
-                onChange={(e) => setSceneNameInput(e.target.value)}
-              />
+        {mode === 'sketch' && (
+          <div className="forge-row">
+            <span className="muted-label">Ink</span>
+            {SKETCH_COLORS.map((col) => (
               <button
+                key={col}
                 type="button"
+                aria-label={`Sketch color ${col}`}
                 className="btn"
-                onClick={() => {
-                  onSaveScene(sceneNameInput || encounter.name || 'Saved Scene');
-                  setSceneNameInput('');
+                style={{
+                  minWidth: 26,
+                  padding: '2px 6px',
+                  background: col,
+                  border: sketchColor === col ? '2px solid #f0f6fc' : '1px solid #30363d',
                 }}
-              >
-                Save Scene
-              </button>
-              {scenes.length > 0 && (
-                <>
-                  <select
-                    className="select"
-                    aria-label="Select battlemap scene"
-                    value={selectedSceneId}
-                    onChange={(e) => setSelectedSceneId(e.target.value)}
-                  >
-                    <option value="">Scenes ({scenes.length})...</option>
-                    {scenes.map((sc) => (
-                      <option key={sc.id} value={sc.id}>
-                        {sc.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    className="btn"
-                    disabled={!selectedSceneId}
-                    onClick={() => selectedSceneId && onLoadScene?.(selectedSceneId)}
-                  >
-                    Load Scene
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-danger"
-                    disabled={!selectedSceneId}
-                    onClick={() => {
-                      if (selectedSceneId) {
-                        onDeleteScene?.(selectedSceneId);
-                        setSelectedSceneId('');
-                      }
-                    }}
-                  >
-                    Del Scene
-                  </button>
-                </>
+                onClick={() => setSketchColor(col)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {showCalibrate && (
+        <div className="subpanel forge-stack" style={{ padding: 10 }}>
+          <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+            <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+              <label className="btn" style={{ cursor: 'pointer' }}>
+                Upload Map
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    handleFileDataUrl(e.target.files?.[0], (url) => onSetMapImage(url));
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+              {encounter.map?.imageDataUrl && (
+                <button type="button" className="btn" onClick={() => onSetMapImage(undefined)}>
+                  Clear Map
+                </button>
               )}
             </div>
-          )}
-
-          {mode === 'sketch' && (
-            <div className="forge-row">
-              <span className="muted-label">Ink</span>
-              {SKETCH_COLORS.map((col) => (
-                <button
-                  key={col}
-                  type="button"
-                  aria-label={`Sketch color ${col}`}
-                  className="btn"
-                  style={{
-                    minWidth: 26,
-                    padding: '2px 6px',
-                    background: col,
-                    border: sketchColor === col ? '2px solid #f0f6fc' : '1px solid #30363d',
-                  }}
-                  onClick={() => setSketchColor(col)}
+            {onSaveScene && (
+              <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+                <input
+                  type="text"
+                  className="input"
+                  style={{ width: 140 }}
+                  placeholder="Scene name..."
+                  value={sceneNameInput}
+                  onChange={(e) => setSceneNameInput(e.target.value)}
                 />
-              ))}
-            </div>
-          )}
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => {
+                    onSaveScene(sceneNameInput || encounter.name || 'Saved Scene');
+                    setSceneNameInput('');
+                  }}
+                >
+                  Save Scene
+                </button>
+                {scenes.length > 0 && (
+                  <>
+                    <select
+                      className="select"
+                      aria-label="Select battlemap scene"
+                      value={selectedSceneId}
+                      onChange={(e) => setSelectedSceneId(e.target.value)}
+                    >
+                      <option value="">Scenes ({scenes.length})...</option>
+                      {scenes.map((sc) => (
+                        <option key={sc.id} value={sc.id}>
+                          {sc.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="btn"
+                      disabled={!selectedSceneId}
+                      onClick={() => selectedSceneId && onLoadScene?.(selectedSceneId)}
+                    >
+                      Load Scene
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-danger"
+                      disabled={!selectedSceneId}
+                      onClick={() => {
+                        if (selectedSceneId) {
+                          onDeleteScene?.(selectedSceneId);
+                          setSelectedSceneId('');
+                        }
+                      }}
+                    >
+                      Del Scene
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
+      )}
 
         {/* Selected Token Portrait & Vision Editor */}
         {selectedToken && !playerView && (

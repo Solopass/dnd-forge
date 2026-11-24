@@ -82,6 +82,7 @@ export function VitalsColumn({
   const [defenseType, setDefenseType] = useState('fire');
   const [newPoolName, setNewPoolName] = useState('');
   const [newPoolMax, setNewPoolMax] = useState('3');
+  const [showHpExtras, setShowHpExtras] = useState(false);
 
   const initSign = sheet.initiative.final >= 0 ? '+' : '';
   const hpPct = sheet.hp.max > 0 ? Math.max(0, Math.min(100, (sheet.hp.current / sheet.hp.max) * 100)) : 0;
@@ -105,7 +106,7 @@ export function VitalsColumn({
   return (
     <aside className="pane" aria-label="Character Vitals">
       <div className="card">
-        <div className="forge-row-between">
+        <div className="forge-row-between" style={{ gap: 6, flexWrap: 'wrap' }}>
           <div>
             <strong>{sheet.name}</strong>
             <div className="forge-muted" style={{ fontSize: 11 }}>
@@ -113,15 +114,15 @@ export function VitalsColumn({
               {sheet.critThreshold < 20 ? ` • Crit ${sheet.critThreshold}–20` : ''}
             </div>
           </div>
-          <div className="forge-row">
+          <div className="forge-row" style={{ gap: 4 }}>
             <button
               type="button"
-              className={`pill ${sheet.inspiration ? 'active' : ''}`}
+              className={`pill forge-nowrap ${sheet.inspiration ? 'active' : ''}`}
               aria-pressed={sheet.inspiration}
               onClick={onToggleInspiration}
               title="Toggle Heroic Inspiration"
             >
-              {sheet.inspiration ? '★ Inspired' : '☆ Insp'}
+              {sheet.inspiration ? '★ Insp' : '☆ Insp'}
             </button>
             <span className="forge-muted" style={{ fontSize: 11 }}>Exh</span>
             <button
@@ -248,46 +249,59 @@ export function VitalsColumn({
           <button type="button" className="btn btn-danger" onClick={() => applyCustomHp(-1)}>
             Dmg
           </button>
-          <button
-            type="button"
-            className="btn"
-            title="Apply half damage (Resistance)"
-            onClick={() => applyCustomHp(-1, 0.5)}
-          >
-            ÷2
-          </button>
-          <button
-            type="button"
-            className="btn"
-            title="Apply double damage (Vulnerability)"
-            onClick={() => applyCustomHp(-1, 2)}
-          >
-            ×2
-          </button>
           <button type="button" className="btn btn-primary" onClick={() => applyCustomHp(1)}>
             Heal
           </button>
-          <input
-            aria-label="Temporary HP"
-            type="number"
-            placeholder="Temp"
-            value={tempHpInput}
-            onChange={(e) => setTempHpInput(e.target.value)}
-            className="forge-input tabular"
-            style={{ width: 64, padding: '3px 6px' }}
-          />
           <button
             type="button"
-            className="btn"
-            onClick={() => {
-              const val = Number.parseInt(tempHpInput, 10);
-              if (!Number.isNaN(val)) onSetTempHp(val);
-              setTempHpInput('');
-            }}
+            className={`pill ${showHpExtras ? 'active' : ''}`}
+            onClick={() => setShowHpExtras((v) => !v)}
+            title="Half/Double damage and Temp HP"
           >
-            Temp
+            Temp / ½×2
           </button>
         </div>
+
+        {showHpExtras && (
+          <div className="forge-row" style={{ marginTop: 6, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn"
+              title="Apply half damage (Resistance)"
+              onClick={() => applyCustomHp(-1, 0.5)}
+            >
+              ÷2 Res
+            </button>
+            <button
+              type="button"
+              className="btn"
+              title="Apply double damage (Vulnerability)"
+              onClick={() => applyCustomHp(-1, 2)}
+            >
+              ×2 Vuln
+            </button>
+            <input
+              aria-label="Temporary HP"
+              type="number"
+              placeholder="Temp"
+              value={tempHpInput}
+              onChange={(e) => setTempHpInput(e.target.value)}
+              className="forge-input tabular"
+              style={{ width: 64, padding: '3px 6px' }}
+            />
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                const val = Number.parseInt(tempHpInput, 10);
+                if (!Number.isNaN(val)) onSetTempHp(val);
+                setTempHpInput('');
+              }}
+            >
+              Set Temp
+            </button>
+          </div>
+        )}
 
         {sheet.hp.current === 0 && (
           <div style={{ marginTop: 8, padding: 6, background: 'rgba(248, 81, 73, 0.12)', borderRadius: 4 }}>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ResolvedActivity, ResolvedCharacterSheet } from '../types/character';
+import { RawCharacterState, ResolvedActivity, ResolvedCharacterSheet } from '../types/character';
 import { ActionEconomy, RollMode } from '../types/core';
 import { UiMode } from '../engine/ui-mode';
 import { parse5eToolsEntries } from '../engine/tags';
@@ -7,11 +7,14 @@ import { scaleDiceForUpcast } from '../engine/dice';
 
 interface ActionEconomyBoardProps {
   sheet: ResolvedCharacterSheet;
+  rawChar?: RawCharacterState;
   layoutVariant?: UiMode;
   rollMode: RollMode;
   onChangeRollMode: (mode: RollMode) => void;
   onTriggerActivity: (activity: ResolvedActivity, slotLevelOverride?: number, asRitual?: boolean) => void;
   onRollInlineExpression: (label: string, expression: string) => void;
+  onToggleEquipped?: (itemId: string) => void;
+  onToggleAttuned?: (itemId: string) => void;
   onOpenGearDrawer?: () => void;
   onOpenBuilderDrawer?: () => void;
 }
@@ -60,11 +63,14 @@ function formatActivityActionLabel(act: ResolvedActivity, overrideDamage?: strin
 
 export function ActionEconomyBoard({
   sheet,
+  rawChar,
   layoutVariant = 'classic',
   rollMode,
   onChangeRollMode,
   onTriggerActivity,
   onRollInlineExpression,
+  onToggleEquipped,
+  onToggleAttuned,
   onOpenGearDrawer,
   onOpenBuilderDrawer,
 }: ActionEconomyBoardProps) {
@@ -236,47 +242,125 @@ export function ActionEconomyBoard({
         </section>
       )}
 
-      {layoutVariant === 'classic' && beyondTab === 'inventory' && (
-        <section className="card forge-stack">
-          <div className="card-header">
-            <div className="forge-section-label">EQUIPMENT &amp; ATTUNEMENT</div>
-            {onOpenGearDrawer && (
-              <button type="button" className="btn btn-primary" onClick={onOpenGearDrawer}>
-                Manage Gear &amp; Currency
-              </button>
+      {layoutVariant === 'classic' && beyondTab === 'inventory' && (() => {
+        const gearItems = (rawChar?.items ?? []).filter(
+          (i) => i.category === 'weapon' || i.category === 'armor' || i.category === 'shield' || i.category === 'gear'
+        );
+        const cur = rawChar?.currency ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
+        return (
+          <section className="card forge-stack">
+            <div className="card-header">
+              <div className="forge-section-label">EQUIPMENT, CURRENCY &amp; ATTUNEMENT ({gearItems.length})</div>
+              {onOpenGearDrawer && (
+                <button type="button" className="btn btn-primary" onClick={onOpenGearDrawer}>
+                  Manage Gear &amp; Currency
+                </button>
+              )}
+            </div>
+            <div className="pill-row">
+              <span className="badge tabular">Attuned: {sheet.attunementCount} / 3</span>
+              <span className="badge tabular">AC: {sheet.ac.final}</span>
+              <span className="badge tabular">Speed: {sheet.speed.final} ft</span>
+              <span className="badge tabular">
+                Purse: {cur.pp}pp • {cur.gp}gp • {cur.sp}sp • {cur.cp}cp
+              </span>
+            </div>
+            {gearItems.length === 0 ? (
+              <div className="forge-muted">No gear carried yet. Click Manage Gear &amp; Currency to add items.</div>
+            ) : (
+              gearItems.map((item) => (
+                <div key={item.id} className="forge-list-row">
+                  <div>
+                    <strong>{item.name}</strong>{' '}
+                    <span className="badge">{item.category.toUpperCase()}</span>
+                    {(item.quantity ?? 1) > 1 && <span className="badge tabular">×{item.quantity}</span>}
+                    {item.entries[0] && (
+                      <div className="forge-muted" style={{ fontSize: 11 }}>{item.entries[0]}</div>
+                    )}
+                  </div>
+                  <div className="forge-row">
+                    {onToggleEquipped && (
+                      <button
+                        type="button"
+                        className={`pill ${item.equipped ? 'active' : ''}`}
+                        onClick={() => onToggleEquipped(item.id)}
+                      >
+                        {item.equipped ? 'Equipped' : 'Equip'}
+                      </button>
+                    )}
+                    {item.requiresAttunement && onToggleAttuned && (
+                      <button
+                        type="button"
+                        className={`pill ${item.attuned ? 'active' : ''}`}
+                        onClick={() => onToggleAttuned(item.id)}
+                      >
+                        {item.attuned ? 'Attuned' : 'Attune'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))
             )}
-          </div>
-          <div className="pill-row">
-            <span className="badge tabular">Attuned: {sheet.attunementCount} / 3</span>
-            <span className="badge tabular">AC: {sheet.ac.final}</span>
-            <span className="badge tabular">Speed: {sheet.speed.final} ft</span>
-          </div>
-          <div className="forge-muted">
-            Click <strong>Manage Gear &amp; Currency</strong> to equip armor/weapons, attune magic items, track gold pieces, or craft homebrew gear.
-          </div>
-        </section>
-      )}
+          </section>
+        );
+      })()}
 
-      {layoutVariant === 'classic' && beyondTab === 'features' && (
-        <section className="card forge-stack">
-          <div className="card-header">
-            <div className="forge-section-label">FEATURES, SENSES &amp; PROFICIENCIES</div>
-            {onOpenBuilderDrawer && (
-              <button type="button" className="btn btn-primary" onClick={onOpenBuilderDrawer}>
-                Open Character Builder
-              </button>
+      {layoutVariant === 'classic' && beyondTab === 'features' && (() => {
+        const featItems = (rawChar?.items ?? []).filter(
+          (i) => i.category === 'feature' || i.category === 'feat' || i.category === 'infusion'
+        );
+        return (
+          <section className="card forge-stack">
+            <div className="card-header">
+              <div className="forge-section-label">FEATURES, FEATS &amp; NOTES ({featItems.length})</div>
+              {onOpenBuilderDrawer && (
+                <button type="button" className="btn btn-primary" onClick={onOpenBuilderDrawer}>
+                  Open Character Builder
+                </button>
+              )}
+            </div>
+            <div className="pill-row">
+              <span className="badge tabular">Proficiency +{sheet.proficiencyBonus.final}</span>
+              <span className="badge tabular">Passive Perception {sheet.passivePerception}</span>
+              <span className="badge tabular">Initiative {sheet.initiative.final >= 0 ? `+${sheet.initiative.final}` : sheet.initiative.final}</span>
+            </div>
+            {featItems.length === 0 ? (
+              <div className="forge-muted">No class features or feats listed yet.</div>
+            ) : (
+              featItems.map((feat) => (
+                <div key={feat.id} className="forge-list-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+                  <div>
+                    <strong>{feat.name}</strong>{' '}
+                    <span className="badge">{feat.category.toUpperCase()}</span>
+                    {feat.source && <span className="forge-muted" style={{ fontSize: 11 }}> • {feat.source}</span>}
+                  </div>
+                  {feat.entries.length > 0 && (
+                    <div className="forge-muted" style={{ fontSize: 12 }}>
+                      {renderTaggedDescription(feat.name, feat.entries[0] ?? '')}
+                    </div>
+                  )}
+                </div>
+              ))
             )}
-          </div>
-          <div className="pill-row">
-            <span className="badge tabular">Proficiency +{sheet.proficiencyBonus.final}</span>
-            <span className="badge tabular">Passive Perception {sheet.passivePerception}</span>
-            <span className="badge tabular">Initiative {sheet.initiative.final >= 0 ? `+${sheet.initiative.final}` : sheet.initiative.final}</span>
-          </div>
-          <div className="forge-muted">
-            All class features, feats, saving throws, and custom character notes are editable in the Character Builder or Gear &amp; Notes drawer.
-          </div>
-        </section>
-      )}
+            {rawChar?.notes && (rawChar.notes.proficiencies || rawChar.notes.bio || rawChar.notes.campaign) && (
+              <div className="subpanel forge-stack" style={{ padding: 8 }}>
+                <div className="forge-section-label">PROFICIENCIES &amp; NOTES</div>
+                {rawChar.notes.proficiencies && (
+                  <div style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>
+                    <strong>Proficiencies:</strong> {rawChar.notes.proficiencies}
+                  </div>
+                )}
+                {rawChar.notes.bio && (
+                  <div style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>{rawChar.notes.bio}</div>
+                )}
+                {rawChar.notes.campaign && (
+                  <div style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>{rawChar.notes.campaign}</div>
+                )}
+              </div>
+            )}
+          </section>
+        );
+      })()}
 
       {(layoutVariant === 'unified' || beyondTab === 'actions') &&
         ECONOMY_SECTIONS.map(({ key, label }) => {

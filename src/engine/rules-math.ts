@@ -236,16 +236,29 @@ export function isEntityActive(item: CompendiumEntity): boolean {
   return item.equipped !== false;
 }
 
+export function computeCantripDiceTier(totalLevel: number): number {
+  if (totalLevel >= 17) return 4;
+  if (totalLevel >= 11) return 3;
+  if (totalLevel >= 5) return 2;
+  return 1;
+}
+
 export function resolveFormulaVariables(
   formula: string,
   abilityMods: Record<AbilityKey, number>,
   profBonus: number,
-  attackAbility?: AbilityKey
+  attackAbility?: AbilityKey,
+  castingMod = 0,
+  totalLevel = 1
 ): string {
   const modVal = attackAbility ? abilityMods[attackAbility] : 0;
+  const cantripDice = computeCantripDiceTier(totalLevel);
   return formula
     .replace(/@prof/gi, String(profBonus))
     .replace(/@mod/gi, String(modVal))
+    .replace(/@spell/gi, String(castingMod))
+    .replace(/@lvl/gi, String(totalLevel))
+    .replace(/@cantrip/gi, String(cantripDice))
     .replace(/@str/gi, String(abilityMods.str))
     .replace(/@dex/gi, String(abilityMods.dex))
     .replace(/@con/gi, String(abilityMods.con))
@@ -311,6 +324,7 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
   const acFlatModifiers: StatModifier[] = [];
   const saveAllModifiers: StatModifier[] = [];
   const speedModifiers: StatModifier[] = [];
+  const initiativeModifiers: StatModifier[] = [];
 
   for (const item of activeItems) {
     if (item.acFlatBonus && item.acFlatBonus !== 0) {
@@ -327,9 +341,14 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
         saveAllModifiers.push({ id: `mod-${item.id}-save`, source: item.name, value: mod.value });
       } else if (mod.target === 'speed.walk') {
         speedModifiers.push({ id: `mod-${item.id}-speed`, source: item.name, value: mod.value });
+      } else if (mod.target === 'initiative') {
+        initiativeModifiers.push({ id: `mod-${item.id}-init`, source: item.name, value: mod.value });
       }
     }
   }
+
+  const exhaustion2024Penalty =
+    raw.ruleset === '2024' && raw.exhaustion > 0 ? -2 * raw.exhaustion : 0;
 
   const acStat = {
     ...buildOverridable(bestFormulaAc, acFlatModifiers, raw.overrides.ac),
@@ -344,6 +363,13 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
         id: `save-prof-${key}`,
         source: 'Proficiency',
         value: profStat.final,
+      });
+    }
+    if (exhaustion2024Penalty !== 0) {
+      saveMods.push({
+        id: 'exhaustion-2024',
+        source: `Exhaustion (${raw.exhaustion})`,
+        value: exhaustion2024Penalty,
       });
     }
     resolvedAbilities[key].save = buildOverridable(
@@ -365,12 +391,31 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
         value: Math.floor(profStat.final * profMultiplier),
       });
     }
+    if (exhaustion2024Penalty !== 0) {
+      skillMods.push({
+        id: 'exhaustion-2024',
+        source: `Exhaustion (${raw.exhaustion})`,
+        value: exhaustion2024Penalty,
+      });
+    }
     resolvedSkills[skillKey] = buildOverridable(
       abilityModifiers[abilityKey],
       skillMods,
       raw.overrides.skills?.[skillKey]
     );
   });
+
+  const primaryCastingAbility: AbilityKey | null =
+    raw.classes.some((c) => c.className.toLowerCase() === 'artificer' || c.className.toLowerCase() === 'wizard')
+      ? 'int'
+      : raw.classes.some((c) => ['cleric', 'druid', 'ranger'].includes(c.className.toLowerCase()))
+      ? 'wis'
+      : raw.classes.some((c) => ['bard', 'paladin', 'sorcerer', 'warlock'].includes(c.className.toLowerCase()))
+      ? 'cha'
+      : null;
+
+  const castingMod = primaryCastingAbility ? abilityModifiers[primaryCastingAbility] : 0;
+  const effectiveLevel = Math.max(1, totalLevel);
 
   const actionsByEconomy: Record<ActionEconomy, ResolvedActivity[]> = {
     action: [],
@@ -382,34 +427,44 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
 
   for (const item of activeItems) {
     for (const act of item.activities) {
-      const resolvedAttack = act.attackBonusFormula
+      const baseAttack = act.attackBonusFormula
         ? evaluateSimpleMath(
             resolveFormulaVariables(
               act.attackBonusFormula,
               abilityModifiers,
               profStat.final,
-              act.attackAbility
+              act.attackAbility,
+              castingMod,
+              effectiveLevel
             )
           )
         : null;
+      const resolvedAttack =
+        baseAttack !== null ? baseAttack + exhaustion2024Penalty : null;
 
-      const resolvedDc = act.saveDcFormula
+      const baseDc = act.saveDcFormula
         ? evaluateSimpleMath(
             resolveFormulaVariables(
               act.saveDcFormula,
               abilityModifiers,
               profStat.final,
-              act.attackAbility
+              act.attackAbility,
+              castingMod,
+              effectiveLevel
             )
           )
         : null;
+      const resolvedDc =
+        baseDc !== null ? baseDc + exhaustion2024Penalty : null;
 
       const resolvedDamage = act.damageFormula
         ? resolveFormulaVariables(
             act.damageFormula,
             abilityModifiers,
             profStat.final,
-            act.attackAbility
+            act.attackAbility,
+            castingMod,
+            effectiveLevel
           )
         : null;
 
@@ -418,7 +473,9 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
             act.description,
             abilityModifiers,
             profStat.final,
-            act.attackAbility
+            act.attackAbility,
+            castingMod,
+            effectiveLevel
           )
         : undefined;
 
@@ -435,16 +492,10 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
     }
   }
 
-  const primaryCastingAbility: AbilityKey | null =
-    raw.classes.some((c) => c.className.toLowerCase() === 'artificer' || c.className.toLowerCase() === 'wizard')
-      ? 'int'
-      : raw.classes.some((c) => ['cleric', 'druid', 'ranger'].includes(c.className.toLowerCase()))
-      ? 'wis'
-      : raw.classes.some((c) => ['bard', 'paladin', 'sorcerer', 'warlock'].includes(c.className.toLowerCase()))
-      ? 'cha'
-      : null;
-
-  const castingMod = primaryCastingAbility ? abilityModifiers[primaryCastingAbility] : 0;
+  const spellExhaustionMods: StatModifier[] =
+    exhaustion2024Penalty !== 0
+      ? [{ id: 'exhaustion-2024', source: `Exhaustion (${raw.exhaustion})`, value: exhaustion2024Penalty }]
+      : [];
 
   return {
     id: raw.id,
@@ -458,7 +509,7 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
     passiveInvestigation: 10 + resolvedSkills.investigation.final,
     passiveInsight: 10 + resolvedSkills.insight.final,
     ac: acStat,
-    initiative: buildOverridable(abilityModifiers.dex, [], raw.overrides.initiative),
+    initiative: buildOverridable(abilityModifiers.dex, initiativeModifiers, raw.overrides.initiative),
     speed: buildOverridable(30, speedModifiers, raw.overrides.speed),
     attunementCount,
     spellcasting: {
@@ -466,12 +517,12 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
       effectiveCasterLevel: computeEffectiveCasterLevel(raw.classes),
       saveDc: buildOverridable(
         8 + profStat.final + castingMod,
-        [],
+        spellExhaustionMods,
         raw.overrides.spellSaveDc
       ),
       attackBonus: buildOverridable(
         profStat.final + castingMod,
-        [],
+        spellExhaustionMods,
         raw.overrides.spellAttackBonus
       ),
     },

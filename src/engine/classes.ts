@@ -236,17 +236,27 @@ export function getClassDefinition(className: string): ClassDefinition | undefin
 /**
  * Computes standard fixed HP for a class stack: Level 1 = max hit die + CON mod;
  * Levels 2..N = (hitDie / 2 + 1 + CON mod) per level (min 1 HP per level).
+ * Adds +2 HP per total level when the Tough feat is present.
  */
-export function computeFixedMaxHp(classes: ClassLevel[], conScore: number): number {
+export function computeFixedMaxHp(
+  classes: ClassLevel[],
+  conScore: number,
+  items?: CompendiumEntity[]
+): number {
   const conMod = computeAbilityModifier(conScore);
   let totalHp = 0;
+  let totalLevel = 0;
   let isFirstLevel = true;
   for (const cls of classes) {
     for (let i = 0; i < cls.level; i++) {
       const baseGain = isFirstLevel ? cls.hitDie : cls.hitDie / 2 + 1;
       totalHp += Math.max(1, baseGain + conMod);
+      totalLevel += 1;
       isFirstLevel = false;
     }
+  }
+  if (items?.some((i) => i.name.toLowerCase().includes('tough'))) {
+    totalHp += 2 * totalLevel;
   }
   return Math.max(1, totalHp);
 }
@@ -360,6 +370,14 @@ export function buildCharacterFromPreset(input: NewCharacterPresetInput): RawCha
     }
     if (clone.category === 'spell') {
       clone.prepared = true;
+    }
+    if (clone.id === 'srd-feat-sneak-attack') {
+      const sneakDice = `${Math.ceil(level / 2)}d6`;
+      clone.entries = [`Rogue: Deal extra ${sneakDice} damage once per turn with a finesse or ranged weapon.`];
+      if (clone.activities[0]) {
+        clone.activities[0].damageFormula = sneakDice;
+        clone.activities[0].description = `Rogue: Deal extra {@damage ${sneakDice}} damage once per turn with finesse/ranged weapon.`;
+      }
     }
     items.push(clone);
   }

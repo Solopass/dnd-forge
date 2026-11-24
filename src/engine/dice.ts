@@ -30,6 +30,13 @@ export function resolveRollMode(advantageSources: number, disadvantageSources: n
   return 'normal';
 }
 
+export function doubleDiceForCrit(expression: string): string {
+  return expression.replace(/(\d*)d(\d+)/gi, (_match, countStr: string, sides: string) => {
+    const count = countStr === '' ? 1 : Number.parseInt(countStr, 10);
+    return `${count * 2}d${sides}`;
+  });
+}
+
 export function evaluateDiceExpression(
   rawExpression: string,
   mode: RollMode = 'normal'

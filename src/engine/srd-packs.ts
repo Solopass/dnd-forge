@@ -1,4 +1,4 @@
-import { CompendiumEntity } from '../types/compendium';
+import { AcFormulaRule, CompendiumEntity, PassiveModifierRule } from '../types/compendium';
 import { AbilityKey, ActionEconomy, Ruleset } from '../types/core';
 
 export interface ContentPack {
@@ -21,6 +21,7 @@ function makeSpell(
     damageFormula?: string;
     damageType?: string;
     heal?: boolean;
+    acFormula?: AcFormulaRule;
     description: string;
     entries?: string[];
   }
@@ -35,6 +36,7 @@ function makeSpell(
     spellLevel,
     concentration: opts.concentration,
     prepared: true,
+    acFormula: opts.acFormula,
     activities: [
       {
         id: `act-${id}`,
@@ -48,10 +50,9 @@ function makeSpell(
           : 'utility',
         actionEconomy,
         resourceCost: poolId ? { poolId, amount: 1 } : undefined,
-        attackAbility: opts.attack ? 'int' : undefined,
-        attackBonusFormula: opts.attack ? '@int + @prof' : undefined,
+        attackBonusFormula: opts.attack ? '@spell + @prof' : undefined,
         saveAbility: opts.saveAbility,
-        saveDcFormula: opts.saveAbility ? '8 + @prof + @int' : undefined,
+        saveDcFormula: opts.saveAbility ? '8 + @prof + @spell' : undefined,
         damageFormula: opts.damageFormula,
         damageType: opts.damageType,
         description: opts.description,
@@ -123,7 +124,13 @@ function makeFeature(
   name: string,
   actionEconomy: ActionEconomy,
   description: string,
-  opts?: { damageFormula?: string; damageType?: string }
+  opts?: {
+    damageFormula?: string;
+    damageType?: string;
+    heal?: boolean;
+    resourceCost?: { poolId: string; amount: number };
+    modifiers?: PassiveModifierRule[];
+  }
 ): CompendiumEntity {
   return {
     id,
@@ -132,12 +139,14 @@ function makeFeature(
     ruleset: '2014',
     category: 'feat',
     equipped: true,
+    modifiers: opts?.modifiers,
     activities: [
       {
         id: `act-${id}`,
         name,
-        type: opts?.damageFormula ? 'utility' : 'utility',
+        type: opts?.heal ? 'heal' : 'utility',
         actionEconomy,
+        resourceCost: opts?.resourceCost,
         damageFormula: opts?.damageFormula,
         damageType: opts?.damageType,
         description,
@@ -195,9 +204,9 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
     entities: [
       makeSpell('srd-spell-fire-bolt', 'Fire Bolt', 0, 'action', {
         attack: true,
-        damageFormula: '2d10',
+        damageFormula: '@cantripd10',
         damageType: 'fire',
-        description: 'Ranged spell attack (120 ft). Deals {@damage 2d10} fire damage.',
+        description: 'Ranged spell attack (120 ft). Deals {@damage @cantripd10} fire damage.',
       }),
       makeSpell('srd-spell-eldritch-blast', 'Eldritch Blast', 0, 'action', {
         attack: true,
@@ -207,21 +216,21 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
       }),
       makeSpell('srd-spell-sacred-flame', 'Sacred Flame', 0, 'action', {
         saveAbility: 'dex',
-        damageFormula: '2d8',
+        damageFormula: '@cantripd8',
         damageType: 'radiant',
-        description: '60 ft. {@save dex} or take {@damage 2d8} radiant damage (ignores cover).',
+        description: '60 ft. {@save dex} or take {@damage @cantripd8} radiant damage (ignores cover).',
       }),
       makeSpell('srd-spell-ray-of-frost', 'Ray of Frost', 0, 'action', {
         attack: true,
-        damageFormula: '2d8',
+        damageFormula: '@cantripd8',
         damageType: 'cold',
-        description: '60 ft. {@damage 2d8} cold damage and speed reduced by 10 ft until start of next turn.',
+        description: '60 ft. {@damage @cantripd8} cold damage and speed reduced by 10 ft until start of next turn.',
       }),
       makeSpell('srd-spell-vicious-mockery', 'Vicious Mockery', 0, 'action', {
         saveAbility: 'wis',
-        damageFormula: '2d4',
+        damageFormula: '@cantripd4',
         damageType: 'psychic',
-        description: '60 ft. {@save wis} or take {@damage 2d4} psychic damage and disadvantage on next attack.',
+        description: '60 ft. {@save wis} or take {@damage @cantripd4} psychic damage and disadvantage on next attack.',
       }),
       makeSpell('srd-spell-guidance', 'Guidance', 0, 'action', {
         concentration: true,
@@ -240,21 +249,22 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
       }),
       makeSpell('srd-spell-healing-word', 'Healing Word', 1, 'bonus_action', {
         heal: true,
-        damageFormula: '1d4 + @int',
+        damageFormula: '1d4 + @spell',
         damageType: 'healing',
-        description: 'Range 60 ft. Restores {@dice 1d4+@int} hit points.',
+        description: 'Range 60 ft. Restores {@dice 1d4+@spell} hit points.',
       }),
       makeSpell('srd-spell-cure-wounds', 'Cure Wounds', 1, 'action', {
         heal: true,
-        damageFormula: '1d8 + @int',
+        damageFormula: '1d8 + @spell',
         damageType: 'healing',
-        description: 'Touch. Restores {@dice 1d8+@int} hit points.',
+        description: 'Touch. Restores {@dice 1d8+@spell} hit points.',
       }),
       makeSpell('srd-spell-bless', 'Bless', 1, 'action', {
         concentration: true,
         description: 'Up to 3 creatures add {@dice 1d4} to attack rolls and saving throws.',
       }),
       makeSpell('srd-spell-mage-armor', 'Mage Armor', 1, 'action', {
+        acFormula: { base: 13, dexCap: null, requiresUnarmored: true },
         description: 'Touch. Unarmored target AC becomes 13 + DEX modifier for 8 hours.',
       }),
       makeSpell('srd-spell-faerie-fire', 'Faerie Fire', 1, 'action', {
@@ -297,9 +307,9 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
       }),
       makeSpell('srd-spell-spiritual-weapon', 'Spiritual Weapon', 2, 'bonus_action', {
         attack: true,
-        damageFormula: '1d8 + @int',
+        damageFormula: '1d8 + @spell',
         damageType: 'force',
-        description: '60 ft. Spectral weapon strikes for {@damage 1d8+@int} force damage.',
+        description: '60 ft. Spectral weapon strikes for {@damage 1d8+@spell} force damage.',
       }),
       makeSpell('srd-spell-hold-person', 'Hold Person', 2, 'action', {
         concentration: true,
@@ -436,20 +446,48 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
     ruleset: '2014',
     description: 'Core class actions and feats: Second Wind, Action Surge, Rage, Sneak Attack, Cunning Action, Lay on Hands, Divine Smite, Wild Shape, Bardic Inspiration, Tough, War Caster, Alert, Lucky.',
     entities: [
-      makeFeature('srd-feat-second-wind', 'Second Wind', 'bonus_action', 'Fighter: Regain {@dice 1d10+@prof} HP once per short/long rest.'),
-      makeFeature('srd-feat-action-surge', 'Action Surge', 'free', 'Fighter: Take one additional action on your turn (1/short rest).'),
-      makeFeature('srd-feat-rage', 'Rage', 'bonus_action', 'Barbarian: Advantage on STR checks/saves, bonus melee damage, resistance to B/P/S.'),
+      makeFeature('srd-feat-second-wind', 'Second Wind', 'bonus_action', 'Fighter: Regain {@dice 1d10+@lvl} HP once per short/long rest.', {
+        heal: true,
+        damageFormula: '1d10 + @lvl',
+        damageType: 'healing',
+        resourceCost: { poolId: 'auto_class_second_wind', amount: 1 },
+      }),
+      makeFeature('srd-feat-action-surge', 'Action Surge', 'free', 'Fighter: Take one additional action on your turn (1/short rest).', {
+        resourceCost: { poolId: 'auto_class_action_surge', amount: 1 },
+      }),
+      makeFeature('srd-feat-rage', 'Rage', 'bonus_action', 'Barbarian: Advantage on STR checks/saves, bonus melee damage, resistance to B/P/S.', {
+        resourceCost: { poolId: 'auto_class_rage', amount: 1 },
+      }),
       makeFeature('srd-feat-sneak-attack', 'Sneak Attack', 'free', 'Rogue: Deal extra {@damage 3d6} damage once per turn with finesse/ranged weapon.', { damageFormula: '3d6', damageType: 'piercing' }),
       makeFeature('srd-feat-cunning-action', 'Cunning Action', 'bonus_action', 'Rogue: Dash, Disengage, or Hide as a bonus action.'),
-      makeFeature('srd-feat-lay-on-hands', 'Lay on Hands', 'action', 'Paladin: Restore HP from a pool equal to 5 x Paladin level, or cure disease/poison.'),
-      makeFeature('srd-feat-divine-smite', 'Divine Smite', 'free', 'Paladin: Expend a 1st-level slot on melee hit for {@damage 2d8} radiant damage (+1d8 vs undead/fiend).', { damageFormula: '2d8', damageType: 'radiant' }),
-      makeFeature('srd-feat-wild-shape', 'Wild Shape', 'action', 'Druid: Magically assume the shape of a beast you have seen before.'),
-      makeFeature('srd-feat-bardic-inspiration', 'Bardic Inspiration', 'bonus_action', 'Bard: Grant an ally within 60 ft an Inspiration die ({@dice 1d8}).'),
-      makeFeature('srd-feat-channel-divinity', 'Channel Divinity', 'action', 'Cleric/Paladin: Channel divine energy for Turn Undead or subclass effect.'),
-      makeFeature('srd-feat-flurry-of-blows', 'Flurry of Blows', 'bonus_action', 'Monk: Spend 1 Ki/Focus point to make two unarmed strikes as a bonus action.'),
+      makeFeature('srd-feat-lay-on-hands', 'Lay on Hands', 'action', 'Paladin: Restore HP from a pool equal to 5 x Paladin level, or cure disease/poison.', {
+        heal: true,
+        damageFormula: '5',
+        damageType: 'healing',
+        resourceCost: { poolId: 'auto_class_lay_on_hands', amount: 5 },
+      }),
+      makeFeature('srd-feat-divine-smite', 'Divine Smite', 'free', 'Paladin: Expend a 1st-level slot on melee hit for {@damage 2d8} radiant damage (+1d8 vs undead/fiend).', {
+        damageFormula: '2d8',
+        damageType: 'radiant',
+        resourceCost: { poolId: 'spell_slot_1', amount: 1 },
+      }),
+      makeFeature('srd-feat-wild-shape', 'Wild Shape', 'action', 'Druid: Magically assume the shape of a beast you have seen before.', {
+        resourceCost: { poolId: 'auto_class_wild_shape', amount: 1 },
+      }),
+      makeFeature('srd-feat-bardic-inspiration', 'Bardic Inspiration', 'bonus_action', 'Bard: Grant an ally within 60 ft an Inspiration die ({@dice 1d8}).', {
+        resourceCost: { poolId: 'auto_class_bardic_insp', amount: 1 },
+      }),
+      makeFeature('srd-feat-channel-divinity', 'Channel Divinity', 'action', 'Cleric/Paladin: Channel divine energy for Turn Undead or subclass effect.', {
+        resourceCost: { poolId: 'auto_class_channel_divinity', amount: 1 },
+      }),
+      makeFeature('srd-feat-flurry-of-blows', 'Flurry of Blows', 'bonus_action', 'Monk: Spend 1 Ki/Focus point to make two unarmed strikes as a bonus action.', {
+        resourceCost: { poolId: 'auto_class_ki', amount: 1 },
+      }),
       makeFeature('srd-feat-war-caster', 'War Caster (Feat)', 'free', 'Advantage on CON saves for concentration; cast spell as opportunity attack.'),
       makeFeature('srd-feat-tough', 'Tough (Feat)', 'free', 'Hit point maximum increases by 2 for every level you have gained.'),
-      makeFeature('srd-feat-alert', 'Alert (Feat)', 'free', '+5 bonus to initiative; cannot be surprised while conscious.'),
+      makeFeature('srd-feat-alert', 'Alert (Feat)', 'free', '+5 bonus to initiative; cannot be surprised while conscious.', {
+        modifiers: [{ target: 'initiative', value: 5 }],
+      }),
       makeFeature('srd-feat-lucky', 'Lucky (Feat)', 'free', '3 Luck points per long rest to roll an extra d20 on attack, check, or save.'),
     ],
   },

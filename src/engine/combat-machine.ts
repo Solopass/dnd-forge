@@ -174,34 +174,38 @@ export function advanceTurn(state: CombatEncounterState): CombatEncounterState {
   const startingCombatant = nextCombatants[nextIndex];
 
   if (startingCombatant) {
-    nextEffects = nextEffects.filter((eff) => {
+    const updatedEffects: ActiveEffect[] = [];
+    for (const eff of nextEffects) {
+      let currentEff = eff;
       if (
         eff.expiration === 'rounds_remaining' &&
         eff.sourceCombatantId === startingCombatant.id &&
         eff.roundsRemaining !== undefined
       ) {
-        eff.roundsRemaining -= 1;
-        if (eff.roundsRemaining <= 0) {
+        const nextRemaining = eff.roundsRemaining - 1;
+        if (nextRemaining <= 0) {
           nextLog.push(makeLog(nextRound, `Effect expired: ${eff.name}`));
           eff.linkedSummonIds?.forEach((id) => expiredSummons.add(id));
-          return false;
+          continue;
         }
+        currentEff = { ...eff, roundsRemaining: nextRemaining };
       }
 
       const startsExpire =
-        (eff.expiration === 'start_of_source_turn' &&
-          eff.sourceCombatantId === startingCombatant.id) ||
-        (eff.expiration === 'start_of_target_turn' &&
-          eff.targetCombatantId === startingCombatant.id);
+        (currentEff.expiration === 'start_of_source_turn' &&
+          currentEff.sourceCombatantId === startingCombatant.id) ||
+        (currentEff.expiration === 'start_of_target_turn' &&
+          currentEff.targetCombatantId === startingCombatant.id);
 
       if (startsExpire) {
-        nextLog.push(makeLog(nextRound, `Effect expired: ${eff.name}`));
-        eff.linkedSummonIds?.forEach((id) => expiredSummons.add(id));
-        return false;
+        nextLog.push(makeLog(nextRound, `Effect expired: ${currentEff.name}`));
+        currentEff.linkedSummonIds?.forEach((id) => expiredSummons.add(id));
+        continue;
       }
 
-      return true;
-    });
+      updatedEffects.push(currentEff);
+    }
+    nextEffects = updatedEffects;
 
     nextCombatants = nextCombatants
       .filter((c) => !expiredSummons.has(c.id))

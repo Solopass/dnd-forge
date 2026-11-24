@@ -115,6 +115,16 @@ export function VitalsColumn({
             </div>
           </div>
           <div className="forge-row" style={{ gap: 4 }}>
+            {layoutVariant === 'classic' && (
+              <button
+                type="button"
+                className={`pill forge-nowrap ${inspectAc ? 'active' : ''}`}
+                onClick={() => setInspectAc((v) => !v)}
+                title="Inspect AC formula or set manual AC override"
+              >
+                AC {sheet.ac.final}
+              </button>
+            )}
             <button
               type="button"
               className={`pill forge-nowrap ${sheet.inspiration ? 'active' : ''}`}

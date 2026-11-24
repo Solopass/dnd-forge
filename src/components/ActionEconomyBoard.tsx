@@ -83,6 +83,98 @@ export function ActionEconomyBoard({
   const isSpellActivity = (act: ResolvedActivity): boolean =>
     Boolean(act.spellMeta || act.resourceCost?.poolId.startsWith('spell_slot_'));
 
+  const renderActivityRow = (act: ResolvedActivity) => {
+    const desc = act.resolvedDescription ?? act.description;
+    const slotMatch = act.resourceCost?.poolId.match(/^spell_slot_(\d+)$/);
+    const baseSlotLvl = slotMatch?.[1] ? Number.parseInt(slotMatch[1], 10) : 0;
+    const higherSlots =
+      baseSlotLvl > 0 && act.upcastDicePerLevel
+        ? sheet.resources
+            .map((r) => {
+              const m = r.id.match(/^spell_slot_(\d+)$/);
+              const lvl = m?.[1] ? Number.parseInt(m[1], 10) : 0;
+              return { lvl, pool: r };
+            })
+            .filter((x) => x.lvl >= baseSlotLvl && x.pool.max > 0)
+        : [];
+    const chosenSlot = upcastOverrides[act.id] ?? baseSlotLvl;
+    const extraLevels = baseSlotLvl > 0 ? Math.max(0, chosenSlot - baseSlotLvl) : 0;
+    const previewDamage =
+      act.computedDamage && act.upcastDicePerLevel && extraLevels > 0
+        ? scaleDiceForUpcast(act.computedDamage, act.upcastDicePerLevel, extraLevels)
+        : act.computedDamage;
+
+    return (
+      <div key={act.id} className="forge-list-row">
+        <div>
+          <strong>{act.name}</strong>{' '}
+          <span className="forge-muted" style={{ fontSize: 11 }}>
+            ({act.parentItemName})
+          </span>
+          {act.concentration && <span className="conc-badge">CONC</span>}
+          {act.ritual && <span className="ritual-badge">RITUAL</span>}
+          {act.resourceCost && (
+            <span className="cost-badge">
+              {formatResourceBadge(act.resourceCost.poolId)}
+            </span>
+          )}
+          {act.spellMeta && (
+            <div className="forge-muted" style={{ fontSize: 10 }}>
+              {[act.spellMeta.castingTime, act.spellMeta.range, act.spellMeta.duration, act.spellMeta.components]
+                .filter(Boolean)
+                .join(' • ')}
+            </div>
+          )}
+          {desc && (
+            <div className="forge-muted">
+              {renderTaggedDescription(act.name, desc)}
+            </div>
+          )}
+        </div>
+
+        <div className="forge-row">
+          {act.ritual && (
+            <button
+              type="button"
+              className="btn forge-nowrap"
+              title="Cast as Ritual (10 min, spends no spell slot)"
+              onClick={() => onTriggerActivity(act, undefined, true)}
+            >
+              Ritual
+            </button>
+          )}
+          {higherSlots.length > 1 && (
+            <select
+              aria-label={`Cast level for ${act.name}`}
+              className="forge-input tabular"
+              style={{ padding: '3px 4px', fontSize: 11 }}
+              value={chosenSlot}
+              onChange={(e) => {
+                const lvl = Number.parseInt(e.target.value, 10);
+                setUpcastOverrides((prev) => ({ ...prev, [act.id]: lvl }));
+              }}
+            >
+              {higherSlots.map(({ lvl, pool }) => (
+                <option key={lvl} value={lvl}>
+                  L{lvl} ({pool.current}/{pool.max})
+                </option>
+              ))}
+            </select>
+          )}
+          <button
+            type="button"
+            className="btn btn-primary tabular forge-nowrap"
+            onClick={() =>
+              onTriggerActivity(act, chosenSlot > baseSlotLvl ? chosenSlot : undefined)
+            }
+          >
+            {formatActivityActionLabel(act, previewDamage)}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const matchesFilter = (act: ResolvedActivity): boolean => {
     const q = search.trim().toLowerCase();
     if (q) {
@@ -216,32 +308,7 @@ export function ActionEconomyBoard({
               ? [...sheet.actionsByEconomy.free, ...sheet.actionsByEconomy.special]
               : sheet.actionsByEconomy[s.key]
             ).filter((act) => isSpellActivity(act) && matchesFilter(act))
-          ).map((act) => (
-            <div key={act.id} className="forge-list-row">
-              <div>
-                <strong>{act.name}</strong>{' '}
-                {act.concentration && <span className="conc-badge">CONC</span>}
-                {act.ritual && <span className="ritual-badge">RITUAL</span>}
-                {act.resourceCost && (
-                  <span className="cost-badge">{formatResourceBadge(act.resourceCost.poolId)}</span>
-                )}
-                {act.spellMeta && (
-                  <div className="forge-muted" style={{ fontSize: 10 }}>
-                    {[act.spellMeta.castingTime, act.spellMeta.range, act.spellMeta.duration]
-                      .filter(Boolean)
-                      .join(' • ')}
-                  </div>
-                )}
-              </div>
-              <button
-                type="button"
-                className="btn btn-primary tabular forge-nowrap"
-                onClick={() => onTriggerActivity(act)}
-              >
-                {formatActivityActionLabel(act, act.computedDamage)}
-              </button>
-            </div>
-          ))}
+          ).map(renderActivityRow)}
         </section>
       )}
 
@@ -384,96 +451,7 @@ export function ActionEconomyBoard({
             {items.length === 0 ? (
               <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>No matching actions.</div>
             ) : (
-              items.map((act) => {
-                const desc = act.resolvedDescription ?? act.description;
-                const slotMatch = act.resourceCost?.poolId.match(/^spell_slot_(\d+)$/);
-                const baseSlotLvl = slotMatch?.[1] ? Number.parseInt(slotMatch[1], 10) : 0;
-                const higherSlots =
-                  baseSlotLvl > 0 && act.upcastDicePerLevel
-                    ? sheet.resources
-                        .map((r) => {
-                          const m = r.id.match(/^spell_slot_(\d+)$/);
-                          const lvl = m?.[1] ? Number.parseInt(m[1], 10) : 0;
-                          return { lvl, pool: r };
-                        })
-                        .filter((x) => x.lvl >= baseSlotLvl && x.pool.max > 0)
-                    : [];
-                const chosenSlot = upcastOverrides[act.id] ?? baseSlotLvl;
-                const extraLevels = baseSlotLvl > 0 ? Math.max(0, chosenSlot - baseSlotLvl) : 0;
-                const previewDamage =
-                  act.computedDamage && act.upcastDicePerLevel && extraLevels > 0
-                    ? scaleDiceForUpcast(act.computedDamage, act.upcastDicePerLevel, extraLevels)
-                    : act.computedDamage;
-                return (
-                  <div key={act.id} className="forge-list-row">
-                    <div>
-                      <strong>{act.name}</strong>{' '}
-                      <span className="forge-muted" style={{ fontSize: 11 }}>
-                        ({act.parentItemName})
-                      </span>
-                      {act.concentration && <span className="conc-badge">CONC</span>}
-                      {act.ritual && <span className="ritual-badge">RITUAL</span>}
-                      {act.resourceCost && (
-                        <span className="cost-badge">
-                          {formatResourceBadge(act.resourceCost.poolId)}
-                        </span>
-                      )}
-                      {act.spellMeta && (
-                        <div className="forge-muted" style={{ fontSize: 10 }}>
-                          {[act.spellMeta.castingTime, act.spellMeta.range, act.spellMeta.duration, act.spellMeta.components]
-                            .filter(Boolean)
-                            .join(' • ')}
-                        </div>
-                      )}
-                      {desc && (
-                        <div className="forge-muted">
-                          {renderTaggedDescription(act.name, desc)}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="forge-row">
-                      {act.ritual && (
-                        <button
-                          type="button"
-                          className="btn forge-nowrap"
-                          title="Cast as Ritual (10 min, spends no spell slot)"
-                          onClick={() => onTriggerActivity(act, undefined, true)}
-                        >
-                          Ritual
-                        </button>
-                      )}
-                      {higherSlots.length > 1 && (
-                        <select
-                          aria-label={`Cast level for ${act.name}`}
-                          className="forge-input tabular"
-                          style={{ padding: '3px 4px', fontSize: 11 }}
-                          value={chosenSlot}
-                          onChange={(e) => {
-                            const lvl = Number.parseInt(e.target.value, 10);
-                            setUpcastOverrides((prev) => ({ ...prev, [act.id]: lvl }));
-                          }}
-                        >
-                          {higherSlots.map(({ lvl, pool }) => (
-                            <option key={lvl} value={lvl}>
-                              L{lvl} ({pool.current}/{pool.max})
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                      <button
-                        type="button"
-                        className="btn btn-primary tabular forge-nowrap"
-                        onClick={() =>
-                          onTriggerActivity(act, chosenSlot > baseSlotLvl ? chosenSlot : undefined)
-                        }
-                      >
-                        {formatActivityActionLabel(act, previewDamage)}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
+              items.map(renderActivityRow)
             )}
           </section>
         );

@@ -694,8 +694,14 @@ export function App() {
               <span className="stat-tile-val tabular">{store.resolvedSheet.speed.final}ft</span>
             </div>
             <div className="beyond-stat-box">
-              <span className="stat-tile-label">PROF</span>
-              <span className="stat-tile-val tabular">+{store.resolvedSheet.proficiencyBonus.final}</span>
+              <span className="stat-tile-label">
+                {store.resolvedSheet.spellcasting.primaryAbility ? 'SPELL DC' : 'PROF'}
+              </span>
+              <span className="stat-tile-val tabular">
+                {store.resolvedSheet.spellcasting.primaryAbility
+                  ? store.resolvedSheet.spellcasting.saveDc.final
+                  : `+${store.resolvedSheet.proficiencyBonus.final}`}
+              </span>
             </div>
           </div>
         </div>

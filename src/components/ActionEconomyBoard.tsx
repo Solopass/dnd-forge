@@ -6,6 +6,9 @@ import { resolveConditionRollMode } from '../engine/conditions';
 import { parse5eToolsEntries } from '../engine/tags';
 import { scaleDiceForUpcast } from '../engine/dice';
 import { BackpackIcon, ScrollIcon, SparklesIcon, SwordsIcon } from './Icons';
+import { InventoryHub } from './InventoryHub';
+import { CampaignRecord } from '../types/campaign';
+import { ItemCategory } from '../types/compendium';
 
 interface ActionEconomyBoardProps {
   sheet: ResolvedCharacterSheet;
@@ -24,6 +27,15 @@ interface ActionEconomyBoardProps {
   flankingRule?: 'off' | 'advantage' | 'plus2';
   onToggleBuff?: (key: keyof ActiveBuffState) => void;
   onDivineSmite?: (slotLevel: number) => void;
+  onRollCheck?: (label: string, modifier: number) => void;
+  campaign?: CampaignRecord | null;
+  onUpdateQuantity?: (itemId: string, delta: number) => void;
+  onUpdateContainer?: (itemId: string, container: string) => void;
+  onUpdateCurrency?: (coin: 'cp' | 'sp' | 'ep' | 'gp' | 'pp', value: number) => void;
+  onSimplifyCurrency?: () => void;
+  onDepositToPartyStash?: (itemId: string) => void;
+  onClaimPartyStashItem?: (stashId: string) => void;
+  onAddPartyStashItem?: (name: string, category: ItemCategory, quantity: number) => void;
 }
 
 const ECONOMY_SECTIONS: Array<{ key: Exclude<ActionEconomy, 'special'>; label: string }> = [
@@ -85,6 +97,15 @@ export function ActionEconomyBoard({
   flankingRule = 'off',
   onToggleBuff,
   onDivineSmite,
+  onRollCheck,
+  campaign,
+  onUpdateQuantity,
+  onUpdateContainer,
+  onUpdateCurrency,
+  onSimplifyCurrency,
+  onDepositToPartyStash,
+  onClaimPartyStashItem,
+  onAddPartyStashItem,
 }: ActionEconomyBoardProps) {
   const [beyondTab, setBeyondTab] = useState<'actions' | 'spells' | 'inventory' | 'features'>('actions');
   const [filter, setFilter] = useState<'all' | 'attack' | 'save' | 'heal' | 'summon' | 'concentration'>('all');
@@ -457,6 +478,10 @@ export function ActionEconomyBoard({
           .filter((x): x is { lvl: number; pool: typeof sheet.resources[number] } => Boolean(x && x.pool.max > 0))
           .sort((a, b) => a.lvl - b.lvl);
 
+        const pactPool = sheet.resources.find(
+          (r) => (r.id === 'pact_magic' || r.id === 'auto_class_pact_magic') && r.max > 0
+        );
+
         return (
           <section className="card forge-stack">
             <div className="card-header">
@@ -465,11 +490,13 @@ export function ActionEconomyBoard({
                 <span className="badge">Save DC {sheet.spellcasting.saveDc.final}</span>
                 <span className="badge">Atk +{sheet.spellcasting.attackBonus.final}</span>
                 <span className="badge">
-                  Prepared {sheet.spellcasting.preparedCount}/{sheet.spellcasting.maxPrepared}
+                  {sheet.spellcasting.maxPrepared !== null
+                    ? `Prepared ${sheet.spellcasting.preparedCount}/${sheet.spellcasting.maxPrepared}`
+                    : `Prepared ${sheet.spellcasting.preparedCount}`}
                 </span>
               </div>
             </div>
-            {spellSlotPools.length > 0 && (
+            {(spellSlotPools.length > 0 || pactPool) && (
               <div className="subpanel forge-row" style={{ padding: '6px 8px', flexWrap: 'wrap', gap: 10 }}>
                 {spellSlotPools.map(({ lvl, pool }) => (
                   <div key={pool.id} className="forge-row" style={{ gap: 4 }}>
@@ -492,6 +519,29 @@ export function ActionEconomyBoard({
                     })}
                   </div>
                 ))}
+                {pactPool && (
+                  <div className="forge-row" style={{ gap: 4, borderLeft: spellSlotPools.length > 0 ? '1px solid var(--border-subtle)' : undefined, paddingLeft: spellSlotPools.length > 0 ? 10 : 0 }}>
+                    <span className="muted-label tabular" style={{ color: 'var(--accent-amber)' }}>
+                      Pact (SR)
+                    </span>
+                    {Array.from({ length: pactPool.max }).map((_, idx) => {
+                      const filled = idx < pactPool.current;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          className={`pill ${filled ? 'active' : ''}`}
+                          style={{ minWidth: 22, padding: '1px 5px', fontSize: 11, borderColor: 'rgba(245, 158, 11, 0.45)' }}
+                          aria-label={`Pact Magic slot ${idx + 1} (${filled ? 'available' : 'spent'})`}
+                          title={filled ? 'Spend Pact Magic slot (Short Rest)' : 'Restore Pact Magic slot'}
+                          onClick={() => onAdjustResource?.(pactPool.id, filled ? -1 : 1)}
+                        >
+                          {filled ? '◆' : '◇'}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
             {ECONOMY_SECTIONS.flatMap((s) =>
@@ -504,68 +554,28 @@ export function ActionEconomyBoard({
         );
       })()}
 
-      {layoutVariant === 'classic' && beyondTab === 'inventory' && (() => {
-        const gearItems = (rawChar?.items ?? []).filter(
-          (i) => i.category === 'weapon' || i.category === 'armor' || i.category === 'shield' || i.category === 'gear'
-        );
-        const cur = rawChar?.currency ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
-        return (
-          <section className="card forge-stack">
-            <div className="card-header">
-              <div className="forge-section-label">EQUIPMENT, CURRENCY &amp; ATTUNEMENT ({gearItems.length})</div>
-              {onOpenGearDrawer && (
-                <button type="button" className="btn btn-primary" onClick={onOpenGearDrawer}>
-                  Manage Gear &amp; Currency
-                </button>
-              )}
-            </div>
-            <div className="pill-row">
-              <span className="badge tabular">Attuned: {sheet.attunementCount} / 3</span>
-              <span className="badge tabular">AC: {sheet.ac.final}</span>
-              <span className="badge tabular">Speed: {sheet.speed.final} ft</span>
-              <span className="badge tabular">
-                Purse: {cur.pp}pp • {cur.gp}gp • {cur.sp}sp • {cur.cp}cp
-              </span>
-            </div>
-            {gearItems.length === 0 ? (
-              <div className="forge-muted">No gear carried yet. Click Manage Gear &amp; Currency to add items.</div>
-            ) : (
-              gearItems.map((item) => (
-                <div key={item.id} className="forge-list-row">
-                  <div>
-                    <strong>{item.name}</strong>{' '}
-                    <span className="badge">{item.category.toUpperCase()}</span>
-                    {(item.quantity ?? 1) > 1 && <span className="badge tabular">×{item.quantity}</span>}
-                    {item.entries[0] && (
-                      <div className="forge-muted" style={{ fontSize: 11 }}>{item.entries[0]}</div>
-                    )}
-                  </div>
-                  <div className="forge-row">
-                    {onToggleEquipped && (
-                      <button
-                        type="button"
-                        className={`pill ${item.equipped ? 'active' : ''}`}
-                        onClick={() => onToggleEquipped(item.id)}
-                      >
-                        {item.equipped ? 'Equipped' : 'Equip'}
-                      </button>
-                    )}
-                    {item.requiresAttunement && onToggleAttuned && (
-                      <button
-                        type="button"
-                        className={`pill ${item.attuned ? 'active' : ''}`}
-                        onClick={() => onToggleAttuned(item.id)}
-                      >
-                        {item.attuned ? 'Attuned' : 'Attune'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-          </section>
-        );
-      })()}
+      {layoutVariant === 'classic' && beyondTab === 'inventory' && rawChar && (
+        <section className="card forge-stack">
+          <InventoryHub
+            mode="both"
+            characterName={rawChar.name}
+            items={rawChar.items}
+            currency={rawChar.currency}
+            attunementCount={sheet.attunementCount}
+            campaign={campaign ?? null}
+            onToggleEquipped={onToggleEquipped ?? (() => {})}
+            onToggleAttuned={onToggleAttuned ?? (() => {})}
+            onUpdateQuantity={onUpdateQuantity ?? (() => {})}
+            onUpdateContainer={onUpdateContainer}
+            onUpdateCurrency={onUpdateCurrency}
+            onSimplifyCurrency={onSimplifyCurrency}
+            onDepositToPartyStash={onDepositToPartyStash}
+            onClaimPartyStashItem={onClaimPartyStashItem}
+            onAddPartyStashItem={onAddPartyStashItem}
+            onOpenGearDrawer={onOpenGearDrawer}
+          />
+        </section>
+      )}
 
       {layoutVariant === 'classic' && beyondTab === 'features' && (() => {
         const featItems = (rawChar?.items ?? []).filter(
@@ -585,7 +595,83 @@ export function ActionEconomyBoard({
               <span className="badge tabular">Proficiency +{sheet.proficiencyBonus.final}</span>
               <span className="badge tabular">Passive Perception {sheet.passivePerception}</span>
               <span className="badge tabular">Initiative {sheet.initiative.final >= 0 ? `+${sheet.initiative.final}` : sheet.initiative.final}</span>
+              {rawChar?.xp !== undefined && (
+                <span className="badge tabular">XP {rawChar.xp.toLocaleString()}</span>
+              )}
+              {rawChar?.details?.alignment && (
+                <span className="badge">{rawChar.details.alignment}</span>
+              )}
+              {rawChar?.details?.size && (
+                <span className="badge">{rawChar.details.size}</span>
+              )}
             </div>
+            {rawChar?.structuredProficiencies && (
+              <div className="subpanel forge-stack" style={{ padding: 8, gap: 6 }}>
+                <div className="forge-section-label">PROFICIENCIES &amp; LANGUAGES</div>
+                {rawChar.structuredProficiencies.armor.length > 0 && (
+                  <div className="forge-row" style={{ flexWrap: 'wrap', gap: 4 }}>
+                    <span className="forge-muted" style={{ fontSize: 11 }}>Armor:</span>
+                    {rawChar.structuredProficiencies.armor.map((a) => (
+                      <span key={a} className="badge">{a}</span>
+                    ))}
+                  </div>
+                )}
+                {rawChar.structuredProficiencies.weapons.length > 0 && (
+                  <div className="forge-row" style={{ flexWrap: 'wrap', gap: 4 }}>
+                    <span className="forge-muted" style={{ fontSize: 11 }}>Weapons:</span>
+                    {rawChar.structuredProficiencies.weapons.map((w) => (
+                      <span key={w} className="badge">{w}</span>
+                    ))}
+                  </div>
+                )}
+                {rawChar.structuredProficiencies.tools.length > 0 && (
+                  <div className="forge-row" style={{ flexWrap: 'wrap', gap: 4 }}>
+                    <span className="forge-muted" style={{ fontSize: 11 }}>Tools:</span>
+                    {rawChar.structuredProficiencies.tools.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        className="pill"
+                        title={`Roll ${t} check (+${sheet.proficiencyBonus.final} Prof + DEX)`}
+                        onClick={() =>
+                          onRollCheck?.(`${t} (Tool)`, sheet.proficiencyBonus.final + sheet.abilities.dex.modifier)
+                        }
+                      >
+                        🎲 {t}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {rawChar.structuredProficiencies.languages.length > 0 && (
+                  <div className="forge-row" style={{ flexWrap: 'wrap', gap: 4 }}>
+                    <span className="forge-muted" style={{ fontSize: 11 }}>Languages:</span>
+                    {rawChar.structuredProficiencies.languages.map((l) => (
+                      <span key={l} className="badge">{l}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {rawChar?.details &&
+              Object.values(rawChar.details).some((v) => Boolean(v && v.trim())) && (
+                <div className="subpanel forge-stack" style={{ padding: 8, gap: 4 }}>
+                  <div className="forge-section-label">CHARACTER DETAILS</div>
+                  <div className="pill-row" style={{ fontSize: 11 }}>
+                    {rawChar.details.age && <span className="badge">Age: {rawChar.details.age}</span>}
+                    {rawChar.details.height && <span className="badge">Height: {rawChar.details.height}</span>}
+                    {rawChar.details.weight && <span className="badge">Weight: {rawChar.details.weight}</span>}
+                    {rawChar.details.eyes && <span className="badge">Eyes: {rawChar.details.eyes}</span>}
+                    {rawChar.details.skin && <span className="badge">Skin: {rawChar.details.skin}</span>}
+                    {rawChar.details.hair && <span className="badge">Hair: {rawChar.details.hair}</span>}
+                  </div>
+                  {rawChar.details.traits && <div style={{ fontSize: 12 }}><strong>Traits:</strong> {rawChar.details.traits}</div>}
+                  {rawChar.details.ideals && <div style={{ fontSize: 12 }}><strong>Ideals:</strong> {rawChar.details.ideals}</div>}
+                  {rawChar.details.bonds && <div style={{ fontSize: 12 }}><strong>Bonds:</strong> {rawChar.details.bonds}</div>}
+                  {rawChar.details.flaws && <div style={{ fontSize: 12 }}><strong>Flaws:</strong> {rawChar.details.flaws}</div>}
+                  {rawChar.details.allies && <div style={{ fontSize: 12 }}><strong>Allies:</strong> {rawChar.details.allies}</div>}
+                  {rawChar.details.backstory && <div style={{ fontSize: 12, whiteSpace: 'pre-wrap' }}><strong>Backstory:</strong> {rawChar.details.backstory}</div>}
+                </div>
+              )}
             {featItems.length === 0 ? (
               <div className="forge-muted">No class features or feats listed yet.</div>
             ) : (

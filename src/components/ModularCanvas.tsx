@@ -27,6 +27,8 @@ const ABILITIES: AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 import { resolveConditionRollMode } from '../engine/conditions';
 import { parse5eToolsEntries } from '../engine/tags';
 import { scaleDiceForUpcast } from '../engine/dice';
+import { InventoryHub } from './InventoryHub';
+import { ItemCategory } from '../types/compendium';
 
 const SkillWheel = lazy(() =>
   import('./SkillWheel').then((m) => ({ default: m.SkillWheel }))
@@ -70,6 +72,13 @@ interface ModularCanvasProps {
   onAdvanceClock?: (minutes: number) => void;
   onAssignLootToCharacter?: (itemName: string, characterId: string) => Promise<void>;
   onDistributeGold?: (gp: number) => Promise<void>;
+  onUpdateQuantity?: (itemId: string, delta: number) => void;
+  onUpdateContainer?: (itemId: string, container: string) => void;
+  onUpdateCurrency?: (coin: 'cp' | 'sp' | 'ep' | 'gp' | 'pp', value: number) => void;
+  onSimplifyCurrency?: () => void;
+  onDepositToPartyStash?: (itemId: string) => void;
+  onClaimPartyStashItem?: (stashId: string) => void;
+  onAddPartyStashItem?: (name: string, category: ItemCategory, quantity: number) => void;
 }
 
 const ALL_COL_SPANS: WidgetColSpan[] = [3, 4, 5, 6, 7, 8, 9, 10, 12];
@@ -113,6 +122,13 @@ export function ModularCanvas({
   onAdvanceClock,
   onAssignLootToCharacter,
   onDistributeGold,
+  onUpdateQuantity,
+  onUpdateContainer,
+  onUpdateCurrency,
+  onSimplifyCurrency,
+  onDepositToPartyStash,
+  onClaimPartyStashItem,
+  onAddPartyStashItem,
 }: ModularCanvasProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -619,43 +635,41 @@ export function ModularCanvas({
       }
 
       case 'inventory': {
-        const gear = rawChar.items.filter(
-          (i) => i.category === 'weapon' || i.category === 'armor' || i.category === 'shield' || i.category === 'gear'
-        );
         return (
-          <div className="forge-stack">
-            <div className="forge-row-between">
-              <span className="badge tabular">
-                GP {rawChar.currency?.gp ?? 0} • Attuned {sheet.attunementCount}/3
-              </span>
-              <button type="button" className="btn" onClick={onOpenGearDrawer}>
-                Manage Gear
-              </button>
-            </div>
-            {gear.map((item) => (
-              <div key={item.id} className="forge-list-row">
-                <span style={{ fontSize: 12 }}>{item.name}</span>
-                <div className="forge-row" style={{ gap: 4 }}>
-                  <button
-                    type="button"
-                    className={`pill ${item.equipped ? 'active' : ''}`}
-                    onClick={() => onToggleEquipped(item.id)}
-                  >
-                    {item.equipped ? 'Eq' : 'Stow'}
-                  </button>
-                  {item.requiresAttunement && (
-                    <button
-                      type="button"
-                      className={`pill ${item.attuned ? 'active' : ''}`}
-                      onClick={() => onToggleAttuned(item.id)}
-                    >
-                      Att
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+          <InventoryHub
+            mode="personal"
+            characterName={rawChar.name}
+            items={rawChar.items}
+            currency={rawChar.currency}
+            attunementCount={sheet.attunementCount}
+            campaign={campaign ?? null}
+            onToggleEquipped={onToggleEquipped}
+            onToggleAttuned={onToggleAttuned}
+            onUpdateQuantity={onUpdateQuantity ?? (() => {})}
+            onUpdateContainer={onUpdateContainer}
+            onUpdateCurrency={onUpdateCurrency}
+            onSimplifyCurrency={onSimplifyCurrency}
+            onDepositToPartyStash={onDepositToPartyStash}
+            onOpenGearDrawer={onOpenGearDrawer}
+          />
+        );
+      }
+
+      case 'party_inventory': {
+        return (
+          <InventoryHub
+            mode="party"
+            characterName={rawChar.name}
+            items={rawChar.items}
+            currency={rawChar.currency}
+            attunementCount={sheet.attunementCount}
+            campaign={campaign ?? null}
+            onToggleEquipped={onToggleEquipped}
+            onToggleAttuned={onToggleAttuned}
+            onUpdateQuantity={onUpdateQuantity ?? (() => {})}
+            onClaimPartyStashItem={onClaimPartyStashItem}
+            onAddPartyStashItem={onAddPartyStashItem}
+          />
         );
       }
 

@@ -65,6 +65,7 @@ export interface CampaignRecord {
   partyXpTotal: number;
   partyLootGp: number;
   partyLootItems: string[];
+  partyStash?: import('./compendium').CompendiumEntity[];
   entries: CampaignEntry[];
   worldMapImageDataUrl?: string;
   worldMapPins?: WorldMapPin[];

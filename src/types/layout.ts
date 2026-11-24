@@ -7,6 +7,7 @@ export type WidgetId =
   | 'pinned_favorites'
   | 'spells'
   | 'inventory'
+  | 'party_inventory'
   | 'features_notes'
   | 'combat_tracker'
   | 'mini_vtt'

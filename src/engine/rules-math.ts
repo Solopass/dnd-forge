@@ -693,15 +693,38 @@ export function computeCharacterSheet(
     actionsByEconomy.action = [...wildActions, ...actionsByEconomy.action];
   }
 
+  const baseWalkSpeed = raw.speeds?.walk ?? 30;
+  if (raw.exhaustion > 0) {
+    if (effectiveExhaustionRule === '2024') {
+      speedModifiers.push({
+        id: 'exhaustion-speed-2024',
+        source: `Exhaustion (${raw.exhaustion})`,
+        value: -5 * raw.exhaustion,
+      });
+    } else if (raw.exhaustion >= 2) {
+      const preExhaustionWalk =
+        baseWalkSpeed + speedModifiers.reduce((acc, m) => acc + m.value, 0);
+      speedModifiers.push({
+        id: 'exhaustion-speed-2014',
+        source: `Exhaustion (${raw.exhaustion})`,
+        value: -Math.ceil(preExhaustionWalk / 2),
+      });
+    }
+  }
+
   const finalAcStat = raw.wildShapeForm
     ? {
         ...buildOverridable(raw.wildShapeForm.ac, [], raw.overrides.ac),
         activeFormulaSource: `Wild Shape: ${raw.wildShapeForm.name}`,
       }
     : acStat;
-  const finalSpeedStat = raw.wildShapeForm
+  const rawSpeedStat = raw.wildShapeForm
     ? buildOverridable(raw.wildShapeForm.speed, [], raw.overrides.speed)
-    : buildOverridable(30, speedModifiers, raw.overrides.speed);
+    : buildOverridable(baseWalkSpeed, speedModifiers, raw.overrides.speed);
+  const finalSpeedStat = {
+    ...rawSpeedStat,
+    final: Math.max(0, rawSpeedStat.final),
+  };
 
   const PREPARED_CASTER_MAP: Record<string, { ability: AbilityKey; half: boolean }> = {
     cleric: { ability: 'wis', half: false },
@@ -784,6 +807,19 @@ export function computeCharacterSheet(
     ac: finalAcStat,
     initiative: buildOverridable(abilityModifiers.dex, initiativeModifiers, raw.overrides.initiative),
     speed: finalSpeedStat,
+    speeds: {
+      walk: finalSpeedStat.final,
+      fly: raw.speeds?.fly ?? 0,
+      swim: raw.speeds?.swim ?? 0,
+      climb: raw.speeds?.climb ?? 0,
+      burrow: raw.speeds?.burrow ?? 0,
+    },
+    senses: {
+      darkvision: raw.senses?.darkvision ?? 0,
+      blindsight: raw.senses?.blindsight ?? 0,
+      tremorsense: raw.senses?.tremorsense ?? 0,
+      truesight: raw.senses?.truesight ?? 0,
+    },
     attunementCount,
     spellcasting: {
       primaryAbility: primaryCastingAbility,

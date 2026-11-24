@@ -90,6 +90,7 @@ export interface CompendiumEntity {
   acFlatBonus?: number;
   quantity?: number;
   weight?: number;
+  container?: string;
   weaponMastery?: WeaponMastery;
   monsterMeta?: MonsterStatMeta;
   modifiers?: PassiveModifierRule[];

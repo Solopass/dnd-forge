@@ -30,7 +30,10 @@ interface VitalsColumnProps {
   onRollInitiative: () => void;
   onToggleCondition: (cond: string) => void;
   onTakeRest: (type: 'short_rest' | 'long_rest') => void;
+  onOpenShortRest?: () => void;
   onSpendHitDie: () => void;
+  onUpdateSenses?: (patch: { darkvision?: number; blindsight?: number; tremorsense?: number; truesight?: number }) => void;
+  onUpdateSpeeds?: (patch: { walk?: number; fly?: number; swim?: number; climb?: number; burrow?: number }) => void;
 }
 
 const ABILITIES: AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
@@ -71,9 +74,13 @@ export function VitalsColumn({
   onRollInitiative,
   onToggleCondition,
   onTakeRest,
+  onOpenShortRest,
   onSpendHitDie,
+  onUpdateSenses,
+  onUpdateSpeeds,
 }: VitalsColumnProps) {
   const [inspectAc, setInspectAc] = useState(false);
+  const [inspectSenses, setInspectSenses] = useState(false);
   const [acInput, setAcInput] = useState('');
   const [hpDeltaInput, setHpDeltaInput] = useState('');
   const [tempHpInput, setTempHpInput] = useState('');
@@ -192,10 +199,15 @@ export function VitalsColumn({
               <span className="stat-tile-label">INIT</span>
               <span className="stat-tile-val tabular">{initSign}{sheet.initiative.final}</span>
             </button>
-            <div className="stat-tile">
+            <button
+              type="button"
+              className="stat-tile"
+              onClick={() => setInspectSenses((v) => !v)}
+              title="Click to edit Walk/Fly/Swim/Climb/Burrow speeds & Senses"
+            >
               <span className="stat-tile-label">SPEED</span>
               <span className="stat-tile-val tabular">{sheet.speed.final}ft</span>
-            </div>
+            </button>
             <div className="stat-tile">
               <span className="stat-tile-label">
                 {sheet.spellcasting.primaryAbility ? 'SPELL DC' : 'PROF'}
@@ -238,6 +250,85 @@ export function VitalsColumn({
               <button type="button" className="btn" onClick={() => onSetAcOverride(null)}>
                 Reset
               </button>
+            </div>
+          </div>
+        )}
+
+        {(sheet.speeds.fly > 0 ||
+          sheet.speeds.swim > 0 ||
+          sheet.speeds.climb > 0 ||
+          sheet.speeds.burrow > 0 ||
+          sheet.senses.darkvision > 0 ||
+          sheet.senses.blindsight > 0 ||
+          sheet.senses.tremorsense > 0 ||
+          sheet.senses.truesight > 0 ||
+          onUpdateSenses ||
+          onUpdateSpeeds) && (
+          <div className="pill-row" style={{ marginTop: 6 }}>
+            {sheet.speeds.fly > 0 && <span className="badge tabular">Fly {sheet.speeds.fly}ft</span>}
+            {sheet.speeds.swim > 0 && <span className="badge tabular">Swim {sheet.speeds.swim}ft</span>}
+            {sheet.speeds.climb > 0 && <span className="badge tabular">Climb {sheet.speeds.climb}ft</span>}
+            {sheet.speeds.burrow > 0 && <span className="badge tabular">Burrow {sheet.speeds.burrow}ft</span>}
+            {sheet.senses.darkvision > 0 && <span className="badge tabular">Darkvision {sheet.senses.darkvision}ft</span>}
+            {sheet.senses.blindsight > 0 && <span className="badge tabular">Blindsight {sheet.senses.blindsight}ft</span>}
+            {sheet.senses.tremorsense > 0 && <span className="badge tabular">Tremorsense {sheet.senses.tremorsense}ft</span>}
+            {sheet.senses.truesight > 0 && <span className="badge tabular">Truesight {sheet.senses.truesight}ft</span>}
+            {(onUpdateSenses || onUpdateSpeeds) && (
+              <button
+                type="button"
+                className="pill"
+                onClick={() => setInspectSenses((v) => !v)}
+                title="Edit Senses & Movement Speeds"
+              >
+                {inspectSenses ? 'Hide Senses/Speeds' : '+ Senses/Speeds'}
+              </button>
+            )}
+          </div>
+        )}
+
+        {inspectSenses && (onUpdateSenses || onUpdateSpeeds) && (
+          <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}>
+            <div className="forge-stack" style={{ gap: 6 }}>
+              {onUpdateSpeeds && (
+                <div className="forge-row" style={{ flexWrap: 'wrap', gap: 6 }}>
+                  {(['walk', 'fly', 'swim', 'climb', 'burrow'] as const).map((k) => (
+                    <label key={k} className="forge-row" style={{ gap: 4, fontSize: 11 }}>
+                      <span className="forge-muted" style={{ textTransform: 'capitalize' }}>{k}</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={5}
+                        className="forge-input tabular"
+                        style={{ width: 54, padding: '2px 4px', fontSize: 11 }}
+                        value={k === 'walk' ? sheet.speeds.walk : sheet.speeds[k]}
+                        onChange={(e) =>
+                          onUpdateSpeeds({ [k]: Math.max(0, Number.parseInt(e.target.value, 10) || 0) })
+                        }
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
+              {onUpdateSenses && (
+                <div className="forge-row" style={{ flexWrap: 'wrap', gap: 6 }}>
+                  {(['darkvision', 'blindsight', 'tremorsense', 'truesight'] as const).map((k) => (
+                    <label key={k} className="forge-row" style={{ gap: 4, fontSize: 11 }}>
+                      <span className="forge-muted" style={{ textTransform: 'capitalize' }}>{k}</span>
+                      <input
+                        type="number"
+                        min={0}
+                        step={5}
+                        className="forge-input tabular"
+                        style={{ width: 54, padding: '2px 4px', fontSize: 11 }}
+                        value={sheet.senses[k]}
+                        onChange={(e) =>
+                          onUpdateSenses({ [k]: Math.max(0, Number.parseInt(e.target.value, 10) || 0) })
+                        }
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -405,7 +496,12 @@ export function VitalsColumn({
 
         {!isUnified && (
           <div className="forge-row" style={{ marginTop: 8 }}>
-            <button type="button" className="btn" style={{ flex: 1 }} onClick={() => onTakeRest('short_rest')}>
+            <button
+              type="button"
+              className="btn"
+              style={{ flex: 1 }}
+              onClick={() => (onOpenShortRest ? onOpenShortRest() : onTakeRest('short_rest'))}
+            >
               Short Rest
             </button>
             <button type="button" className="btn" style={{ flex: 1 }} onClick={onSpendHitDie}>

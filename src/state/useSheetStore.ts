@@ -930,6 +930,51 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     appendLog(`Spent Hit Die (1d${primaryDie}${sign}${conMod}): healed ${healed} HP.`, 'roll');
   }, [rawChar.resources, rawChar.classes, resolvedSheet.abilities.con.modifier, persistCharacter, appendLog]);
 
+  const spendHitDiceBulk = useCallback(
+    (count: number, dieSize?: 6 | 8 | 10 | 12) => {
+      const hitDicePool = rawChar.resources.find((r) => r.id === 'hit_dice');
+      const available = hitDicePool?.current ?? 0;
+      const toSpend = Math.min(available, Math.max(0, Math.floor(count)));
+      if (toSpend <= 0) return;
+      const die = dieSize ?? rawChar.classes[0]?.hitDie ?? 8;
+      const conMod = resolvedSheet.abilities.con.modifier;
+      const sign = conMod >= 0 ? '+' : '';
+      let totalHealed = 0;
+      const rolls: number[] = [];
+      for (let i = 0; i < toSpend; i += 1) {
+        const r = evaluateDiceExpression(`1d${die}${sign}${conMod}`, 'normal');
+        const val = Math.max(1, r.total);
+        rolls.push(val);
+        totalHealed += val;
+      }
+      persistCharacter((prev) => ({
+        ...prev,
+        hp: {
+          ...prev.hp,
+          current: Math.min(prev.hp.max, prev.hp.current + totalHealed),
+        },
+        resources: prev.resources.map((r) =>
+          r.id === 'hit_dice' ? { ...r, current: Math.max(0, r.current - toSpend) } : r
+        ),
+      }));
+      appendLog(
+        `Short Rest Hit Dice (${toSpend}×d${die}${sign}${conMod} = [${rolls.join(', ')}]): healed ${totalHealed} HP.`,
+        'roll'
+      );
+    },
+    [rawChar.resources, rawChar.classes, resolvedSheet.abilities.con.modifier, persistCharacter, appendLog]
+  );
+
+  const castRitualSpell = useCallback(
+    (activity: ResolvedActivity) => {
+      appendLog(
+        `Cast ${activity.parentItemName} as a Ritual (+10 min, no spell slot spent).`,
+        'info'
+      );
+    },
+    [appendLog]
+  );
+
   const toggleItemEquipped = useCallback(
     (itemId: string) => {
       persistCharacter((prev) => ({
@@ -1912,6 +1957,98 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     },
     [persistCharacter]
   );
+
+  const updateSenses = useCallback(
+    (patch: Partial<NonNullable<RawCharacterState['senses']>>) => {
+      persistCharacter((prev) => ({
+        ...prev,
+        senses: {
+          darkvision: prev.senses?.darkvision ?? 0,
+          blindsight: prev.senses?.blindsight ?? 0,
+          tremorsense: prev.senses?.tremorsense ?? 0,
+          truesight: prev.senses?.truesight ?? 0,
+          ...patch,
+        },
+      }));
+    },
+    [persistCharacter]
+  );
+
+  const updateSpeeds = useCallback(
+    (patch: Partial<NonNullable<RawCharacterState['speeds']>>) => {
+      persistCharacter((prev) => ({
+        ...prev,
+        speeds: {
+          walk: prev.speeds?.walk ?? 30,
+          fly: prev.speeds?.fly ?? 0,
+          swim: prev.speeds?.swim ?? 0,
+          climb: prev.speeds?.climb ?? 0,
+          burrow: prev.speeds?.burrow ?? 0,
+          ...patch,
+        },
+      }));
+    },
+    [persistCharacter]
+  );
+
+  const updateStructuredProficiencies = useCallback(
+    (patch: Partial<NonNullable<RawCharacterState['structuredProficiencies']>>) => {
+      persistCharacter((prev) => ({
+        ...prev,
+        structuredProficiencies: {
+          armor: prev.structuredProficiencies?.armor ?? [],
+          weapons: prev.structuredProficiencies?.weapons ?? [],
+          tools: prev.structuredProficiencies?.tools ?? [],
+          languages: prev.structuredProficiencies?.languages ?? [],
+          ...patch,
+        },
+      }));
+    },
+    [persistCharacter]
+  );
+
+  const updateDetails = useCallback(
+    (patch: Partial<NonNullable<RawCharacterState['details']>>) => {
+      persistCharacter((prev) => ({
+        ...prev,
+        details: {
+          ...(prev.details ?? {}),
+          ...patch,
+        },
+      }));
+    },
+    [persistCharacter]
+  );
+
+  const updateItemContainer = useCallback(
+    (itemId: string, container: string) => {
+      persistCharacter((prev) => ({
+        ...prev,
+        items: prev.items.map((it) =>
+          it.id === itemId ? { ...it, container: container || undefined } : it
+        ),
+      }));
+    },
+    [persistCharacter]
+  );
+
+  const simplifyCurrency = useCallback(() => {
+    persistCharacter((prev) => {
+      const c = prev.currency ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
+      const totalCp = c.cp + c.sp * 10 + c.ep * 50 + c.gp * 100 + c.pp * 1000;
+      const pp = Math.floor(totalCp / 1000);
+      const remAfterPp = totalCp % 1000;
+      const gp = Math.floor(remAfterPp / 100);
+      const remAfterGp = remAfterPp % 100;
+      const sp = Math.floor(remAfterGp / 10);
+      const cp = remAfterGp % 10;
+      return {
+        ...prev,
+        currency: { cp, sp, ep: 0, gp, pp },
+      };
+    });
+    appendLog('Converted currency to optimal denominations (PP/GP/SP/CP).', 'info');
+  }, [persistCharacter, appendLog]);
 
   const createHomebrewEntity = useCallback(
     async (entity: CompendiumEntity, addToSheet: boolean) => {
@@ -3497,6 +3634,120 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     [characterList, rawChar.id, persistCampaign, appendLog]
   );
 
+  const depositItemToPartyStash = useCallback(
+    (itemId: string) => {
+      const item = rawChar.items.find((it) => it.id === itemId);
+      if (!item) return;
+      const qty = item.quantity ?? 1;
+      persistCharacter((prev) => {
+        if (qty > 1) {
+          return {
+            ...prev,
+            items: prev.items.map((it) =>
+              it.id === itemId ? { ...it, quantity: qty - 1 } : it
+            ),
+          };
+        }
+        return {
+          ...prev,
+          items: prev.items.filter((it) => it.id !== itemId),
+        };
+      });
+      persistCampaign((prev) => {
+        const stash = prev.partyStash ?? [];
+        const existingIdx = stash.findIndex((s) => s.name === item.name && s.category === item.category);
+        const nextStash =
+          existingIdx >= 0
+            ? stash.map((s, idx) =>
+                idx === existingIdx ? { ...s, quantity: (s.quantity ?? 1) + 1 } : s
+              )
+            : [
+                {
+                  ...item,
+                  id: `stash-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                  equipped: false,
+                  attuned: false,
+                  quantity: 1,
+                },
+                ...stash,
+              ];
+        return { ...prev, partyStash: nextStash };
+      });
+      appendLog(`${rawChar.name} deposited "${item.name}" into Party Shared Inventory.`, 'info');
+    },
+    [rawChar.items, rawChar.name, persistCharacter, persistCampaign, appendLog]
+  );
+
+  const claimPartyStashItem = useCallback(
+    (stashItemId: string) => {
+      const stash = campaign?.partyStash ?? [];
+      const item = stash.find((s) => s.id === stashItemId);
+      if (!item) return;
+      const qty = item.quantity ?? 1;
+      persistCampaign((prev) => {
+        const prevStash = prev.partyStash ?? [];
+        const nextStash =
+          qty > 1
+            ? prevStash.map((s) =>
+                s.id === stashItemId ? { ...s, quantity: qty - 1 } : s
+              )
+            : prevStash.filter((s) => s.id !== stashItemId);
+        return { ...prev, partyStash: nextStash };
+      });
+      persistCharacter((prev) => {
+        const existingIdx = prev.items.findIndex(
+          (it) => it.name === item.name && it.category === item.category
+        );
+        if (existingIdx >= 0) {
+          return {
+            ...prev,
+            items: prev.items.map((it, idx) =>
+              idx === existingIdx ? { ...it, quantity: (it.quantity ?? 1) + 1 } : it
+            ),
+          };
+        }
+        return {
+          ...prev,
+          items: [
+            {
+              ...item,
+              id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              equipped: false,
+              attuned: false,
+              quantity: 1,
+            },
+            ...prev.items,
+          ],
+        };
+      });
+      appendLog(`${rawChar.name} claimed "${item.name}" from Party Shared Inventory.`, 'info');
+    },
+    [campaign?.partyStash, rawChar.name, persistCampaign, persistCharacter, appendLog]
+  );
+
+  const addPartyStashItem = useCallback(
+    (name: string, category: CompendiumEntity['category'] = 'gear', quantity = 1, notes?: string) => {
+      const clean = name.trim();
+      if (!clean) return;
+      persistCampaign((prev) => {
+        const stash = prev.partyStash ?? [];
+        const newItem: CompendiumEntity = {
+          id: `stash-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          name: clean,
+          source: 'Party Stash',
+          ruleset: rawChar.ruleset,
+          category,
+          quantity: Math.max(1, quantity),
+          activities: [],
+          entries: notes?.trim() ? [notes.trim()] : [],
+        };
+        return { ...prev, partyStash: [newItem, ...stash] };
+      });
+      appendLog(`Added "${clean}" (×${Math.max(1, quantity)}) to Party Shared Inventory.`, 'info');
+    },
+    [rawChar.ruleset, persistCampaign, appendLog]
+  );
+
   const upsertDowntimeProject = useCallback(
     (project: DowntimeProject) => {
       persistCampaign((prev) => {
@@ -3692,6 +3943,17 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     toggleCondition,
     rollCharacterInitiative,
     takeRest,
+    spendHitDiceBulk,
+    castRitualSpell,
+    updateSenses,
+    updateSpeeds,
+    updateStructuredProficiencies,
+    updateDetails,
+    updateItemContainer,
+    simplifyCurrency,
+    depositItemToPartyStash,
+    claimPartyStashItem,
+    addPartyStashItem,
     toggleItemEquipped,
     toggleItemPrepared,
     toggleItemAttuned,

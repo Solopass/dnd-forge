@@ -60,6 +60,9 @@ const LiveTableModal = lazy(() =>
 const EncounterBuilderModal = lazy(() =>
   import('./components/EncounterBuilderModal').then((m) => ({ default: m.EncounterBuilderModal }))
 );
+const ShortRestModal = lazy(() =>
+  import('./components/ShortRestModal').then((m) => ({ default: m.ShortRestModal }))
+);
 import { BUILTIN_CONTENT_PACKS } from './engine/srd-packs';
 import { detectRulesetPreset } from './engine/ruleset-config';
 import {
@@ -275,6 +278,7 @@ export function App() {
   });
   const [activeLayout, setActiveLayout] = useState<WorkspaceLayoutConfig>(() => readStoredLayout());
   const [levelUpOpen, setLevelUpOpen] = useState(false);
+  const [shortRestOpen, setShortRestOpen] = useState(false);
   const [liveTableOpen, setLiveTableOpen] = useState(false);
   const [dmHubOpen, setDmHubOpen] = useState(false);
   const [encounterBuilderOpen, setEncounterBuilderOpen] = useState(false);
@@ -454,7 +458,10 @@ export function App() {
       onRollInitiative={store.rollCharacterInitiative}
       onToggleCondition={store.toggleCondition}
       onTakeRest={store.takeRest}
+      onOpenShortRest={() => setShortRestOpen(true)}
       onSpendHitDie={store.spendHitDie}
+      onUpdateSenses={store.updateSenses}
+      onUpdateSpeeds={store.updateSpeeds}
       onRollCheck={(label, mod) => {
         const sign = mod >= 0 ? '+' : '';
         const res = evaluateDiceExpression(`1d20${sign}${mod}`, store.rollMode);
@@ -481,6 +488,19 @@ export function App() {
       flankingRule={store.houseRules.flankingRule}
       onToggleBuff={store.toggleBuff}
       onDivineSmite={store.divineSmite}
+      onRollCheck={(label, mod) => {
+        const sign = mod >= 0 ? '+' : '';
+        const res = evaluateDiceExpression(`1d20${sign}${mod}`, store.rollMode);
+        store.appendLog(`${label} (${res.mode}): ${res.total}`, res.isCrit ? 'crit' : 'roll');
+      }}
+      campaign={store.campaign}
+      onUpdateQuantity={store.updateItemQuantity}
+      onUpdateContainer={store.updateItemContainer}
+      onUpdateCurrency={store.updateCurrency}
+      onSimplifyCurrency={store.simplifyCurrency}
+      onDepositToPartyStash={store.depositItemToPartyStash}
+      onClaimPartyStashItem={store.claimPartyStashItem}
+      onAddPartyStashItem={store.addPartyStashItem}
     />
   );
 
@@ -842,7 +862,7 @@ export function App() {
             </div>
           </div>
           <div className="forge-row" style={{ flexWrap: 'wrap' }}>
-            <button type="button" className="btn" onClick={() => store.takeRest('short_rest')}>
+            <button type="button" className="btn" onClick={() => setShortRestOpen(true)}>
               Short Rest
             </button>
             <button type="button" className="btn" onClick={() => store.takeRest('long_rest')}>
@@ -1113,6 +1133,13 @@ export function App() {
             onAdvanceClock={store.advanceCampaignClock}
             onAssignLootToCharacter={store.assignLootItemToCharacter}
             onDistributeGold={store.distributeGoldToParty}
+            onUpdateQuantity={store.updateItemQuantity}
+            onUpdateContainer={store.updateItemContainer}
+            onUpdateCurrency={store.updateCurrency}
+            onSimplifyCurrency={store.simplifyCurrency}
+            onDepositToPartyStash={store.depositItemToPartyStash}
+            onClaimPartyStashItem={store.claimPartyStashItem}
+            onAddPartyStashItem={store.addPartyStashItem}
           />
         </Suspense>
       ) : uiMode === 'classic' ? (
@@ -1238,7 +1265,7 @@ export function App() {
                 <span>AC {store.resolvedSheet.ac.final}</span>
               </div>
               <div className="forge-row" style={{ gap: 4 }}>
-                <button type="button" className="btn" style={{ flex: 1, fontSize: 11 }} onClick={() => store.takeRest('short_rest')}>
+                <button type="button" className="btn" style={{ flex: 1, fontSize: 11 }} onClick={() => setShortRestOpen(true)}>
                   Short Rest
                 </button>
                 <button type="button" className="btn" style={{ flex: 1, fontSize: 11 }} onClick={() => store.takeRest('long_rest')}>
@@ -1438,15 +1465,33 @@ export function App() {
           maxPrepared={store.resolvedSheet.spellcasting.maxPrepared}
           currency={store.rawChar.currency}
           notes={store.rawChar.notes}
+          structuredProficiencies={store.rawChar.structuredProficiencies}
+          details={store.rawChar.details}
           onClose={() => setGearOpen(false)}
           onToggleEquipped={store.toggleItemEquipped}
           onTogglePrepared={store.toggleItemPrepared}
           onToggleAttuned={store.toggleItemAttuned}
           onUpdateQuantity={store.updateItemQuantity}
+          onUpdateContainer={store.updateItemContainer}
+          onDepositToPartyStash={store.depositItemToPartyStash}
           onRemoveItem={store.removeSheetItem}
           onUpdateCurrency={store.updateCurrency}
+          onSimplifyCurrency={store.simplifyCurrency}
           onUpdateNotes={store.updateCharacterNotes}
+          onUpdateStructuredProficiencies={store.updateStructuredProficiencies}
+          onUpdateDetails={store.updateDetails}
           onCreateHomebrew={store.createHomebrewEntity}
+        />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <ShortRestModal
+          isOpen={shortRestOpen}
+          onClose={() => setShortRestOpen(false)}
+          sheet={store.resolvedSheet}
+          classes={store.rawChar.classes}
+          onSpendHitDice={store.spendHitDiceBulk}
+          onCompleteShortRest={() => store.takeRest('short_rest')}
         />
       </Suspense>
 

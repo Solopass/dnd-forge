@@ -13,14 +13,21 @@ interface EquipmentSpellDrawerProps {
   maxPrepared: number | null;
   currency?: RawCharacterState['currency'];
   notes?: RawCharacterState['notes'];
+  structuredProficiencies?: RawCharacterState['structuredProficiencies'];
+  details?: RawCharacterState['details'];
   onClose: () => void;
   onToggleEquipped: (id: string) => void;
   onTogglePrepared: (id: string) => void;
   onToggleAttuned: (id: string) => void;
   onUpdateQuantity: (id: string, delta: number) => void;
+  onUpdateContainer?: (id: string, container: string) => void;
+  onDepositToPartyStash?: (id: string) => void;
   onRemoveItem: (id: string) => void;
   onUpdateCurrency: (coin: 'cp' | 'sp' | 'ep' | 'gp' | 'pp', value: number) => void;
+  onSimplifyCurrency?: () => void;
   onUpdateNotes: (patch: Partial<NonNullable<RawCharacterState['notes']>>) => void;
+  onUpdateStructuredProficiencies?: (patch: Partial<NonNullable<RawCharacterState['structuredProficiencies']>>) => void;
+  onUpdateDetails?: (patch: Partial<NonNullable<RawCharacterState['details']>>) => void;
   onCreateHomebrew: (entity: CompendiumEntity, addToSheet: boolean) => Promise<void>;
 }
 
@@ -30,19 +37,26 @@ export function EquipmentSpellDrawer({
   isOpen,
   items,
   attunementCount,
-  strScore,
+  strScore: _strScore,
   preparedCount,
   maxPrepared,
   currency,
   notes,
+  structuredProficiencies,
+  details,
   onClose,
   onToggleEquipped,
   onTogglePrepared,
   onToggleAttuned,
   onUpdateQuantity,
+  onUpdateContainer,
+  onDepositToPartyStash,
   onRemoveItem,
   onUpdateCurrency,
+  onSimplifyCurrency,
   onUpdateNotes,
+  onUpdateStructuredProficiencies,
+  onUpdateDetails,
   onCreateHomebrew,
 }: EquipmentSpellDrawerProps) {
   const [tab, setTab] = useState<'gear' | 'notes' | 'homebrew'>('gear');
@@ -64,11 +78,6 @@ export function EquipmentSpellDrawer({
   const coins = currency ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
   const totalGpValue =
     coins.pp * 10 + coins.gp + coins.ep * 0.5 + coins.sp * 0.1 + coins.cp * 0.01;
-  const totalWeight = items.reduce(
-    (sum, it) => sum + (it.weight ?? 0) * (it.quantity ?? 1),
-    0
-  );
-  const carryCapacity = strScore * 15;
 
   const handleSaveHomebrew = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -158,9 +167,6 @@ export function EquipmentSpellDrawer({
       {tab === 'gear' && (
         <div className="forge-stack">
           <div className="forge-row-between forge-muted tabular" style={{ fontSize: 11, flexWrap: 'wrap', gap: 6 }}>
-            <span>
-              Carried Weight: <strong>{totalWeight.toFixed(1)}</strong> / {carryCapacity} lb
-            </span>
             {maxPrepared !== null && (
               <span style={{ color: preparedCount > maxPrepared ? 'var(--accent-amber)' : 'var(--text-secondary)' }}>
                 Prepared Spells: <strong>{preparedCount}</strong> / {maxPrepared}
@@ -183,11 +189,36 @@ export function EquipmentSpellDrawer({
                   <strong>{item.name}</strong>{' '}
                   <span className="forge-muted" style={{ fontSize: 11 }}>
                     ({item.category.toUpperCase()})
-                    {item.weight ? ` • ${item.weight} lb` : ''}
+                    {item.container ? ` • [${item.container}]` : ''}
                   </span>
                 </div>
 
                 <div className="pill-row" style={{ alignItems: 'center' }}>
+                  {isPhysical && onUpdateContainer && (
+                    <select
+                      aria-label={`${item.name} container`}
+                      className="forge-input"
+                      style={{ padding: '2px 4px', fontSize: 10, width: 92 }}
+                      value={item.container ?? ''}
+                      onChange={(e) => onUpdateContainer(item.id, e.target.value)}
+                    >
+                      <option value="">Carried</option>
+                      <option value="Backpack">Backpack</option>
+                      <option value="Bag of Holding">Bag of Holding</option>
+                      <option value="Pouch">Pouch</option>
+                    </select>
+                  )}
+                  {isPhysical && onDepositToPartyStash && (
+                    <button
+                      type="button"
+                      className="btn"
+                      style={{ fontSize: 10, padding: '2px 6px' }}
+                      title="Move 1 to Party Shared Inventory"
+                      onClick={() => onDepositToPartyStash(item.id)}
+                    >
+                      → Party
+                    </button>
+                  )}
                   {isPhysical && (
                     <div className="forge-row">
                       <button
@@ -267,13 +298,20 @@ export function EquipmentSpellDrawer({
       {tab === 'notes' && (
         <div className="forge-stack">
           <div className="card forge-stack">
-            <div className="forge-row-between">
+            <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
               <span className="forge-section-label" style={{ marginBottom: 0 }}>
                 CURRENCY
               </span>
-              <span className="tabular forge-muted">
-                Total Value: <strong>{totalGpValue.toFixed(2)} GP</strong>
-              </span>
+              <div className="forge-row" style={{ gap: 6 }}>
+                <span className="tabular forge-muted">
+                  Total Value: <strong>{totalGpValue.toFixed(2)} GP</strong>
+                </span>
+                {onSimplifyCurrency && (
+                  <button type="button" className="btn" onClick={onSimplifyCurrency}>
+                    Simplify Coins
+                  </button>
+                )}
+              </div>
             </div>
             <div className="forge-ability-grid-6">
               {COINS.map((coin) => (
@@ -290,6 +328,88 @@ export function EquipmentSpellDrawer({
               ))}
             </div>
           </div>
+
+          {onUpdateStructuredProficiencies && (
+            <div className="card forge-stack">
+              <div className="forge-section-label">STRUCTURED PROFICIENCIES &amp; LANGUAGES</div>
+              {(
+                [
+                  ['armor', 'Armor (comma-separated)', 'Light, Medium, Shields'],
+                  ['weapons', 'Weapons (comma-separated)', 'Simple, Martial, Longsword'],
+                  ['tools', 'Tools (comma-separated)', "Thieves' Tools, Smith's Tools"],
+                  ['languages', 'Languages (comma-separated)', 'Common, Elvish, Draconic'],
+                ] as const
+              ).map(([field, label, placeholder]) => (
+                <label key={field} className="forge-field">
+                  <span className="forge-label">{label}</span>
+                  <input
+                    type="text"
+                    className="forge-input"
+                    value={(structuredProficiencies?.[field] ?? []).join(', ')}
+                    placeholder={placeholder}
+                    onChange={(e) =>
+                      onUpdateStructuredProficiencies({
+                        [field]: e.target.value
+                          .split(',')
+                          .map((s) => s.trim())
+                          .filter(Boolean),
+                      })
+                    }
+                  />
+                </label>
+              ))}
+            </div>
+          )}
+
+          {onUpdateDetails && (
+            <div className="card forge-stack">
+              <div className="forge-section-label">CHARACTER DESCRIPTION &amp; TRAITS</div>
+              <div className="forge-row" style={{ flexWrap: 'wrap', gap: 6 }}>
+                {(
+                  [
+                    ['alignment', 'Alignment'],
+                    ['size', 'Size'],
+                    ['age', 'Age'],
+                    ['height', 'Height'],
+                    ['weight', 'Weight'],
+                    ['eyes', 'Eyes'],
+                    ['skin', 'Skin'],
+                    ['hair', 'Hair'],
+                  ] as const
+                ).map(([field, label]) => (
+                  <label key={field} className="forge-field" style={{ flex: '1 1 110px' }}>
+                    <span className="forge-label">{label}</span>
+                    <input
+                      type="text"
+                      className="forge-input"
+                      value={details?.[field] ?? ''}
+                      onChange={(e) => onUpdateDetails({ [field]: e.target.value })}
+                    />
+                  </label>
+                ))}
+              </div>
+              {(
+                [
+                  ['traits', 'Personality Traits'],
+                  ['ideals', 'Ideals'],
+                  ['bonds', 'Bonds'],
+                  ['flaws', 'Flaws'],
+                  ['allies', 'Allies & Organizations'],
+                  ['backstory', 'Backstory'],
+                ] as const
+              ).map(([field, label]) => (
+                <label key={field} className="forge-field">
+                  <span className="forge-label">{label}</span>
+                  <textarea
+                    rows={field === 'backstory' ? 3 : 2}
+                    className="forge-input"
+                    value={details?.[field] ?? ''}
+                    onChange={(e) => onUpdateDetails({ [field]: e.target.value })}
+                  />
+                </label>
+              ))}
+            </div>
+          )}
 
           <div className="card forge-stack">
             <label className="forge-field">

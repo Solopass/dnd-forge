@@ -97,6 +97,41 @@ export interface RawCharacterState {
     campaign: string;
     proficiencies: string;
   };
+  senses?: {
+    darkvision?: number;
+    blindsight?: number;
+    tremorsense?: number;
+    truesight?: number;
+  };
+  speeds?: {
+    walk?: number;
+    fly?: number;
+    swim?: number;
+    climb?: number;
+    burrow?: number;
+  };
+  structuredProficiencies?: {
+    armor: string[];
+    weapons: string[];
+    tools: string[];
+    languages: string[];
+  };
+  details?: {
+    alignment?: string;
+    size?: string;
+    age?: string;
+    height?: string;
+    weight?: string;
+    eyes?: string;
+    skin?: string;
+    hair?: string;
+    traits?: string;
+    ideals?: string;
+    bonds?: string;
+    flaws?: string;
+    allies?: string;
+    backstory?: string;
+  };
 }
 
 export interface ResolvedActivity extends Activity {
@@ -138,6 +173,19 @@ export interface ResolvedCharacterSheet {
   ac: OverridableStat<number> & { activeFormulaSource: string };
   initiative: OverridableStat<number>;
   speed: OverridableStat<number>;
+  speeds: {
+    walk: number;
+    fly: number;
+    swim: number;
+    climb: number;
+    burrow: number;
+  };
+  senses: {
+    darkvision: number;
+    blindsight: number;
+    tremorsense: number;
+    truesight: number;
+  };
   attunementCount: number;
   spellcasting: {
     primaryAbility: AbilityKey | null;

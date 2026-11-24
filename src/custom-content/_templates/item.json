@@ -1,0 +1,27 @@
+{
+  "id": "custom-wpn-sunforged-blade",
+  "name": "Sunforged Longsword +1",
+  "category": "weapon",
+  "source": "Homebrew",
+  "ruleset": "2024",
+  "equipped": false,
+  "attuned": false,
+  "requiresAttunement": true,
+  "rarity": "Rare",
+  "weaponMastery": "Sap",
+  "modifiers": [],
+  "activities": [
+    {
+      "id": "act-sunforged-slash",
+      "name": "Sunforged Longsword +1",
+      "type": "attack",
+      "actionEconomy": "action",
+      "attackAbility": "str",
+      "attackBonusFormula": "@mod+@prof+1",
+      "damageFormula": "1d8+@mod+1",
+      "damageType": "radiant",
+      "description": "Emits bright light in a 15-foot radius. Mastery (Sap): Target has Disadvantage on its next attack roll."
+    }
+  ],
+  "entries": ["A radiant blade tempered in celestial fire. Grants +1 to attack and damage rolls and deals radiant damage."]
+}

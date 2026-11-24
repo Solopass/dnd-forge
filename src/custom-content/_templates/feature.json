@@ -1,0 +1,28 @@
+{
+  "id": "custom-feat-arcane-resilience",
+  "name": "Arcane Resilience",
+  "category": "feat",
+  "source": "Homebrew",
+  "ruleset": "2014",
+  "modifiers": [
+    {
+      "id": "mod-ar-hp",
+      "target": "maxHp",
+      "operation": "add",
+      "value": 10,
+      "sourceLabel": "Arcane Resilience"
+    }
+  ],
+  "activities": [
+    {
+      "id": "act-ar-ward",
+      "name": "Arcane Ward",
+      "type": "heal",
+      "actionEconomy": "bonus_action",
+      "damageFormula": "1d8+@prof",
+      "damageType": "healing",
+      "description": "Channel reserve magic to regain 1d8 + PB HP."
+    }
+  ],
+  "entries": ["Increases maximum HP by 10 and grants a bonus action self-heal."]
+}

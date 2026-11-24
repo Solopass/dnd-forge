@@ -1,6 +1,8 @@
 import { WildShapeForm } from '../types/character';
 import { AcFormulaRule, CompendiumEntity, CreatureSize, MonsterStatMeta, PassiveModifierRule } from '../types/compendium';
 import { AbilityKey, ActionEconomy, Ruleset } from '../types/core';
+import { SRD_EXPANSION_PACKS } from './srd-expansion';
+import { CUSTOM_REPO_CONTENT_PACK } from './custom-content-loader';
 
 export interface ContentPack {
   id: string;
@@ -1180,6 +1182,8 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
       ], 'Speed 40 ft, Climb 40 ft. Multiattack (2 Fist attacks).', { size: 'huge', speeds: '40 ft, Climb 40 ft' }),
     ],
   },
+  ...SRD_EXPANSION_PACKS,
+  ...(CUSTOM_REPO_CONTENT_PACK.entities.length > 0 ? [CUSTOM_REPO_CONTENT_PACK] : []),
 ];
 
 const BEAST_SPEEDS: Record<string, number> = {

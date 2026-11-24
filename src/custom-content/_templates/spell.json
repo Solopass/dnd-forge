@@ -1,0 +1,32 @@
+{
+  "id": "custom-spl-arc-flash",
+  "name": "Arc Flash",
+  "category": "spell",
+  "source": "Homebrew",
+  "ruleset": "2014",
+  "spellLevel": 2,
+  "school": "Evocation",
+  "castingTime": "1 action",
+  "range": "60 feet",
+  "components": "V, S",
+  "duration": "Instantaneous",
+  "concentration": false,
+  "ritual": false,
+  "prepared": true,
+  "activities": [
+    {
+      "id": "act-arc-flash",
+      "name": "Arc Flash",
+      "type": "save",
+      "actionEconomy": "action",
+      "saveAbility": "dex",
+      "saveDcFormula": "8+@prof+@spell",
+      "damageFormula": "3d8",
+      "damageType": "lightning",
+      "upcastDicePerLevel": "1d8",
+      "resourceCost": { "poolId": "spell_slot_2", "amount": 1 },
+      "description": "Creatures in a 15-foot cone must succeed a DEX save or take lightning damage and be unable to take reactions until their next turn."
+    }
+  ],
+  "entries": ["A blinding crackle of lightning erupts in a 15-foot cone."]
+}

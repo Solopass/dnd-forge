@@ -27,6 +27,7 @@ import { parseHomebrewMarkdownBlock } from '../engine/statblock-parser';
 import { adapt5eToolsPayload } from '../engine/five-tools-adapter';
 import { parseDndBeyondPdfBuffer } from '../engine/ddb-pdf-importer';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
+import { CUSTOM_REPO_CHARACTERS, parseCustomContentJson } from '../engine/custom-content-loader';
 import {
   buildCharacterFromPreset,
   buildSubclassGrantEntities,
@@ -212,11 +213,23 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
           db.scenes.toArray(),
         ]);
         if (active && allSaved.length > 0) {
-          setCharacterList(allSaved);
-          setRawChar(allSaved[0]!);
+          const existingIds = new Set(allSaved.map((c) => c.id));
+          const missingRepoChars = CUSTOM_REPO_CHARACTERS.filter((c) => !existingIds.has(c.id));
+          for (const rc of missingRepoChars) {
+            await saveCharacter(rc);
+          }
+          const combined = [...allSaved, ...missingRepoChars];
+          setCharacterList(combined);
+          setRawChar(combined[0]!);
         } else {
           await saveCharacter(initialCharacter);
           await upsertCompendiumEntities(initialCharacter.items);
+          for (const rc of CUSTOM_REPO_CHARACTERS) {
+            await saveCharacter(rc);
+          }
+          if (active && CUSTOM_REPO_CHARACTERS.length > 0) {
+            setCharacterList([initialCharacter, ...CUSTOM_REPO_CHARACTERS]);
+          }
         }
         if (active && savedEncounters.length > 0) {
           setEncounterList(savedEncounters);
@@ -1578,8 +1591,26 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
             `Imported ${adapted.entities.length} 5e.tools entities (${adapted.skipped} skipped).`,
             'info'
           );
+          return;
+        }
+
+        const customParsed = parseCustomContentJson(rawText);
+        if (customParsed.entities.length > 0 || customParsed.characters.length > 0) {
+          if (customParsed.entities.length > 0) {
+            await upsertCompendiumEntities(customParsed.entities);
+            setCompendium((prev) => [...customParsed.entities, ...prev]);
+          }
+          for (const ch of customParsed.characters) {
+            await saveCharacter(ch);
+            setCharacterList((prev) => (prev.some((p) => p.id === ch.id) ? prev : [...prev, ch]));
+            setRawChar(ch);
+          }
+          appendLog(
+            `Imported ${customParsed.entities.length} custom entity(s) and ${customParsed.characters.length} character(s).`,
+            'info'
+          );
         } else {
-          appendLog('JSON recognized, but no spell/item/feat/monster arrays were found.', 'warn');
+          appendLog('JSON recognized, but no D&D Forge entities, characters, or 5e.tools arrays were found.', 'warn');
         }
       } catch (err) {
         appendLog(`JSON import failed: ${String(err)}`, 'warn');

@@ -1,0 +1,43 @@
+{
+  "id": "custom-mob-shadow-drake",
+  "name": "Shadow Drake",
+  "category": "monster",
+  "source": "Homebrew",
+  "ruleset": "2014",
+  "monsterMeta": {
+    "ac": 15,
+    "hp": 58,
+    "dexModifier": 3,
+    "cr": "3",
+    "size": "medium",
+    "speeds": "30 ft, Fly 60 ft",
+    "saves": "DEX +5, CON +4",
+    "skills": "Perception +4, Stealth +7",
+    "resistances": ["necrotic"],
+    "immunities": [],
+    "vulnerabilities": ["radiant"],
+    "senses": "Darkvision 120 ft, Passive Perception 14"
+  },
+  "activities": [
+    {
+      "id": "act-bite",
+      "name": "Shadow Bite",
+      "type": "attack",
+      "actionEconomy": "action",
+      "attackBonusFormula": "6",
+      "damageFormula": "2d6+3+1d6",
+      "damageType": "piercing + necrotic"
+    },
+    {
+      "id": "act-breath",
+      "name": "Gloom Breath (Recharge 5-6)",
+      "type": "save",
+      "actionEconomy": "action",
+      "saveAbility": "con",
+      "saveDcFormula": "13",
+      "damageFormula": "6d6",
+      "damageType": "necrotic"
+    }
+  ],
+  "entries": ["Shadow Stealth: While in dim light or darkness, the drake can take the Hide action as a bonus action."]
+}

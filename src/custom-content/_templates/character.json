@@ -1,0 +1,44 @@
+{
+  "id": "custom-char-kaelen",
+  "name": "Kaelen Voss",
+  "ruleset": "2014",
+  "species": "Human",
+  "background": "Soldier",
+  "classes": [
+    {
+      "id": "cls-fighter",
+      "className": "Fighter",
+      "subclass": "Battle Master",
+      "level": 5,
+      "hitDie": 10,
+      "casterProgression": "none"
+    }
+  ],
+  "abilities": {
+    "str": 18,
+    "dex": 14,
+    "con": 16,
+    "int": 10,
+    "wis": 12,
+    "cha": 10
+  },
+  "skillProficiencies": {
+    "Athletics": "proficient",
+    "Perception": "proficient",
+    "Intimidation": "proficient"
+  },
+  "savingThrowProficiencies": ["str", "con"],
+  "hp": { "current": 49, "max": 49, "temp": 0 },
+  "deathSaves": { "successes": 0, "failures": 0 },
+  "exhaustion": 0,
+  "heroicInspiration": false,
+  "speed": 30,
+  "currency": { "cp": 0, "sp": 0, "ep": 0, "gp": 125, "pp": 0 },
+  "conditions": [],
+  "resources": [
+    { "id": "auto_class_second_wind", "name": "Second Wind", "current": 1, "max": 1, "resetOn": "short_rest" },
+    { "id": "auto_class_action_surge", "name": "Action Surge", "current": 1, "max": 1, "resetOn": "short_rest" }
+  ],
+  "items": [],
+  "overrides": {}
+}

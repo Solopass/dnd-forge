@@ -206,6 +206,8 @@ export function buildCharacterFromDdbFields(
   const dvMatch = sensesRaw.match(/darkvision\s*(\d+)\s*ft/i);
   if (dvMatch?.[1]) {
     char.senses = { darkvision: Number.parseInt(dvMatch[1], 10) };
+  } else if (/elf|dwarf|gnome|half-orc|tiefling/i.test(char.species)) {
+    char.senses = { darkvision: 60 };
   }
   const profLangRaw = getField('ProficienciesLang', 'Proficiencies');
   if (profLangRaw) {

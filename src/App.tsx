@@ -1557,7 +1557,7 @@ export function App() {
           onClose={() => setCharManagerOpen(false)}
           characters={store.characterList}
           activeCharacterId={store.rawChar.id}
-          onSelectCharacter={(id) => void store.switchCharacter(id)}
+          onSelectCharacter={(id) => store.switchCharacter(id)}
           onOpenNewCharacter={() => setNewCharOpen(true)}
           onOpenBuilderForActive={() => setBuilderOpen(true)}
           onDuplicateCharacter={store.duplicateCharacter}

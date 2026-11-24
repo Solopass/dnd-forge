@@ -1,22 +1,28 @@
-# D&D Forge — Local-First 5e Character Manager & VTT
+# Sidereroll — Local-First 5e Character Manager & VTT
 
-Offline-first, zero-bloat D&D 5e (2014 SRD 5.1 & 2024 SRD 5.2) character sheet, rules engine, encounter manager, and 2D tactical battlemap.
+Offline-first, zero-bloat D&D 5e (2014 SRD 5.1 & 2024 SRD 5.2) character sheet, rules engine, encounter manager, live table sync, and 2D tactical battlemap.
 
-- **Live Demo (GitHub Pages):** https://solopass.github.io/dnd-forge/
+- **Live App (GitHub Pages):** https://solopass.github.io/dnd-forge/
 
 ## Quick Start
 
 ```bash
 bun install
+bun run content:validate
 bun run test
 bun run build
 bun run dev
 ```
 
 ## Key Features
-- **All 14 Classes & Starter Wizard (`src/engine/classes.ts`):** Pre-configured presets for Artificer, Barbarian, Bard, Blood Hunter, Cleric, Druid, Fighter, Monk, Paladin, Ranger, Rogue, Sorcerer, Warlock, and Wizard with subclass presets, Unarmored Defense, hit dice, and scaled class resource pools.
-- **5-Pass Pure Rules Pipeline (`src/engine/rules-math.ts`):** Resolves ASI, proficiency, exclusive AC formulas, multiclass spell slots, Pact Magic + upcast fallback, `@spell` / `@cantrip` / `@lvl` variables, 2024 exhaustion penalties, and manual overrides.
-- **SRD 5.1 & 5.2 Base Content (`src/engine/srd-packs.ts`):** Cantrips through 9th-level spells, core weapons/armor/shields, class features/feats, 2024 Weapon Mastery gear, and encounter monsters—plus D&D Beyond PDF, Markdown, and 5e.tools JSON import.
-- **Complete Player Sheet & Homebrew Creator (`src/components/EquipmentSpellDrawer.tsx`):** Item quantities & carrying weight, `CP/SP/EP/GP/PP` purse, persistent bio/campaign notes, and a form-based homebrew item/spell creator.
-- **Multi-Encounter Manager & 2D Battlemap (`src/components/SummonCombatDrawer.tsx`, `src/components/BattlemapModal.tsx`):** Multiple saved encounters, `+ Party` roster import, 5e encounter XP difficulty calculator, linked summons & concentration checks, and an interactive 5ft-grid SVG battlemap with custom map upload, measurement ruler, and AoE templates.
-- **Persistent Dexie IndexedDB & Theme/Print (`src/storage/db.ts`, `src/components/SettingsModal.tsx`):** Automatic offline persistence with `.json` backup export/import, System/Light/Dark + High-Contrast themes, and print-ready character sheet styles.
+- **3 Workspace Modes:** Switch seamlessly between **Beyond Classic**, **Unified Command** (with interactive **Skill Wheel**), and **Modular Grid** (drag/resize widgets + **DM Master Screen**).
+- **Full SRD 5.1 (2014) & SRD 5.2 (2024) Compendium (`3,154` custom-pack entities + built-in packs):** Pre-installed spells (`658`), monsters (`675`), equipment & magic items (`1,058`), and feats/features/traits (`763`), searchable via `Ctrl+K` or `+ Add Spell` / `+ Add Gear` with class + castable-level + CONC/RITUAL filters.
+- **Right-Slot Inspector & Rich 5e Tags:** Click any spell, weapon, inventory item, or feature/feat to inspect full rules text, metadata, `imageUrl` art, clickable `{@damage}` / `{@dice}` / `{@dc}` roll chips, and rollable actions.
+- **Character Manager & 3-Step Creator (`src/components/CharacterManagerModal.tsx`, `src/components/NewCharacterModal.tsx`):** Searchable roster with avatar/monogram cards, `.json` / `.md` export, D&D Beyond PDF import (auto-enriched against SRD packs), and a 3-step creator with Standard Array / Point Buy / `4d6kh3`, subclasses, senses, speeds, languages, and starting SRD spells/gear.
+- **5-Pass Pure Rules Pipeline (`src/engine/rules-math.ts`):** Resolves ASI, proficiency, exclusive AC formulas, multiclass spell slots, Pact Magic (Short Rest) + upcasting + Ritual casting, Short Rest Hit Dice modal, 2014/2024 Exhaustion speed & d20 penalties, and optional house rules (Flanking Advantage/+2, Crunchy Crits, etc.).
+- **Personal & Party Shared Inventory (`src/components/InventoryHub.tsx`):** Containers (`Carried`, `Backpack`, `Bag of Holding`, `Pouch`), quick coin `+`/`-` + `Simplify Coins`, and shared **Party Stash** with live table sync.
+- **2D Tactical Battlemap & Live Table (`src/components/BattlemapModal.tsx`, `src/engine/live-sync.ts`):** 5ft-grid SVG battlemap with token quick-actions HUD (`HP +/-`, Conditions, Inspect), fog/terrain/AoE templates, token portrait art, and WebRTC / BroadcastChannel live sync (party vitals, token claims, target attacks/saves/heals/buffs, and party stash).
+
+## Bulk Content Tool & Local GUI
+- **CLI:** `bun run content:convert <file.(pdf|md|txt|csv|tsv|json)> --category <spell|monster|weapon|armor|gear|feat|feature|character> --ruleset <2014|2024>` and `bun run content:validate` (see `src/custom-content/BULK_CONTENT_IMPORT_GUIDE.md`).
+- **Local GUI:** `bun run content:gui` (or launch `launch-content-gui.bat`) opens `http://127.0.0.1:4179` for drag-and-drop conversion, validation, and testing.

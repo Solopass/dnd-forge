@@ -8,7 +8,7 @@ interface CharacterManagerModalProps {
   onClose: () => void;
   characters: RawCharacterState[];
   activeCharacterId: string;
-  onSelectCharacter: (id: string) => void;
+  onSelectCharacter: (id: string) => void | Promise<void>;
   onOpenNewCharacter: () => void;
   onOpenBuilderForActive: () => void;
   onDuplicateCharacter: (targetId?: string) => Promise<void>;
@@ -229,8 +229,8 @@ export const CharacterManagerModal: React.FC<CharacterManagerModalProps> = ({
                       <button
                         type="button"
                         className="btn"
-                        onClick={() => {
-                          if (!isActive) onSelectCharacter(c.id);
+                        onClick={async () => {
+                          if (!isActive) await onSelectCharacter(c.id);
                           onClose();
                           onOpenBuilderForActive();
                         }}

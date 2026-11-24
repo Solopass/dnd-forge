@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { RawCharacterState, ResolvedActivity, ResolvedCharacterSheet } from '../types/character';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ClassLevel, RawCharacterState, ResolvedActivity, ResolvedCharacterSheet, WildShapeForm } from '../types/character';
 import { CombatEncounterState, CombatLogEntry } from '../types/combat';
 import { Activity, CompendiumEntity } from '../types/compendium';
-import { ActionEconomy, RecoveryTrigger, RollMode } from '../types/core';
+import { AbilityKey, ActionEconomy, RecoveryTrigger, RollMode } from '../types/core';
 import {
   applyRestRecovery,
   computeCharacterSheet,
@@ -29,6 +29,14 @@ import {
   syncClassResourcePools,
 } from '../engine/classes';
 import {
+  decodeCharacterShareCode,
+  LivePeerInfo,
+  LiveTableMessage,
+  LiveTableRole,
+  LiveTableSession,
+} from '../engine/live-sync';
+import { playTableSound } from '../engine/sound';
+import {
   buildSearchTokens,
   db,
   importBackupBundle,
@@ -45,6 +53,23 @@ export interface ConsoleLine {
   tone: 'info' | 'roll' | 'warn' | 'crit';
 }
 
+export interface ToastMessage {
+  id: string;
+  text: string;
+  tone: 'info' | 'roll' | 'crit' | 'warn';
+}
+
+export interface LevelUpPlanInput {
+  className: string;
+  hitDie: 6 | 8 | 10 | 12;
+  casterProgression: ClassLevel['casterProgression'];
+  hpGain: number;
+  subclassName?: string;
+  applySubclassGrants?: boolean;
+  abilityIncreases?: Partial<Record<AbilityKey, number>>;
+  bonusEntityIds?: string[];
+}
+
 export function useSheetStore(initialCharacter: RawCharacterState, initialEncounter: CombatEncounterState) {
   const [rawChar, setRawChar] = useState<RawCharacterState>(initialCharacter);
   const [characterList, setCharacterList] = useState<RawCharacterState[]>([initialCharacter]);
@@ -53,6 +78,13 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   const [compendium, setCompendium] = useState<CompendiumEntity[]>(initialCharacter.items);
   const [rollMode, setRollMode] = useState<RollMode>('normal');
   const [pendingConcDc, setPendingConcDc] = useState<number | null>(null);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [liveStatus, setLiveStatus] = useState<{
+    role: LiveTableRole;
+    roomCode: string;
+    peers: LivePeerInfo[];
+  }>({ role: 'idle', roomCode: '', peers: [] });
+  const [historyCounts, setHistoryCounts] = useState({ past: 0, future: 0 });
   const [consoleLines, setConsoleLines] = useState<ConsoleLine[]>([
     {
       id: 'init-1',
@@ -62,16 +94,77 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     },
   ]);
 
-  const appendLog = useCallback((text: string, tone: ConsoleLine['tone'] = 'info') => {
-    setConsoleLines((prev) => [
+  const rawCharRef = useRef(rawChar);
+  rawCharRef.current = rawChar;
+  const encounterRef = useRef(encounter);
+  encounterRef.current = encounter;
+  const pastRef = useRef<Array<{ rawChar: RawCharacterState; encounter: CombatEncounterState }>>([]);
+  const futureRef = useRef<Array<{ rawChar: RawCharacterState; encounter: CombatEncounterState }>>([]);
+  const lastSnapshotTsRef = useRef(0);
+  const isApplyingHistoryRef = useRef(false);
+  const isApplyingRemoteRef = useRef(false);
+  const lastBroadcastDigestRef = useRef('');
+  const liveSessionRef = useRef<LiveTableSession | null>(null);
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  const pushToast = useCallback((text: string, tone: ToastMessage['tone'] = 'info') => {
+    const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    setToasts((prev) => [{ id, text, tone }, ...prev.slice(0, 2)]);
+  }, []);
+
+  const appendLog = useCallback(
+    (text: string, tone: ConsoleLine['tone'] = 'info') => {
+      setConsoleLines((prev) => [
+        {
+          id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          timestamp: new Date().toLocaleTimeString(),
+          text,
+          tone,
+        },
+        ...prev.slice(0, 89),
+      ]);
+
+      if (!text.startsWith('[LIVE')) {
+        if (tone === 'roll' || tone === 'crit') {
+          const snd = text.includes('[FUMBLE]') ? 'fumble' : tone === 'crit' ? 'crit' : 'roll';
+          playTableSound(snd);
+          pushToast(text, tone);
+        }
+        const session = liveSessionRef.current;
+        if (session && session.getState().role !== 'idle' && (tone === 'roll' || tone === 'crit')) {
+          session.broadcast({
+            type: 'roll',
+            senderId: session.senderId,
+            senderName: rawCharRef.current.name,
+            text,
+            tone,
+            timestamp: Date.now(),
+          });
+        }
+      }
+    },
+    [pushToast]
+  );
+
+  const recordUndoSnapshot = useCallback(() => {
+    if (isApplyingHistoryRef.current || isApplyingRemoteRef.current) return;
+    const now = Date.now();
+    if (now - lastSnapshotTsRef.current < 180 && pastRef.current.length > 0) {
+      return;
+    }
+    lastSnapshotTsRef.current = now;
+    pastRef.current = [
+      ...pastRef.current.slice(-24),
       {
-        id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        timestamp: new Date().toLocaleTimeString(),
-        text,
-        tone,
+        rawChar: structuredClone(rawCharRef.current),
+        encounter: structuredClone(encounterRef.current),
       },
-      ...prev.slice(0, 89),
-    ]);
+    ];
+    futureRef.current = [];
+    setHistoryCounts({ past: pastRef.current.length, future: 0 });
   }, []);
 
   useEffect(() => {
@@ -118,42 +211,112 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     [rawChar]
   );
 
-  const persistCharacter = useCallback((updater: (prev: RawCharacterState) => RawCharacterState) => {
-    setRawChar((prev) => {
-      const drafted = updater(prev);
-      const totalAbilities = {
-        str: drafted.baseAbilities.str + drafted.bonusAbilities.str,
-        dex: drafted.baseAbilities.dex + drafted.bonusAbilities.dex,
-        con: drafted.baseAbilities.con + drafted.bonusAbilities.con,
-        int: drafted.baseAbilities.int + drafted.bonusAbilities.int,
-        wis: drafted.baseAbilities.wis + drafted.bonusAbilities.wis,
-        cha: drafted.baseAbilities.cha + drafted.bonusAbilities.cha,
-      };
-      const withClassPools = syncClassResourcePools(drafted.classes, drafted.resources, totalAbilities);
-      const syncedResources = syncSpellSlotPools(drafted.classes, withClassPools);
-      const next = { ...drafted, resources: syncedResources };
-      void saveCharacter(next);
-      setCharacterList((list) =>
-        list.some((c) => c.id === next.id)
-          ? list.map((c) => (c.id === next.id ? next : c))
-          : [...list, next]
-      );
-      return next;
-    });
-  }, []);
+  const persistCharacter = useCallback(
+    (updater: (prev: RawCharacterState) => RawCharacterState) => {
+      recordUndoSnapshot();
+      setRawChar((prev) => {
+        const drafted = updater(prev);
+        const totalAbilities = {
+          str: drafted.baseAbilities.str + drafted.bonusAbilities.str,
+          dex: drafted.baseAbilities.dex + drafted.bonusAbilities.dex,
+          con: drafted.baseAbilities.con + drafted.bonusAbilities.con,
+          int: drafted.baseAbilities.int + drafted.bonusAbilities.int,
+          wis: drafted.baseAbilities.wis + drafted.bonusAbilities.wis,
+          cha: drafted.baseAbilities.cha + drafted.bonusAbilities.cha,
+        };
+        const withClassPools = syncClassResourcePools(drafted.classes, drafted.resources, totalAbilities);
+        const syncedResources = syncSpellSlotPools(drafted.classes, withClassPools);
+        const next = { ...drafted, resources: syncedResources };
+        void saveCharacter(next);
+        setCharacterList((list) =>
+          list.some((c) => c.id === next.id)
+            ? list.map((c) => (c.id === next.id ? next : c))
+            : [...list, next]
+        );
+        return next;
+      });
+    },
+    [recordUndoSnapshot]
+  );
 
-  const persistEncounter = useCallback((updater: (prev: CombatEncounterState) => CombatEncounterState) => {
-    setEncounter((prev) => {
-      const next = updater(prev);
-      void saveEncounter(next);
-      setEncounterList((list) =>
-        list.some((e) => e.id === next.id)
-          ? list.map((e) => (e.id === next.id ? next : e))
-          : [...list, next]
+  const persistEncounter = useCallback(
+    (updater: (prev: CombatEncounterState) => CombatEncounterState) => {
+      recordUndoSnapshot();
+      setEncounter((prev) => {
+        const next = updater(prev);
+        void saveEncounter(next);
+        setEncounterList((list) =>
+          list.some((e) => e.id === next.id)
+            ? list.map((e) => (e.id === next.id ? next : e))
+            : [...list, next]
+        );
+        return next;
+      });
+    },
+    [recordUndoSnapshot]
+  );
+
+  const undo = useCallback(() => {
+    const prevSnapshot = pastRef.current[pastRef.current.length - 1];
+    if (!prevSnapshot) return;
+    isApplyingHistoryRef.current = true;
+    try {
+      pastRef.current = pastRef.current.slice(0, -1);
+      futureRef.current = [
+        ...futureRef.current.slice(-24),
+        {
+          rawChar: structuredClone(rawCharRef.current),
+          encounter: structuredClone(encounterRef.current),
+        },
+      ];
+      setRawChar(prevSnapshot.rawChar);
+      setEncounter(prevSnapshot.encounter);
+      void saveCharacter(prevSnapshot.rawChar);
+      void saveEncounter(prevSnapshot.encounter);
+      setCharacterList((list) =>
+        list.map((c) => (c.id === prevSnapshot.rawChar.id ? prevSnapshot.rawChar : c))
       );
-      return next;
-    });
-  }, []);
+      setEncounterList((list) =>
+        list.map((e) => (e.id === prevSnapshot.encounter.id ? prevSnapshot.encounter : e))
+      );
+      setHistoryCounts({ past: pastRef.current.length, future: futureRef.current.length });
+      appendLog('Undid last change.', 'info');
+      pushToast('Undid last change.', 'info');
+    } finally {
+      isApplyingHistoryRef.current = false;
+    }
+  }, [appendLog, pushToast]);
+
+  const redo = useCallback(() => {
+    const nextSnapshot = futureRef.current[futureRef.current.length - 1];
+    if (!nextSnapshot) return;
+    isApplyingHistoryRef.current = true;
+    try {
+      futureRef.current = futureRef.current.slice(0, -1);
+      pastRef.current = [
+        ...pastRef.current.slice(-24),
+        {
+          rawChar: structuredClone(rawCharRef.current),
+          encounter: structuredClone(encounterRef.current),
+        },
+      ];
+      setRawChar(nextSnapshot.rawChar);
+      setEncounter(nextSnapshot.encounter);
+      void saveCharacter(nextSnapshot.rawChar);
+      void saveEncounter(nextSnapshot.encounter);
+      setCharacterList((list) =>
+        list.map((c) => (c.id === nextSnapshot.rawChar.id ? nextSnapshot.rawChar : c))
+      );
+      setEncounterList((list) =>
+        list.map((e) => (e.id === nextSnapshot.encounter.id ? nextSnapshot.encounter : e))
+      );
+      setHistoryCounts({ past: pastRef.current.length, future: futureRef.current.length });
+      appendLog('Redid change.', 'info');
+      pushToast('Redid change.', 'info');
+    } finally {
+      isApplyingHistoryRef.current = false;
+    }
+  }, [appendLog, pushToast]);
 
   const switchCharacter = useCallback(
     async (characterId: string) => {
@@ -246,6 +409,68 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
 
   const adjustHp = useCallback(
     (delta: number) => {
+      if (rawChar.wildShapeForm) {
+        const beast = rawChar.wildShapeForm;
+        if (delta < 0) {
+          const dmg = Math.abs(delta);
+          const beastAbsorb = Math.min(beast.hp.current, dmg);
+          const leftover = dmg - beastAbsorb;
+          const nextBeastHp = beast.hp.current - beastAbsorb;
+          const reverted = nextBeastHp <= 0;
+
+          let nextHumanHp = rawChar.hp;
+          if (reverted && leftover > 0) {
+            const absorbedTemp = Math.min(rawChar.hp.temp, leftover);
+            nextHumanHp = {
+              ...rawChar.hp,
+              temp: rawChar.hp.temp - absorbedTemp,
+              current: Math.max(0, rawChar.hp.current - (leftover - absorbedTemp)),
+            };
+          }
+
+          persistCharacter((prev) => ({
+            ...prev,
+            wildShapeForm: reverted ? null : { ...beast, hp: { ...beast.hp, current: nextBeastHp } },
+            hp: reverted ? nextHumanHp : prev.hp,
+            deathSaves: reverted && nextHumanHp.current > 0 ? { successes: 0, failures: 0 } : prev.deathSaves,
+          }));
+
+          const dc = Math.max(10, Math.floor(dmg / 2));
+          const hasActiveConc = encounter.activeEffects.some(
+            (e) => e.sourceCombatantId === rawChar.id && e.isConcentration
+          );
+          if (hasActiveConc) {
+            setPendingConcDc(dc);
+            appendLog(
+              `Concentration Check required: DC ${dc} CON save! (took ${dmg} damage)`,
+              'warn'
+            );
+          }
+
+          if (reverted) {
+            appendLog(
+              `${beast.name} dropped to 0 HP — reverted!${leftover > 0 ? ` Carry-over damage: ${leftover}.` : ''}`,
+              'warn'
+            );
+            pushToast(`Wild Shape (${beast.name}) ended!`, 'warn');
+          } else {
+            appendLog(`Wild Shape (${beast.name}) took ${dmg} damage (${nextBeastHp}/${beast.hp.max} HP).`, 'info');
+          }
+          return;
+        }
+
+        const healedBeastHp = Math.min(beast.hp.max, beast.hp.current + delta);
+        persistCharacter((prev) => ({
+          ...prev,
+          wildShapeForm: prev.wildShapeForm
+            ? { ...prev.wildShapeForm, hp: { ...prev.wildShapeForm.hp, current: healedBeastHp } }
+            : null,
+        }));
+        playTableSound('heal');
+        appendLog(`Wild Shape (${beast.name}) healed +${delta} (${healedBeastHp}/${beast.hp.max} HP).`, 'info');
+        return;
+      }
+
       const computeAdjusted = (hp: RawCharacterState['hp']) => {
         let nextTemp = hp.temp;
         let nextCurrent = hp.current;
@@ -291,11 +516,41 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
             'warn'
           );
         }
+      } else if (delta > 0) {
+        playTableSound('heal');
       }
       appendLog(`HP adjusted by ${delta >= 0 ? `+${delta}` : delta}.`, 'info');
     },
-    [rawChar.hp, rawChar.id, encounter.activeEffects, persistCharacter, persistEncounter, appendLog]
+    [rawChar.hp, rawChar.wildShapeForm, rawChar.id, encounter.activeEffects, persistCharacter, persistEncounter, appendLog, pushToast]
   );
+
+  const enterWildShape = useCallback(
+    (form: WildShapeForm) => {
+      const cloned: WildShapeForm = structuredClone(form);
+      persistCharacter((prev) => {
+        const wsPool = prev.resources.find((r) => r.id === 'auto_class_wild_shape');
+        const nextResources =
+          wsPool && wsPool.current > 0
+            ? prev.resources.map((r) =>
+                r.id === 'auto_class_wild_shape' ? { ...r, current: r.current - 1 } : r
+              )
+            : prev.resources;
+        return {
+          ...prev,
+          wildShapeForm: cloned,
+          resources: nextResources,
+        };
+      });
+      appendLog(`Shifted into Wild Shape: ${form.name} (AC ${form.ac}, ${form.hp.max} HP, ${form.speed} ft).`, 'info');
+      pushToast(`Wild Shape: ${form.name} (${form.hp.max} HP)`, 'info');
+    },
+    [persistCharacter, appendLog, pushToast]
+  );
+
+  const revertWildShape = useCallback(() => {
+    persistCharacter((prev) => ({ ...prev, wildShapeForm: null }));
+    appendLog(`${rawChar.name} reverted from Wild Shape.`, 'info');
+  }, [rawChar.name, persistCharacter, appendLog]);
 
   const setTempHp = useCallback(
     (temp: number) => {
@@ -798,13 +1053,15 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   );
 
   const triggerActivity = useCallback(
-    (activity: ResolvedActivity, slotLevelOverride?: number) => {
+    (activity: ResolvedActivity, slotLevelOverride?: number, asRitual = false) => {
       let spentNote = '';
       const baseSlotMatch = activity.resourceCost?.poolId.match(/^spell_slot_(\d+)$/);
       const baseSpellLevel = baseSlotMatch?.[1] ? Number.parseInt(baseSlotMatch[1], 10) : 0;
       let effectiveSlotLevel = baseSpellLevel > 0 ? baseSpellLevel : activity.resourceCost?.amount ?? 4;
 
-      if (activity.resourceCost) {
+      if (asRitual && activity.ritual) {
+        spentNote = ' (Ritual — 10 min, no slot spent)';
+      } else if (activity.resourceCost) {
         const requestedPoolId =
           baseSpellLevel > 0 && slotLevelOverride && slotLevelOverride > baseSpellLevel
             ? `spell_slot_${slotLevelOverride}`
@@ -854,9 +1111,10 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
       }
 
       if (
-        activity.actionEconomy === 'action' ||
-        activity.actionEconomy === 'bonus_action' ||
-        activity.actionEconomy === 'reaction'
+        !asRitual &&
+        (activity.actionEconomy === 'action' ||
+          activity.actionEconomy === 'bonus_action' ||
+          activity.actionEconomy === 'reaction')
       ) {
         persistEncounter((prev) => ({
           ...prev,
@@ -1485,6 +1743,327 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     [compendium]
   );
 
+  const importSingleCharacter = useCallback(
+    async (incoming: RawCharacterState) => {
+      const idCollision = characterList.some((c) => c.id === incoming.id);
+      const targetChar: RawCharacterState = idCollision
+        ? {
+            ...structuredClone(incoming),
+            id: `char-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`,
+            name: `${incoming.name} (Imported)`,
+          }
+        : structuredClone(incoming);
+      await saveCharacter(targetChar);
+      setCharacterList((prev) => [...prev, targetChar]);
+      setRawChar(targetChar);
+      setPendingConcDc(null);
+      appendLog(`Imported character "${targetChar.name}".`, 'info');
+      pushToast(`Imported character: ${targetChar.name}`, 'info');
+    },
+    [characterList, appendLog, pushToast]
+  );
+
+  const applyLevelUpPlan = useCallback(
+    (input: LevelUpPlanInput) => {
+      const allPackEntities = new Map<string, CompendiumEntity>(
+        BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities).map((e) => [e.id, e])
+      );
+
+      persistCharacter((prev) => {
+        const exists = prev.classes.some(
+          (c) => c.className.toLowerCase() === input.className.toLowerCase()
+        );
+        const nextClasses: ClassLevel[] = exists
+          ? prev.classes.map((c) =>
+              c.className.toLowerCase() === input.className.toLowerCase()
+                ? {
+                    ...c,
+                    level: Math.min(20, c.level + 1),
+                    subclassName: input.subclassName?.trim() || c.subclassName,
+                  }
+                : c
+            )
+          : [
+              ...prev.classes,
+              {
+                className: input.className,
+                subclassName: input.subclassName?.trim() || undefined,
+                level: 1,
+                hitDie: input.hitDie,
+                casterProgression: input.casterProgression,
+              },
+            ];
+
+        const nextBonusAbilities = { ...prev.bonusAbilities };
+        if (input.abilityIncreases) {
+          (Object.entries(input.abilityIncreases) as Array<[AbilityKey, number | undefined]>).forEach(
+            ([key, delta]) => {
+              if (delta && delta !== 0) {
+                nextBonusAbilities[key] = (nextBonusAbilities[key] ?? 0) + delta;
+              }
+            }
+          );
+        }
+
+        const existingIds = new Set(prev.items.map((i) => i.id));
+        const existingNames = new Set(prev.items.map((i) => i.name.toLowerCase()));
+        const additions: CompendiumEntity[] = [];
+
+        for (const eid of input.bonusEntityIds ?? []) {
+          const found = allPackEntities.get(eid);
+          if (!found || existingIds.has(found.id) || existingNames.has(found.name.toLowerCase())) continue;
+          const clone = structuredClone(found);
+          clone.ruleset = prev.ruleset;
+          clone.prepared = true;
+          clone.equipped = true;
+          additions.push(clone);
+          existingIds.add(clone.id);
+          existingNames.add(clone.name.toLowerCase());
+        }
+
+        if (input.applySubclassGrants && input.subclassName) {
+          const grants = buildSubclassGrantEntities(input.className, input.subclassName, prev.ruleset);
+          for (const g of grants) {
+            if (existingIds.has(g.id) || existingNames.has(g.name.toLowerCase())) continue;
+            additions.push(g);
+            existingIds.add(g.id);
+            existingNames.add(g.name.toLowerCase());
+          }
+        }
+
+        const hpDelta = Math.max(1, Math.round(input.hpGain));
+        return {
+          ...prev,
+          classes: nextClasses,
+          bonusAbilities: nextBonusAbilities,
+          hp: {
+            ...prev.hp,
+            max: prev.hp.max + hpDelta,
+            current: Math.min(prev.hp.max + hpDelta, prev.hp.current + hpDelta),
+          },
+          items: [...prev.items, ...additions],
+        };
+      });
+
+      appendLog(`Leveled up ${input.className} (+${Math.max(1, Math.round(input.hpGain))} HP).`, 'info');
+      pushToast(`${rawChar.name}: ${input.className} level up (+${Math.max(1, Math.round(input.hpGain))} HP)!`, 'info');
+    },
+    [rawChar.name, persistCharacter, appendLog, pushToast]
+  );
+
+  const onRemoteMessageRef = useRef<(msg: LiveTableMessage) => void>(() => {});
+  onRemoteMessageRef.current = (msg: LiveTableMessage) => {
+    if (msg.type === 'roll') {
+      appendLog(`[LIVE • ${msg.senderName}] ${msg.text}`, msg.tone);
+      if (msg.tone === 'roll' || msg.tone === 'crit') {
+        playTableSound(msg.text.includes('[FUMBLE]') ? 'fumble' : msg.tone === 'crit' ? 'crit' : 'roll');
+        pushToast(`[${msg.senderName}] ${msg.text}`, msg.tone);
+      }
+      return;
+    }
+
+    if (msg.type === 'encounter_state' && liveStatus.role === 'player') {
+      isApplyingRemoteRef.current = true;
+      try {
+        setEncounter(msg.encounter);
+        void saveEncounter(msg.encounter);
+        setEncounterList((list) =>
+          list.some((e) => e.id === msg.encounter.id)
+            ? list.map((e) => (e.id === msg.encounter.id ? msg.encounter : e))
+            : [...list, msg.encounter]
+        );
+        appendLog(`[LIVE] Encounter synced from DM (${msg.senderName}).`, 'info');
+      } finally {
+        setTimeout(() => {
+          isApplyingRemoteRef.current = false;
+        }, 40);
+      }
+      return;
+    }
+
+    if (msg.type === 'player_sync' && liveStatus.role === 'host') {
+      persistEncounter((prev) => {
+        const exists = prev.combatants.some((c) => c.id === msg.characterId);
+        if (!exists) return prev;
+        return {
+          ...prev,
+          combatants: prev.combatants.map((c) =>
+            c.id === msg.characterId
+              ? { ...c, hp: msg.hp, ac: msg.ac, conditions: msg.conditions }
+              : c
+          ),
+        };
+      });
+      return;
+    }
+
+    if (msg.type === 'character_share') {
+      void importSingleCharacter(msg.character);
+    }
+  };
+
+  const ensureLiveSession = useCallback((): LiveTableSession => {
+    if (!liveSessionRef.current) {
+      liveSessionRef.current = new LiveTableSession(
+        (msg) => onRemoteMessageRef.current(msg),
+        (peers) => {
+          const st = liveSessionRef.current?.getState();
+          setLiveStatus({
+            role: st?.role ?? 'idle',
+            roomCode: st?.roomCode ?? '',
+            peers,
+          });
+        }
+      );
+    }
+    return liveSessionRef.current;
+  }, []);
+
+  const refreshLiveStatus = useCallback(() => {
+    const st = liveSessionRef.current?.getState();
+    setLiveStatus({
+      role: st?.role ?? 'idle',
+      roomCode: st?.roomCode ?? '',
+      peers: st?.peers ?? [],
+    });
+  }, []);
+
+  const hostLocalTable = useCallback(
+    (roomCode?: string) => {
+      const session = ensureLiveSession();
+      const code = session.startLocalRoom('host', roomCode ?? '', rawCharRef.current.name);
+      refreshLiveStatus();
+      appendLog(`Hosting Live Table room "${code}" (BroadcastChannel).`, 'info');
+      pushToast(`Hosting room ${code}`, 'info');
+      return code;
+    },
+    [ensureLiveSession, refreshLiveStatus, appendLog, pushToast]
+  );
+
+  const joinLocalTable = useCallback(
+    (roomCode: string) => {
+      const session = ensureLiveSession();
+      const code = session.startLocalRoom('player', roomCode, rawCharRef.current.name);
+      refreshLiveStatus();
+      appendLog(`Joined Live Table room "${code}".`, 'info');
+      pushToast(`Joined room ${code}`, 'info');
+      return code;
+    },
+    [ensureLiveSession, refreshLiveStatus, appendLog, pushToast]
+  );
+
+  const createWebRtcInvite = useCallback(async () => {
+    const session = ensureLiveSession();
+    const res = await session.createWebRtcInvite(rawCharRef.current.name);
+    refreshLiveStatus();
+    appendLog('Generated WebRTC Invite Code for remote player.', 'info');
+    return res;
+  }, [ensureLiveSession, refreshLiveStatus, appendLog]);
+
+  const acceptWebRtcInvite = useCallback(
+    async (inviteCode: string) => {
+      const session = ensureLiveSession();
+      const res = await session.acceptWebRtcInvite(inviteCode, rawCharRef.current.name);
+      refreshLiveStatus();
+      appendLog('Accepted WebRTC Invite; share Reply Code with DM Host.', 'info');
+      return res;
+    },
+    [ensureLiveSession, refreshLiveStatus, appendLog]
+  );
+
+  const completeWebRtcLink = useCallback(
+    async (peerId: string, replyCode: string) => {
+      const session = ensureLiveSession();
+      await session.completeWebRtcLink(peerId, replyCode);
+      refreshLiveStatus();
+      appendLog('Completed WebRTC peer link!', 'info');
+      pushToast('WebRTC peer connected!', 'info');
+    },
+    [ensureLiveSession, refreshLiveStatus, appendLog, pushToast]
+  );
+
+  const disconnectLiveTable = useCallback(() => {
+    liveSessionRef.current?.disconnect();
+    refreshLiveStatus();
+    appendLog('Disconnected from Live Table session.', 'info');
+  }, [refreshLiveStatus, appendLog]);
+
+  const pushEncounterToPeers = useCallback(() => {
+    const session = liveSessionRef.current;
+    if (!session || liveStatus.role === 'idle') return;
+    session.broadcast({
+      type: 'encounter_state',
+      senderId: session.senderId,
+      senderName: rawCharRef.current.name,
+      encounter: encounterRef.current,
+    });
+    appendLog('Broadcasted current encounter to connected players.', 'info');
+  }, [liveStatus.role, appendLog]);
+
+  const shareActiveCharacterToPeers = useCallback(() => {
+    const session = liveSessionRef.current;
+    if (!session || liveStatus.role === 'idle') return;
+    session.broadcast({
+      type: 'character_share',
+      senderId: session.senderId,
+      senderName: rawCharRef.current.name,
+      character: rawCharRef.current,
+    });
+    appendLog(`Shared character "${rawCharRef.current.name}" with connected peers.`, 'info');
+  }, [liveStatus.role, appendLog]);
+
+  useEffect(() => {
+    return () => {
+      liveSessionRef.current?.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hash = window.location.hash;
+    if (!hash.startsWith('#char=DFC1:')) return;
+    try {
+      const decoded = decodeCharacterShareCode(hash);
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      void importSingleCharacter(decoded);
+    } catch {
+      appendLog('Could not decode shared character URL hash.', 'warn');
+    }
+    // run once after mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const session = liveSessionRef.current;
+    if (!session || liveStatus.role === 'idle' || isApplyingRemoteRef.current) return;
+    if (liveStatus.role === 'host') {
+      const digest = JSON.stringify({ id: encounter.id, round: encounter.round, turn: encounter.activeTurnIndex, combatants: encounter.combatants, effects: encounter.activeEffects });
+      if (digest !== lastBroadcastDigestRef.current) {
+        lastBroadcastDigestRef.current = digest;
+        session.broadcast({
+          type: 'encounter_state',
+          senderId: session.senderId,
+          senderName: rawChar.name,
+          encounter,
+        });
+      }
+    } else if (liveStatus.role === 'player') {
+      const digest = JSON.stringify({ id: rawChar.id, hp: rawChar.hp, ac: resolvedSheet.ac.final, cond: rawChar.conditions });
+      if (digest !== lastBroadcastDigestRef.current) {
+        lastBroadcastDigestRef.current = digest;
+        session.broadcast({
+          type: 'player_sync',
+          senderId: session.senderId,
+          senderName: rawChar.name,
+          characterId: rawChar.id,
+          hp: rawChar.hp,
+          ac: resolvedSheet.ac.final,
+          conditions: rawChar.conditions,
+        });
+      }
+    }
+  }, [liveStatus.role, encounter, rawChar, resolvedSheet.ac.final]);
+
   return {
     rawChar,
     characterList,
@@ -1515,6 +2094,26 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     rollMode,
     setRollMode,
     pendingConcDc,
+    toasts,
+    dismissToast,
+    pushToast,
+    canUndo: historyCounts.past > 0,
+    canRedo: historyCounts.future > 0,
+    undo,
+    redo,
+    enterWildShape,
+    revertWildShape,
+    applyLevelUpPlan,
+    importSingleCharacter,
+    liveStatus,
+    hostLocalTable,
+    joinLocalTable,
+    createWebRtcInvite,
+    acceptWebRtcInvite,
+    completeWebRtcLink,
+    disconnectLiveTable,
+    pushEncounterToPeers,
+    shareActiveCharacterToPeers,
     consoleLines,
     appendLog,
     clearConsoleLog,

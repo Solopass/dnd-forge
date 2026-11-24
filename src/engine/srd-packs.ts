@@ -582,4 +582,97 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
       ], 'Legendary Resistance (3/day). Multiattack + Legendary Actions.'),
     ],
   },
+  {
+    id: 'pack-srd-high-level-spells',
+    name: 'SRD High-Level Spells (6th–9th Level)',
+    ruleset: '2014',
+    description: 'High-tier SRD 5.1 spells from 6th to 9th level (Chain Lightning, Disintegrate, Heal, Sunbeam, Finger of Death, Forcecage, Sunburst, Meteor Swarm, Power Word Kill, Wish).',
+    entities: [
+      makeSpell('srd-spell-chain-lightning', 'Chain Lightning', 6, 'action', {
+        saveAbility: 'dex',
+        damageFormula: '10d8',
+        damageType: 'lightning',
+        description: '150 ft. Bolt leaps to 3 additional targets. {@save dex} or take {@damage 10d8} lightning damage (half on success).',
+      }),
+      makeSpell('srd-spell-disintegrate', 'Disintegrate', 6, 'action', {
+        saveAbility: 'dex',
+        damageFormula: '10d6 + 40',
+        damageType: 'force',
+        description: '60 ft. {@save dex} or take {@damage 10d6+40} force damage; turns target to dust at 0 HP.',
+      }),
+      makeSpell('srd-spell-heal', 'Heal', 6, 'action', {
+        heal: true,
+        damageFormula: '70',
+        damageType: 'healing',
+        description: '60 ft. Target regains 70 hit points and ends blindness, deafness, and any diseases.',
+      }),
+      makeSpell('srd-spell-sunbeam', 'Sunbeam', 6, 'action', {
+        concentration: true,
+        saveAbility: 'con',
+        damageFormula: '6d8',
+        damageType: 'radiant',
+        description: '60-ft line. {@save con} or take {@damage 6d8} radiant damage and Blinded until your next turn.',
+      }),
+      makeSpell('srd-spell-globe-of-invulnerability', 'Globe of Invulnerability', 6, 'action', {
+        concentration: true,
+        description: '10-ft radius barrier blocks spells of 5th level or lower.',
+      }),
+      makeSpell('srd-spell-finger-of-death', 'Finger of Death', 7, 'action', {
+        saveAbility: 'con',
+        damageFormula: '7d8 + 30',
+        damageType: 'necrotic',
+        description: '60 ft. {@save con} or take {@damage 7d8+30} necrotic damage (half on success).',
+      }),
+      makeSpell('srd-spell-fire-storm', 'Fire Storm', 7, 'action', {
+        saveAbility: 'dex',
+        damageFormula: '7d10',
+        damageType: 'fire',
+        description: 'Up to ten 10-ft cubes. {@save dex} or take {@damage 7d10} fire damage.',
+      }),
+      makeSpell('srd-spell-forcecage', 'Forcecage', 7, 'action', {
+        description: '100 ft. Trap creatures inside an immobile invisible cage/box of force for 1 hour.',
+      }),
+      makeSpell('srd-spell-teleport', 'Teleport', 7, 'action', {
+        description: 'Instantly transport yourself and up to eight willing creatures to a known destination.',
+      }),
+      makeSpell('srd-spell-resurrection', 'Resurrection', 7, 'action', {
+        description: 'Touch a dead creature (dead <= 100 years) to restore it to life with full HP.',
+      }),
+      makeSpell('srd-spell-power-word-stun', 'Power Word Stun', 8, 'action', {
+        description: '60 ft. Creature with 150 HP or fewer is Stunned.',
+      }),
+      makeSpell('srd-spell-sunburst', 'Sunburst', 8, 'action', {
+        saveAbility: 'con',
+        damageFormula: '12d6',
+        damageType: 'radiant',
+        description: '60-ft radius sphere. {@save con} or take {@damage 12d6} radiant damage and Blinded for 1 minute.',
+      }),
+      makeSpell('srd-spell-mind-blank', 'Mind Blank', 8, 'action', {
+        description: '24 hours. Immune to psychic damage, mind reading, and charmed condition.',
+      }),
+      makeSpell('srd-spell-dominate-monster', 'Dominate Monster', 8, 'action', {
+        concentration: true,
+        saveAbility: 'wis',
+        description: '60 ft. {@save wis} or creature is Charmed and obeys telepathic commands.',
+      }),
+      makeSpell('srd-spell-meteor-swarm', 'Meteor Swarm', 9, 'action', {
+        saveAbility: 'dex',
+        damageFormula: '20d6 + 20d6',
+        damageType: 'fire + bludgeoning',
+        description: 'Four 40-ft radius spheres (1 mile). {@save dex} or take {@damage 20d6+20d6} fire + bludgeoning damage.',
+      }),
+      makeSpell('srd-spell-power-word-kill', 'Power Word Kill', 9, 'action', {
+        description: '60 ft. If target has 100 HP or fewer, it dies instantaneously.',
+      }),
+      makeSpell('srd-spell-wish', 'Wish', 9, 'action', {
+        description: 'Duplicate any spell of 8th level or lower without components, or reshape reality.',
+      }),
+      makeSpell('srd-spell-true-resurrection', 'True Resurrection', 9, 'action', {
+        description: 'Restore a creature dead up to 200 years to life with full HP and new body if needed.',
+      }),
+      makeSpell('srd-spell-foresight', 'Foresight', 9, 'action', {
+        description: '8 hours. Target cannot be surprised and has advantage on attacks, checks, and saves.',
+      }),
+    ],
+  },
 ];

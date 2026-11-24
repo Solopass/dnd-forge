@@ -69,6 +69,8 @@ export interface CompendiumEntity {
   spellLevel?: number;
   acFormula?: AcFormulaRule;
   acFlatBonus?: number;
+  quantity?: number;
+  weight?: number;
   monsterMeta?: MonsterStatMeta;
   modifiers?: PassiveModifierRule[];
   activities: Activity[];

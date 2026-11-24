@@ -28,6 +28,10 @@ export interface CombatantNode {
   kind: 'pc' | 'npc' | 'monster' | 'summon';
   ownerId?: string;
   characterId?: string;
+  cr?: string;
+  x?: number;
+  y?: number;
+  tokenColor?: string;
   initiative: number;
   dexModifier: number;
   ac: number;
@@ -39,6 +43,15 @@ export interface CombatantNode {
   conditions: string[];
   actions?: Activity[];
   turnEconomyUsed: Record<ActionEconomy, boolean>;
+}
+
+export interface BattlemapTemplate {
+  id: string;
+  kind: 'sphere' | 'cone' | 'line' | 'cube';
+  x: number;
+  y: number;
+  radiusFeet: number;
+  color: string;
 }
 
 export interface CombatLogEntry {
@@ -57,4 +70,11 @@ export interface CombatEncounterState {
   combatants: CombatantNode[];
   activeEffects: ActiveEffect[];
   log: CombatLogEntry[];
+  map?: {
+    imageDataUrl?: string;
+    cols: number;
+    rows: number;
+    gridFeet: number;
+    templates: BattlemapTemplate[];
+  };
 }

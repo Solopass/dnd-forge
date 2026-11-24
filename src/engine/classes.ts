@@ -5,6 +5,12 @@ import { BACKGROUND_PRESETS, SPECIES_PRESETS } from './backgrounds';
 import { computeAbilityModifier, createBlankCharacter, syncSpellSlotPools } from './rules-math';
 import { BUILTIN_CONTENT_PACKS } from './srd-packs';
 
+export interface SubclassPreset {
+  name: string;
+  summary: string;
+  bonusEntityIds?: string[];
+}
+
 export interface ClassDefinition {
   className: string;
   hitDie: 6 | 8 | 10 | 12;
@@ -15,6 +21,7 @@ export interface ClassDefinition {
   defaultSkills: SkillKey[];
   unarmoredDefense?: { extraAbility: AbilityKey; label: string };
   startingEntityIds: string[];
+  subclassPresets: SubclassPreset[];
   resourcePoolsForLevel: (level: number, abilities?: Record<AbilityKey, number>) => ResourcePool[];
 }
 
@@ -30,6 +37,10 @@ export const CLASS_DEFINITIONS: ClassDefinition[] = [
     recommendedArray: { str: 8, dex: 14, con: 13, int: 15, wis: 12, cha: 10 },
     defaultSkills: ['arcana', 'investigation'],
     startingEntityIds: ['srd-arm-scale-mail', 'srd-arm-shield', 'srd-wpn-light-crossbow', 'srd-spell-fire-bolt', 'srd-spell-cure-wounds', 'srd-spell-faerie-fire'],
+    subclassPresets: [
+      { name: 'Armorer', summary: 'Arcane Armor, Thunder Gauntlets & Defensive Field.' },
+      { name: 'Battle Smith', summary: 'Steel Defender companion & INT-based weapon attacks.' },
+    ],
     resourcePoolsForLevel: (level) =>
       level >= 3
         ? [{ id: 'auto_class_defensive_field', name: 'Defensive Field / Infusions', current: Math.max(2, Math.ceil(level / 2)), max: Math.max(2, Math.ceil(level / 2)), recovery: 'long_rest', isAutoClassPool: true }]
@@ -45,6 +56,10 @@ export const CLASS_DEFINITIONS: ClassDefinition[] = [
     defaultSkills: ['athletics', 'perception'],
     unarmoredDefense: { extraAbility: 'con', label: 'Unarmored Defense (CON)' },
     startingEntityIds: ['srd-wpn-greataxe', 'srd-wpn-handaxe', 'srd-wpn-javelin', 'srd-feat-rage'],
+    subclassPresets: [
+      { name: 'Path of the Berserker', summary: 'Frenzy bonus-action attacks & Mindless Rage.' },
+      { name: 'Path of the Totem Warrior', summary: 'Bear/Eagle/Wolf totem resistances and aura.' },
+    ],
     resourcePoolsForLevel: (level) => {
       const rages = level >= 20 ? 99 : level >= 17 ? 6 : level >= 12 ? 5 : level >= 6 ? 4 : level >= 3 ? 3 : 2;
       return [{ id: 'auto_class_rage', name: 'Rage', current: rages, max: rages, recovery: 'long_rest', isAutoClassPool: true }];
@@ -59,6 +74,10 @@ export const CLASS_DEFINITIONS: ClassDefinition[] = [
     recommendedArray: { str: 8, dex: 14, con: 13, int: 10, wis: 12, cha: 15 },
     defaultSkills: ['performance', 'persuasion', 'deception'],
     startingEntityIds: ['srd-arm-leather', 'srd-wpn-rapier', 'srd-wpn-dagger', 'srd-spell-vicious-mockery', 'srd-spell-healing-word', 'srd-spell-faerie-fire', 'srd-feat-bardic-inspiration'],
+    subclassPresets: [
+      { name: 'College of Lore', summary: 'Cutting Words & extra Magical Secrets.' },
+      { name: 'College of Valor', summary: 'Medium armor, shields, martial weapons & Extra Attack.' },
+    ],
     resourcePoolsForLevel: (level, abilities) => {
       const chaMod = abilities ? Math.max(1, computeAbilityModifier(abilities.cha)) : 3;
       return [{
@@ -80,6 +99,10 @@ export const CLASS_DEFINITIONS: ClassDefinition[] = [
     recommendedArray: { str: 10, dex: 15, con: 14, int: 13, wis: 12, cha: 8 },
     defaultSkills: ['acrobatics', 'investigation'],
     startingEntityIds: ['srd-arm-studded-leather', 'srd-wpn-rapier', 'srd-wpn-light-crossbow'],
+    subclassPresets: [
+      { name: 'Order of the Ghostslayer', summary: 'Radiant Rite & Curse Specialist.' },
+      { name: 'Order of the Profane Soul', summary: 'Pact Magic casting & Rite Focus.' },
+    ],
     resourcePoolsForLevel: (level) => [
       { id: 'auto_class_blood_maledict', name: 'Blood Maledict', current: level >= 17 ? 4 : level >= 13 ? 3 : level >= 6 ? 2 : 1, max: level >= 17 ? 4 : level >= 13 ? 3 : level >= 6 ? 2 : 1, recovery: 'short_rest', isAutoClassPool: true },
     ],
@@ -93,6 +116,10 @@ export const CLASS_DEFINITIONS: ClassDefinition[] = [
     recommendedArray: { str: 13, dex: 10, con: 14, int: 8, wis: 15, cha: 12 },
     defaultSkills: ['insight', 'religion'],
     startingEntityIds: ['srd-arm-scale-mail', 'srd-arm-shield', 'srd-wpn-mace', 'srd-spell-sacred-flame', 'srd-spell-guidance', 'srd-spell-bless', 'srd-spell-guiding-bolt', 'srd-spell-healing-word', 'srd-feat-channel-divinity'],
+    subclassPresets: [
+      { name: 'Life Domain', summary: 'Heavy armor, Disciple of Life (+2+lvl healing) & Preserve Life.' },
+      { name: 'Light Domain', summary: 'Warding Flare & Radiance of the Dawn.' },
+    ],
     resourcePoolsForLevel: (level) => {
       if (level < 2) return [];
       const cd = level >= 18 ? 3 : level >= 6 ? 2 : 1;
@@ -108,6 +135,10 @@ export const CLASS_DEFINITIONS: ClassDefinition[] = [
     recommendedArray: { str: 8, dex: 13, con: 14, int: 12, wis: 15, cha: 10 },
     defaultSkills: ['nature', 'perception'],
     startingEntityIds: ['srd-arm-leather', 'srd-arm-shield', 'srd-wpn-quarterstaff', 'srd-spell-guidance', 'srd-spell-cure-wounds', 'srd-spell-faerie-fire', 'srd-feat-wild-shape'],
+    subclassPresets: [
+      { name: 'Circle of the Land', summary: 'Natural Recovery & Circle Spells.' },
+      { name: 'Circle of the Moon', summary: 'Combat Wild Shape (bonus action, higher CR beasts).' },
+    ],
     resourcePoolsForLevel: (level) =>
       level >= 2
         ? [{ id: 'auto_class_wild_shape', name: 'Wild Shape', current: 2, max: 2, recovery: 'short_rest', isAutoClassPool: true }]
@@ -122,6 +153,10 @@ export const CLASS_DEFINITIONS: ClassDefinition[] = [
     recommendedArray: { str: 15, dex: 13, con: 14, int: 8, wis: 12, cha: 10 },
     defaultSkills: ['athletics', 'intimidation'],
     startingEntityIds: ['srd-arm-chain-mail', 'srd-arm-shield', 'srd-wpn-longsword', 'srd-wpn-javelin', 'srd-feat-second-wind', 'srd-feat-action-surge'],
+    subclassPresets: [
+      { name: 'Champion', summary: 'Improved Critical (19–20) & Remarkable Athlete.' },
+      { name: 'Battle Master', summary: 'Superiority Dice & tactical combat maneuvers.' },
+    ],
     resourcePoolsForLevel: (level) => {
       const pools: ResourcePool[] = [
         { id: 'auto_class_second_wind', name: 'Second Wind', current: 1, max: 1, recovery: 'short_rest', isAutoClassPool: true },
@@ -143,6 +178,10 @@ export const CLASS_DEFINITIONS: ClassDefinition[] = [
     defaultSkills: ['acrobatics', 'stealth'],
     unarmoredDefense: { extraAbility: 'wis', label: 'Unarmored Defense (WIS)' },
     startingEntityIds: ['srd-wpn-shortsword', 'srd-wpn-dagger', 'srd-feat-flurry-of-blows'],
+    subclassPresets: [
+      { name: 'Way of the Open Hand', summary: 'Open Hand Technique (knock prone / push on Flurry).' },
+      { name: 'Way of Shadow', summary: 'Shadow Arts spells & Shadow Step teleport.' },
+    ],
     resourcePoolsForLevel: (level) =>
       level >= 2
         ? [{ id: 'auto_class_ki', name: 'Focus / Ki Points', current: level, max: level, recovery: 'short_rest', isAutoClassPool: true }]
@@ -157,6 +196,10 @@ export const CLASS_DEFINITIONS: ClassDefinition[] = [
     recommendedArray: { str: 15, dex: 10, con: 13, int: 8, wis: 12, cha: 14 },
     defaultSkills: ['athletics', 'persuasion'],
     startingEntityIds: ['srd-arm-chain-mail', 'srd-arm-shield', 'srd-wpn-longsword', 'srd-wpn-javelin', 'srd-spell-bless', 'srd-spell-cure-wounds', 'srd-feat-lay-on-hands', 'srd-feat-divine-smite'],
+    subclassPresets: [
+      { name: 'Oath of Devotion', summary: 'Sacred Weapon (+CHA to hit) & Turn the Unholy.' },
+      { name: 'Oath of Vengeance', summary: 'Vow of Enmity (advantage) & Misty Step.' },
+    ],
     resourcePoolsForLevel: (level) => {
       const pools: ResourcePool[] = [
         { id: 'auto_class_lay_on_hands', name: 'Lay on Hands (HP Pool)', current: level * 5, max: level * 5, recovery: 'long_rest', isAutoClassPool: true },
@@ -176,6 +219,10 @@ export const CLASS_DEFINITIONS: ClassDefinition[] = [
     recommendedArray: { str: 10, dex: 15, con: 13, int: 8, wis: 14, cha: 12 },
     defaultSkills: ['perception', 'stealth', 'survival'],
     startingEntityIds: ['srd-arm-scale-mail', 'srd-wpn-longbow', 'srd-wpn-shortsword', 'srd-spell-hunters-mark', 'srd-spell-cure-wounds'],
+    subclassPresets: [
+      { name: 'Hunter', summary: 'Colossus Slayer (+1d8) or Horde Breaker.' },
+      { name: 'Gloom Stalker', summary: 'Dread Ambusher (+WIS to Init, extra opening attack) & Umbral Sight.' },
+    ],
     resourcePoolsForLevel: () => [],
   },
   {
@@ -187,6 +234,10 @@ export const CLASS_DEFINITIONS: ClassDefinition[] = [
     recommendedArray: { str: 8, dex: 15, con: 13, int: 14, wis: 12, cha: 10 },
     defaultSkills: ['acrobatics', 'sleight_of_hand', 'stealth', 'perception'],
     startingEntityIds: ['srd-arm-leather', 'srd-wpn-rapier', 'srd-wpn-shortbow', 'srd-wpn-dagger', 'srd-feat-sneak-attack', 'srd-feat-cunning-action'],
+    subclassPresets: [
+      { name: 'Thief', summary: 'Fast Hands bonus-action Sleight of Hand / Use Object.' },
+      { name: 'Assassin', summary: 'Assassinate (advantage & auto-crit vs surprised foes).' },
+    ],
     resourcePoolsForLevel: () => [],
   },
   {
@@ -198,6 +249,10 @@ export const CLASS_DEFINITIONS: ClassDefinition[] = [
     recommendedArray: { str: 8, dex: 13, con: 14, int: 10, wis: 12, cha: 15 },
     defaultSkills: ['arcana', 'persuasion'],
     startingEntityIds: ['srd-wpn-dagger', 'srd-wpn-light-crossbow', 'srd-spell-fire-bolt', 'srd-spell-mage-hand', 'srd-spell-magic-missile', 'srd-spell-shield', 'srd-spell-mage-armor'],
+    subclassPresets: [
+      { name: 'Draconic Bloodline', summary: 'Draconic Resilience (13 + DEX AC) & +1 HP/level.' },
+      { name: 'Wild Magic', summary: 'Tides of Chaos advantage & Wild Magic Surge.' },
+    ],
     resourcePoolsForLevel: (level) =>
       level >= 2
         ? [{ id: 'auto_class_sorcery_points', name: 'Sorcery Points', current: level, max: level, recovery: 'long_rest', isAutoClassPool: true }]
@@ -212,6 +267,10 @@ export const CLASS_DEFINITIONS: ClassDefinition[] = [
     recommendedArray: { str: 8, dex: 13, con: 14, int: 12, wis: 10, cha: 15 },
     defaultSkills: ['arcana', 'deception'],
     startingEntityIds: ['srd-arm-leather', 'srd-wpn-dagger', 'srd-wpn-light-crossbow', 'srd-spell-eldritch-blast', 'srd-spell-mage-hand', 'srd-spell-hex'],
+    subclassPresets: [
+      { name: 'The Fiend', summary: 'Dark One’s Blessing (temp HP on kill) & Fireball access.' },
+      { name: 'The Hexblade', summary: 'Hexblade’s Curse & CHA-based martial weapons + shield.' },
+    ],
     resourcePoolsForLevel: () => [],
   },
   {
@@ -223,6 +282,10 @@ export const CLASS_DEFINITIONS: ClassDefinition[] = [
     recommendedArray: { str: 8, dex: 14, con: 13, int: 15, wis: 12, cha: 10 },
     defaultSkills: ['arcana', 'investigation'],
     startingEntityIds: ['srd-wpn-quarterstaff', 'srd-spell-fire-bolt', 'srd-spell-mage-hand', 'srd-spell-ray-of-frost', 'srd-spell-magic-missile', 'srd-spell-shield', 'srd-spell-mage-armor'],
+    subclassPresets: [
+      { name: 'School of Evocation', summary: 'Sculpt Spells (protect allies from AoE) & Empowered Evocation.' },
+      { name: 'School of Abjuration', summary: 'Arcane Ward barrier & improved Counterspell/Dispel.' },
+    ],
     resourcePoolsForLevel: () => [
       { id: 'auto_class_arcane_recovery', name: 'Arcane Recovery', current: 1, max: 1, recovery: 'long_rest', isAutoClassPool: true },
     ],
@@ -231,6 +294,10 @@ export const CLASS_DEFINITIONS: ClassDefinition[] = [
 
 export function getClassDefinition(className: string): ClassDefinition | undefined {
   return CLASS_DEFINITIONS.find((c) => c.className.toLowerCase() === className.toLowerCase());
+}
+
+export function getSubclassPresets(className: string): SubclassPreset[] {
+  return getClassDefinition(className)?.subclassPresets ?? [];
 }
 
 /**

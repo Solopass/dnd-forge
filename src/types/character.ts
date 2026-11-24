@@ -63,6 +63,18 @@ export interface RawCharacterState {
   resources: ResourcePool[];
   items: CompendiumEntity[];
   overrides: CharacterOverrides;
+  currency?: {
+    cp: number;
+    sp: number;
+    ep: number;
+    gp: number;
+    pp: number;
+  };
+  notes?: {
+    bio: string;
+    campaign: string;
+    proficiencies: string;
+  };
 }
 
 export interface ResolvedActivity extends Activity {

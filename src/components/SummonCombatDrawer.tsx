@@ -1,7 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { CombatEncounterState } from '../types/combat';
 import { Activity, CompendiumEntity } from '../types/compendium';
-import { STANDARD_CONDITIONS } from '../types/core';
+import { ActionEconomy, STANDARD_CONDITIONS } from '../types/core';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
 import { evaluateEncounterDifficulty } from '../engine/encounter-math';
 import { ConsoleLine } from '../state/useSheetStore';
@@ -23,6 +23,7 @@ interface SummonDrawerProps {
   onAdjustCombatantHp: (id: string, delta: number) => void;
   onSetCombatantInitiative: (id: string, initiative: number) => void;
   onToggleCombatantCondition: (id: string, condition: string) => void;
+  onToggleCombatantEconomy: (id: string, economy: ActionEconomy) => void;
   onRemoveCombatant: (id: string) => void;
   onTriggerCombatantActivity: (combatantName: string, act: Activity) => void;
   onDropConcentration: (sourceId: string) => void;
@@ -54,6 +55,7 @@ export function SummonCombatDrawer({
   onAdjustCombatantHp,
   onSetCombatantInitiative,
   onToggleCombatantCondition,
+  onToggleCombatantEconomy,
   onRemoveCombatant,
   onTriggerCombatantActivity,
   onDropConcentration,
@@ -323,6 +325,33 @@ export function SummonCombatDrawer({
                 className={`hp-bar-fill ${getCombatHpClass(node.hp.current, node.hp.max)}`}
                 style={{ width: `${hpPct}%` }}
               />
+            </div>
+
+            <div className="forge-row-between" style={{ marginTop: 6 }}>
+              <span className="forge-muted" style={{ fontSize: 11 }}>
+                Turn Economy:
+              </span>
+              <div className="econ-pill-row" role="group" aria-label={`${node.name} turn economy`}>
+                {([
+                  { key: 'action', label: 'A', title: 'Action' },
+                  { key: 'bonus_action', label: 'BA', title: 'Bonus Action' },
+                  { key: 'reaction', label: 'R', title: 'Reaction' },
+                ] as const).map((item) => {
+                  const used = node.turnEconomyUsed[item.key];
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      className={`econ-pill ${used ? 'used' : ''}`}
+                      aria-pressed={used}
+                      title={`${item.title}: ${used ? 'Used' : 'Available'} (click to toggle)`}
+                      onClick={() => onToggleCombatantEconomy(node.id, item.key)}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="forge-row" style={{ marginTop: 6 }}>

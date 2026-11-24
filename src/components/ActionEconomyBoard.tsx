@@ -7,7 +7,7 @@ interface ActionEconomyBoardProps {
   sheet: ResolvedCharacterSheet;
   rollMode: RollMode;
   onChangeRollMode: (mode: RollMode) => void;
-  onTriggerActivity: (activity: ResolvedActivity) => void;
+  onTriggerActivity: (activity: ResolvedActivity, slotLevelOverride?: number) => void;
   onRollInlineExpression: (label: string, expression: string) => void;
 }
 
@@ -61,6 +61,7 @@ export function ActionEconomyBoard({
 }: ActionEconomyBoardProps) {
   const [filter, setFilter] = useState<'all' | 'attack' | 'save' | 'heal' | 'summon' | 'concentration'>('all');
   const [search, setSearch] = useState('');
+  const [upcastOverrides, setUpcastOverrides] = useState<Record<string, number>>({});
 
   const matchesFilter = (act: ResolvedActivity): boolean => {
     const q = search.trim().toLowerCase();
@@ -166,6 +167,19 @@ export function ActionEconomyBoard({
             ) : (
               items.map((act) => {
                 const desc = act.resolvedDescription ?? act.description;
+                const slotMatch = act.resourceCost?.poolId.match(/^spell_slot_(\d+)$/);
+                const baseSlotLvl = slotMatch?.[1] ? Number.parseInt(slotMatch[1], 10) : 0;
+                const higherSlots =
+                  baseSlotLvl > 0 && act.upcastDicePerLevel
+                    ? sheet.resources
+                        .map((r) => {
+                          const m = r.id.match(/^spell_slot_(\d+)$/);
+                          const lvl = m?.[1] ? Number.parseInt(m[1], 10) : 0;
+                          return { lvl, pool: r };
+                        })
+                        .filter((x) => x.lvl >= baseSlotLvl && x.pool.max > 0)
+                    : [];
+                const chosenSlot = upcastOverrides[act.id] ?? baseSlotLvl;
                 return (
                   <div key={act.id} className="forge-list-row">
                     <div>
@@ -186,13 +200,35 @@ export function ActionEconomyBoard({
                       )}
                     </div>
 
-                    <button
-                      type="button"
-                      className="btn btn-primary tabular forge-nowrap"
-                      onClick={() => onTriggerActivity(act)}
-                    >
-                      {formatActivityActionLabel(act)}
-                    </button>
+                    <div className="forge-row">
+                      {higherSlots.length > 1 && (
+                        <select
+                          aria-label={`Cast level for ${act.name}`}
+                          className="forge-input tabular"
+                          style={{ padding: '3px 4px', fontSize: 11 }}
+                          value={chosenSlot}
+                          onChange={(e) => {
+                            const lvl = Number.parseInt(e.target.value, 10);
+                            setUpcastOverrides((prev) => ({ ...prev, [act.id]: lvl }));
+                          }}
+                        >
+                          {higherSlots.map(({ lvl, pool }) => (
+                            <option key={lvl} value={lvl}>
+                              L{lvl} ({pool.current}/{pool.max})
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      <button
+                        type="button"
+                        className="btn btn-primary tabular forge-nowrap"
+                        onClick={() =>
+                          onTriggerActivity(act, chosenSlot > baseSlotLvl ? chosenSlot : undefined)
+                        }
+                      >
+                        {formatActivityActionLabel(act)}
+                      </button>
+                    </div>
                   </div>
                 );
               })

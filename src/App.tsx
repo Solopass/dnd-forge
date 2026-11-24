@@ -254,6 +254,9 @@ export function App() {
           onSetTempHp={store.setTempHp}
           onSetExhaustion={store.setExhaustion}
           onUpdateDeathSaves={store.updateDeathSaves}
+          onRollDeathSave={store.rollDeathSave}
+          onToggleInspiration={store.toggleInspiration}
+          onToggleDefense={store.toggleDefense}
           onAdjustResource={store.adjustResourcePool}
           onAddResource={store.addCustomResourcePool}
           onSetAcOverride={(val) => store.setStatOverride('ac', val)}
@@ -292,6 +295,7 @@ export function App() {
           onAdjustCombatantHp={store.adjustCombatantHp}
           onSetCombatantInitiative={store.setCombatantInitiative}
           onToggleCombatantCondition={store.toggleCombatantCondition}
+          onToggleCombatantEconomy={store.toggleCombatantEconomy}
           onRemoveCombatant={store.removeCombatant}
           onTriggerCombatantActivity={store.triggerCombatantActivity}
           onDropConcentration={store.dropConcentration}
@@ -327,6 +331,7 @@ export function App() {
         canDelete={store.characterList.length > 1}
         onClose={() => setBuilderOpen(false)}
         onUpdateCharacter={store.persistCharacter}
+        onApplySubclassGrants={store.applySubclassGrants}
         onDuplicateCharacter={store.duplicateCharacter}
         onDeleteCharacter={() => store.deleteCharacter(store.rawChar.id)}
         onLog={store.appendLog}

@@ -11,6 +11,7 @@ interface CharacterBuilderDrawerProps {
   canDelete: boolean;
   onClose: () => void;
   onUpdateCharacter: (updater: (prev: RawCharacterState) => RawCharacterState) => void;
+  onApplySubclassGrants: (className: string, subclassName: string) => number;
   onDuplicateCharacter: () => Promise<void>;
   onDeleteCharacter: () => Promise<void>;
   onLog: (msg: string, tone?: 'info' | 'warn') => void;
@@ -25,6 +26,7 @@ export function CharacterBuilderDrawer({
   canDelete,
   onClose,
   onUpdateCharacter,
+  onApplySubclassGrants,
   onDuplicateCharacter,
   onDeleteCharacter,
   onLog,
@@ -129,7 +131,7 @@ export function CharacterBuilderDrawer({
   const cycleSkillProf = (skill: SkillKey) => {
     onUpdateCharacter((prev) => {
       const cur = prev.skillProficiencies[skill] ?? 0;
-      const next: 0 | 1 | 2 = cur === 0 ? 1 : cur === 1 ? 2 : 0;
+      const next: 0 | 0.5 | 1 | 2 = cur === 0 ? 0.5 : cur === 0.5 ? 1 : cur === 1 ? 2 : 0;
       return {
         ...prev,
         skillProficiencies: { ...prev.skillProficiencies, [skill]: next },
@@ -242,8 +244,19 @@ export function CharacterBuilderDrawer({
                   </div>
                 )}
                 {activeSub && (
-                  <div className="forge-muted" style={{ fontSize: 11, marginTop: 2 }}>
-                    {activeSub.summary}
+                  <div className="forge-row-between" style={{ marginTop: 4, gap: 8 }}>
+                    <div className="forge-muted" style={{ fontSize: 11 }}>
+                      {activeSub.summary}
+                    </div>
+                    {activeSub.bonusEntityIds && activeSub.bonusEntityIds.length > 0 && (
+                      <button
+                        type="button"
+                        className="btn btn-primary forge-nowrap"
+                        onClick={() => onApplySubclassGrants(cls.className, cls.subclassName ?? '')}
+                      >
+                        Apply Subclass Grants
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -313,11 +326,11 @@ export function CharacterBuilderDrawer({
         </div>
 
         <div className="card">
-          <div className="forge-section-label">SKILL PROFICIENCIES (CLICK TO CYCLE: NONE → PROF → EXPERTISE)</div>
+          <div className="forge-section-label">SKILL PROFICIENCIES (CLICK TO CYCLE: NONE ○ → HALF ◐ → PROF ● → EXPERTISE ★★)</div>
           <div className="forge-skill-pill-grid">
             {SKILL_KEYS.map((sk) => {
               const rank = character.skillProficiencies[sk] ?? 0;
-              const badge = rank === 2 ? '★★' : rank === 1 ? '●' : '○';
+              const badge = rank === 2 ? '★★' : rank === 1 ? '●' : rank === 0.5 ? '◐' : '○';
               return (
                 <button
                   key={sk}

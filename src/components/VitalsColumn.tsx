@@ -9,6 +9,9 @@ interface VitalsColumnProps {
   onSetTempHp: (temp: number) => void;
   onSetExhaustion: (level: number) => void;
   onUpdateDeathSaves: (kind: 'successes' | 'failures', count: number) => void;
+  onRollDeathSave: () => void;
+  onToggleInspiration: () => void;
+  onToggleDefense: (kind: 'resistances' | 'immunities' | 'vulnerabilities', damageType: string) => void;
   onAdjustResource: (poolId: string, delta: number) => void;
   onAddResource: (name: string, max: number, recovery: RecoveryTrigger) => void;
   onSetAcOverride: (val: number | null) => void;
@@ -43,6 +46,9 @@ export function VitalsColumn({
   onSetTempHp,
   onSetExhaustion,
   onUpdateDeathSaves,
+  onRollDeathSave,
+  onToggleInspiration,
+  onToggleDefense,
   onAdjustResource,
   onAddResource,
   onSetAcOverride,
@@ -59,6 +65,9 @@ export function VitalsColumn({
   const [skillsExpanded, setSkillsExpanded] = useState(true);
   const [skillFilter, setSkillFilter] = useState('');
   const [selectedCondition, setSelectedCondition] = useState<string>(STANDARD_CONDITIONS[0]);
+  const [showDefenseEditor, setShowDefenseEditor] = useState(false);
+  const [defenseKind, setDefenseKind] = useState<'resistances' | 'immunities' | 'vulnerabilities'>('resistances');
+  const [defenseType, setDefenseType] = useState('fire');
   const [newPoolName, setNewPoolName] = useState('');
   const [newPoolMax, setNewPoolMax] = useState('3');
 
@@ -70,10 +79,13 @@ export function VitalsColumn({
     formatSkillLabel(sk).toLowerCase().includes(skillFilter.trim().toLowerCase())
   );
 
-  const applyCustomHp = (sign: 1 | -1) => {
-    const amount = Math.abs(Number.parseInt(hpDeltaInput, 10));
-    if (!Number.isNaN(amount) && amount > 0) {
-      onAdjustHp(sign * amount);
+  const applyCustomHp = (sign: 1 | -1, multiplier = 1) => {
+    const rawAmount = Math.abs(Number.parseInt(hpDeltaInput, 10));
+    if (!Number.isNaN(rawAmount) && rawAmount > 0) {
+      const scaled = multiplier === 1 ? rawAmount : Math.floor(rawAmount * multiplier);
+      if (scaled > 0) {
+        onAdjustHp(sign * scaled);
+      }
       setHpDeltaInput('');
     }
   };
@@ -86,9 +98,19 @@ export function VitalsColumn({
             <strong>{sheet.name}</strong>
             <div className="forge-muted" style={{ fontSize: 11 }}>
               Lvl {sheet.totalLevel} • {sheet.ruleset.toUpperCase()} • Prof +{sheet.proficiencyBonus.final}
+              {sheet.critThreshold < 20 ? ` • Crit ${sheet.critThreshold}–20` : ''}
             </div>
           </div>
           <div className="forge-row">
+            <button
+              type="button"
+              className={`pill ${sheet.inspiration ? 'active' : ''}`}
+              aria-pressed={sheet.inspiration}
+              onClick={onToggleInspiration}
+              title="Toggle Heroic Inspiration"
+            >
+              {sheet.inspiration ? '★ Inspired' : '☆ Insp'}
+            </button>
             <span className="forge-muted" style={{ fontSize: 11 }}>Exh</span>
             <button
               type="button"
@@ -111,12 +133,6 @@ export function VitalsColumn({
             </button>
           </div>
         </div>
-
-        {sheet.exhaustion > 0 && sheet.ruleset === '2024' && (
-          <div className="forge-muted" style={{ color: 'var(--accent-amber)', fontSize: 11, marginTop: 4 }}>
-            2024 Exhaustion active: {-2 * sheet.exhaustion} to d20 tests &amp; Save DCs
-          </div>
-        )}
 
         <div className="stat-strip">
           <button
@@ -220,6 +236,22 @@ export function VitalsColumn({
           <button type="button" className="btn btn-danger" onClick={() => applyCustomHp(-1)}>
             Dmg
           </button>
+          <button
+            type="button"
+            className="btn"
+            title="Apply half damage (Resistance)"
+            onClick={() => applyCustomHp(-1, 0.5)}
+          >
+            ÷2
+          </button>
+          <button
+            type="button"
+            className="btn"
+            title="Apply double damage (Vulnerability)"
+            onClick={() => applyCustomHp(-1, 2)}
+          >
+            ×2
+          </button>
           <button type="button" className="btn btn-primary" onClick={() => applyCustomHp(1)}>
             Heal
           </button>
@@ -247,8 +279,13 @@ export function VitalsColumn({
 
         {sheet.hp.current === 0 && (
           <div style={{ marginTop: 8, padding: 6, background: 'rgba(248, 81, 73, 0.12)', borderRadius: 4 }}>
-            <div style={{ fontSize: 11, color: 'var(--accent-red)', marginBottom: 4 }}>
-              DEATH SAVING THROWS
+            <div className="forge-row-between" style={{ marginBottom: 4 }}>
+              <span style={{ fontSize: 11, color: 'var(--accent-red)', fontWeight: 700 }}>
+                DEATH SAVING THROWS
+              </span>
+              <button type="button" className="btn btn-primary" onClick={onRollDeathSave}>
+                Roll Death Save
+              </button>
             </div>
             <div className="forge-row-between" style={{ fontSize: 12 }}>
               <span>
@@ -304,7 +341,93 @@ export function VitalsColumn({
           <button type="button" className="btn" onClick={() => onToggleCondition(selectedCondition)}>
             Toggle Cond
           </button>
+          <button
+            type="button"
+            className={`btn ${showDefenseEditor ? 'btn-primary' : ''}`}
+            onClick={() => setShowDefenseEditor((v) => !v)}
+            title="Edit damage resistances, immunities, and vulnerabilities"
+          >
+            Defenses
+          </button>
         </div>
+
+        {(sheet.defenses.resistances.length > 0 ||
+          sheet.defenses.immunities.length > 0 ||
+          sheet.defenses.vulnerabilities.length > 0) && (
+          <div className="pill-row" style={{ marginTop: 6 }}>
+            {sheet.defenses.resistances.map((d) => (
+              <button
+                key={`res-${d}`}
+                type="button"
+                className="pill def-res"
+                onClick={() => onToggleDefense('resistances', d)}
+                title="Resistance (click to remove)"
+              >
+                Res: {d} ×
+              </button>
+            ))}
+            {sheet.defenses.immunities.map((d) => (
+              <button
+                key={`imm-${d}`}
+                type="button"
+                className="pill def-imm"
+                onClick={() => onToggleDefense('immunities', d)}
+                title="Immunity (click to remove)"
+              >
+                Imm: {d} ×
+              </button>
+            ))}
+            {sheet.defenses.vulnerabilities.map((d) => (
+              <button
+                key={`vuln-${d}`}
+                type="button"
+                className="pill def-vuln"
+                onClick={() => onToggleDefense('vulnerabilities', d)}
+                title="Vulnerability (click to remove)"
+              >
+                Vuln: {d} ×
+              </button>
+            ))}
+          </div>
+        )}
+
+        {showDefenseEditor && (
+          <div className="forge-row" style={{ marginTop: 6, flexWrap: 'wrap' }}>
+            <select
+              aria-label="Defense category"
+              className="forge-input"
+              value={defenseKind}
+              onChange={(e) => setDefenseKind(e.target.value as 'resistances' | 'immunities' | 'vulnerabilities')}
+              style={{ padding: '3px 6px', fontSize: 11 }}
+            >
+              <option value="resistances">Resistance</option>
+              <option value="immunities">Immunity</option>
+              <option value="vulnerabilities">Vulnerability</option>
+            </select>
+            <select
+              aria-label="Damage type"
+              className="forge-input"
+              value={defenseType}
+              onChange={(e) => setDefenseType(e.target.value)}
+              style={{ flex: 1, padding: '3px 6px', fontSize: 11 }}
+            >
+              {['acid', 'bludgeoning', 'cold', 'fire', 'force', 'lightning', 'necrotic', 'piercing', 'poison', 'psychic', 'radiant', 'slashing', 'thunder'].map(
+                (dt) => (
+                  <option key={dt} value={dt}>
+                    {dt}
+                  </option>
+                )
+              )}
+            </select>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => onToggleDefense(defenseKind, defenseType)}
+            >
+              +Toggle
+            </button>
+          </div>
+        )}
 
         {sheet.conditions.length > 0 && (
           <div className="pill-row" style={{ marginTop: 6 }}>
@@ -318,6 +441,14 @@ export function VitalsColumn({
               >
                 {cond} ×
               </button>
+            ))}
+          </div>
+        )}
+
+        {sheet.conditionWarnings.length > 0 && (
+          <div className="cond-warning-box" role="status">
+            {sheet.conditionWarnings.map((warn, i) => (
+              <div key={i}>{warn}</div>
             ))}
           </div>
         )}

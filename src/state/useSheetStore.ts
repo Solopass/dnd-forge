@@ -525,9 +525,10 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
           }));
 
           const dc = Math.max(10, Math.floor(dmg / 2));
-          const hasActiveConc = encounter.activeEffects.some(
-            (e) => e.sourceCombatantId === rawChar.id && e.isConcentration
-          );
+          const hasActiveConc =
+            encounter.activeEffects.some(
+              (e) => e.sourceCombatantId === rawChar.id && e.isConcentration
+            ) || rawChar.conditions.some((c) => c.toLowerCase() === 'concentrating');
           if (hasActiveConc) {
             setPendingConcDc(dc);
             appendLog(
@@ -595,9 +596,10 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
 
       if (delta < 0) {
         const dc = Math.max(10, Math.floor(Math.abs(delta) / 2));
-        const hasActiveConc = encounter.activeEffects.some(
-          (e) => e.sourceCombatantId === rawChar.id && e.isConcentration
-        );
+        const hasActiveConc =
+          encounter.activeEffects.some(
+            (e) => e.sourceCombatantId === rawChar.id && e.isConcentration
+          ) || rawChar.conditions.some((c) => c.toLowerCase() === 'concentrating');
         if (hasActiveConc) {
           setPendingConcDc(dc);
           appendLog(
@@ -610,7 +612,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
       }
       appendLog(`HP adjusted by ${delta >= 0 ? `+${delta}` : delta}.`, 'info');
     },
-    [rawChar.hp, rawChar.wildShapeForm, rawChar.id, encounter.activeEffects, persistCharacter, persistEncounter, appendLog, pushToast]
+    [rawChar.hp, rawChar.wildShapeForm, rawChar.id, rawChar.conditions, encounter.activeEffects, persistCharacter, persistEncounter, appendLog, pushToast]
   );
 
   const enterWildShape = useCallback(

@@ -1269,6 +1269,22 @@ export function StatusConsole({
               {die}
             </button>
           ))}
+          <button
+            type="button"
+            className="btn tabular"
+            title="Roll d20 with Advantage"
+            onClick={() => onRollExpression('Quick d20 (Adv)', '2d20kh1')}
+          >
+            d20 Adv
+          </button>
+          <button
+            type="button"
+            className="btn tabular"
+            title="Roll d20 with Disadvantage"
+            onClick={() => onRollExpression('Quick d20 (Dis)', '2d20kl1')}
+          >
+            d20 Dis
+          </button>
         </div>
 
         <div className="forge-row">

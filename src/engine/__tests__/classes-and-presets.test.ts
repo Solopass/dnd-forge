@@ -5,7 +5,7 @@ import {
   computeFixedMaxHp,
   syncClassResourcePools,
 } from '../classes';
-import { computeCharacterSheet } from '../rules-math';
+import { computeCharacterSheet, syncSpellSlotPools } from '../rules-math';
 import { BUILTIN_CONTENT_PACKS } from '../srd-packs';
 
 describe('D&D Forge Class Definitions & Character Presets', () => {
@@ -165,5 +165,41 @@ describe('D&D Forge Class Definitions & Character Presets', () => {
     // Tough adds +2 * 5 = +10 HP on Fighter Lvl 5 (CON 14+1=15 (+2) => 44 + 10 = 54)
     const toughHp = computeFixedMaxHp(fighter.classes, fighter.baseAbilities.con + fighter.bonusAbilities.con, fighter.items);
     expect(toughHp).toBe(54);
+  });
+
+  it('preserves decremented Pact Slots and spell slots when syncing class and slot pools', () => {
+    const warlock = buildCharacterFromPreset({
+      id: 'wlk-sync',
+      name: 'Vex',
+      className: 'Warlock',
+      level: 5,
+      speciesName: 'Tiefling',
+      backgroundName: 'Sage',
+      ruleset: '2014',
+    });
+    const spentWarlockPools = warlock.resources.map((r) =>
+      r.id === 'pact_slot' ? { ...r, current: r.current - 1 } : r
+    );
+    const afterClassSync = syncClassResourcePools(warlock.classes, spentWarlockPools);
+    const afterSlotSync = syncSpellSlotPools(warlock.classes, afterClassSync);
+    expect(afterSlotSync.find((r) => r.id === 'pact_slot')?.current).toBe(1);
+    expect(afterSlotSync.find((r) => r.id === 'pact_slot')?.max).toBe(2);
+
+    const wizard = buildCharacterFromPreset({
+      id: 'wiz-sync',
+      name: 'Lyra',
+      className: 'Wizard',
+      level: 3,
+      speciesName: 'Elf',
+      backgroundName: 'Sage',
+      ruleset: '2014',
+    });
+    const spentWizardPools = wizard.resources.map((r) =>
+      r.id === 'spell_slot_1' ? { ...r, current: 2 } : r
+    );
+    const wizClassSync = syncClassResourcePools(wizard.classes, spentWizardPools);
+    const wizSlotSync = syncSpellSlotPools(wizard.classes, wizClassSync);
+    expect(wizSlotSync.find((r) => r.id === 'spell_slot_1')?.current).toBe(2);
+    expect(wizSlotSync.find((r) => r.id === 'spell_slot_1')?.max).toBe(4);
   });
 });

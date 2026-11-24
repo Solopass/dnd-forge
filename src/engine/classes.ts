@@ -271,6 +271,7 @@ export function syncClassResourcePools(
   abilities?: Record<AbilityKey, number>
 ): ResourcePool[] {
   const prevMap = new Map(existingPools.map((p) => [p.id, p]));
+  const preservedSpellSlots = existingPools.filter((p) => p.isAutoSpellSlot);
   const customPools = existingPools.filter(
     (p) => !p.isAutoSpellSlot && !p.isAutoClassPool && p.id !== 'hit_dice'
   );
@@ -302,7 +303,7 @@ export function syncClassResourcePools(
     }
   }
 
-  return [hitDicePool, ...autoClassPools, ...customPools];
+  return [...preservedSpellSlots, hitDicePool, ...autoClassPools, ...customPools];
 }
 
 export interface NewCharacterPresetInput {

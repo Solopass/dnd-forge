@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { FormEvent, useRef, useState } from 'react';
 import { BACKGROUND_PRESETS, SPECIES_PRESETS } from '../engine/backgrounds';
 import { CLASS_DEFINITIONS, NewCharacterPresetInput } from '../engine/classes';
 import { evaluateDiceExpression } from '../engine/dice';
@@ -29,6 +29,7 @@ export function NewCharacterModal({ isOpen, onClose, onCreate }: NewCharacterMod
     wis: 10,
     cha: 8,
   });
+  const isSubmittingRef = useRef(false);
 
   const selectedClass = CLASS_DEFINITIONS.find((c) => c.className === className) ?? CLASS_DEFINITIONS[0]!;
   const activeAbilities = abilityMode === 'standard' ? selectedClass.recommendedArray : rolledScores;
@@ -46,19 +47,29 @@ export function NewCharacterModal({ isOpen, onClose, onCreate }: NewCharacterMod
     setAbilityMode('rolled');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const submitCharacter = async () => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    try {
+      await onCreate({
+        name: name.trim() || `${speciesName} ${className}`,
+        className,
+        level,
+        speciesName,
+        backgroundName,
+        ruleset,
+        baseAbilities: activeAbilities,
+      });
+      setName('');
+      onClose();
+    } finally {
+      isSubmittingRef.current = false;
+    }
+  };
+
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    await onCreate({
-      name: name.trim() || `${speciesName} ${className}`,
-      className,
-      level,
-      speciesName,
-      backgroundName,
-      ruleset,
-      baseAbilities: activeAbilities,
-    });
-    setName('');
-    onClose();
+    void submitCharacter();
   };
 
   return (
@@ -172,7 +183,7 @@ export function NewCharacterModal({ isOpen, onClose, onCreate }: NewCharacterMod
             </div>
           </div>
 
-          <div className="forge-ability-grid">
+          <div className="forge-ability-grid-6">
             {ABILITY_ORDER.map((key) => (
               <label key={key} className="forge-field">
                 <span className="forge-label">{key.toUpperCase()}</span>
@@ -203,7 +214,7 @@ export function NewCharacterModal({ isOpen, onClose, onCreate }: NewCharacterMod
           <button type="button" className="btn" onClick={onClose}>
             Cancel
           </button>
-          <button type="submit" className="btn btn-primary">
+          <button type="button" className="btn btn-primary" onClick={() => void submitCharacter()}>
             Create {className} (Lvl {level})
           </button>
         </div>

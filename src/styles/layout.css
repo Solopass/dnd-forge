@@ -268,8 +268,24 @@ dialog.forge-dialog::backdrop {
 
 .forge-ability-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
+}
+
+.forge-ability-grid-6 {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 540px) {
+  .forge-ability-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .forge-ability-grid-6 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .forge-nowrap {

@@ -155,6 +155,46 @@ export function syncSpellSlotPools(classes: ClassLevel[], existingPools: Resourc
   return [...generatedSlots, ...preservedCustom];
 }
 
+export function resolveResourcePoolForCost(
+  resources: ResourcePool[],
+  classes: ClassLevel[],
+  requestedPoolId: string,
+  amount: number
+): { poolId: string; note?: string } | { error: string } {
+  const spellMatch = requestedPoolId.match(/^spell_slot_(\d+)$/);
+  if (spellMatch && spellMatch[1]) {
+    const levelNeeded = Number.parseInt(spellMatch[1], 10);
+    const exact = resources.find((r) => r.id === requestedPoolId);
+    if (exact && exact.current >= amount) {
+      return { poolId: exact.id };
+    }
+
+    const pactLevel = classes
+      .filter((c) => c.casterProgression === 'pact')
+      .reduce((sum, c) => sum + c.level, 0);
+    const pactSlotRank = pactLevel > 0 ? Math.min(5, Math.ceil(pactLevel / 2)) : 0;
+    const pactPool = resources.find((r) => r.id === 'pact_slot');
+    if (pactPool && pactSlotRank >= levelNeeded && pactPool.current >= amount) {
+      return { poolId: pactPool.id, note: `via Pact Slot Lvl ${pactSlotRank}` };
+    }
+
+    for (let lvl = levelNeeded + 1; lvl <= 9; lvl++) {
+      const upcast = resources.find((r) => r.id === `spell_slot_${lvl}`);
+      if (upcast && upcast.current >= amount) {
+        return { poolId: upcast.id, note: `upcast with Level ${lvl} slot` };
+      }
+    }
+
+    return { error: `No Level ${levelNeeded}+ spell slot or Pact Slot remaining.` };
+  }
+
+  const pool = resources.find((r) => r.id === requestedPoolId);
+  if (pool && pool.current < amount) {
+    return { error: `Insufficient ${pool.name}.` };
+  }
+  return { poolId: requestedPoolId };
+}
+
 export function applyRestRecovery(
   raw: RawCharacterState,
   restType: 'short_rest' | 'long_rest'

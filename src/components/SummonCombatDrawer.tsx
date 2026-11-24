@@ -997,8 +997,20 @@ export function CommandPalette({
 
         {tab === 'packs' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-              1-click install built-in SRD 5.1 / 2024 SRD 5.2 spells, weapons, and monster packs into your local IndexedDB compendium:
+            <div className="forge-row-between" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+              <span>All built-in SRD 5.1 / 2024 SRD 5.2 &amp; Repo content packs are automatically pre-installed.</span>
+              <button
+                type="button"
+                className="btn"
+                onClick={async () => {
+                  for (const p of BUILTIN_CONTENT_PACKS) {
+                    await onInstallContentPack(p.id);
+                  }
+                  setTab('search');
+                }}
+              >
+                Re-sync All
+              </button>
             </div>
             {BUILTIN_CONTENT_PACKS.map((pack) => (
               <div
@@ -1013,16 +1025,9 @@ export function CommandPalette({
                   </span>
                   <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{pack.description}</div>
                 </div>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={async () => {
-                    await onInstallContentPack(pack.id);
-                    setTab('search');
-                  }}
-                >
-                  Install Pack
-                </button>
+                <span className="badge" style={{ color: 'var(--accent-green)', borderColor: 'rgba(63,185,80,0.4)' }}>
+                  Installed ✓
+                </span>
               </div>
             ))}
           </div>

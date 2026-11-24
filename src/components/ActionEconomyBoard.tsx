@@ -398,22 +398,38 @@ export function ActionEconomyBoard({
                 >
                   Bless +1d4
                 </button>
-                <button
-                  type="button"
-                  className={`pill ${activeBuffs?.rage ? 'active' : ''}`}
-                  title="Add +2 damage to weapon attacks"
-                  onClick={() => onToggleBuff('rage')}
-                >
-                  Rage +2
-                </button>
-                <button
-                  type="button"
-                  className={`pill ${activeBuffs?.sneakAttack ? 'active' : ''}`}
-                  title="Add Sneak Attack dice (+ceil(Level/2)d6)"
-                  onClick={() => onToggleBuff('sneakAttack')}
-                >
-                  Sneak Atk +{Math.max(1, Math.ceil(sheet.totalLevel / 2))}d6
-                </button>
+                {(() => {
+                  const hasRage =
+                    rawChar?.classes.some((c) => c.className.toLowerCase() === 'barbarian') ||
+                    rawChar?.items.some((i) => i.name.toLowerCase().includes('rage'));
+                  if (!hasRage) return null;
+                  return (
+                    <button
+                      type="button"
+                      className={`pill ${activeBuffs?.rage ? 'active' : ''}`}
+                      title="Add +2 damage to weapon attacks"
+                      onClick={() => onToggleBuff('rage')}
+                    >
+                      Rage +2
+                    </button>
+                  );
+                })()}
+                {(() => {
+                  const hasSneak =
+                    rawChar?.classes.some((c) => c.className.toLowerCase() === 'rogue') ||
+                    rawChar?.items.some((i) => i.name.toLowerCase().includes('sneak attack'));
+                  if (!hasSneak) return null;
+                  return (
+                    <button
+                      type="button"
+                      className={`pill ${activeBuffs?.sneakAttack ? 'active' : ''}`}
+                      title="Add Sneak Attack dice (+ceil(Level/2)d6)"
+                      onClick={() => onToggleBuff('sneakAttack')}
+                    >
+                      Sneak Atk +{Math.max(1, Math.ceil(sheet.totalLevel / 2))}d6
+                    </button>
+                  );
+                })()}
                 {flankingRule !== 'off' && (
                   <button
                     type="button"
@@ -425,6 +441,10 @@ export function ActionEconomyBoard({
                   </button>
                 )}
                 {onDivineSmite && (() => {
+                  const hasSmite =
+                    rawChar?.classes.some((c) => c.className.toLowerCase() === 'paladin') ||
+                    rawChar?.items.some((i) => i.name.toLowerCase().includes('divine smite'));
+                  if (!hasSmite) return null;
                   const availableSmiteLevels = [1, 2, 3, 4, 5].filter(
                     (lvl) => (sheet.resources.find((r) => r.id === `spell_slot_${lvl}`)?.current ?? 0) > 0
                   );

@@ -488,7 +488,9 @@ export function App() {
       layoutVariant={uiMode}
       rollMode={store.rollMode}
       onChangeRollMode={store.setRollMode}
-      onTriggerActivity={store.triggerActivity}
+      onTriggerActivity={(act, slot, ritual) =>
+        store.triggerActivity(act, slot, ritual, selectedTargetIds)
+      }
       onRollInlineExpression={store.rollInlineExpression}
       onToggleEquipped={store.toggleItemEquipped}
       onToggleAttuned={store.toggleItemAttuned}
@@ -613,7 +615,9 @@ export function App() {
             <ItemInspectorPanel
               item={inspectedItem}
               sheet={store.resolvedSheet}
-              onTriggerActivity={store.triggerActivity}
+              onTriggerActivity={(act, slot, ritual) =>
+        store.triggerActivity(act, slot, ritual, selectedTargetIds)
+      }
               onRollInlineExpression={store.rollInlineExpression}
               onToggleEquipped={store.toggleItemEquipped}
               onTogglePrepared={store.toggleItemPrepared}
@@ -1185,7 +1189,9 @@ export function App() {
             flankingRule={store.houseRules.flankingRule}
             onToggleBuff={store.toggleBuff}
             onDivineSmite={store.divineSmite}
-            onTriggerActivity={store.triggerActivity}
+            onTriggerActivity={(act, slot, ritual) =>
+        store.triggerActivity(act, slot, ritual, selectedTargetIds)
+      }
             onRollInlineExpression={store.rollInlineExpression}
             onAdjustHp={store.adjustHp}
             onSetTempHp={store.setTempHp}

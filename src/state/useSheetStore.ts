@@ -1190,7 +1190,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   );
 
   const triggerActivity = useCallback(
-    (activity: ResolvedActivity, slotLevelOverride?: number, asRitual = false) => {
+    (activity: ResolvedActivity, slotLevelOverride?: number, asRitual = false, targetIds: string[] = []) => {
       let spentNote = '';
       const baseSlotMatch = activity.resourceCost?.poolId.match(/^spell_slot_(\d+)$/);
       const baseSpellLevel = baseSlotMatch?.[1] ? Number.parseInt(baseSlotMatch[1], 10) : 0;
@@ -1339,6 +1339,38 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
           `${activity.name}${activity.computedAttackBonus === null ? spentNote : ''} ${kindLabel}: ${dmg.total} ${activity.damageType ?? ''} (${dmgExpr})${upcastTag}${buffTag}${critTag}`,
           attackIsCrit ? 'crit' : 'roll'
         );
+
+        if (activity.type === 'heal' && dmg.total > 0) {
+          const healAmount = dmg.total;
+          if (targetIds.length > 0) {
+            const healedNames: string[] = [];
+            persistEncounter((prev) => ({
+              ...prev,
+              combatants: prev.combatants.map((c) => {
+                if (!targetIds.includes(c.id)) return c;
+                healedNames.push(c.name);
+                return {
+                  ...c,
+                  hp: { ...c.hp, current: Math.min(c.hp.max, c.hp.current + healAmount) },
+                };
+              }),
+            }));
+            if (targetIds.includes(rawChar.id)) {
+              persistCharacter((prev) => ({
+                ...prev,
+                hp: { ...prev.hp, current: Math.min(prev.hp.max, prev.hp.current + healAmount) },
+              }));
+            }
+            if (healedNames.length > 0) {
+              appendLog(`Applied +${healAmount} HP healing to: ${healedNames.join(', ')}.`, 'info');
+            }
+          } else {
+            persistCharacter((prev) => ({
+              ...prev,
+              hp: { ...prev.hp, current: Math.min(prev.hp.max, prev.hp.current + healAmount) },
+            }));
+          }
+        }
       } else if (spentNote) {
         appendLog(`Cast ${activity.name}${spentNote}.`, 'info');
       }
@@ -1350,7 +1382,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         );
       }
 
-      if (activity.concentration || activity.type === 'summon') {
+      if (activity.concentration || activity.type === 'summon' || (activity.type === 'utility' && targetIds.length > 0)) {
         const concId = `eff-${Date.now()}`;
         const durLow = activity.spellMeta?.duration?.toLowerCase() ?? '';
         let durationRounds: number | undefined;
@@ -1359,16 +1391,28 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         else if (durLow.includes('1 hr') || durLow.includes('1 hour')) durationRounds = 600;
         else if (durLow.includes('1 round')) durationRounds = 1;
 
+        const effectTargets =
+          targetIds.length > 0 && activity.type !== 'summon' ? targetIds : [rawChar.id];
+        const targetNames = encounter.combatants
+          .filter((c) => effectTargets.includes(c.id))
+          .map((c) => c.name);
+
         persistEncounter((prev) => {
-          let updated = applyEffectWithConcentrationCheck(prev, {
-            id: concId,
-            name: activity.parentItemName,
-            sourceCombatantId: rawChar.id,
-            targetCombatantId: rawChar.id,
-            isConcentration: activity.concentration,
-            expiration: activity.concentration ? 'concentration' : durationRounds ? 'rounds_remaining' : 'indefinite',
-            roundsRemaining: durationRounds,
+          let updated = prev;
+          effectTargets.forEach((tid, idx) => {
+            updated = applyEffectWithConcentrationCheck(updated, {
+              id: `${concId}-${idx}`,
+              name: activity.parentItemName || activity.name,
+              sourceCombatantId: rawChar.id,
+              targetCombatantId: tid,
+              isConcentration: activity.concentration && idx === 0,
+              expiration: activity.concentration ? 'concentration' : durationRounds ? 'rounds_remaining' : 'indefinite',
+              roundsRemaining: durationRounds,
+            });
           });
+          if (targetIds.length > 0 && activity.type !== 'summon' && targetNames.length > 0) {
+            appendLog(`Applied ${activity.parentItemName || activity.name} to: ${targetNames.join(', ')}.`, 'info');
+          }
 
           if (activity.type === 'summon') {
             updated = spawnLinkedSummon(

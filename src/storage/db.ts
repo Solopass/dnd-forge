@@ -18,14 +18,19 @@ export interface BackupBundle {
   encounters: CombatEncounterState[];
 }
 
-export function buildSearchTokens(entity: CompendiumEntity): string {
-  const raw = `${entity.name} ${entity.category} ${entity.source} ${entity.ruleset} ${entity.entries.join(' ')}`;
+export function normalizeSearchQuery(raw: string): string {
   return raw
     .toLowerCase()
     .replace(/\{@\w+\s+([^}]+)\}/g, '$1')
     .replace(/[^a-z0-9\s-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+export function buildSearchTokens(entity: CompendiumEntity): string {
+  return normalizeSearchQuery(
+    `${entity.name} ${entity.category} ${entity.source} ${entity.ruleset} ${entity.entries.join(' ')}`
+  );
 }
 
 export class DndForgeDatabase extends Dexie {

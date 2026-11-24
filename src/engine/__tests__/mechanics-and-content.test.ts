@@ -8,6 +8,7 @@ import {
   syncClassResourcePools,
 } from '../classes';
 import { BUILTIN_CONTENT_PACKS } from '../srd-packs';
+import { buildSearchTokens, normalizeSearchQuery } from '../../storage/db';
 import { CompendiumEntity } from '../../types/compendium';
 
 function findPackEntity(id: string): CompendiumEntity {
@@ -165,5 +166,8 @@ describe('Bucket 1 & 2: Core 5e Mechanics & Content Depth', () => {
     expect(all.some((e) => e.name === 'Magic Initiate (2024 Origin)')).toBe(true);
     expect(all.some((e) => e.category === 'monster' && e.name === 'Lich')).toBe(true);
     expect(all.some((e) => e.category === 'monster' && e.name === 'Hill Giant')).toBe(true);
+
+    const defStyle = findPackEntity('srd-style-defense');
+    expect(buildSearchTokens(defStyle)).toContain(normalizeSearchQuery('Fighting Style: Defense'));
   });
 });

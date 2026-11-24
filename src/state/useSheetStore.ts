@@ -32,6 +32,7 @@ import {
   buildSearchTokens,
   db,
   importBackupBundle,
+  normalizeSearchQuery,
   saveCharacter,
   saveEncounter,
   upsertCompendiumEntities,
@@ -1471,10 +1472,14 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
 
   const searchCompendium = useCallback(
     (query: string): CompendiumEntity[] => {
-      const q = query.trim().toLowerCase();
-      if (!q) return compendium.slice(0, 120);
+      const rawQ = query.trim().toLowerCase();
+      if (!rawQ) return compendium.slice(0, 120);
+      const normQ = normalizeSearchQuery(query);
       return compendium
-        .filter((item) => buildSearchTokens(item).includes(q))
+        .filter((item) => {
+          if (item.name.toLowerCase().includes(rawQ)) return true;
+          return normQ ? buildSearchTokens(item).includes(normQ) : false;
+        })
         .slice(0, 120);
     },
     [compendium]

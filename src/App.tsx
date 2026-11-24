@@ -1159,8 +1159,22 @@ export function App() {
               onClick={() => setUnifiedView('vtt')}
             >
               <span className="forge-row" style={{ gap: 6 }}><MapIcon size={14} /> Tactical VTT</span>
-              <span className="badge">Rnd {store.encounter.round}</span>
+              <span className="badge">{isCombatActive ? `Live R${store.encounter.round}` : `Rnd ${store.encounter.round}`}</span>
             </button>
+            <div className="subpanel forge-stack" style={{ padding: '8px', gap: 6, marginTop: 4 }}>
+              <div className="forge-row-between tabular" style={{ fontSize: 11 }}>
+                <strong>HP {store.resolvedSheet.hp.current}/{store.resolvedSheet.hp.max}</strong>
+                <span>AC {store.resolvedSheet.ac.final}</span>
+              </div>
+              <div className="forge-row" style={{ gap: 4 }}>
+                <button type="button" className="btn" style={{ flex: 1, fontSize: 11 }} onClick={() => store.takeRest('short_rest')}>
+                  Short Rest
+                </button>
+                <button type="button" className="btn" style={{ flex: 1, fontSize: 11 }} onClick={() => store.takeRest('long_rest')}>
+                  Long Rest
+                </button>
+              </div>
+            </div>
             <hr style={{ width: '100%', border: 0, borderTop: '1px solid var(--border-subtle)', margin: '4px 0' }} />
             <button type="button" className="unified-rail-btn" onClick={() => setBuilderOpen(true)}>
               <span>Build &amp; Stats</span>
@@ -1180,7 +1194,7 @@ export function App() {
           </nav>
 
           <div className="unified-main-with-combat">
-            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%', overflow: 'hidden' }}>
               {unifiedView !== 'sheet' && (
                 <div
                   className="subpanel forge-row-between"
@@ -1189,6 +1203,7 @@ export function App() {
                     padding: '6px 10px',
                     flexWrap: 'wrap',
                     gap: 8,
+                    flexShrink: 0,
                   }}
                 >
                   <div className="forge-row" style={{ gap: 8, flexWrap: 'wrap' }}>
@@ -1208,23 +1223,53 @@ export function App() {
                 </div>
               )}
               {unifiedView === 'sheet' && (
-                <div className="unified-sheet-split">
+                <div className="unified-sheet-split" style={{ flex: 1, minHeight: 0 }}>
                   {vitalsNode}
                   {actionBoardNode}
                 </div>
               )}
-              {unifiedView === 'dm' && (
-                <div className="pane" style={{ padding: 14 }}>
+              {unifiedView === 'dm' && !isPlayerRole && (
+                <div className="pane" style={{ padding: 14, flex: 1, minHeight: 0 }}>
                   <Suspense fallback={null}>
                     <DmHubModal isOpen embedded onClose={() => setUnifiedView('sheet')} {...sharedDmHubProps} />
                   </Suspense>
                 </div>
               )}
-              {unifiedView === 'vtt' && (
-                <div className="pane" style={{ padding: 14 }}>
-                  <Suspense fallback={null}>
-                    <BattlemapModal isOpen embeddedFull onClose={() => setUnifiedView('sheet')} {...sharedBattlemapProps} />
-                  </Suspense>
+              {(unifiedView === 'vtt' || (unifiedView === 'dm' && isPlayerRole)) && (
+                <div className="pane center-stage-pane" style={{ padding: '10px 14px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div className="subpanel forge-row-between" style={{ padding: '6px 10px', flexWrap: 'wrap', gap: 8, flexShrink: 0 }}>
+                    <div className="pill-row tabular">
+                      <span className="badge">
+                        HP {store.resolvedSheet.hp.current}/{store.resolvedSheet.hp.max}
+                        {store.resolvedSheet.hp.temp > 0 ? ` (+${store.resolvedSheet.hp.temp})` : ''}
+                      </span>
+                      <span className="badge">AC {store.resolvedSheet.ac.final}</span>
+                      <button type="button" className="btn" onClick={store.rollCharacterInitiative}>
+                        Init {store.resolvedSheet.initiative.final >= 0 ? `+${store.resolvedSheet.initiative.final}` : store.resolvedSheet.initiative.final}
+                      </button>
+                      <span className="badge">Speed {store.resolvedSheet.speed.final}ft</span>
+                    </div>
+                    <div className="forge-row" style={{ gap: 4 }}>
+                      <button type="button" className="btn btn-danger" onClick={() => store.adjustHp(-5)}>
+                        -5 HP
+                      </button>
+                      <button type="button" className="btn btn-primary" onClick={() => store.adjustHp(5)}>
+                        +5 HP
+                      </button>
+                    </div>
+                  </div>
+                  <div className="center-battlemap-slot" style={{ flexShrink: 0 }}>
+                    <Suspense fallback={null}>
+                      <BattlemapModal
+                        isOpen
+                        embeddedFull
+                        onClose={() => setUnifiedView('sheet')}
+                        {...sharedBattlemapProps}
+                        playerView={effectivePlayerView}
+                      />
+                    </Suspense>
+                  </div>
+                  {actionBoardNode}
                 </div>
               )}
             </div>

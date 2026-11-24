@@ -18,6 +18,12 @@ const SettingsModal = lazy(() =>
 const RulesetModal = lazy(() =>
   import('./components/RulesetModal').then((m) => ({ default: m.RulesetModal }))
 );
+const ThemeStudioModal = lazy(() =>
+  import('./components/ThemeStudioModal').then((m) => ({ default: m.ThemeStudioModal }))
+);
+const ModularCanvas = lazy(() =>
+  import('./components/ModularCanvas').then((m) => ({ default: m.ModularCanvas }))
+);
 const LevelUpModal = lazy(() =>
   import('./components/LevelUpModal').then((m) => ({ default: m.LevelUpModal }))
 );
@@ -53,6 +59,17 @@ const EncounterBuilderModal = lazy(() =>
 );
 import { BUILTIN_CONTENT_PACKS } from './engine/srd-packs';
 import { detectRulesetPreset } from './engine/ruleset-config';
+import {
+  applyThemeToDocument,
+  BUILTIN_THEMES,
+  readStoredActiveThemeId,
+  readStoredCustomThemes,
+  saveCustomThemes,
+} from './engine/themes';
+import { CUSTOM_REPO_THEMES } from './engine/custom-content-loader';
+import { readStoredLayout, saveStoredLayout } from './engine/layout-engine';
+import { ThemeDefinition } from './types/theme';
+import { WorkspaceLayoutConfig } from './types/layout';
 import { applyUiMode, readStoredUiMode, UiMode } from './engine/ui-mode';
 import { evaluateDiceExpression } from './engine/dice';
 import { exportFullBundle } from './storage/db';
@@ -238,6 +255,22 @@ export function App() {
   const [battlemapOpen, setBattlemapOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [rulesetOpen, setRulesetOpen] = useState(false);
+  const [themeStudioOpen, setThemeStudioOpen] = useState(false);
+  const [modularMode, setModularMode] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('dnd-forge-modular-mode') === '1';
+    } catch {
+      return false;
+    }
+  });
+  const [isEditingLayout, setIsEditingLayout] = useState(false);
+  const [customThemes, setCustomThemes] = useState<ThemeDefinition[]>(() => readStoredCustomThemes());
+  const [activeTheme, setActiveTheme] = useState<ThemeDefinition>(() => {
+    const storedId = readStoredActiveThemeId();
+    const pool = [...BUILTIN_THEMES, ...CUSTOM_REPO_THEMES, ...readStoredCustomThemes()];
+    return pool.find((t) => t.id === storedId) ?? BUILTIN_THEMES[0]!;
+  });
+  const [activeLayout, setActiveLayout] = useState<WorkspaceLayoutConfig>(() => readStoredLayout());
   const [levelUpOpen, setLevelUpOpen] = useState(false);
   const [liveTableOpen, setLiveTableOpen] = useState(false);
   const [dmHubOpen, setDmHubOpen] = useState(false);
@@ -258,6 +291,59 @@ export function App() {
   useEffect(() => {
     applyUiMode(uiMode);
   }, [uiMode]);
+
+  useEffect(() => {
+    applyThemeToDocument(activeTheme);
+  }, [activeTheme]);
+
+  const handleApplyTheme = (theme: ThemeDefinition) => {
+    const reduced =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const doc = document as Document & {
+      startViewTransition?: (cb: () => void) => void;
+    };
+    if (!reduced && typeof doc.startViewTransition === 'function') {
+      doc.startViewTransition(() => setActiveTheme(theme));
+    } else {
+      setActiveTheme(theme);
+    }
+  };
+
+  const handleSaveCustomTheme = (theme: ThemeDefinition) => {
+    setCustomThemes((prev) => {
+      const next = prev.some((t) => t.id === theme.id)
+        ? prev.map((t) => (t.id === theme.id ? theme : t))
+        : [theme, ...prev];
+      saveCustomThemes(next);
+      return next;
+    });
+  };
+
+  const handleDeleteCustomTheme = (themeId: string) => {
+    setCustomThemes((prev) => {
+      const next = prev.filter((t) => t.id !== themeId);
+      saveCustomThemes(next);
+      return next;
+    });
+    if (activeTheme.id === themeId) {
+      setActiveTheme(BUILTIN_THEMES[0]!);
+    }
+  };
+
+  const handleChangeLayout = (next: WorkspaceLayoutConfig) => {
+    setActiveLayout(next);
+    saveStoredLayout(next);
+  };
+
+  const setModularEnabled = (enabled: boolean) => {
+    setModularMode(enabled);
+    try {
+      localStorage.setItem('dnd-forge-modular-mode', enabled ? '1' : '0');
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -553,24 +639,56 @@ export function App() {
           <div className="mode-switcher" role="group" aria-label="Interface layout mode">
             <button
               type="button"
-              className={`mode-switcher-btn ${uiMode === 'classic' ? 'active' : ''}`}
-              aria-pressed={uiMode === 'classic'}
-              onClick={() => setUiMode('classic')}
+              className={`mode-switcher-btn ${!modularMode && uiMode === 'classic' ? 'active' : ''}`}
+              aria-pressed={!modularMode && uiMode === 'classic'}
+              onClick={() => {
+                setModularEnabled(false);
+                setUiMode('classic');
+              }}
             >
               Beyond Classic
             </button>
             <button
               type="button"
-              className={`mode-switcher-btn ${uiMode === 'unified' ? 'active' : ''}`}
-              aria-pressed={uiMode === 'unified'}
-              onClick={() => setUiMode('unified')}
+              className={`mode-switcher-btn ${!modularMode && uiMode === 'unified' ? 'active' : ''}`}
+              aria-pressed={!modularMode && uiMode === 'unified'}
+              onClick={() => {
+                setModularEnabled(false);
+                setUiMode('unified');
+              }}
             >
               Unified Command
+            </button>
+            <button
+              type="button"
+              className={`mode-switcher-btn ${modularMode ? 'active' : ''}`}
+              aria-pressed={modularMode}
+              onClick={() => setModularEnabled(true)}
+            >
+              Modular Grid
             </button>
           </div>
         </div>
 
         <div className="topbar-actions">
+          {modularMode && (
+            <button
+              type="button"
+              className={`btn ${isEditingLayout ? 'btn-primary' : ''}`}
+              onClick={() => setIsEditingLayout((v) => !v)}
+              title="Reorder, resize, hide, or restore workspace blocks"
+            >
+              {isEditingLayout ? 'Done Editing' : 'Edit Blocks'}
+            </button>
+          )}
+          <button
+            type="button"
+            className="btn"
+            onClick={() => setThemeStudioOpen(true)}
+            title="Open Theme Studio, Custom Theme Editor & Setup Sharing"
+          >
+            Themes
+          </button>
           <button
             type="button"
             className="btn"
@@ -586,7 +704,7 @@ export function App() {
           <button type="button" className="btn" onClick={() => setPaletteOpen(true)} title="Compendium, Packs & PDF Import (Ctrl+K)">
             Packs (Ctrl+K)
           </button>
-          {uiMode === 'classic' && (
+          {(modularMode || uiMode === 'classic') && (
             <>
               <button type="button" className="btn" onClick={() => setDmHubOpen(true)}>
                 DM Hub
@@ -632,7 +750,7 @@ export function App() {
         </div>
       </header>
 
-      {uiMode === 'classic' && (
+      {!modularMode && uiMode === 'classic' && (
         <div className="beyond-hero-banner">
           <div className="beyond-hero-identity">
             <label
@@ -699,7 +817,7 @@ export function App() {
         </div>
       )}
 
-      {uiMode === 'classic' && (
+      {!modularMode && uiMode === 'classic' && (
         <div className="beyond-ability-bar" aria-label="Ability scores and combat vitals">
           <div className="beyond-ability-strip">
             {(['str', 'dex', 'con', 'int', 'wis', 'cha'] as const).map((key) => {
@@ -832,7 +950,56 @@ export function App() {
         </div>
       )}
 
-      {uiMode === 'classic' ? (
+      {modularMode ? (
+        <Suspense fallback={null}>
+          <ModularCanvas
+            layout={activeLayout}
+            onChangeLayout={handleChangeLayout}
+            isEditing={isEditingLayout}
+            onToggleEditing={setIsEditingLayout}
+            onOpenThemeStudio={() => setThemeStudioOpen(true)}
+            sheet={store.resolvedSheet}
+            rawChar={store.rawChar}
+            rollMode={store.rollMode}
+            onChangeRollMode={store.setRollMode}
+            activeBuffs={store.activeBuffs}
+            flankingRule={store.houseRules.flankingRule}
+            onToggleBuff={store.toggleBuff}
+            onDivineSmite={store.divineSmite}
+            onTriggerActivity={store.triggerActivity}
+            onRollInlineExpression={store.rollInlineExpression}
+            onAdjustHp={store.adjustHp}
+            onSetTempHp={store.setTempHp}
+            onSetExhaustion={store.setExhaustion}
+            onRollAbilityCheck={(ab) => {
+              const mod = store.resolvedSheet.abilities[ab].modifier;
+              store.rollInlineExpression(`${ab.toUpperCase()} Check`, `1d20${mod >= 0 ? '+' : ''}${mod}`);
+            }}
+            onRollSavingThrow={(ab) => {
+              const mod = store.resolvedSheet.abilities[ab].save.final;
+              store.rollInlineExpression(`${ab.toUpperCase()} Save`, `1d20${mod >= 0 ? '+' : ''}${mod}`);
+            }}
+            onRollSkillCheck={(sk) => {
+              const mod = store.resolvedSheet.skills[sk].final;
+              store.rollInlineExpression(`${sk} Check`, `1d20${mod >= 0 ? '+' : ''}${mod}`);
+            }}
+            onToggleCondition={store.toggleCondition}
+            onAdjustResource={store.adjustResourcePool}
+            onToggleEquipped={store.toggleItemEquipped}
+            onToggleAttuned={store.toggleItemAttuned}
+            onOpenBuilderDrawer={() => setBuilderOpen(true)}
+            onOpenGearDrawer={() => setGearOpen(true)}
+            encounter={store.encounter}
+            combatDrawerNode={combatDrawerNode}
+            miniVttNode={
+              <Suspense fallback={null}>
+                <BattlemapModal isOpen embedded onClose={() => {}} {...sharedBattlemapProps} />
+              </Suspense>
+            }
+            consoleLines={store.consoleLines}
+          />
+        </Suspense>
+      ) : uiMode === 'classic' ? (
         <>
           <div className="mobile-tab-bar" role="tablist" aria-label="Workspace panels" ref={mobileTablistRef}>
             {(
@@ -1130,6 +1297,8 @@ export function App() {
             return p === '2014' ? '2014 Classic' : p === '2024' ? '2024 Revised' : 'Custom Mix';
           })()}
           onOpenRulesetModal={() => setRulesetOpen(true)}
+          activeThemeName={activeTheme.name}
+          onOpenThemeStudio={() => setThemeStudioOpen(true)}
           onExportBackup={handleExport}
           onExportActiveCharacter={handleExportActiveCharacter}
         />
@@ -1139,6 +1308,25 @@ export function App() {
           onClose={() => setRulesetOpen(false)}
           houseRules={store.houseRules}
           onUpdateHouseRules={store.updateHouseRules}
+        />
+
+        <ThemeStudioModal
+          isOpen={themeStudioOpen}
+          onClose={() => setThemeStudioOpen(false)}
+          activeTheme={activeTheme}
+          customThemes={customThemes}
+          onApplyTheme={handleApplyTheme}
+          onSaveCustomTheme={handleSaveCustomTheme}
+          onDeleteCustomTheme={handleDeleteCustomTheme}
+          activeLayout={activeLayout}
+          onApplyLayout={handleChangeLayout}
+          onEnterLayoutEditor={() => {
+            setModularEnabled(true);
+            setIsEditingLayout(true);
+          }}
+          houseRules={store.houseRules}
+          onUpdateHouseRules={store.updateHouseRules}
+          onLog={store.appendLog}
         />
       </Suspense>
 

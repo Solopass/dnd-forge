@@ -12,6 +12,8 @@ interface SettingsModalProps {
   onChangeUiMode?: (mode: UiMode) => void;
   rulesetPresetLabel?: string;
   onOpenRulesetModal?: () => void;
+  activeThemeName?: string;
+  onOpenThemeStudio?: () => void;
   onExportBackup: () => Promise<void>;
   onExportActiveCharacter: () => void;
 }
@@ -41,6 +43,8 @@ export function SettingsModal({
   onChangeUiMode,
   rulesetPresetLabel,
   onOpenRulesetModal,
+  activeThemeName,
+  onOpenThemeStudio,
   onExportBackup,
   onExportActiveCharacter,
 }: SettingsModalProps) {
@@ -138,6 +142,30 @@ export function SettingsModal({
             Classic mimics the familiar D&amp;D Beyond character sheet with modal DM/VTT tools. Unified embeds DM Studio &amp; Tactical VTT directly in the main canvas with a left workspace rail.
           </div>
         </div>
+
+        {onOpenThemeStudio && (
+          <div className="card forge-stack">
+            <div className="card-header">
+              <div className="forge-section-label">THEME STUDIO &amp; MODULAR LAYOUTS</div>
+              <span className="badge">{activeThemeName ?? 'Obsidian Forge'}</span>
+            </div>
+            <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 8 }}>
+              <div className="forge-muted" style={{ flex: 1, minWidth: 220 }}>
+                Choose from 8 built-in themes, build custom colors/fonts/surfaces with live WCAG contrast checks, or share your Theme + Layout setup.
+              </div>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  onClose();
+                  onOpenThemeStudio();
+                }}
+              >
+                Open Theme Studio...
+              </button>
+            </div>
+          </div>
+        )}
 
         {onOpenRulesetModal && (
           <div className="card forge-stack">

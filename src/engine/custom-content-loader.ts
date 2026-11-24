@@ -1,6 +1,8 @@
 import { CompendiumEntity } from '../types/compendium';
 import type { ContentPack } from './srd-packs';
 import { RawCharacterState } from '../types/character';
+import type { ThemeDefinition } from '../types/theme';
+import type { WorkspaceLayoutConfig } from '../types/layout';
 
 /**
  * Automatically discovers and loads any .json file placed into:
@@ -31,6 +33,14 @@ const featureModules = import.meta.glob<Record<string, unknown>>(
 );
 const characterModules = import.meta.glob<Record<string, unknown>>(
   '../custom-content/characters/*.json',
+  { eager: true, import: 'default' }
+);
+const themeModules = import.meta.glob<Record<string, unknown>>(
+  '../custom-content/themes/*.json',
+  { eager: true, import: 'default' }
+);
+const layoutModules = import.meta.glob<Record<string, unknown>>(
+  '../custom-content/layouts/*.json',
   { eager: true, import: 'default' }
 );
 
@@ -132,6 +142,20 @@ export const CUSTOM_REPO_CONTENT_PACK: ContentPack = {
 export const CUSTOM_REPO_CHARACTERS: RawCharacterState[] = Object.values(characterModules)
   .map((mod) => (mod && typeof mod === 'object' ? normalizeCustomCharacter(mod) : null))
   .filter((c): c is RawCharacterState => c !== null);
+
+export const CUSTOM_REPO_THEMES: ThemeDefinition[] = (
+  Object.values(themeModules) as unknown[]
+).filter(
+  (mod): mod is ThemeDefinition =>
+    Boolean(mod && typeof mod === 'object' && 'name' in mod && 'tokens' in mod)
+);
+
+export const CUSTOM_REPO_LAYOUTS: WorkspaceLayoutConfig[] = (
+  Object.values(layoutModules) as unknown[]
+).filter(
+  (mod): mod is WorkspaceLayoutConfig =>
+    Boolean(mod && typeof mod === 'object' && 'name' in mod && 'widgets' in mod)
+);
 
 /**
  * Parses arbitrary pasted/uploaded JSON text into CompendiumEntity[] and/or RawCharacterState[].

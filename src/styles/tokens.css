@@ -100,9 +100,15 @@
     --scrollbar-thumb: light-dark(var(--scrollbar-thumb-light), var(--scrollbar-thumb-dark));
   }
 
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-scale: 1;
+  --density: comfortable;
 
+  --card-pad: 11px;
+  --card-gap: 9px;
+  --row-pad-y: 5px;
   --radius-sm: 4px;
   --radius-md: 7px;
   --radius-lg: 10px;
@@ -113,8 +119,15 @@
 
   --accent-brand: var(--accent-blue);
   --accent-gold: var(--accent-amber);
-  --bg-card-header: light-dark(rgba(0, 0, 0, 0.03), rgba(255, 255, 255, 0.03));
+  --bg-card-header: color-mix(in oklab, var(--accent-brand) 6%, transparent);
   --bg-rail: light-dark(#eaeef2, #0b0e14);
+
+  /* Contrast-safe foreground over --accent-brand: CIE XYZ fallback + contrast-color() */
+  --wcag-y-threshold: 0.17913;
+  --accent-y: max(0, sign(var(--wcag-y-threshold) - y));
+  --on-accent-brand: color(
+    from var(--accent-brand) xyz-d65 calc(var(--accent-y) * 0.9505) var(--accent-y) calc(var(--accent-y) * 1.089)
+  );
 
   --z-drawer: 40;
   --z-palette: 100;
@@ -172,9 +185,109 @@ body {
   background-color: var(--bg-base);
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: calc(13px * var(--font-scale, 1));
   line-height: 1.45;
   overflow: hidden;
+}
+
+h1, h2, h3, .forge-section-label, .topbar-brand-badge {
+  font-family: var(--font-display, var(--font-sans));
+}
+
+:where([data-density='compact']) {
+  --card-pad: 7px;
+  --card-gap: 6px;
+  --row-pad-y: 3px;
+}
+
+:where([data-density='comfortable']) {
+  --card-pad: 11px;
+  --card-gap: 9px;
+  --row-pad-y: 5px;
+}
+
+:where([data-density='spacious']) {
+  --card-pad: 16px;
+  --card-gap: 13px;
+  --row-pad-y: 8px;
+}
+
+@container style(--density: compact) {
+  .card, .widget-frame {
+    padding: 7px;
+    gap: 6px;
+  }
+}
+
+@container style(--density: spacious) {
+  .card, .widget-frame {
+    padding: 16px;
+    gap: 13px;
+  }
+}
+
+:root[data-texture='parchment'] body {
+  background-image: radial-gradient(
+    ellipse at 50% 0%,
+    color-mix(in oklab, var(--accent-gold) 7%, transparent),
+    transparent 70%
+  );
+}
+
+:root[data-texture='grid'] body {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--border-subtle) 35%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--border-subtle) 35%, transparent) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+:root[data-texture='noise'] body {
+  background-image: radial-gradient(
+    color-mix(in oklab, var(--text-muted) 12%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 10px 10px;
+}
+
+:root[data-elevation='flat'] .card,
+:root[data-elevation='flat'] .widget-frame {
+  box-shadow: none;
+}
+
+:root[data-elevation='elevated'] .card,
+:root[data-elevation='elevated'] .widget-frame {
+  box-shadow: var(--shadow-md);
+}
+
+:root[data-elevation='glass'] .card,
+:root[data-elevation='glass'] .widget-frame {
+  background-color: color-mix(in oklab, var(--bg-surface) 80%, transparent);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-md);
+}
+
+@supports (color: contrast-color(red)) {
+  :root {
+    --on-accent-brand: contrast-color(var(--accent-brand));
+  }
+}
+
+@media (forced-colors: active) {
+  .card,
+  .subpanel,
+  .widget-frame,
+  .btn,
+  .pill,
+  .badge {
+    border: 1px solid CanvasText;
+    box-shadow: none;
+  }
+  .btn-primary,
+  .pill.active {
+    background: Highlight;
+    color: HighlightText;
+    border-color: Highlight;
+  }
 }
 
 .tabular {

@@ -120,3 +120,10 @@ Rules:
 Here is the content to convert:
 <PASTE RAW STAT BLOCK / ITEM / SPELL / CHARACTER HERE>
 ```
+
+---
+
+## Themes & Modular Layouts (`themes/` & `layouts/`)
+
+- **Custom Themes (`src/custom-content/themes/<slug>.json`)**: Export from **Theme Studio -> Share Setup -> Download Setup .json** or drop a `ThemeDefinition` JSON file directly into `src/custom-content/themes/`.
+- **Custom Layouts (`src/custom-content/layouts/<slug>.json`)**: Drop a `WorkspaceLayoutConfig` JSON file directly into `src/custom-content/layouts/` to make it available in the **Theme Studio -> Layouts & Share Setup** preset list.

@@ -9,6 +9,13 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom', 'dexie'],
+          rulesEngine: [
+            './src/engine/rules-math.ts',
+            './src/engine/combat-machine.ts',
+            './src/engine/classes.ts',
+            './src/engine/dice.ts',
+            './src/engine/live-sync.ts',
+          ],
           compendium: ['./src/engine/srd-packs.ts'],
           dmHub: ['./src/engine/dm-tools.ts'],
         },

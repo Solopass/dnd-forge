@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { getQualitativeHealthLabel } from '../engine/dm-tools';
 import { SharedHandoutPayload } from '../types/campaign';
 import { CombatEncounterState, MapPingEvent } from '../types/combat';
-import { BattlemapModal } from './BattlemapModal';
+
+const BattlemapModal = lazy(() =>
+  import('./BattlemapModal').then((m) => ({ default: m.BattlemapModal }))
+);
 
 const EMPTY_ENCOUNTER: CombatEncounterState = {
   id: 'player-wait',
@@ -61,26 +64,28 @@ export function PlayerDisplayApp() {
 
       <div className="player-display-grid">
         <section className="panel" style={{ padding: 10 }}>
-          <BattlemapModal
-            isOpen
-            embedded
-            encounter={encounter}
-            playerView
-            activePings={pings}
-            onTogglePlayerView={() => {}}
-            onClose={() => {}}
-            onMoveToken={() => {}}
-            onSetMapImage={() => {}}
-            onAddTemplate={() => {}}
-            onClearTemplates={() => {}}
-            onToggleFogCells={() => {}}
-            onFillAllFog={() => {}}
-            onClearAllFog={() => {}}
-            onSetTerrainCell={() => {}}
-            onClearTerrain={() => {}}
-            onUpdateMapSettings={() => {}}
-            onNextTurn={() => {}}
-          />
+          <Suspense fallback={null}>
+            <BattlemapModal
+              isOpen
+              embedded
+              encounter={encounter}
+              playerView
+              activePings={pings}
+              onTogglePlayerView={() => {}}
+              onClose={() => {}}
+              onMoveToken={() => {}}
+              onSetMapImage={() => {}}
+              onAddTemplate={() => {}}
+              onClearTemplates={() => {}}
+              onToggleFogCells={() => {}}
+              onFillAllFog={() => {}}
+              onClearAllFog={() => {}}
+              onSetTerrainCell={() => {}}
+              onClearTerrain={() => {}}
+              onUpdateMapSettings={() => {}}
+              onNextTurn={() => {}}
+            />
+          </Suspense>
         </section>
 
         <aside className="panel forge-stack" style={{ padding: 12 }}>

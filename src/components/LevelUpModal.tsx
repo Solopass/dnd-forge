@@ -43,8 +43,10 @@ export function LevelUpModal({
   const [asiPrimary, setAsiPrimary] = useState<AbilityKey>('str');
   const [asiSecondary, setAsiSecondary] = useState<AbilityKey>('con');
   const [selectedFeatId, setSelectedFeatId] = useState('');
+  const [featFilter, setFeatFilter] = useState('');
   const [selectedSpellIds, setSelectedSpellIds] = useState<string[]>([]);
   const [spellFilter, setSpellFilter] = useState('');
+  const [showAllClassSpells, setShowAllClassSpells] = useState(false);
   const [matchCharRulesetOnly, setMatchCharRulesetOnly] = useState(true);
 
   const classDef = getClassDefinition(selectedClass) ?? CLASS_DEFINITIONS[0]!;
@@ -80,15 +82,22 @@ export function LevelUpModal({
   }, [compendiumEntities]);
   const ownedIds = useMemo(() => new Set(character.items.map((i) => i.id)), [character.items]);
 
-  const featOptions = useMemo(
-    () =>
-      allPackEntities.filter(
+  const featOptions = useMemo(() => {
+    const q = featFilter.trim().toLowerCase();
+    return allPackEntities
+      .filter(
         (e) =>
           e.category === 'feat' &&
           !ownedIds.has(e.id) &&
           (!matchCharRulesetOnly || e.ruleset === character.ruleset || e.ruleset === 'homebrew')
-      ),
-    [allPackEntities, ownedIds, matchCharRulesetOnly, character.ruleset]
+      )
+      .filter((e) => !q || e.name.toLowerCase().includes(q) || e.entries.join(' ').toLowerCase().includes(q))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [allPackEntities, ownedIds, matchCharRulesetOnly, character.ruleset, featFilter]);
+
+  const selectedFeat = useMemo(
+    () => featOptions.find((f) => f.id === selectedFeatId) ?? allPackEntities.find((e) => e.id === selectedFeatId && e.category === 'feat') ?? null,
+    [featOptions, allPackEntities, selectedFeatId]
   );
 
   const maxNewSpellLevel = useMemo(() => {
@@ -108,17 +117,22 @@ export function LevelUpModal({
   const learnableSpells = useMemo(() => {
     if (maxNewSpellLevel <= 0) return [];
     const q = spellFilter.trim().toLowerCase();
+    const clsLower = selectedClass.toLowerCase();
     return allPackEntities
       .filter(
         (e) =>
           e.category === 'spell' &&
           !ownedIds.has(e.id) &&
           (e.spellLevel ?? 0) <= maxNewSpellLevel &&
-          (!matchCharRulesetOnly || e.ruleset === character.ruleset || e.ruleset === 'homebrew')
+          (!matchCharRulesetOnly || e.ruleset === character.ruleset || e.ruleset === 'homebrew') &&
+          (showAllClassSpells ||
+            !e.classes?.length ||
+            e.classes.some((c) => c.toLowerCase() === clsLower))
       )
       .filter((e) => !q || e.name.toLowerCase().includes(q))
+      .sort((a, b) => (a.spellLevel ?? 0) - (b.spellLevel ?? 0) || a.name.localeCompare(b.name))
       .slice(0, 60);
-  }, [allPackEntities, ownedIds, maxNewSpellLevel, spellFilter, matchCharRulesetOnly, character.ruleset]);
+  }, [allPackEntities, ownedIds, maxNewSpellLevel, spellFilter, matchCharRulesetOnly, character.ruleset, showAllClassSpells, selectedClass]);
 
   const matchingClassFeatures = useMemo(() => {
     const clsLower = selectedClass.toLowerCase();
@@ -148,11 +162,19 @@ export function LevelUpModal({
     const abilityIncreases: Partial<Record<AbilityKey, number>> = {};
     const bonusEntityIds = [...selectedSpellIds];
     if (showAsi) {
+      const capDelta = (key: AbilityKey, delta: number): number => {
+        const cur = character.baseAbilities[key] + character.bonusAbilities[key];
+        return Math.max(0, Math.min(20, cur + delta) - cur);
+      };
       if (asiMode === 'plus2') {
-        abilityIncreases[asiPrimary] = 2;
+        abilityIncreases[asiPrimary] = capDelta(asiPrimary, 2);
       } else if (asiMode === 'plus1x2') {
-        abilityIncreases[asiPrimary] = (abilityIncreases[asiPrimary] ?? 0) + 1;
-        abilityIncreases[asiSecondary] = (abilityIncreases[asiSecondary] ?? 0) + 1;
+        if (asiPrimary === asiSecondary) {
+          abilityIncreases[asiPrimary] = capDelta(asiPrimary, 2);
+        } else {
+          abilityIncreases[asiPrimary] = capDelta(asiPrimary, 1);
+          abilityIncreases[asiSecondary] = capDelta(asiSecondary, 1);
+        }
       } else if (asiMode === 'feat' && selectedFeatId) {
         bonusEntityIds.push(selectedFeatId);
       }
@@ -293,58 +315,105 @@ export function LevelUpModal({
                   value={asiPrimary}
                   onChange={(e) => setAsiPrimary(e.target.value as AbilityKey)}
                 >
-                  {ABILITIES.map((a) => (
-                    <option key={a} value={a}>{a.toUpperCase()} (+2)</option>
-                  ))}
+                  {ABILITIES.map((a) => {
+                    const cur = character.baseAbilities[a] + character.bonusAbilities[a];
+                    const next = Math.min(20, cur + 2);
+                    return (
+                      <option key={a} value={a}>
+                        {a.toUpperCase()} ({cur} {'->'} {next}{cur >= 20 ? ' • max 20' : ''})
+                      </option>
+                    );
+                  })}
                 </select>
               </label>
             )}
 
             {asiMode === 'plus1x2' && (
-              <div className="forge-grid-2">
-                <label className="forge-field">
-                  <span className="forge-label">FIRST +1</span>
-                  <select
-                    className="forge-input"
-                    value={asiPrimary}
-                    onChange={(e) => setAsiPrimary(e.target.value as AbilityKey)}
-                  >
-                    {ABILITIES.map((a) => (
-                      <option key={a} value={a}>{a.toUpperCase()} (+1)</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="forge-field">
-                  <span className="forge-label">SECOND +1</span>
-                  <select
-                    className="forge-input"
-                    value={asiSecondary}
-                    onChange={(e) => setAsiSecondary(e.target.value as AbilityKey)}
-                  >
-                    {ABILITIES.map((a) => (
-                      <option key={a} value={a}>{a.toUpperCase()} (+1)</option>
-                    ))}
-                  </select>
-                </label>
+              <div className="forge-stack">
+                <div className="forge-grid-2">
+                  <label className="forge-field">
+                    <span className="forge-label">FIRST +1</span>
+                    <select
+                      className="forge-input"
+                      value={asiPrimary}
+                      onChange={(e) => setAsiPrimary(e.target.value as AbilityKey)}
+                    >
+                      {ABILITIES.map((a) => {
+                        const cur = character.baseAbilities[a] + character.bonusAbilities[a];
+                        return (
+                          <option key={a} value={a}>
+                            {a.toUpperCase()} ({cur} {'->'} {Math.min(20, cur + 1)})
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </label>
+                  <label className="forge-field">
+                    <span className="forge-label">SECOND +1</span>
+                    <select
+                      className="forge-input"
+                      value={asiSecondary}
+                      onChange={(e) => setAsiSecondary(e.target.value as AbilityKey)}
+                    >
+                      {ABILITIES.map((a) => {
+                        const cur = character.baseAbilities[a] + character.bonusAbilities[a];
+                        const bonus = a === asiPrimary ? 2 : 1;
+                        return (
+                          <option key={a} value={a}>
+                            {a.toUpperCase()} ({cur} {'->'} {Math.min(20, cur + bonus)})
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </label>
+                </div>
+                {asiPrimary === asiSecondary && (
+                  <span className="forge-muted" style={{ fontSize: 11 }}>
+                    Same ability selected twice — applies +2 to {asiPrimary.toUpperCase()}.
+                  </span>
+                )}
               </div>
             )}
 
             {asiMode === 'feat' && (
-              <label className="forge-field">
-                <span className="forge-label">FEAT OR FIGHTING STYLE</span>
-                <select
-                  className="forge-input"
-                  value={selectedFeatId}
-                  onChange={(e) => setSelectedFeatId(e.target.value)}
-                >
-                  <option value="">Select feat...</option>
-                  {featOptions.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="forge-stack">
+                <div className="forge-row" style={{ gap: 8 }}>
+                  <input
+                    aria-label="Filter SRD feats"
+                    type="text"
+                    className="forge-input"
+                    placeholder={`Search ${featOptions.length} feats...`}
+                    value={featFilter}
+                    onChange={(e) => setFeatFilter(e.target.value)}
+                  />
+                </div>
+                <label className="forge-field">
+                  <span className="forge-label">FEAT OR FIGHTING STYLE ({featOptions.length} MATCHING)</span>
+                  <select
+                    className="forge-input"
+                    value={selectedFeatId}
+                    onChange={(e) => setSelectedFeatId(e.target.value)}
+                  >
+                    <option value="">Select feat...</option>
+                    {featOptions.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.name} ({f.ruleset.toUpperCase()})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {selectedFeat && (
+                  <div className="subpanel forge-stack" style={{ padding: '8px 10px', gap: 4 }}>
+                    <div className="forge-row-between">
+                      <strong style={{ fontSize: 12 }}>{selectedFeat.name}</strong>
+                      <span className="badge">{selectedFeat.ruleset.toUpperCase()}</span>
+                    </div>
+                    <p className="forge-muted" style={{ fontSize: 11, margin: 0, lineHeight: 1.45 }}>
+                      {selectedFeat.entries.slice(0, 2).join(' ')}
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}
@@ -386,14 +455,24 @@ export function LevelUpModal({
               </span>
               <span className="forge-muted tabular">{selectedSpellIds.length} selected</span>
             </div>
-            <input
-              aria-label="Filter learnable spells"
-              type="text"
-              className="forge-input"
-              placeholder="Search spells..."
-              value={spellFilter}
-              onChange={(e) => setSpellFilter(e.target.value)}
-            />
+            <div className="forge-row" style={{ gap: 8 }}>
+              <input
+                aria-label="Filter learnable spells"
+                type="text"
+                className="forge-input"
+                placeholder={`Search ${selectedClass} spells...`}
+                value={spellFilter}
+                onChange={(e) => setSpellFilter(e.target.value)}
+              />
+              <label className="forge-row" style={{ gap: 4, whiteSpace: 'nowrap', fontSize: 11, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={showAllClassSpells}
+                  onChange={(e) => setShowAllClassSpells(e.target.checked)}
+                />
+                <span>All classes</span>
+              </label>
+            </div>
             <div style={{ maxHeight: 160, overflowY: 'auto' }} className="pill-row">
               {learnableSpells.slice(0, 40).map((sp) => {
                 const chosen = selectedSpellIds.includes(sp.id);

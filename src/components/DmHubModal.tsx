@@ -69,6 +69,7 @@ interface DmHubModalProps {
   onAdvanceDowntime?: (deltaDays: number) => void;
   onDeleteDowntime?: (projectId: string) => void;
   onSyncCampaignRepo?: (config?: ExternalRepoConfig) => Promise<void>;
+  onPushCampaignRepo?: (config?: ExternalRepoConfig) => Promise<void>;
 }
 
 const CATEGORIES: Array<{ key: 'all' | CampaignCategory; label: string }> = [
@@ -118,6 +119,7 @@ export function DmHubModal({
   onAdvanceDowntime,
   onDeleteDowntime,
   onSyncCampaignRepo,
+  onPushCampaignRepo,
 }: DmHubModalProps) {
   const [tab, setTab] = useState<'binder' | 'clock' | 'loot' | 'dmscreen' | 'xp' | 'improv' | 'worldmap' | 'soundboard'>('binder');
   const [dtOwner, setDtOwner] = useState('');
@@ -889,7 +891,7 @@ export function DmHubModal({
                   )}
                 </div>
                 <div className="forge-muted" style={{ fontSize: 12 }}>
-                  Link a separate GitHub repo (<code>owner/repo</code>) for this campaign&apos;s characters, monsters, items, and handouts. Supports public repos or private repos (with a token in Settings).
+                  Link a GitHub repo (<code>owner/repo</code>) for this campaign&apos;s binder entries, custom DLC, and characters. Use Pack Path to keep multiple campaigns in one shared repo.
                 </div>
                 <form
                   className="forge-row"
@@ -899,33 +901,68 @@ export function DmHubModal({
                     const fd = new FormData(e.currentTarget);
                     const slug = parseRepoSlug(String(fd.get('repoSlug') || ''));
                     const branch = String(fd.get('repoBranch') || 'main').trim() || 'main';
+                    const packPath = String(fd.get('repoPath') || 'campaign-pack.json').trim() || 'campaign-pack.json';
                     if (!slug) return;
-                    void onSyncCampaignRepo({ owner: slug.owner, repo: slug.repo, branch });
+                    void onSyncCampaignRepo({ owner: slug.owner, repo: slug.repo, branch, packPath });
                   }}
                 >
                   <input
                     name="repoSlug"
                     type="text"
                     className="forge-input"
-                    style={{ flex: '1 1 200px' }}
+                    style={{ flex: '1 1 180px' }}
                     defaultValue={
                       campaign.externalRepo
                         ? `${campaign.externalRepo.owner}/${campaign.externalRepo.repo}`
                         : ''
                     }
-                    placeholder="Solopass/campaign-curse-of-strahd"
+                    placeholder="Solopass/dnd-campaign-vault"
                   />
                   <input
                     name="repoBranch"
                     type="text"
                     className="forge-input"
-                    style={{ width: 90 }}
+                    style={{ width: 80 }}
                     defaultValue={campaign.externalRepo?.branch ?? 'main'}
                     placeholder="main"
                   />
+                  <input
+                    name="repoPath"
+                    type="text"
+                    className="forge-input"
+                    style={{ flex: '1 1 170px' }}
+                    defaultValue={campaign.externalRepo?.packPath ?? 'campaign-pack.json'}
+                    placeholder="campaign-pack.json"
+                    title="Manifest path inside the repo (e.g. campaign-pack.json or campaigns/strahd/campaign-pack.json)"
+                  />
                   <button type="submit" className="btn btn-primary">
-                    Sync Campaign Repo
+                    Sync Repo
                   </button>
+                  {onPushCampaignRepo && (
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={(e) => {
+                        const form = e.currentTarget.closest('form');
+                        if (!form) {
+                          void onPushCampaignRepo();
+                          return;
+                        }
+                        const fd = new FormData(form);
+                        const slug = parseRepoSlug(String(fd.get('repoSlug') || ''));
+                        const branch = String(fd.get('repoBranch') || 'main').trim() || 'main';
+                        const packPath = String(fd.get('repoPath') || 'campaign-pack.json').trim() || 'campaign-pack.json';
+                        if (!slug) {
+                          void onPushCampaignRepo();
+                          return;
+                        }
+                        void onPushCampaignRepo({ owner: slug.owner, repo: slug.repo, branch, packPath });
+                      }}
+                      title="Commit this campaign's binder entries and custom DLC back to GitHub (requires PAT in Settings)"
+                    >
+                      Push Pack
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="btn"
@@ -941,7 +978,7 @@ export function DmHubModal({
                       URL.revokeObjectURL(url);
                     }}
                   >
-                    Download Manifest Template
+                    Template
                   </button>
                 </form>
               </div>

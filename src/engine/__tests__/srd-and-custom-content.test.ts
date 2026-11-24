@@ -12,7 +12,12 @@ import {
   convertRawEntityToSidereroll,
 } from '../content-converter';
 import { buildCharacterFromDdbFields } from '../ddb-pdf-importer';
-import { buildCampaignPackTemplate, parseRepoSlug, resolveRepoAssetUrl } from '../campaign-repo-sync';
+import {
+  buildCampaignPackExport,
+  buildCampaignPackTemplate,
+  parseRepoSlug,
+  resolveRepoAssetUrl,
+} from '../campaign-repo-sync';
 import monsterTemplate from '../../custom-content/_templates/monster.json';
 import itemTemplate from '../../custom-content/_templates/item.json';
 import spellTemplate from '../../custom-content/_templates/spell.json';
@@ -232,5 +237,56 @@ describe('Custom Content Templates & JSON Loader', () => {
     const manifest = JSON.parse(buildCampaignPackTemplate('Curse of Strahd')) as { name: string; entities: unknown[] };
     expect(manifest.name).toBe('Curse of Strahd');
     expect(manifest.entities.length).toBeGreaterThan(0);
+
+    const exported = JSON.parse(
+      buildCampaignPackExport(
+        {
+          id: 'camp-1',
+          name: 'Barovia',
+          setting: 'Ravenloft',
+          clock: { day: 1, hour: 12, minute: 0, calendarName: 'Barovian', weather: 'Foggy', activeTimers: [] },
+          partyXpTotal: 0,
+          partyLootGp: 50,
+          partyLootItems: [],
+          entries: [
+            {
+              id: 'e1',
+              category: 'npc',
+              title: 'Ireena Kolyana',
+              summary: 'Noble of Barovia',
+              body: 'Seeking safe passage.',
+              tags: ['ally'],
+              status: 'active',
+              updatedAt: '2026-11-24T00:00:00Z',
+            },
+          ],
+          createdAt: '2026-11-24T00:00:00Z',
+        },
+        [
+          {
+            id: 'hb-sunblade',
+            name: 'Sunsword',
+            source: 'Barovia DLC',
+            ruleset: '2024',
+            category: 'weapon',
+            activities: [],
+            entries: ['Radiant blade.'],
+          },
+        ],
+        {
+          characters: ['characters/hero.json'],
+          entities: [{ path: 'monsters/strahd.json', category: 'monster' }],
+        }
+      )
+    ) as {
+      name: string;
+      characters: string[];
+      entities: unknown[];
+      entries: Array<{ title: string }>;
+    };
+    expect(exported.name).toBe('Barovia');
+    expect(exported.characters).toEqual(['characters/hero.json']);
+    expect(exported.entities).toHaveLength(2);
+    expect(exported.entries[0]?.title).toBe('Ireena Kolyana');
   });
 });

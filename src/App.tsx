@@ -709,6 +709,7 @@ export function App() {
     onAdvanceDowntime: store.advanceDowntimeDays,
     onDeleteDowntime: store.deleteDowntimeProject,
     onSyncCampaignRepo: store.syncCampaignExternalRepo,
+    onPushCampaignRepo: store.pushCampaignToRepo,
     onSpawnImprovEncounter: (enc: { monsters: Array<{ name: string; count: number }> }) => {
       const allMobs = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities).filter(
         (e) => e.category === 'monster'

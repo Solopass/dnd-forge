@@ -837,6 +837,7 @@ export function CommandPalette({
   const [tab, setTab] = useState<'search' | 'packs' | 'pdf' | 'markdown' | 'json'>('search');
   const [categoryFilter, setCategoryFilter] = useState<'all' | CompendiumEntity['category']>(initialCategory);
   const [rulesetFilter, setRulesetFilter] = useState<'all' | '2014' | '2024'>(initialRuleset);
+  const [customOnly, setCustomOnly] = useState(false);
   const [spellLevelFilter, setSpellLevelFilter] = useState<'all' | number>('all');
   const [spellTagFilter, setSpellTagFilter] = useState<'all' | 'conc' | 'ritual'>('all');
   const [classCastableOnly, setClassCastableOnly] = useState(false);
@@ -860,6 +861,9 @@ export function CommandPalette({
       (item) =>
         (categoryFilter === 'all' || item.category === categoryFilter) &&
         (rulesetFilter === 'all' || item.ruleset === rulesetFilter) &&
+        (!customOnly ||
+          item.ruleset === 'homebrew' ||
+          (!item.source.startsWith('SRD') && !item.source.startsWith('5e'))) &&
         (categoryFilter !== 'spell' || spellLevelFilter === 'all' || (item.spellLevel ?? 0) === spellLevelFilter) &&
         (categoryFilter !== 'spell' ||
           !classCastableOnly ||
@@ -962,6 +966,14 @@ export function CommandPalette({
                   {rs === 'all' ? 'ALL RULES' : rs}
                 </button>
               ))}
+              <button
+                type="button"
+                className={`pill ${customOnly ? 'active' : ''}`}
+                onClick={() => setCustomOnly((v) => !v)}
+                title="Show only Homebrew, DLC, and Repo-synced content"
+              >
+                DLC / REPO
+              </button>
               <span className="badge tabular" style={{ marginLeft: 'auto' }}>
                 {matches.length}/{allMatches.length}
               </span>

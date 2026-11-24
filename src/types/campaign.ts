@@ -61,6 +61,7 @@ export interface ExternalRepoConfig {
   owner: string;
   repo: string;
   branch?: string;
+  packPath?: string;
   lastSyncedAt?: string;
 }
 

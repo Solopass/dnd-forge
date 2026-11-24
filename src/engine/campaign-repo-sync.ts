@@ -1,4 +1,4 @@
-import { CampaignEntry, ExternalRepoConfig } from '../types/campaign';
+import { CampaignEntry, CampaignRecord, ExternalRepoConfig } from '../types/campaign';
 import { RawCharacterState } from '../types/character';
 import { CompendiumEntity, ItemCategory } from '../types/compendium';
 import { normalizeCustomCharacter, normalizeCustomEntity } from './custom-content-loader';
@@ -7,10 +7,12 @@ const PAT_STORAGE_KEY = 'sidereroll-github-pat';
 
 export interface CampaignPackManifest {
   name?: string;
+  setting?: string;
   ruleset?: '2014' | '2024';
   source?: string;
-  characters?: string[];
-  entities?: Array<string | { path: string; category?: ItemCategory }>;
+  exportedAt?: string;
+  characters?: Array<string | Record<string, unknown>>;
+  entities?: Array<string | { path: string; category?: ItemCategory } | Record<string, unknown>>;
   entries?: CampaignEntry[];
 }
 
@@ -100,14 +102,37 @@ export async function fetchCampaignPackFromGitHub(
   config: ExternalRepoConfig,
   token?: string
 ): Promise<SyncedCampaignPackResult> {
-  const rawManifest = (await fetchRepoJson(config, 'campaign-pack.json', token)) as CampaignPackManifest;
+  const packPath = config.packPath?.trim() || 'campaign-pack.json';
+  const rawManifest = (await fetchRepoJson(config, packPath, token)) as CampaignPackManifest;
   const entities: CompendiumEntity[] = [];
   const characters: RawCharacterState[] = [];
+  const sourceLabel =
+    rawManifest.source?.trim() || rawManifest.name?.trim() || `${config.owner}/${config.repo}`;
+
+  const pushNormalizedEntity = (item: Record<string, unknown>, fallbackCat: ItemCategory) => {
+    const norm = normalizeCustomEntity(item, fallbackCat);
+    if (!norm) return;
+    if (norm.imageUrl) norm.imageUrl = resolveRepoAssetUrl(norm.imageUrl, config);
+    if (!norm.source || norm.source === 'Custom' || norm.source === 'Homebrew') {
+      norm.source = sourceLabel;
+    }
+    entities.push(norm);
+  };
 
   for (const entrySpec of rawManifest.entities ?? []) {
-    const specPath = typeof entrySpec === 'string' ? entrySpec : entrySpec.path;
+    const specObj =
+      typeof entrySpec === 'object' && entrySpec !== null
+        ? (entrySpec as { path?: unknown; category?: ItemCategory })
+        : null;
+    if (specObj && typeof specObj.path !== 'string') {
+      const cat = typeof specObj.category === 'string' ? specObj.category : 'gear';
+      pushNormalizedEntity(entrySpec as Record<string, unknown>, cat);
+      continue;
+    }
+    const specPath = typeof entrySpec === 'string' ? entrySpec : typeof specObj?.path === 'string' ? specObj.path : '';
+    if (!specPath) continue;
     const fallbackCat: ItemCategory =
-      (typeof entrySpec === 'object' && entrySpec.category) ||
+      specObj?.category ||
       (specPath.includes('spell')
         ? 'spell'
         : specPath.includes('monster')
@@ -119,16 +144,20 @@ export async function fetchCampaignPackFromGitHub(
     const arr = Array.isArray(payload) ? payload : [payload];
     for (const item of arr) {
       if (!item || typeof item !== 'object') continue;
-      const norm = normalizeCustomEntity(item as Record<string, unknown>, fallbackCat);
-      if (norm) {
-        if (norm.imageUrl) norm.imageUrl = resolveRepoAssetUrl(norm.imageUrl, config);
-        entities.push(norm);
-      }
+      pushNormalizedEntity(item as Record<string, unknown>, fallbackCat);
     }
   }
 
-  for (const charPath of rawManifest.characters ?? []) {
-    const payload = await fetchRepoJson(config, charPath, token);
+  for (const charSpec of rawManifest.characters ?? []) {
+    if (typeof charSpec === 'object' && charSpec !== null) {
+      const norm = normalizeCustomCharacter(charSpec);
+      if (norm) {
+        if (norm.avatarUrl) norm.avatarUrl = resolveRepoAssetUrl(norm.avatarUrl, config);
+        characters.push(norm);
+      }
+      continue;
+    }
+    const payload = await fetchRepoJson(config, charSpec, token);
     const arr = Array.isArray(payload) ? payload : [payload];
     for (const rawChar of arr) {
       if (!rawChar || typeof rawChar !== 'object') continue;
@@ -147,6 +176,45 @@ export async function fetchCampaignPackFromGitHub(
     entries: Array.isArray(rawManifest.entries) ? rawManifest.entries : [],
     syncedAt: new Date().toISOString(),
   };
+}
+
+export async function tryFetchExistingManifest(
+  config: ExternalRepoConfig,
+  token?: string
+): Promise<CampaignPackManifest | null> {
+  const packPath = config.packPath?.trim() || 'campaign-pack.json';
+  try {
+    const data = await fetchRepoJson(config, packPath, token);
+    return data && typeof data === 'object' ? (data as CampaignPackManifest) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function buildCampaignPackExport(
+  campaign: CampaignRecord,
+  customEntities: CompendiumEntity[],
+  existingManifest?: CampaignPackManifest | null
+): string {
+  const preservedEntityRefs = (existingManifest?.entities ?? []).filter(
+    (e) => typeof e === 'string' || (typeof e === 'object' && e !== null && 'path' in e)
+  );
+  const preservedCharRefs = (existingManifest?.characters ?? []).filter(
+    (c) => typeof c === 'string'
+  );
+
+  const manifest: CampaignPackManifest = {
+    ...(existingManifest ?? {}),
+    name: campaign.name,
+    setting: campaign.setting,
+    source: existingManifest?.source ?? campaign.name,
+    exportedAt: new Date().toISOString(),
+    characters: preservedCharRefs,
+    entities: [...preservedEntityRefs, ...customEntities.map((e) => e as unknown as Record<string, unknown>)],
+    entries: campaign.entries,
+  };
+
+  return `${JSON.stringify(manifest, null, 2)}\n`;
 }
 
 function utf8ToBase64(text: string): string {

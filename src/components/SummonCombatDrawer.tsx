@@ -34,6 +34,7 @@ interface SummonDrawerProps {
   onAddTimedEffect: (name: string, rounds: number) => void;
   onAdjustCombatantHp: (id: string, delta: number) => void;
   onSetCombatantInitiative: (id: string, initiative: number) => void;
+  onMoveCombatantOrder?: (id: string, delta: -1 | 1) => void;
   onToggleCombatantCondition: (id: string, condition: string) => void;
   onToggleCombatantEconomy: (id: string, economy: ActionEconomy) => void;
   onRemoveCombatant: (id: string) => void;
@@ -92,6 +93,7 @@ export function SummonCombatDrawer({
   onAddTimedEffect,
   onAdjustCombatantHp,
   onSetCombatantInitiative,
+  onMoveCombatantOrder,
   onToggleCombatantCondition,
   onToggleCombatantEconomy,
   onRemoveCombatant,
@@ -515,6 +517,28 @@ export function SummonCombatDrawer({
                 {node.hidden && <span className="conc-badge">HIDDEN</span>}
               </span>
               <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+                {!isPlayerRole && onMoveCombatantOrder && (
+                  <>
+                    <button
+                      type="button"
+                      className="btn"
+                      aria-label={`Move ${node.name} up in initiative`}
+                      title="Move up in turn order"
+                      onClick={() => onMoveCombatantOrder(node.id, -1)}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      className="btn"
+                      aria-label={`Move ${node.name} down in initiative`}
+                      title="Move down in turn order"
+                      onClick={() => onMoveCombatantOrder(node.id, 1)}
+                    >
+                      ↓
+                    </button>
+                  </>
+                )}
                 {node.kind !== 'pc' && !isPlayerRole && (
                   <button
                     type="button"

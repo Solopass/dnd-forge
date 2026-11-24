@@ -99,6 +99,21 @@ export type LiveTableMessage =
       customBonus?: number;
       weaponMastery?: WeaponMastery;
       attackerAbilityMod?: number;
+    }
+  | {
+      type: 'target_save';
+      senderId: string;
+      senderName: string;
+      attackerName: string;
+      targetIds: string[];
+      activity: Activity;
+      explicitDc?: number;
+    }
+  | {
+      type: 'claim_token';
+      senderId: string;
+      senderName: string;
+      combatantId: string;
     };
 
 const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

@@ -28,6 +28,9 @@ interface LiveTableModalProps {
   onShareCharacterToPeers: () => void;
   onImportCharacter: (char: RawCharacterState) => Promise<void>;
   onSendRollRequest?: (label: string, kind: 'check' | 'save', abilityOrSkill: string, dc?: number) => void;
+  pcTokens?: Array<{ id: string; name: string }>;
+  claimedTokenId?: string | null;
+  onClaimToken?: (combatantId: string) => void;
   onLog: (msg: string, tone?: 'info' | 'warn') => void;
 }
 
@@ -46,6 +49,9 @@ export function LiveTableModal({
   onShareCharacterToPeers,
   onImportCharacter,
   onSendRollRequest,
+  pcTokens = [],
+  claimedTokenId,
+  onClaimToken,
   onLog,
 }: LiveTableModalProps) {
   const [tab, setTab] = useState<'local' | 'webrtc' | 'share'>('local');
@@ -130,6 +136,29 @@ export function LiveTableModal({
             </div>
           )}
         </div>
+
+        {liveStatus.role === 'player' && onClaimToken && pcTokens.length > 0 && (
+          <div className="card forge-row-between" style={{ flexWrap: 'wrap', gap: 8 }}>
+            <div>
+              <div className="forge-section-label">CLAIM MY BATTLEMAP TOKEN</div>
+              <div className="forge-muted" style={{ fontSize: 11 }}>
+                Select which PC token on the Battlemap you control.
+              </div>
+            </div>
+            <select
+              aria-label="Claim battlemap token"
+              className="forge-input"
+              value={claimedTokenId ?? activeCharacter.id}
+              onChange={(e) => onClaimToken(e.target.value)}
+            >
+              {pcTokens.map((pc) => (
+                <option key={pc.id} value={pc.id}>
+                  {pc.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {liveStatus.role === 'host' && onSendRollRequest && (
           <div className="card forge-stack">

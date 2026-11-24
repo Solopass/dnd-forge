@@ -111,6 +111,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     abilityOrSkill: string;
     dc?: number;
   } | null>(null);
+  const [claimedTokenId, setClaimedTokenId] = useState<string | null>(null);
   const [compendium, setCompendium] = useState<CompendiumEntity[]>(initialCharacter.items);
   const [rollMode, setRollMode] = useState<RollMode>('normal');
   const [pendingConcDc, setPendingConcDc] = useState<number | null>(null);
@@ -1762,7 +1763,8 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     (combatantId: string, x: number, y: number) => {
       if (liveStatus.role === 'player') {
         const session = liveSessionRef.current;
-        if (session && combatantId === rawChar.id) {
+        const ownedId = claimedTokenId ?? rawChar.id;
+        if (session && combatantId === ownedId) {
           session.broadcast({
             type: 'token_move',
             senderId: session.senderId,
@@ -2181,6 +2183,16 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         msg.weaponMastery,
         msg.attackerAbilityMod
       );
+      return;
+    }
+
+    if (msg.type === 'target_save' && liveStatus.role === 'host') {
+      targetSaveCombatants(msg.attackerName, msg.targetIds, msg.activity, msg.explicitDc);
+      return;
+    }
+
+    if (msg.type === 'claim_token' && liveStatus.role === 'host') {
+      appendLog(`[LIVE] ${msg.senderName} claimed token "${msg.combatantId}".`, 'info');
     }
   };
 
@@ -2702,6 +2714,41 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         : '';
     appendLog(`Rolled Initiative for all combatants (Reset to Round 1).${surpriseNote}`, 'roll');
   }, [encounter.combatants, houseRules.surpriseRule, persistEncounter, appendLog]);
+
+  const moveCombatantOrder = useCallback(
+    (combatantId: string, delta: -1 | 1) => {
+      persistEncounter((prev) => {
+        const idx = prev.combatants.findIndex((c) => c.id === combatantId);
+        const targetIdx = idx + delta;
+        if (idx < 0 || targetIdx < 0 || targetIdx >= prev.combatants.length) return prev;
+        const next = [...prev.combatants];
+        const [moved] = next.splice(idx, 1);
+        if (!moved) return prev;
+        next.splice(targetIdx, 0, moved);
+        const activeId = prev.combatants[prev.activeTurnIndex]?.id;
+        const nextActive = activeId ? Math.max(0, next.findIndex((c) => c.id === activeId)) : prev.activeTurnIndex;
+        return { ...prev, combatants: next, activeTurnIndex: nextActive };
+      });
+    },
+    [persistEncounter]
+  );
+
+  const claimCombatantToken = useCallback(
+    (combatantId: string) => {
+      setClaimedTokenId(combatantId);
+      const session = liveSessionRef.current;
+      if (session && liveStatus.role !== 'idle') {
+        session.broadcast({
+          type: 'claim_token',
+          senderId: session.senderId,
+          senderName: rawChar.name,
+          combatantId,
+        });
+      }
+      appendLog(`Claimed map token "${combatantId}".`, 'info');
+    },
+    [liveStatus.role, rawChar.name, appendLog]
+  );
 
   const toggleCombatantHidden = useCallback(
     (combatantId: string) => {
@@ -3258,6 +3305,21 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
       const targets = encounter.combatants.filter((c) => targetIds.includes(c.id));
       if (targets.length === 0) return;
 
+      if (liveStatus.role === 'player') {
+        const session = liveSessionRef.current;
+        if (session) {
+          session.broadcast({
+            type: 'target_save',
+            senderId: session.senderId,
+            senderName: rawChar.name,
+            attackerName,
+            targetIds,
+            activity,
+            explicitDc,
+          });
+        }
+      }
+
       const outcomes = resolveTargetSaves(activity, targets, explicitDc);
       const hpUpdates = new Map(
         outcomes.filter((o) => o.targetId !== rawChar.id).map((o) => [o.targetId, o.nextHp])
@@ -3602,6 +3664,9 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     applyLevelUpPlan,
     importSingleCharacter,
     liveStatus,
+    claimedTokenId,
+    claimCombatantToken,
+    moveCombatantOrder,
     hostLocalTable,
     joinLocalTable,
     createWebRtcInvite,

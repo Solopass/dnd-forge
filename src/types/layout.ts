@@ -10,7 +10,9 @@ export type WidgetId =
   | 'features_notes'
   | 'combat_tracker'
   | 'mini_vtt'
-  | 'dice_console';
+  | 'dice_console'
+  | 'dm_notes'
+  | 'dm_loot';
 
 export type WidgetColSpan = 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 12;
 export type WidgetHeightPreset = 'auto' | 'compact' | 'tall';

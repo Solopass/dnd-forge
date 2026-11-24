@@ -23,6 +23,8 @@ export const WIDGET_LABELS: Record<WidgetId, string> = {
   combat_tracker: 'Encounter & Turn Tracker',
   mini_vtt: 'Tactical Mini VTT',
   dice_console: 'Dice & Combat Log',
+  dm_notes: 'DM Campaign & Clock',
+  dm_loot: 'DM Party Stash & Gold',
 };
 
 function makeWidgets(
@@ -104,12 +106,14 @@ export const BUILTIN_LAYOUT_PRESETS: WorkspaceLayoutConfig[] = [
   {
     id: 'layout-dm-screen',
     name: 'DM Master Screen',
-    description: 'Tactical VTT, Encounter Tracker, Conditions, and Notes side by side.',
+    description: 'Tactical VTT, Encounter Tracker, Campaign Clock, Party Stash, and Conditions side by side.',
     builtIn: true,
     gap: 'tight',
     widgets: makeWidgets([
       ['combat_tracker', 4],
       ['mini_vtt', 8, 'tall'],
+      ['dm_notes', 6, 'compact'],
+      ['dm_loot', 6, 'compact'],
       ['vitals', 4],
       ['conditions', 4],
       ['features_notes', 4, 'compact'],

@@ -500,6 +500,7 @@ export function App() {
       onResetEncounter={store.resetEncounter}
       onAdjustCombatantHp={store.adjustCombatantHp}
       onSetCombatantInitiative={store.setCombatantInitiative}
+      onMoveCombatantOrder={store.moveCombatantOrder}
       onToggleCombatantCondition={store.toggleCombatantCondition}
       onToggleCombatantEconomy={store.toggleCombatantEconomy}
       onRemoveCombatant={store.removeCombatant}
@@ -561,7 +562,7 @@ export function App() {
       ),
     onSetTokenPortrait: store.setCombatantPortrait,
     onSetTokenVision: store.setCombatantVision,
-    ownedCharacterId: store.liveStatus.role === 'player' ? store.rawChar.id : undefined,
+    ownedCharacterId: isPlayerRole ? (store.claimedTokenId ?? store.rawChar.id) : undefined,
     onOpenPopOutPlayer: () => {
       window.open('?player=1', 'dnd-forge-player-display', 'width=1280,height=800');
     },
@@ -943,6 +944,67 @@ export function App() {
         </div>
       )}
 
+      {!isPlayerRole && store.encounter.combatants.some((c) => c.kind === 'pc') && (
+        <div
+          className="subpanel forge-row"
+          style={{
+            padding: '5px 14px',
+            margin: '6px 14px 0',
+            flexWrap: 'wrap',
+            gap: 8,
+            flexShrink: 0,
+          }}
+          aria-label="DM Party Live Status Strip"
+        >
+          <span className="muted-label">PARTY VITALS</span>
+          {store.encounter.combatants
+            .filter((c) => c.kind === 'pc')
+            .map((pc) => (
+              <span key={pc.id} className="badge tabular">
+                <strong>{pc.name}</strong> • HP {pc.hp.current}/{pc.hp.max} • AC {pc.ac}
+                {pc.conditions.length > 0 ? ` • ${pc.conditions.join(', ')}` : ''}
+              </span>
+            ))}
+        </div>
+      )}
+
+      {store.pendingConcDc !== null && (
+        <div
+          className="subpanel forge-row-between"
+          role="alert"
+          style={{
+            padding: '8px 14px',
+            margin: '6px 14px 0',
+            borderColor: 'color-mix(in oklab, var(--accent-danger) 65%, var(--border-subtle))',
+            background: 'color-mix(in oklab, var(--accent-danger) 12%, var(--bg-surface))',
+            flexWrap: 'wrap',
+            gap: 8,
+            flexShrink: 0,
+          }}
+        >
+          <div className="forge-row" style={{ gap: 8 }}>
+            <span className="badge" style={{ color: 'var(--accent-red)', borderColor: 'var(--accent-red)' }}>
+              CONCENTRATION CHECK
+            </span>
+            <span>
+              Roll Constitution saving throw vs <strong className="tabular">DC {store.pendingConcDc}</strong>
+            </span>
+          </div>
+          <div className="forge-row" style={{ gap: 6 }}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => store.rollConcentrationSave(store.pendingConcDc ?? 10)}
+            >
+              Roll CON Save (DC {store.pendingConcDc})
+            </button>
+            <button type="button" className="btn btn-danger" onClick={() => store.dropConcentration('Dropped manually')}>
+              Drop Concentration
+            </button>
+          </div>
+        </div>
+      )}
+
       {store.pendingRollRequest && (
         <div
           className="subpanel forge-row-between"
@@ -1045,6 +1107,12 @@ export function App() {
               </Suspense>
             }
             consoleLines={store.consoleLines}
+            isPlayerRole={isPlayerRole}
+            campaign={store.campaign}
+            characterList={store.characterList}
+            onAdvanceClock={store.advanceCampaignClock}
+            onAssignLootToCharacter={store.assignLootItemToCharacter}
+            onDistributeGold={store.distributeGoldToParty}
           />
         </Suspense>
       ) : uiMode === 'classic' ? (
@@ -1351,6 +1419,11 @@ export function App() {
           onShareCharacterToPeers={store.shareActiveCharacterToPeers}
           onImportCharacter={store.importSingleCharacter}
           onSendRollRequest={store.sendRollRequestToPeers}
+          pcTokens={store.encounter.combatants
+            .filter((c) => c.kind === 'pc')
+            .map((c) => ({ id: c.id, name: c.name }))}
+          claimedTokenId={store.claimedTokenId}
+          onClaimToken={store.claimCombatantToken}
           onLog={store.appendLog}
         />
       </Suspense>

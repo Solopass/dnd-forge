@@ -19,6 +19,8 @@ import {
 import { RawCharacterState, ResolvedActivity, ResolvedCharacterSheet } from '../types/character';
 import { AbilityKey, ActiveBuffState, RollMode, SkillKey, STANDARD_CONDITIONS } from '../types/core';
 import { CombatEncounterState } from '../types/combat';
+import { CampaignRecord } from '../types/campaign';
+import { formatWorldClock } from '../engine/dm-tools';
 import { SKILL_ABILITY_MAP } from '../engine/rules-math';
 
 const ABILITIES: AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
@@ -62,6 +64,12 @@ interface ModularCanvasProps {
   combatDrawerNode: ReactNode;
   miniVttNode: ReactNode;
   consoleLines: Array<{ id: string; text: string; tone: string }>;
+  isPlayerRole?: boolean;
+  campaign?: CampaignRecord;
+  characterList?: RawCharacterState[];
+  onAdvanceClock?: (minutes: number) => void;
+  onAssignLootToCharacter?: (itemName: string, characterId: string) => Promise<void>;
+  onDistributeGold?: (gp: number) => Promise<void>;
 }
 
 const ALL_COL_SPANS: WidgetColSpan[] = [3, 4, 5, 6, 7, 8, 9, 10, 12];
@@ -99,6 +107,12 @@ export function ModularCanvas({
   combatDrawerNode,
   miniVttNode,
   consoleLines,
+  isPlayerRole = false,
+  campaign,
+  characterList = [],
+  onAdvanceClock,
+  onAssignLootToCharacter,
+  onDistributeGold,
 }: ModularCanvasProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -109,6 +123,7 @@ export function ModularCanvas({
   const [smiteLevel, setSmiteLevel] = useState(1);
   const [savedPresets, setSavedPresets] = useState<WorkspaceLayoutConfig[]>(() => readStoredSavedLayouts());
   const [presetNameInput, setPresetNameInput] = useState('');
+  const [lootTargetId, setLootTargetId] = useState('');
   const [pinnedIds, setPinnedIds] = useState<string[]>(() => {
     try {
       const raw = localStorage.getItem('dnd-forge-pinned-actions');
@@ -689,6 +704,99 @@ export function ModularCanvas({
             </div>
           </div>
         );
+
+      case 'dm_notes':
+        if (isPlayerRole || !campaign) {
+          return <div className="forge-muted" style={{ fontSize: 12 }}>DM-only widget.</div>;
+        }
+        return (
+          <div className="forge-stack">
+            <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+              <strong className="tabular" style={{ fontSize: 13 }}>
+                {formatWorldClock(campaign.clock)}
+              </strong>
+              <span className="badge">{campaign.clock.weather}</span>
+            </div>
+            {onAdvanceClock && (
+              <div className="pill-row">
+                <button type="button" className="btn" onClick={() => onAdvanceClock(10)}>+10m</button>
+                <button type="button" className="btn" onClick={() => onAdvanceClock(60)}>+1h</button>
+                <button type="button" className="btn" onClick={() => onAdvanceClock(480)}>+8h</button>
+                <button type="button" className="btn" onClick={() => onAdvanceClock(1440)}>+1d</button>
+              </div>
+            )}
+            <div className="forge-stack" style={{ maxHeight: 150, overflowY: 'auto' }}>
+              {campaign.entries.slice(0, 5).map((entry) => (
+                <div key={entry.id} className="subpanel" style={{ padding: '5px 8px' }}>
+                  <div style={{ fontWeight: 600, fontSize: 12 }}>
+                    {entry.title} <span className="badge">{entry.category.toUpperCase()}</span>
+                  </div>
+                  {entry.summary && <div className="forge-muted" style={{ fontSize: 11 }}>{entry.summary}</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'dm_loot':
+        if (isPlayerRole || !campaign) {
+          return <div className="forge-muted" style={{ fontSize: 12 }}>DM-only widget.</div>;
+        }
+        return (
+          <div className="forge-stack">
+            <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+              <span className="tabular">
+                Party Gold: <strong>{campaign.partyLootGp.toLocaleString()} GP</strong>
+              </span>
+              {onDistributeGold && characterList.length > 0 && (
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={campaign.partyLootGp < characterList.length}
+                  onClick={() => void onDistributeGold(campaign.partyLootGp)}
+                >
+                  Split GP ({characterList.length} PCs)
+                </button>
+              )}
+            </div>
+            {characterList.length > 0 && campaign.partyLootItems.length > 0 && (
+              <select
+                aria-label="Stash recipient"
+                className="forge-input"
+                value={lootTargetId || characterList[0]?.id || ''}
+                onChange={(e) => setLootTargetId(e.target.value)}
+              >
+                {characterList.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    Recipient: {c.name}
+                  </option>
+                ))}
+              </select>
+            )}
+            <div className="forge-stack" style={{ maxHeight: 150, overflowY: 'auto' }}>
+              {campaign.partyLootItems.length === 0 ? (
+                <div className="forge-muted" style={{ fontSize: 12 }}>No stash items.</div>
+              ) : (
+                campaign.partyLootItems.map((itemName, idx) => (
+                  <div key={`${itemName}-${idx}`} className="forge-list-row">
+                    <span style={{ fontSize: 12 }}>{itemName}</span>
+                    {onAssignLootToCharacter && characterList.length > 0 && (
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() =>
+                          void onAssignLootToCharacter(itemName, lootTargetId || characterList[0]!.id)
+                        }
+                      >
+                        Give
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        );
     }
   };
 
@@ -801,6 +909,7 @@ export function ModularCanvas({
       >
         {layout.widgets.map((w, idx) => {
           if (!w.visible) return null;
+          if (isPlayerRole && (w.id === 'dm_notes' || w.id === 'dm_loot')) return null;
           return (
             <section
               key={w.id}

@@ -1,10 +1,18 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { getQualitativeHealthLabel, sizeToGridCells } from '../engine/dm-tools';
-import { CombatantNode, CombatEncounterState } from '../types/combat';
+import { computeVisibleCells } from '../engine/vtt-vision';
+import {
+  BattlemapScene,
+  CombatantNode,
+  CombatEncounterState,
+  MapPingEvent,
+  MapSketchStroke,
+} from '../types/combat';
 import { ModalDialog } from './ModalDialog';
 
 interface BattlemapModalProps {
   isOpen: boolean;
+  embedded?: boolean;
   encounter: CombatEncounterState;
   playerView: boolean;
   onTogglePlayerView: () => void;
@@ -20,11 +28,27 @@ interface BattlemapModalProps {
   onClearTerrain: () => void;
   onUpdateMapSettings: (patch: Partial<NonNullable<CombatEncounterState['map']>>) => void;
   onNextTurn: () => void;
+  scenes?: BattlemapScene[];
+  onSaveScene?: (name: string) => void;
+  onLoadScene?: (sceneId: string) => void;
+  onDeleteScene?: (sceneId: string) => void;
+  onAddSketchStroke?: (stroke: MapSketchStroke) => void;
+  onClearSketches?: () => void;
+  activePings?: MapPingEvent[];
+  onPing?: (x: number, y: number) => void;
+  selectedTargetIds?: string[];
+  onToggleTarget?: (combatantId: string) => void;
+  onSetTokenPortrait?: (combatantId: string, url: string | undefined) => void;
+  onSetTokenVision?: (combatantId: string, feet: number) => void;
+  onOpenPopOutPlayer?: () => void;
 }
 
 type MapMode =
   | 'move'
+  | 'target'
   | 'measure'
+  | 'ping'
+  | 'sketch'
   | 'sphere'
   | 'cone'
   | 'line'
@@ -36,6 +60,7 @@ type MapMode =
   | 'erase_terrain';
 
 const CELL_PX = 50;
+const SKETCH_COLORS = ['#f85149', '#58a6ff', '#3fb950', '#f59e0b', '#f0f6fc'] as const;
 
 function getTokenColor(node: CombatantNode): string {
   if (node.tokenColor) return node.tokenColor;
@@ -55,6 +80,7 @@ function getInitials(name: string): string {
 
 export function BattlemapModal({
   isOpen,
+  embedded = false,
   encounter,
   playerView,
   onTogglePlayerView,
@@ -70,10 +96,28 @@ export function BattlemapModal({
   onClearTerrain,
   onUpdateMapSettings,
   onNextTurn,
+  scenes = [],
+  onSaveScene,
+  onLoadScene,
+  onDeleteScene,
+  onAddSketchStroke,
+  onClearSketches,
+  activePings = [],
+  onPing,
+  selectedTargetIds = [],
+  onToggleTarget,
+  onSetTokenPortrait,
+  onSetTokenVision,
+  onOpenPopOutPlayer,
 }: BattlemapModalProps) {
   const [mode, setMode] = useState<MapMode>('move');
   const [zoom, setZoom] = useState(1);
   const [showCalibrate, setShowCalibrate] = useState(false);
+  const [selectedTokenId, setSelectedTokenId] = useState<string | null>(null);
+  const [sceneNameInput, setSceneNameInput] = useState('');
+  const [selectedSceneId, setSelectedSceneId] = useState('');
+  const [sketchColor, setSketchColor] = useState<string>(SKETCH_COLORS[0]);
+  const [activeStroke, setActiveStroke] = useState<MapSketchStroke | null>(null);
   const [dragPreview, setDragPreview] = useState<{ id: string; x: number; y: number } | null>(null);
   const [measureStart, setMeasureStart] = useState<{ x: number; y: number } | null>(null);
   const [measureEnd, setMeasureEnd] = useState<{ x: number; y: number } | null>(null);
@@ -83,23 +127,38 @@ export function BattlemapModal({
 
   const cols = Math.max(8, Math.min(40, encounter.map?.cols ?? 20));
   const rows = Math.max(6, Math.min(30, encounter.map?.rows ?? 12));
+  const gridFeet = encounter.map?.gridFeet ?? 5;
   const gridOpacity = encounter.map?.gridOpacity ?? 0.25;
   const imageScale = encounter.map?.imageScale ?? 1;
   const imageOffsetX = encounter.map?.imageOffsetX ?? 0;
   const imageOffsetY = encounter.map?.imageOffsetY ?? 0;
+  const dynamicVision = Boolean(encounter.map?.dynamicVision);
+  const autoRevealFog = Boolean(encounter.map?.autoRevealFog);
   const fogCells = encounter.map?.fogCells ?? [];
   const fogSet = new Set(fogCells);
   const terrainCells = encounter.map?.terrainCells ?? [];
   const templates = encounter.map?.templates ?? [];
+  const sketches = encounter.map?.sketches ?? [];
+  const targetSet = new Set(selectedTargetIds);
+
+  const visibleCells = useMemo(() => {
+    if (!dynamicVision) return null;
+    return computeVisibleCells(encounter.combatants, cols, rows, gridFeet, terrainCells);
+  }, [dynamicVision, encounter.combatants, cols, rows, gridFeet, terrainCells]);
+
+  const toSvgCoords = (clientX: number, clientY: number): { sx: number; sy: number } => {
+    const svg = svgRef.current;
+    if (!svg) return { sx: 0, sy: 0 };
+    const rect = svg.getBoundingClientRect();
+    const sx = Math.max(0, Math.min(cols * CELL_PX, ((clientX - rect.left) / rect.width) * (cols * CELL_PX)));
+    const sy = Math.max(0, Math.min(rows * CELL_PX, ((clientY - rect.top) / rect.height) * (rows * CELL_PX)));
+    return { sx, sy };
+  };
 
   const toGridCoords = (clientX: number, clientY: number): { gx: number; gy: number } => {
-    const svg = svgRef.current;
-    if (!svg) return { gx: 0, gy: 0 };
-    const rect = svg.getBoundingClientRect();
-    const relX = ((clientX - rect.left) / rect.width) * (cols * CELL_PX);
-    const relY = ((clientY - rect.top) / rect.height) * (rows * CELL_PX);
-    const gx = Math.max(0, Math.min(cols - 1, Math.floor(relX / CELL_PX)));
-    const gy = Math.max(0, Math.min(rows - 1, Math.floor(relY / CELL_PX)));
+    const { sx, sy } = toSvgCoords(clientX, clientY);
+    const gx = Math.max(0, Math.min(cols - 1, Math.floor(sx / CELL_PX)));
+    const gy = Math.max(0, Math.min(rows - 1, Math.floor(sy / CELL_PX)));
     return { gx, gy };
   };
 
@@ -115,7 +174,23 @@ export function BattlemapModal({
   };
 
   const handleSvgPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (embedded) return;
+    const { sx, sy } = toSvgCoords(e.clientX, e.clientY);
     const { gx, gy } = toGridCoords(e.clientX, e.clientY);
+
+    if (mode === 'ping') {
+      onPing?.(gx, gy);
+      return;
+    }
+    if (mode === 'sketch') {
+      setActiveStroke({
+        id: `sk-${Date.now().toString(36)}`,
+        color: sketchColor,
+        width: 3,
+        points: [{ x: Math.round(sx), y: Math.round(sy) }],
+      });
+      return;
+    }
     if (mode === 'measure') {
       setMeasureStart({ x: gx, y: gy });
       setMeasureEnd({ x: gx, y: gy });
@@ -140,7 +215,10 @@ export function BattlemapModal({
   };
 
   const handleSvgPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (embedded) return;
+    const { sx, sy } = toSvgCoords(e.clientX, e.clientY);
     const { gx, gy } = toGridCoords(e.clientX, e.clientY);
+
     if (dragPreview) {
       const node = encounter.combatants.find((c) => c.id === dragPreview.id);
       const span = sizeToGridCells(node?.size);
@@ -149,6 +227,12 @@ export function BattlemapModal({
         x: Math.max(0, Math.min(cols - span, gx)),
         y: Math.max(0, Math.min(rows - span, gy)),
       });
+    } else if (activeStroke) {
+      setActiveStroke((prev) =>
+        prev
+          ? { ...prev, points: [...prev.points, { x: Math.round(sx), y: Math.round(sy) }] }
+          : null
+      );
     } else if (mode === 'measure' && measureStart) {
       setMeasureEnd({ x: gx, y: gy });
     } else if (isPainting) {
@@ -157,9 +241,16 @@ export function BattlemapModal({
   };
 
   const handleSvgPointerUp = () => {
+    if (embedded) return;
     if (dragPreview) {
       onMoveToken(dragPreview.id, dragPreview.x, dragPreview.y);
       setDragPreview(null);
+    }
+    if (activeStroke) {
+      if (activeStroke.points.length >= 2) {
+        onAddSketchStroke?.(activeStroke);
+      }
+      setActiveStroke(null);
     }
     if (mode === 'measure') {
       setMeasureStart(null);
@@ -169,25 +260,427 @@ export function BattlemapModal({
     lastPaintedCellRef.current = '';
   };
 
-  const handleMapUpload = (file: File | undefined) => {
+  const handleFileDataUrl = (file: File | undefined, cb: (url: string) => void) => {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        onSetMapImage(reader.result);
-      }
+      if (typeof reader.result === 'string') cb(reader.result);
     };
     reader.readAsDataURL(file);
   };
 
   const measureFeet =
     measureStart && measureEnd
-      ? Math.max(Math.abs(measureEnd.x - measureStart.x), Math.abs(measureEnd.y - measureStart.y)) * 5
+      ? Math.max(Math.abs(measureEnd.x - measureStart.x), Math.abs(measureEnd.y - measureStart.y)) * gridFeet
       : 0;
 
-  const visibleCombatants = playerView
-    ? encounter.combatants.filter((c) => !c.hidden || c.kind === 'pc')
-    : encounter.combatants;
+  const visibleCombatants = encounter.combatants.filter((c, idx) => {
+    if (!playerView) return true;
+    if (c.hidden && c.kind !== 'pc') return false;
+    if (visibleCells && c.kind !== 'pc' && c.kind !== 'summon') {
+      const span = sizeToGridCells(c.size);
+      const bx = Math.max(0, Math.min(cols - span, c.x ?? (12 + (idx % 5))));
+      const by = Math.max(0, Math.min(rows - span, c.y ?? (2 + (idx % 6))));
+      let anyVisible = false;
+      for (let dy = 0; dy < span; dy++) {
+        for (let dx = 0; dx < span; dx++) {
+          if (visibleCells.has(`${bx + dx},${by + dy}`)) anyVisible = true;
+        }
+      }
+      return anyVisible;
+    }
+    return true;
+  });
+
+  const selectedToken = selectedTokenId
+    ? encounter.combatants.find((c) => c.id === selectedTokenId) ?? null
+    : null;
+
+  const svgGrid = (
+    <div className="battlemap-scroll" style={{ maxHeight: embedded ? 'calc(100vh - 110px)' : '62vh' }}>
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${cols * CELL_PX} ${rows * CELL_PX}`}
+        style={{
+          width: `${Math.round(zoom * 100)}%`,
+          minWidth: `${Math.round(cols * 32 * zoom)}px`,
+          display: 'block',
+          background: '#0b0e14',
+          userSelect: 'none',
+          touchAction: 'none',
+        }}
+        onPointerDown={handleSvgPointerDown}
+        onPointerMove={handleSvgPointerMove}
+        onPointerUp={handleSvgPointerUp}
+        onPointerLeave={handleSvgPointerUp}
+      >
+        <defs>
+          {visibleCombatants.map((node, idx) => {
+            const span = sizeToGridCells(node.size);
+            const baseGx = Math.max(0, Math.min(cols - span, node.x ?? (node.kind === 'pc' ? 2 : 12 + (idx % 5))));
+            const baseGy = Math.max(0, Math.min(rows - span, node.y ?? 2 + (idx % 6)));
+            const gx = dragPreview?.id === node.id ? dragPreview.x : baseGx;
+            const gy = dragPreview?.id === node.id ? dragPreview.y : baseGy;
+            const cx = (gx + span / 2) * CELL_PX;
+            const cy = (gy + span / 2) * CELL_PX;
+            const r = span * CELL_PX * 0.38;
+            return (
+              <clipPath key={`clip-${node.id}`} id={`token-clip-${node.id}`}>
+                <circle cx={cx} cy={cy} r={r} />
+              </clipPath>
+            );
+          })}
+        </defs>
+
+        {encounter.map?.imageDataUrl && (
+          <image
+            href={encounter.map.imageDataUrl}
+            x={imageOffsetX}
+            y={imageOffsetY}
+            width={cols * CELL_PX * imageScale}
+            height={rows * CELL_PX * imageScale}
+            preserveAspectRatio="none"
+          />
+        )}
+
+        {/* Terrain markers */}
+        {terrainCells.map((cell) => {
+          const fill =
+            cell.kind === 'wall'
+              ? 'rgba(139, 148, 158, 0.72)'
+              : cell.kind === 'difficult'
+                ? 'rgba(210, 153, 34, 0.35)'
+                : 'rgba(88, 166, 255, 0.35)';
+          return (
+            <g key={`ter-${cell.x}-${cell.y}`} style={{ pointerEvents: 'none' }}>
+              <rect
+                x={cell.x * CELL_PX + 1}
+                y={cell.y * CELL_PX + 1}
+                width={CELL_PX - 2}
+                height={CELL_PX - 2}
+                rx={3}
+                fill={fill}
+                stroke={cell.kind === 'wall' ? '#8b949e' : '#d29922'}
+                strokeWidth={cell.kind === 'wall' ? 1.5 : 1}
+                strokeDasharray={cell.kind === 'difficult' ? '4 2' : undefined}
+              />
+            </g>
+          );
+        })}
+
+        {/* Grid lines */}
+        {Array.from({ length: cols + 1 }).map((_, i) => (
+          <line
+            key={`v-${i}`}
+            x1={i * CELL_PX}
+            y1={0}
+            x2={i * CELL_PX}
+            y2={rows * CELL_PX}
+            stroke={`rgba(139, 148, 158, ${gridOpacity})`}
+            strokeWidth={1}
+          />
+        ))}
+        {Array.from({ length: rows + 1 }).map((_, j) => (
+          <line
+            key={`h-${j}`}
+            x1={0}
+            y1={j * CELL_PX}
+            x2={cols * CELL_PX}
+            y2={j * CELL_PX}
+            stroke={`rgba(139, 148, 158, ${gridOpacity})`}
+            strokeWidth={1}
+          />
+        ))}
+
+        {/* AoE Templates */}
+        {templates.map((tpl) => {
+          const cx = tpl.x * CELL_PX + CELL_PX / 2;
+          const cy = tpl.y * CELL_PX + CELL_PX / 2;
+          const pxSize = (tpl.radiusFeet / gridFeet) * CELL_PX;
+          if (tpl.kind === 'sphere') {
+            return (
+              <circle
+                key={tpl.id}
+                cx={cx}
+                cy={cy}
+                r={pxSize}
+                fill={tpl.color}
+                stroke="#f85149"
+                strokeWidth={2}
+              />
+            );
+          }
+          if (tpl.kind === 'cone') {
+            return (
+              <polygon
+                key={tpl.id}
+                points={`${cx},${cy} ${cx + pxSize},${cy - pxSize * 0.55} ${cx + pxSize},${cy + pxSize * 0.55}`}
+                fill={tpl.color}
+                stroke="#d29922"
+                strokeWidth={2}
+              />
+            );
+          }
+          if (tpl.kind === 'line') {
+            return (
+              <rect
+                key={tpl.id}
+                x={cx}
+                y={cy - CELL_PX * 0.4}
+                width={pxSize}
+                height={CELL_PX * 0.8}
+                fill={tpl.color}
+                stroke="#58a6ff"
+                strokeWidth={2}
+              />
+            );
+          }
+          return (
+            <rect
+              key={tpl.id}
+              x={tpl.x * CELL_PX}
+              y={tpl.y * CELL_PX}
+              width={pxSize}
+              height={pxSize}
+              fill={tpl.color}
+              stroke="#bc8cff"
+              strokeWidth={2}
+            />
+          );
+        })}
+
+        {/* Freehand Sketches */}
+        {[...sketches, ...(activeStroke ? [activeStroke] : [])].map((stroke) => (
+          <polyline
+            key={stroke.id}
+            fill="none"
+            stroke={stroke.color}
+            strokeWidth={stroke.width}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            points={stroke.points.map((p) => `${p.x},${p.y}`).join(' ')}
+            style={{ pointerEvents: 'none' }}
+          />
+        ))}
+
+        {/* Combatant Tokens */}
+        {visibleCombatants.map((node, idx) => {
+          const span = sizeToGridCells(node.size);
+          const baseGx = Math.max(0, Math.min(cols - span, node.x ?? (node.kind === 'pc' ? 2 : 12 + (idx % 5))));
+          const baseGy = Math.max(0, Math.min(rows - span, node.y ?? 2 + (idx % 6)));
+          const gx = dragPreview?.id === node.id ? dragPreview.x : baseGx;
+          const gy = dragPreview?.id === node.id ? dragPreview.y : baseGy;
+          const cx = (gx + span / 2) * CELL_PX;
+          const cy = (gy + span / 2) * CELL_PX;
+          const r = span * CELL_PX * 0.38;
+          const isActive = encounter.combatants[encounter.activeTurnIndex]?.id === node.id;
+          const isTargeted = targetSet.has(node.id);
+          const isSelected = selectedTokenId === node.id;
+          const fill = getTokenColor(node);
+          const hpPct = node.hp.max > 0 ? Math.max(0, Math.min(1, node.hp.current / node.hp.max)) : 0;
+          const hideNumeric = playerView && node.kind !== 'pc';
+
+          return (
+            <g
+              key={node.id}
+              opacity={node.hidden ? 0.5 : 1}
+              style={{ cursor: embedded ? 'default' : mode === 'move' ? 'grab' : 'pointer' }}
+              onPointerDown={(e) => {
+                if (embedded) return;
+                if (mode === 'target') {
+                  e.stopPropagation();
+                  onToggleTarget?.(node.id);
+                  setSelectedTokenId(node.id);
+                  return;
+                }
+                if (mode === 'move') {
+                  e.stopPropagation();
+                  setSelectedTokenId(node.id);
+                  setDragPreview({ id: node.id, x: baseGx, y: baseGy });
+                }
+              }}
+            >
+              <title>
+                {hideNumeric
+                  ? `${node.name} • ${getQualitativeHealthLabel(node.hp.current, node.hp.max)}`
+                  : `${node.name} (${(node.size ?? 'medium').toUpperCase()}) • HP ${node.hp.current}/${node.hp.max} • AC ${node.ac}`}
+              </title>
+              {isActive && (
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={r + 4}
+                  fill="none"
+                  stroke="#f0f6fc"
+                  strokeWidth={2.5}
+                  strokeDasharray="4 2"
+                />
+              )}
+              {isTargeted && (
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={r + 7}
+                  fill="none"
+                  stroke="#f85149"
+                  strokeWidth={2}
+                />
+              )}
+              {isSelected && !isTargeted && !embedded && (
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={r + 6}
+                  fill="none"
+                  stroke="#58a6ff"
+                  strokeWidth={1.5}
+                />
+              )}
+              <circle cx={cx} cy={cy} r={r} fill={fill} opacity={0.92} stroke="#0d1117" strokeWidth={2} />
+              {node.portraitUrl ? (
+                <image
+                  href={node.portraitUrl}
+                  x={cx - r}
+                  y={cy - r}
+                  width={r * 2}
+                  height={r * 2}
+                  preserveAspectRatio="xMidYMid slice"
+                  clipPath={`url(#token-clip-${node.id})`}
+                />
+              ) : (
+                <text
+                  x={cx}
+                  y={cy + 4}
+                  textAnchor="middle"
+                  fill="#0d1117"
+                  fontSize={span > 1 ? 15 : 12}
+                  fontWeight={800}
+                >
+                  {getInitials(node.name)}
+                  {span > 1 ? ` (${span}x)` : ''}
+                </text>
+              )}
+              {!hideNumeric && (
+                <>
+                  <rect x={cx - r * 0.8} y={cy + r - 4} width={r * 1.6} height={4} rx={2} fill="#0d1117" />
+                  <rect
+                    x={cx - r * 0.8}
+                    y={cy + r - 4}
+                    width={r * 1.6 * hpPct}
+                    height={4}
+                    rx={2}
+                    fill={hpPct > 0.5 ? '#3fb950' : hpPct > 0.25 ? '#d29922' : '#f85149'}
+                  />
+                </>
+              )}
+            </g>
+          );
+        })}
+
+        {/* Dynamic Vision Line-of-Sight Darkness */}
+        {visibleCells &&
+          Array.from({ length: rows }).map((_, y) =>
+            Array.from({ length: cols }).map((__, x) => {
+              const key = `${x},${y}`;
+              if (visibleCells.has(key) || fogSet.has(key)) return null;
+              return (
+                <rect
+                  key={`los-${key}`}
+                  x={x * CELL_PX}
+                  y={y * CELL_PX}
+                  width={CELL_PX}
+                  height={CELL_PX}
+                  fill={playerView ? 'rgba(4, 7, 12, 0.9)' : 'rgba(4, 7, 12, 0.36)'}
+                  style={{ pointerEvents: 'none' }}
+                />
+              );
+            })
+          )}
+
+        {/* Fog of War overlay */}
+        {Array.from(fogSet).map((key) => {
+          const [fxRaw, fyRaw] = key.split(',');
+          const fx = Number.parseInt(fxRaw ?? '', 10);
+          const fy = Number.parseInt(fyRaw ?? '', 10);
+          if (Number.isNaN(fx) || Number.isNaN(fy)) return null;
+          return (
+            <rect
+              key={`fog-${key}`}
+              x={fx * CELL_PX}
+              y={fy * CELL_PX}
+              width={CELL_PX}
+              height={CELL_PX}
+              fill={playerView ? '#05070b' : 'rgba(13, 17, 23, 0.56)'}
+              stroke={playerView ? 'none' : 'rgba(139, 148, 158, 0.2)'}
+              style={{ pointerEvents: 'none' }}
+            />
+          );
+        })}
+
+        {/* Live Map Pings */}
+        {activePings.map((ping) => (
+          <g key={ping.id} style={{ pointerEvents: 'none' }}>
+            <circle
+              cx={ping.x * CELL_PX + CELL_PX / 2}
+              cy={ping.y * CELL_PX + CELL_PX / 2}
+              r={CELL_PX * 0.55}
+              fill="none"
+              stroke={ping.color}
+              strokeWidth={3}
+            />
+            <circle
+              cx={ping.x * CELL_PX + CELL_PX / 2}
+              cy={ping.y * CELL_PX + CELL_PX / 2}
+              r={CELL_PX * 0.9}
+              fill="none"
+              stroke={ping.color}
+              strokeWidth={1.5}
+              strokeDasharray="4 3"
+              opacity={0.75}
+            />
+          </g>
+        ))}
+
+        {/* Measurement Ruler */}
+        {measureStart && measureEnd && (
+          <g style={{ pointerEvents: 'none' }}>
+            <line
+              x1={measureStart.x * CELL_PX + CELL_PX / 2}
+              y1={measureStart.y * CELL_PX + CELL_PX / 2}
+              x2={measureEnd.x * CELL_PX + CELL_PX / 2}
+              y2={measureEnd.y * CELL_PX + CELL_PX / 2}
+              stroke="#58a6ff"
+              strokeWidth={3}
+              strokeDasharray="6 4"
+            />
+            <rect
+              x={measureEnd.x * CELL_PX + 6}
+              y={Math.max(4, measureEnd.y * CELL_PX - 14)}
+              width={48}
+              height={20}
+              rx={4}
+              fill="#0d1117"
+              stroke="#58a6ff"
+            />
+            <text
+              x={measureEnd.x * CELL_PX + 30}
+              y={Math.max(18, measureEnd.y * CELL_PX)}
+              textAnchor="middle"
+              fill="#f0f6fc"
+              fontSize={11}
+              fontWeight={700}
+            >
+              {measureFeet} ft
+            </text>
+          </g>
+        )}
+      </svg>
+    </div>
+  );
+
+  if (embedded) {
+    return svgGrid;
+  }
 
   return (
     <ModalDialog
@@ -202,7 +695,10 @@ export function BattlemapModal({
             {(
               [
                 ['move', 'Move'],
+                ['target', 'Target'],
                 ['measure', 'Measure'],
+                ['ping', 'Ping'],
+                ['sketch', 'Sketch'],
                 ['sphere', 'Sphere 20ft'],
                 ['cone', 'Cone 15ft'],
                 ['line', 'Line 30ft'],
@@ -234,6 +730,11 @@ export function BattlemapModal({
             >
               {playerView ? 'Player View ON' : 'Player View OFF'}
             </button>
+            {onOpenPopOutPlayer && (
+              <button type="button" className="btn" onClick={onOpenPopOutPlayer}>
+                Pop-Out Player Screen
+              </button>
+            )}
             <button
               type="button"
               className="btn"
@@ -241,13 +742,7 @@ export function BattlemapModal({
             >
               Zoom -
             </button>
-            <button
-              type="button"
-              className="btn tabular"
-              onClick={() => setZoom(1)}
-            >
-              {Math.round(zoom * 100)}%
-            </button>
+            <span className="badge tabular">{Math.round(zoom * 100)}%</span>
             <button
               type="button"
               className="btn"
@@ -258,7 +753,7 @@ export function BattlemapModal({
             <button
               type="button"
               className={`btn ${showCalibrate ? 'btn-primary' : ''}`}
-              onClick={() => setShowCalibrate((v) => !v)}
+              onClick={() => setShowCalibrate((s) => !s)}
             >
               Calibrate Grid
             </button>
@@ -272,8 +767,11 @@ export function BattlemapModal({
               <input
                 type="file"
                 accept="image/*"
-                className="visually-hidden"
-                onChange={(e) => handleMapUpload(e.target.files?.[0])}
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  handleFileDataUrl(e.target.files?.[0], (url) => onSetMapImage(url));
+                  e.target.value = '';
+                }}
               />
             </label>
             {encounter.map?.imageDataUrl && (
@@ -299,23 +797,180 @@ export function BattlemapModal({
                 Clear AoE ({templates.length})
               </button>
             )}
+            {sketches.length > 0 && (
+              <button type="button" className="btn" onClick={onClearSketches}>
+                Clear Sketch ({sketches.length})
+              </button>
+            )}
+            <button
+              type="button"
+              className={`pill ${dynamicVision ? 'active' : ''}`}
+              aria-pressed={dynamicVision}
+              onClick={() => onUpdateMapSettings({ dynamicVision: !dynamicVision })}
+            >
+              Dynamic Vision {dynamicVision ? 'ON' : 'OFF'}
+            </button>
+            {dynamicVision && (
+              <button
+                type="button"
+                className={`pill ${autoRevealFog ? 'active' : ''}`}
+                aria-pressed={autoRevealFog}
+                onClick={() => onUpdateMapSettings({ autoRevealFog: !autoRevealFog })}
+              >
+                Auto-Reveal Fog {autoRevealFog ? 'ON' : 'OFF'}
+              </button>
+            )}
           </div>
+
           <button type="button" className="btn btn-primary" onClick={onNextTurn}>
             Next Turn (Rnd {encounter.round})
           </button>
         </div>
 
-        {showCalibrate && (
-          <div className="card forge-row" style={{ flexWrap: 'wrap', gap: 10 }}>
-            <label className="forge-row">
-              <span className="forge-label">COLS</span>
+        {/* Scene Library & Sketch Color Bar */}
+        <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+          {onSaveScene && (
+            <div className="forge-row" style={{ flexWrap: 'wrap' }}>
               <input
-                aria-label="Map columns"
+                type="text"
+                className="input"
+                style={{ width: 140 }}
+                placeholder="Scene name..."
+                value={sceneNameInput}
+                onChange={(e) => setSceneNameInput(e.target.value)}
+              />
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  onSaveScene(sceneNameInput || encounter.name || 'Saved Scene');
+                  setSceneNameInput('');
+                }}
+              >
+                Save Scene
+              </button>
+              {scenes.length > 0 && (
+                <>
+                  <select
+                    className="select"
+                    aria-label="Select battlemap scene"
+                    value={selectedSceneId}
+                    onChange={(e) => setSelectedSceneId(e.target.value)}
+                  >
+                    <option value="">Scenes ({scenes.length})...</option>
+                    {scenes.map((sc) => (
+                      <option key={sc.id} value={sc.id}>
+                        {sc.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={!selectedSceneId}
+                    onClick={() => selectedSceneId && onLoadScene?.(selectedSceneId)}
+                  >
+                    Load Scene
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    disabled={!selectedSceneId}
+                    onClick={() => {
+                      if (selectedSceneId) {
+                        onDeleteScene?.(selectedSceneId);
+                        setSelectedSceneId('');
+                      }
+                    }}
+                  >
+                    Del Scene
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {mode === 'sketch' && (
+            <div className="forge-row">
+              <span className="muted-label">Ink</span>
+              {SKETCH_COLORS.map((col) => (
+                <button
+                  key={col}
+                  type="button"
+                  aria-label={`Sketch color ${col}`}
+                  className="btn"
+                  style={{
+                    minWidth: 26,
+                    padding: '2px 6px',
+                    background: col,
+                    border: sketchColor === col ? '2px solid #f0f6fc' : '1px solid #30363d',
+                  }}
+                  onClick={() => setSketchColor(col)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Selected Token Portrait & Vision Editor */}
+        {selectedToken && !playerView && (
+          <div className="subpanel forge-row-between" style={{ padding: '6px 10px', flexWrap: 'wrap', gap: 6 }}>
+            <span className="badge">
+              Token: <strong>{selectedToken.name}</strong>
+            </span>
+            <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+              <label className="btn" style={{ cursor: 'pointer' }}>
+                Upload Portrait
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    handleFileDataUrl(e.target.files?.[0], (url) =>
+                      onSetTokenPortrait?.(selectedToken.id, url)
+                    );
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+              {selectedToken.portraitUrl && (
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => onSetTokenPortrait?.(selectedToken.id, undefined)}
+                >
+                  Clear Portrait
+                </button>
+              )}
+              <label className="forge-row">
+                <span className="muted-label">Vision (ft)</span>
+                <input
+                  type="number"
+                  className="input input-compact"
+                  style={{ width: 64 }}
+                  min={5}
+                  max={300}
+                  step={5}
+                  value={selectedToken.visionFeet ?? 60}
+                  onChange={(e) =>
+                    onSetTokenVision?.(selectedToken.id, Number.parseInt(e.target.value, 10) || 60)
+                  }
+                />
+              </label>
+            </div>
+          </div>
+        )}
+
+        {showCalibrate && (
+          <div className="subpanel forge-row" style={{ padding: 10, flexWrap: 'wrap', gap: 10 }}>
+            <label className="forge-row">
+              <span className="muted-label">Cols</span>
+              <input
                 type="number"
+                className="input input-compact"
+                style={{ width: 64 }}
                 min={8}
                 max={40}
-                className="forge-input tabular"
-                style={{ width: 56 }}
                 value={cols}
                 onChange={(e) =>
                   onUpdateMapSettings({ cols: Math.max(8, Math.min(40, Number.parseInt(e.target.value, 10) || 20)) })
@@ -323,14 +978,13 @@ export function BattlemapModal({
               />
             </label>
             <label className="forge-row">
-              <span className="forge-label">ROWS</span>
+              <span className="muted-label">Rows</span>
               <input
-                aria-label="Map rows"
                 type="number"
+                className="input input-compact"
+                style={{ width: 64 }}
                 min={6}
                 max={30}
-                className="forge-input tabular"
-                style={{ width: 56 }}
                 value={rows}
                 onChange={(e) =>
                   onUpdateMapSettings({ rows: Math.max(6, Math.min(30, Number.parseInt(e.target.value, 10) || 12)) })
@@ -338,11 +992,10 @@ export function BattlemapModal({
               />
             </label>
             <label className="forge-row">
-              <span className="forge-label">GRID OPACITY</span>
+              <span className="muted-label">Grid Opacity</span>
               <input
-                aria-label="Grid opacity"
                 type="range"
-                min={0.05}
+                min={0}
                 max={0.8}
                 step={0.05}
                 value={gridOpacity}
@@ -350,9 +1003,8 @@ export function BattlemapModal({
               />
             </label>
             <label className="forge-row">
-              <span className="forge-label">BG SCALE</span>
+              <span className="muted-label">BG Scale</span>
               <input
-                aria-label="Background map scale"
                 type="range"
                 min={0.5}
                 max={2}
@@ -362,24 +1014,20 @@ export function BattlemapModal({
               />
             </label>
             <label className="forge-row">
-              <span className="forge-label">OFFSET X</span>
+              <span className="muted-label">Offset X</span>
               <input
-                aria-label="Background offset X"
                 type="number"
-                step={10}
-                className="forge-input tabular"
+                className="input input-compact"
                 style={{ width: 64 }}
                 value={imageOffsetX}
                 onChange={(e) => onUpdateMapSettings({ imageOffsetX: Number.parseInt(e.target.value, 10) || 0 })}
               />
             </label>
             <label className="forge-row">
-              <span className="forge-label">OFFSET Y</span>
+              <span className="muted-label">Offset Y</span>
               <input
-                aria-label="Background offset Y"
                 type="number"
-                step={10}
-                className="forge-input tabular"
+                className="input input-compact"
                 style={{ width: 64 }}
                 value={imageOffsetY}
                 onChange={(e) => onUpdateMapSettings({ imageOffsetY: Number.parseInt(e.target.value, 10) || 0 })}
@@ -388,257 +1036,7 @@ export function BattlemapModal({
           </div>
         )}
 
-        <div className="battlemap-scroll">
-          <svg
-            ref={svgRef}
-            viewBox={`0 0 ${cols * CELL_PX} ${rows * CELL_PX}`}
-            className="battlemap-svg"
-            style={{ width: `${zoom * 100}%`, minWidth: `${zoom * 100}%` }}
-            role="img"
-            aria-label="Tactical 5-foot square battlemap grid"
-            onPointerDown={handleSvgPointerDown}
-            onPointerMove={handleSvgPointerMove}
-            onPointerUp={handleSvgPointerUp}
-          >
-            {encounter.map?.imageDataUrl && (
-              <image
-                href={encounter.map.imageDataUrl}
-                x={imageOffsetX}
-                y={imageOffsetY}
-                width={cols * CELL_PX * imageScale}
-                height={rows * CELL_PX * imageScale}
-                preserveAspectRatio="xMidYMid slice"
-              />
-            )}
-
-            {/* Terrain Overlay */}
-            {terrainCells.map((tc) => (
-              <rect
-                key={`tr-${tc.x}-${tc.y}`}
-                x={tc.x * CELL_PX + 1}
-                y={tc.y * CELL_PX + 1}
-                width={CELL_PX - 2}
-                height={CELL_PX - 2}
-                rx={3}
-                fill={
-                  tc.kind === 'wall'
-                    ? 'rgba(110, 118, 129, 0.72)'
-                    : tc.kind === 'difficult'
-                    ? 'rgba(210, 153, 34, 0.34)'
-                    : 'rgba(88, 166, 255, 0.32)'
-                }
-                stroke={tc.kind === 'wall' ? '#8b949e' : tc.kind === 'difficult' ? '#d29922' : '#58a6ff'}
-                strokeWidth={1.5}
-              />
-            ))}
-
-            {/* 5ft square grid */}
-            {Array.from({ length: cols + 1 }, (_, i) => (
-              <line
-                key={`v-${i}`}
-                x1={i * CELL_PX}
-                y1={0}
-                x2={i * CELL_PX}
-                y2={rows * CELL_PX}
-                stroke={`rgba(139, 148, 158, ${gridOpacity})`}
-                strokeWidth={1}
-              />
-            ))}
-            {Array.from({ length: rows + 1 }, (_, j) => (
-              <line
-                key={`h-${j}`}
-                x1={0}
-                y1={j * CELL_PX}
-                x2={cols * CELL_PX}
-                y2={j * CELL_PX}
-                stroke={`rgba(139, 148, 158, ${gridOpacity})`}
-                strokeWidth={1}
-              />
-            ))}
-
-            {/* AoE Templates */}
-            {templates.map((tpl) => {
-              const cx = tpl.x * CELL_PX + CELL_PX / 2;
-              const cy = tpl.y * CELL_PX + CELL_PX / 2;
-              const pxSize = (tpl.radiusFeet / 5) * CELL_PX;
-              if (tpl.kind === 'sphere') {
-                return (
-                  <circle
-                    key={tpl.id}
-                    cx={cx}
-                    cy={cy}
-                    r={pxSize}
-                    fill={tpl.color}
-                    stroke="#f85149"
-                    strokeWidth={2}
-                  />
-                );
-              }
-              if (tpl.kind === 'cone') {
-                return (
-                  <polygon
-                    key={tpl.id}
-                    points={`${cx},${cy} ${cx + pxSize},${cy - pxSize * 0.55} ${cx + pxSize},${cy + pxSize * 0.55}`}
-                    fill={tpl.color}
-                    stroke="#d29922"
-                    strokeWidth={2}
-                  />
-                );
-              }
-              if (tpl.kind === 'line') {
-                return (
-                  <rect
-                    key={tpl.id}
-                    x={cx}
-                    y={cy - CELL_PX * 0.4}
-                    width={pxSize}
-                    height={CELL_PX * 0.8}
-                    fill={tpl.color}
-                    stroke="#58a6ff"
-                    strokeWidth={2}
-                  />
-                );
-              }
-              return (
-                <rect
-                  key={tpl.id}
-                  x={tpl.x * CELL_PX}
-                  y={tpl.y * CELL_PX}
-                  width={pxSize}
-                  height={pxSize}
-                  fill={tpl.color}
-                  stroke="#bc8cff"
-                  strokeWidth={2}
-                />
-              );
-            })}
-
-            {/* Combatant Tokens (scaled 1x1 through 4x4 by creature size) */}
-            {visibleCombatants.map((node, idx) => {
-              const span = sizeToGridCells(node.size);
-              const baseGx = Math.max(0, Math.min(cols - span, node.x ?? (node.kind === 'pc' ? 2 : 12 + (idx % 5))));
-              const baseGy = Math.max(0, Math.min(rows - span, node.y ?? 2 + (idx % 6)));
-              const gx = dragPreview?.id === node.id ? dragPreview.x : baseGx;
-              const gy = dragPreview?.id === node.id ? dragPreview.y : baseGy;
-              const cx = (gx + span / 2) * CELL_PX;
-              const cy = (gy + span / 2) * CELL_PX;
-              const r = span * CELL_PX * 0.38;
-              const isActive = encounter.combatants[encounter.activeTurnIndex]?.id === node.id;
-              const fill = getTokenColor(node);
-              const hpPct = node.hp.max > 0 ? Math.max(0, Math.min(1, node.hp.current / node.hp.max)) : 0;
-              const hideNumeric = playerView && node.kind !== 'pc';
-
-              return (
-                <g
-                  key={node.id}
-                  opacity={node.hidden ? 0.5 : 1}
-                  style={{ cursor: mode === 'move' ? 'grab' : 'pointer' }}
-                  onPointerDown={(e) => {
-                    if (mode !== 'move') return;
-                    e.stopPropagation();
-                    setDragPreview({ id: node.id, x: baseGx, y: baseGy });
-                  }}
-                >
-                  <title>
-                    {hideNumeric
-                      ? `${node.name} • ${getQualitativeHealthLabel(node.hp.current, node.hp.max)}`
-                      : `${node.name} (${(node.size ?? 'medium').toUpperCase()}) • HP ${node.hp.current}/${node.hp.max} • AC ${node.ac}`}
-                  </title>
-                  {isActive && (
-                    <circle
-                      cx={cx}
-                      cy={cy}
-                      r={r + 4}
-                      fill="none"
-                      stroke="#f0f6fc"
-                      strokeWidth={2.5}
-                      strokeDasharray="4 2"
-                    />
-                  )}
-                  <circle cx={cx} cy={cy} r={r} fill={fill} opacity={0.9} stroke="#0d1117" strokeWidth={2} />
-                  <text
-                    x={cx}
-                    y={cy + 4}
-                    textAnchor="middle"
-                    fill="#0d1117"
-                    fontSize={span > 1 ? 15 : 12}
-                    fontWeight={800}
-                  >
-                    {getInitials(node.name)}
-                    {span > 1 ? ` (${span}x)` : ''}
-                  </text>
-                  {!hideNumeric && (
-                    <>
-                      <rect x={cx - r * 0.8} y={cy + r - 4} width={r * 1.6} height={4} rx={2} fill="#0d1117" />
-                      <rect
-                        x={cx - r * 0.8}
-                        y={cy + r - 4}
-                        width={r * 1.6 * hpPct}
-                        height={4}
-                        rx={2}
-                        fill={hpPct > 0.5 ? '#3fb950' : hpPct > 0.25 ? '#d29922' : '#f85149'}
-                      />
-                    </>
-                  )}
-                </g>
-              );
-            })}
-
-            {/* Fog of War overlay */}
-            {Array.from(fogSet).map((key) => {
-              const [fxRaw, fyRaw] = key.split(',');
-              const fx = Number.parseInt(fxRaw ?? '', 10);
-              const fy = Number.parseInt(fyRaw ?? '', 10);
-              if (Number.isNaN(fx) || Number.isNaN(fy)) return null;
-              return (
-                <rect
-                  key={`fog-${key}`}
-                  x={fx * CELL_PX}
-                  y={fy * CELL_PX}
-                  width={CELL_PX}
-                  height={CELL_PX}
-                  fill={playerView ? '#05070b' : 'rgba(13, 17, 23, 0.56)'}
-                  stroke={playerView ? 'none' : 'rgba(139, 148, 158, 0.2)'}
-                  style={{ pointerEvents: 'none' }}
-                />
-              );
-            })}
-
-            {/* Measurement Ruler */}
-            {measureStart && measureEnd && (
-              <g style={{ pointerEvents: 'none' }}>
-                <line
-                  x1={measureStart.x * CELL_PX + CELL_PX / 2}
-                  y1={measureStart.y * CELL_PX + CELL_PX / 2}
-                  x2={measureEnd.x * CELL_PX + CELL_PX / 2}
-                  y2={measureEnd.y * CELL_PX + CELL_PX / 2}
-                  stroke="#58a6ff"
-                  strokeWidth={3}
-                  strokeDasharray="6 4"
-                />
-                <rect
-                  x={measureEnd.x * CELL_PX + 6}
-                  y={Math.max(4, measureEnd.y * CELL_PX - 14)}
-                  width={48}
-                  height={20}
-                  rx={4}
-                  fill="#0d1117"
-                  stroke="#58a6ff"
-                />
-                <text
-                  x={measureEnd.x * CELL_PX + 30}
-                  y={Math.max(18, measureEnd.y * CELL_PX)}
-                  textAnchor="middle"
-                  fill="#f0f6fc"
-                  fontSize={11}
-                  fontWeight={700}
-                >
-                  {measureFeet} ft
-                </text>
-              </g>
-            )}
-          </svg>
-        </div>
+        {svgGrid}
       </div>
     </ModalDialog>
   );

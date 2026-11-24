@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CampaignEntry, CampaignRecord } from '../types/campaign';
+import { CampaignEntry, CampaignRecord, SharedHandoutPayload, WorldMapPin } from '../types/campaign';
 import { ClassLevel, RawCharacterState, ResolvedActivity, ResolvedCharacterSheet, WildShapeForm } from '../types/character';
-import { CombatEncounterState } from '../types/combat';
+import { BattlemapScene, CombatEncounterState, MapPingEvent, MapSketchStroke } from '../types/combat';
+import { computeVisibleCells } from '../engine/vtt-vision';
+import { resolveTargetAttack, resolveTargetSaves } from '../engine/target-combat';
 import { Activity, CompendiumEntity, CreatureSize, MonsterStatMeta } from '../types/compendium';
 import { AbilityKey, ActionEconomy, RecoveryTrigger, RollMode } from '../types/core';
 import {
@@ -48,11 +50,13 @@ import { playTableSound } from '../engine/sound';
 import {
   buildSearchTokens,
   db,
+  deleteSceneRecord,
   importBackupBundle,
   normalizeSearchQuery,
   saveCampaign,
   saveCharacter,
   saveEncounter,
+  saveScene,
   upsertCompendiumEntities,
 } from '../storage/db';
 
@@ -88,6 +92,9 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   const [encounterList, setEncounterList] = useState<CombatEncounterState[]>([initialEncounter]);
   const [campaign, setCampaign] = useState<CampaignRecord>(defaultCampaign);
   const [campaignList, setCampaignList] = useState<CampaignRecord[]>([defaultCampaign]);
+  const [scenes, setScenes] = useState<BattlemapScene[]>([]);
+  const [activePings, setActivePings] = useState<MapPingEvent[]>([]);
+  const [activeSharedHandout, setActiveSharedHandout] = useState<SharedHandoutPayload | null>(null);
   const [compendium, setCompendium] = useState<CompendiumEntity[]>(initialCharacter.items);
   const [rollMode, setRollMode] = useState<RollMode>('normal');
   const [pendingConcDc, setPendingConcDc] = useState<number | null>(null);
@@ -184,10 +191,11 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     let active = true;
     (async () => {
       try {
-        const [allSaved, savedEncounters, savedCampaigns] = await Promise.all([
+        const [allSaved, savedEncounters, savedCampaigns, savedScenes] = await Promise.all([
           db.characters.toArray(),
           db.encounters.toArray(),
           db.campaigns.toArray(),
+          db.scenes.toArray(),
         ]);
         if (active && allSaved.length > 0) {
           setCharacterList(allSaved);
@@ -211,6 +219,9 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         } else {
           await saveCampaign(defaultCampaign);
           if (active) setCampaignList([defaultCampaign]);
+        }
+        if (active && savedScenes.length > 0) {
+          setScenes(savedScenes);
         }
         const basePackEntities = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities);
         await upsertCompendiumEntities(basePackEntities);
@@ -1649,12 +1660,30 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
 
   const moveCombatantToken = useCallback(
     (combatantId: string, x: number, y: number) => {
-      persistEncounter((prev) => ({
-        ...prev,
-        combatants: prev.combatants.map((c) =>
+      persistEncounter((prev) => {
+        const nextCombatants = prev.combatants.map((c) =>
           c.id === combatantId ? { ...c, x, y } : c
-        ),
-      }));
+        );
+        if (prev.map?.dynamicVision && prev.map?.autoRevealFog && prev.map.fogCells?.length) {
+          const visible = computeVisibleCells(
+            nextCombatants,
+            prev.map.cols,
+            prev.map.rows,
+            prev.map.gridFeet,
+            prev.map.terrainCells ?? []
+          );
+          const nextFog = prev.map.fogCells.filter((cell) => !visible.has(cell));
+          return {
+            ...prev,
+            combatants: nextCombatants,
+            map: { ...prev.map, fogCells: nextFog },
+          };
+        }
+        return {
+          ...prev,
+          combatants: nextCombatants,
+        };
+      });
     },
     [persistEncounter]
   );
@@ -1958,6 +1987,36 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
 
     if (msg.type === 'character_share') {
       void importSingleCharacter(msg.character);
+      return;
+    }
+
+    if (msg.type === 'ping') {
+      const ping: MapPingEvent = {
+        id: `ping-${msg.timestamp}`,
+        x: msg.x,
+        y: msg.y,
+        color: msg.color,
+        senderName: msg.senderName,
+        timestamp: msg.timestamp,
+      };
+      setActivePings((prev) => [...prev.filter((p) => Date.now() - p.timestamp < 3200), ping]);
+      return;
+    }
+
+    if (msg.type === 'handout_show' && liveStatus.role === 'player') {
+      setActiveSharedHandout({
+        id: msg.id,
+        title: msg.title,
+        summary: msg.summary,
+        body: msg.body,
+        imageDataUrl: msg.imageDataUrl,
+        senderName: msg.senderName,
+      });
+      return;
+    }
+
+    if (msg.type === 'handout_hide' && liveStatus.role === 'player') {
+      setActiveSharedHandout(null);
     }
   };
 
@@ -2659,6 +2718,340 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     }));
   }, [persistEncounter]);
 
+  const playerDisplayChannelRef = useRef<BroadcastChannel | null>(null);
+  const sharedHandoutRef = useRef<SharedHandoutPayload | null>(null);
+  sharedHandoutRef.current = activeSharedHandout;
+  const activePingsRef = useRef<MapPingEvent[]>([]);
+  activePingsRef.current = activePings;
+
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return;
+    const ch = new BroadcastChannel('dnd-forge-player-display');
+    playerDisplayChannelRef.current = ch;
+    ch.onmessage = (evt: MessageEvent) => {
+      if (evt.data?.type === 'request_sync') {
+        ch.postMessage({
+          type: 'sync_state',
+          encounter: encounterRef.current,
+          sharedHandout: sharedHandoutRef.current,
+          pings: activePingsRef.current.filter((p) => Date.now() - p.timestamp < 3200),
+        });
+      }
+    };
+    return () => {
+      ch.close();
+      playerDisplayChannelRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    playerDisplayChannelRef.current?.postMessage({
+      type: 'sync_state',
+      encounter,
+      sharedHandout: activeSharedHandout,
+      pings: activePings.filter((p) => Date.now() - p.timestamp < 3200),
+    });
+  }, [encounter, activeSharedHandout, activePings]);
+
+  const saveCurrentMapAsScene = useCallback(
+    async (name: string) => {
+      const clean = name.trim() || encounter.name || 'Untitled Scene';
+      const m = encounter.map;
+      const scene: BattlemapScene = {
+        id: `scene-${Date.now().toString(36)}`,
+        name: clean,
+        imageDataUrl: m?.imageDataUrl,
+        cols: m?.cols ?? 20,
+        rows: m?.rows ?? 12,
+        gridFeet: m?.gridFeet ?? 5,
+        fogCells: m?.fogCells ? [...m.fogCells] : [],
+        terrainCells: m?.terrainCells ? [...m.terrainCells] : [],
+        sketches: m?.sketches ? [...m.sketches] : [],
+        gridOpacity: m?.gridOpacity,
+        imageScale: m?.imageScale,
+        imageOffsetX: m?.imageOffsetX,
+        imageOffsetY: m?.imageOffsetY,
+        dynamicVision: m?.dynamicVision,
+        autoRevealFog: m?.autoRevealFog,
+        updatedAt: new Date().toISOString(),
+      };
+      await saveScene(scene);
+      setScenes((prev) => [scene, ...prev.filter((s) => s.id !== scene.id)]);
+      appendLog(`Saved battlemap scene "${clean}".`, 'info');
+    },
+    [encounter.name, encounter.map, appendLog]
+  );
+
+  const loadSceneToEncounter = useCallback(
+    (sceneId: string) => {
+      const scene = scenes.find((s) => s.id === sceneId);
+      if (!scene) return;
+      persistEncounter((prev) => ({
+        ...prev,
+        map: {
+          cols: scene.cols,
+          rows: scene.rows,
+          gridFeet: scene.gridFeet,
+          templates: [],
+          imageDataUrl: scene.imageDataUrl,
+          fogCells: scene.fogCells ? [...scene.fogCells] : [],
+          terrainCells: scene.terrainCells ? [...scene.terrainCells] : [],
+          sketches: scene.sketches ? [...scene.sketches] : [],
+          gridOpacity: scene.gridOpacity,
+          imageScale: scene.imageScale,
+          imageOffsetX: scene.imageOffsetX,
+          imageOffsetY: scene.imageOffsetY,
+          dynamicVision: scene.dynamicVision,
+          autoRevealFog: scene.autoRevealFog,
+        },
+      }));
+      appendLog(`Loaded battlemap scene "${scene.name}".`, 'info');
+    },
+    [scenes, persistEncounter, appendLog]
+  );
+
+  const deleteScene = useCallback(
+    async (sceneId: string) => {
+      await deleteSceneRecord(sceneId);
+      setScenes((prev) => prev.filter((s) => s.id !== sceneId));
+      appendLog('Deleted battlemap scene.', 'info');
+    },
+    [appendLog]
+  );
+
+  const setCombatantPortrait = useCallback(
+    (combatantId: string, portraitUrl: string | undefined) => {
+      persistEncounter((prev) => ({
+        ...prev,
+        combatants: prev.combatants.map((c) =>
+          c.id === combatantId ? { ...c, portraitUrl } : c
+        ),
+      }));
+    },
+    [persistEncounter]
+  );
+
+  const setCombatantVision = useCallback(
+    (combatantId: string, visionFeet: number) => {
+      const safeFeet = Math.max(5, Math.min(300, Math.round(visionFeet)));
+      persistEncounter((prev) => ({
+        ...prev,
+        combatants: prev.combatants.map((c) =>
+          c.id === combatantId ? { ...c, visionFeet: safeFeet } : c
+        ),
+      }));
+    },
+    [persistEncounter]
+  );
+
+  const addMapSketchStroke = useCallback(
+    (stroke: MapSketchStroke) => {
+      if (stroke.points.length < 2) return;
+      persistEncounter((prev) => ({
+        ...prev,
+        map: {
+          cols: 20,
+          rows: 12,
+          gridFeet: 5,
+          templates: [],
+          ...(prev.map ?? {}),
+          sketches: [...(prev.map?.sketches ?? []), stroke],
+        },
+      }));
+    },
+    [persistEncounter]
+  );
+
+  const clearMapSketches = useCallback(() => {
+    persistEncounter((prev) => ({
+      ...prev,
+      map: {
+        cols: 20,
+        rows: 12,
+        gridFeet: 5,
+        templates: [],
+        ...(prev.map ?? {}),
+        sketches: [],
+      },
+    }));
+  }, [persistEncounter]);
+
+  const broadcastMapPing = useCallback(
+    (x: number, y: number) => {
+      const ping: MapPingEvent = {
+        id: `ping-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`,
+        x,
+        y,
+        color: '#f59e0b',
+        senderName: rawChar.name,
+        timestamp: Date.now(),
+      };
+      setActivePings((prev) => [...prev.filter((p) => Date.now() - p.timestamp < 3200), ping]);
+      const session = liveSessionRef.current;
+      if (session && session.getState().role !== 'idle') {
+        session.broadcast({
+          type: 'ping',
+          senderId: session.senderId,
+          senderName: rawChar.name,
+          x,
+          y,
+          color: ping.color,
+          timestamp: ping.timestamp,
+        });
+      }
+    },
+    [rawChar.name]
+  );
+
+  const targetAttackCombatants = useCallback(
+    (attackerName: string, targetIds: string[], activity: Activity, customBonus?: number) => {
+      if (targetIds.length === 0) {
+        appendLog('Select one or more targets first.', 'warn');
+        return;
+      }
+      const targets = encounter.combatants.filter((c) => targetIds.includes(c.id));
+      if (targets.length === 0) return;
+
+      const outcomes = targets.map((t) => resolveTargetAttack(activity, t, rollMode, customBonus));
+      const hpUpdates = new Map(outcomes.map((o) => [o.targetId, o.nextHp]));
+
+      persistEncounter((prev) => ({
+        ...prev,
+        combatants: prev.combatants.map((c) => {
+          const nextHp = hpUpdates.get(c.id);
+          return nextHp !== undefined ? { ...c, hp: { ...c.hp, current: nextHp } } : c;
+        }),
+      }));
+
+      for (const o of outcomes) {
+        if (!o.hit) {
+          appendLog(
+            `${attackerName} → ${o.targetName} (${activity.name}): Rolled ${o.attackTotal} vs AC — MISS${o.isFumble ? ' [FUMBLE]' : ''}.`,
+            'info'
+          );
+        } else {
+          const noteStr = o.modifierNote ? ` [${o.modifierNote}]` : '';
+          appendLog(
+            `${attackerName} → ${o.targetName} (${activity.name}): ${o.isCrit ? 'CRIT ' : 'HIT '} (${o.attackTotal}) for ${o.appliedDamage} dmg${noteStr} (HP -> ${o.nextHp}).`,
+            o.isCrit ? 'crit' : 'roll'
+          );
+          if (o.targetId === rawChar.id) {
+            adjustHp(-o.appliedDamage);
+          }
+        }
+      }
+    },
+    [encounter.combatants, rollMode, persistEncounter, appendLog, rawChar.id, adjustHp]
+  );
+
+  const targetSaveCombatants = useCallback(
+    (attackerName: string, targetIds: string[], activity: Activity, explicitDc?: number) => {
+      if (targetIds.length === 0) {
+        appendLog('Select one or more targets first.', 'warn');
+        return;
+      }
+      const targets = encounter.combatants.filter((c) => targetIds.includes(c.id));
+      if (targets.length === 0) return;
+
+      const outcomes = resolveTargetSaves(activity, targets, explicitDc);
+      const hpUpdates = new Map(outcomes.map((o) => [o.targetId, o.nextHp]));
+
+      persistEncounter((prev) => ({
+        ...prev,
+        combatants: prev.combatants.map((c) => {
+          const nextHp = hpUpdates.get(c.id);
+          return nextHp !== undefined ? { ...c, hp: { ...c.hp, current: nextHp } } : c;
+        }),
+      }));
+
+      for (const o of outcomes) {
+        const noteStr = o.modifierNote ? ` [${o.modifierNote}]` : '';
+        appendLog(
+          `${attackerName} → ${o.targetName} (${activity.name} DC ${o.saveDc}): Save ${o.saveRoll} (${o.passed ? 'PASS ½' : 'FAIL'}) for ${o.appliedDamage} dmg${noteStr} (HP -> ${o.nextHp}).`,
+          o.passed ? 'info' : 'roll'
+        );
+        if (o.targetId === rawChar.id) {
+          adjustHp(-o.appliedDamage);
+        }
+      }
+    },
+    [encounter.combatants, persistEncounter, appendLog, rawChar.id, adjustHp]
+  );
+
+  const setWorldMapImage = useCallback(
+    (worldMapImageDataUrl: string | undefined) => {
+      persistCampaign((prev) => ({ ...prev, worldMapImageDataUrl }));
+      appendLog(worldMapImageDataUrl ? 'Updated campaign world map.' : 'Cleared campaign world map.', 'info');
+    },
+    [persistCampaign, appendLog]
+  );
+
+  const upsertWorldMapPin = useCallback(
+    (pin: WorldMapPin) => {
+      persistCampaign((prev) => {
+        const existing = prev.worldMapPins ?? [];
+        const hasPin = existing.some((p) => p.id === pin.id);
+        return {
+          ...prev,
+          worldMapPins: hasPin
+            ? existing.map((p) => (p.id === pin.id ? pin : p))
+            : [...existing, pin],
+        };
+      });
+    },
+    [persistCampaign]
+  );
+
+  const deleteWorldMapPin = useCallback(
+    (pinId: string) => {
+      persistCampaign((prev) => ({
+        ...prev,
+        worldMapPins: (prev.worldMapPins ?? []).filter((p) => p.id !== pinId),
+      }));
+    },
+    [persistCampaign]
+  );
+
+  const shareHandoutToPlayers = useCallback(
+    (entry: CampaignEntry) => {
+      const payload: SharedHandoutPayload = {
+        id: entry.id,
+        title: entry.title,
+        summary: entry.summary,
+        body: entry.body,
+        imageDataUrl: entry.imageDataUrl,
+        senderName: rawChar.name,
+      };
+      setActiveSharedHandout(payload);
+      const session = liveSessionRef.current;
+      if (session && session.getState().role !== 'idle') {
+        session.broadcast({
+          type: 'handout_show',
+          senderId: session.senderId,
+          senderName: payload.senderName,
+          id: payload.id,
+          title: payload.title,
+          summary: payload.summary,
+          body: payload.body,
+          imageDataUrl: payload.imageDataUrl,
+        });
+      }
+      appendLog(`Shared handout "${entry.title}" with Player Display / Live Table.`, 'info');
+    },
+    [rawChar.name, appendLog]
+  );
+
+  const hideSharedHandout = useCallback(() => {
+    setActiveSharedHandout(null);
+    const session = liveSessionRef.current;
+    if (session && session.getState().role !== 'idle') {
+      session.broadcast({
+        type: 'handout_hide',
+        senderId: session.senderId,
+      });
+    }
+  }, []);
+
   return {
     rawChar,
     characterList,
@@ -2687,6 +3080,24 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     clearAllFog,
     setTerrainCell,
     clearTerrain,
+    scenes,
+    saveCurrentMapAsScene,
+    loadSceneToEncounter,
+    deleteScene,
+    setCombatantPortrait,
+    setCombatantVision,
+    addMapSketchStroke,
+    clearMapSketches,
+    activePings,
+    broadcastMapPing,
+    targetAttackCombatants,
+    targetSaveCombatants,
+    setWorldMapImage,
+    upsertWorldMapPin,
+    deleteWorldMapPin,
+    activeSharedHandout,
+    shareHandoutToPlayers,
+    hideSharedHandout,
     addTimedCombatEffect,
     rollAllInitiative,
     toggleCombatantHidden,

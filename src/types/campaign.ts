@@ -9,7 +9,27 @@ export interface CampaignEntry {
   tags: string[];
   status: 'active' | 'completed' | 'secret';
   pinned?: boolean;
+  imageDataUrl?: string;
   updatedAt: string;
+}
+
+export interface WorldMapPin {
+  id: string;
+  xPct: number;
+  yPct: number;
+  label: string;
+  kind: 'location' | 'quest' | 'npc' | 'danger';
+  entryId?: string;
+  notes?: string;
+}
+
+export interface SharedHandoutPayload {
+  id: string;
+  title: string;
+  summary: string;
+  body: string;
+  imageDataUrl?: string;
+  senderName: string;
 }
 
 export interface ClockTimer {
@@ -36,5 +56,7 @@ export interface CampaignRecord {
   partyLootGp: number;
   partyLootItems: string[];
   entries: CampaignEntry[];
+  worldMapImageDataUrl?: string;
+  worldMapPins?: WorldMapPin[];
   createdAt: string;
 }

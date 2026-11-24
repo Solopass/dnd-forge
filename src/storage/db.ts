@@ -2,9 +2,9 @@ import Dexie, { Table } from 'dexie';
 import { CampaignRecord } from '../types/campaign';
 import { RawCharacterState } from '../types/character';
 import { CompendiumEntity } from '../types/compendium';
-import { CombatEncounterState } from '../types/combat';
+import { BattlemapScene, CombatEncounterState } from '../types/combat';
 
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 export interface IndexedCompendiumRecord extends CompendiumEntity {
   searchTokens: string;
@@ -18,6 +18,7 @@ export interface BackupBundle {
   compendium: CompendiumEntity[];
   encounters: CombatEncounterState[];
   campaigns?: CampaignRecord[];
+  scenes?: BattlemapScene[];
 }
 
 export function normalizeSearchQuery(raw: string): string {
@@ -40,6 +41,7 @@ export class DndForgeDatabase extends Dexie {
   compendium!: Table<IndexedCompendiumRecord, string>;
   encounters!: Table<CombatEncounterState, string>;
   campaigns!: Table<CampaignRecord, string>;
+  scenes!: Table<BattlemapScene, string>;
 
   constructor() {
     super('dnd-forge-local-db');
@@ -50,11 +52,19 @@ export class DndForgeDatabase extends Dexie {
       encounters: 'id, name',
     });
 
+    this.version(2).stores({
+      characters: 'id, name, ruleset',
+      compendium: 'id, name, category, source, ruleset, searchTokens',
+      encounters: 'id, name',
+      campaigns: 'id, name',
+    });
+
     this.version(CURRENT_SCHEMA_VERSION).stores({
       characters: 'id, name, ruleset',
       compendium: 'id, name, category, source, ruleset, searchTokens',
       encounters: 'id, name',
       campaigns: 'id, name',
+      scenes: 'id, name',
     });
 
     this.on('versionchange', () => {
@@ -80,6 +90,15 @@ export async function saveCampaign(campaign: CampaignRecord): Promise<void> {
   await db.campaigns.put(cleanPayload);
 }
 
+export async function saveScene(scene: BattlemapScene): Promise<void> {
+  const cleanPayload = structuredClone(scene);
+  await db.scenes.put(cleanPayload);
+}
+
+export async function deleteSceneRecord(sceneId: string): Promise<void> {
+  await db.scenes.delete(sceneId);
+}
+
 export async function upsertCompendiumEntities(entities: CompendiumEntity[]): Promise<number> {
   const indexed: IndexedCompendiumRecord[] = entities.map((item) => ({
     ...structuredClone(item),
@@ -90,11 +109,12 @@ export async function upsertCompendiumEntities(entities: CompendiumEntity[]): Pr
 }
 
 export async function exportFullBundle(): Promise<BackupBundle> {
-  const [characters, compendiumRecords, encounters, campaigns] = await Promise.all([
+  const [characters, compendiumRecords, encounters, campaigns, scenes] = await Promise.all([
     db.characters.toArray(),
     db.compendium.toArray(),
     db.encounters.toArray(),
     db.campaigns.toArray(),
+    db.scenes.toArray(),
   ]);
 
   const compendium: CompendiumEntity[] = compendiumRecords.map(({ searchTokens: _omit, ...rest }) => rest);
@@ -107,6 +127,7 @@ export async function exportFullBundle(): Promise<BackupBundle> {
     compendium,
     encounters,
     campaigns,
+    scenes,
   };
 }
 
@@ -149,16 +170,24 @@ export async function importBackupBundle(
       )
     : [];
 
+  const validScenes = Array.isArray(candidate.scenes)
+    ? candidate.scenes.filter(
+        (sc): sc is BattlemapScene =>
+          typeof sc === 'object' && sc !== null && typeof sc.id === 'string' && typeof sc.name === 'string'
+      )
+    : [];
+
   if (Array.isArray(candidate.characters) && validCharacters.length < candidate.characters.length) {
     warnings.push(`Skipped ${candidate.characters.length - validCharacters.length} malformed character record(s).`);
   }
 
-  await db.transaction('rw', db.characters, db.compendium, db.encounters, db.campaigns, async () => {
+  await db.transaction('rw', db.characters, db.compendium, db.encounters, db.campaigns, db.scenes, async () => {
     if (mode === 'replace') {
       await db.characters.clear();
       await db.compendium.clear();
       await db.encounters.clear();
       await db.campaigns.clear();
+      await db.scenes.clear();
     }
     if (validCharacters.length > 0) {
       await db.characters.bulkPut(structuredClone(validCharacters));
@@ -171,6 +200,9 @@ export async function importBackupBundle(
     }
     if (validCampaigns.length > 0) {
       await db.campaigns.bulkPut(structuredClone(validCampaigns));
+    }
+    if (validScenes.length > 0) {
+      await db.scenes.bulkPut(structuredClone(validScenes));
     }
   });
 

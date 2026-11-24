@@ -18,7 +18,9 @@ import { LevelUpModal } from './components/LevelUpModal';
 import { LiveTableModal } from './components/LiveTableModal';
 import { DmHubModal } from './components/DmHubModal';
 import { MonsterStatblockModal } from './components/MonsterStatblockModal';
+import { EncounterBuilderModal } from './components/EncounterBuilderModal';
 import { ToastStack } from './components/ToastStack';
+import { BUILTIN_CONTENT_PACKS } from './engine/srd-packs';
 import { evaluateDiceExpression } from './engine/dice';
 import { exportFullBundle } from './storage/db';
 import { RawCharacterState } from './types/character';
@@ -178,6 +180,8 @@ export function App() {
   const [levelUpOpen, setLevelUpOpen] = useState(false);
   const [liveTableOpen, setLiveTableOpen] = useState(false);
   const [dmHubOpen, setDmHubOpen] = useState(false);
+  const [encounterBuilderOpen, setEncounterBuilderOpen] = useState(false);
+  const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
   const [playerView, setPlayerView] = useState(false);
   const [inspectedCombatantId, setInspectedCombatantId] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<'vitals' | 'actions' | 'combat'>('vitals');
@@ -423,6 +427,16 @@ export function App() {
           onTriggerCombatantActivity={store.triggerCombatantActivity}
           onDropConcentration={store.dropConcentration}
           onRollConcentrationSave={store.rollConcentrationSave}
+          selectedTargetIds={selectedTargetIds}
+          onToggleTarget={(id) =>
+            setSelectedTargetIds((prev) =>
+              prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+            )
+          }
+          onClearTargets={() => setSelectedTargetIds([])}
+          onTargetAttack={store.targetAttackCombatants}
+          onTargetSave={store.targetSaveCombatants}
+          onOpenEncounterBuilder={() => setEncounterBuilderOpen(true)}
           onAddMonster={store.addMonsterToEncounter}
         />
       </div>
@@ -528,6 +542,25 @@ export function App() {
         onClearTerrain={store.clearTerrain}
         onUpdateMapSettings={store.updateEncounterMapSettings}
         onNextTurn={store.stepCombatTurn}
+        scenes={store.scenes}
+        onSaveScene={store.saveCurrentMapAsScene}
+        onLoadScene={store.loadSceneToEncounter}
+        onDeleteScene={store.deleteScene}
+        onAddSketchStroke={store.addMapSketchStroke}
+        onClearSketches={store.clearMapSketches}
+        activePings={store.activePings}
+        onPing={store.broadcastMapPing}
+        selectedTargetIds={selectedTargetIds}
+        onToggleTarget={(id) =>
+          setSelectedTargetIds((prev) =>
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+          )
+        }
+        onSetTokenPortrait={store.setCombatantPortrait}
+        onSetTokenVision={store.setCombatantVision}
+        onOpenPopOutPlayer={() => {
+          window.open('?player=1', 'dnd-forge-player-display', 'width=1280,height=800');
+        }}
       />
 
       <DmHubModal
@@ -553,6 +586,64 @@ export function App() {
         onAwardXp={store.awardPartyXp}
         onMilestoneLevelUp={store.triggerPartyMilestoneLevelUp}
         onRollExpression={store.rollInlineExpression}
+        activeSharedHandout={store.activeSharedHandout}
+        onShareHandout={store.shareHandoutToPlayers}
+        onHideHandout={store.hideSharedHandout}
+        onSetWorldMapImage={store.setWorldMapImage}
+        onUpsertWorldMapPin={store.upsertWorldMapPin}
+        onDeleteWorldMapPin={store.deleteWorldMapPin}
+        onSpawnImprovEncounter={(enc) => {
+          const allMobs = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities).filter(
+            (e) => e.category === 'monster'
+          );
+          for (const entry of enc.monsters) {
+            const match = allMobs.find((m) => m.name === entry.name);
+            if (match?.monsterMeta) {
+              for (let i = 0; i < entry.count; i++) {
+                store.addMonsterToEncounter(
+                  match.name,
+                  match.monsterMeta.ac,
+                  match.monsterMeta.hp,
+                  match.monsterMeta.dexModifier,
+                  match.activities,
+                  match.monsterMeta.cr,
+                  match.monsterMeta,
+                  match.entries.join(' ')
+                );
+              }
+            }
+          }
+          setDmHubOpen(false);
+        }}
+        onPrintPacket={() => {
+          document.body.classList.add('print-session-mode');
+          window.print();
+          setTimeout(() => document.body.classList.remove('print-session-mode'), 300);
+        }}
+      />
+
+      <EncounterBuilderModal
+        isOpen={encounterBuilderOpen}
+        onClose={() => setEncounterBuilderOpen(false)}
+        partyLevels={store.characterList.map((c) => c.classes.reduce((s, cl) => s + cl.level, 0))}
+        onSpawnMonsters={(monsters) => {
+          for (const m of monsters) {
+            if (!m.monsterMeta) continue;
+            store.addMonsterToEncounter(
+              m.name,
+              m.monsterMeta.ac,
+              m.monsterMeta.hp,
+              m.monsterMeta.dexModifier,
+              m.activities,
+              m.monsterMeta.cr,
+              m.monsterMeta,
+              m.entries.join(' ')
+            );
+          }
+        }}
+        onCreateCustomMonster={(entity) => {
+          void store.createHomebrewEntity(entity, false);
+        }}
       />
 
       <MonsterStatblockModal
@@ -583,10 +674,38 @@ export function App() {
           levelUpOpen ||
           liveTableOpen ||
           dmHubOpen ||
+          encounterBuilderOpen ||
           Boolean(inspectedCombatantId)
         }
         onDismiss={store.dismissToast}
       />
+
+      <section className="print-session-packet" aria-hidden="true">
+        <h1>{store.campaign.name} — Session Prep Packet</h1>
+        <p>
+          Setting: {store.campaign.setting} • Day {store.campaign.clock.day},{' '}
+          {String(store.campaign.clock.hour).padStart(2, '0')}:
+          {String(store.campaign.clock.minute).padStart(2, '0')} ({store.campaign.clock.weather})
+        </p>
+        <h2>Campaign Binder ({store.campaign.entries.length} Entries)</h2>
+        {store.campaign.entries.map((entry) => (
+          <div key={entry.id} style={{ marginBottom: 10, borderBottom: '1px solid #ccc', paddingBottom: 6 }}>
+            <strong>
+              [{entry.category.toUpperCase()}] {entry.title}
+            </strong>{' '}
+            — {entry.summary}
+            <div style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>{entry.body}</div>
+          </div>
+        ))}
+        <h2>Active Encounter: {store.encounter.name} (Round {store.encounter.round})</h2>
+        <ul>
+          {store.encounter.combatants.map((c) => (
+            <li key={c.id}>
+              {c.name} — Init {c.initiative}, AC {c.ac}, HP {c.hp.current}/{c.hp.max}
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 }

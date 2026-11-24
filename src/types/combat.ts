@@ -31,6 +31,8 @@ export interface CombatantNode {
   cr?: string;
   size?: CreatureSize;
   hidden?: boolean;
+  portraitUrl?: string;
+  visionFeet?: number;
   x?: number;
   y?: number;
   tokenColor?: string;
@@ -74,6 +76,41 @@ export interface CombatLogEntry {
   severity: 'info' | 'warning' | 'crit' | 'fumble';
 }
 
+export interface MapSketchStroke {
+  id: string;
+  color: string;
+  width: number;
+  points: Array<{ x: number; y: number }>;
+}
+
+export interface MapPingEvent {
+  id: string;
+  x: number;
+  y: number;
+  color: string;
+  senderName: string;
+  timestamp: number;
+}
+
+export interface BattlemapScene {
+  id: string;
+  name: string;
+  imageDataUrl?: string;
+  cols: number;
+  rows: number;
+  gridFeet: number;
+  fogCells?: string[];
+  terrainCells?: TerrainCell[];
+  sketches?: MapSketchStroke[];
+  gridOpacity?: number;
+  imageScale?: number;
+  imageOffsetX?: number;
+  imageOffsetY?: number;
+  dynamicVision?: boolean;
+  autoRevealFog?: boolean;
+  updatedAt: string;
+}
+
 export interface CombatEncounterState {
   id: string;
   name: string;
@@ -90,9 +127,12 @@ export interface CombatEncounterState {
     templates: BattlemapTemplate[];
     fogCells?: string[];
     terrainCells?: TerrainCell[];
+    sketches?: MapSketchStroke[];
     gridOpacity?: number;
     imageScale?: number;
     imageOffsetX?: number;
     imageOffsetY?: number;
+    dynamicVision?: boolean;
+    autoRevealFog?: boolean;
   };
 }

@@ -995,4 +995,31 @@ button.stat-tile:hover {
     border-color: #999;
     break-inside: avoid;
   }
+
+  body.print-session-mode .workspace-grid {
+    display: none !important;
+  }
+
+  .print-session-packet {
+    display: none;
+  }
+
+  body.print-session-mode .print-session-packet {
+    display: block !important;
+    background: #fff;
+    color: #000;
+    padding: 12px;
+  }
+}
+
+.print-session-packet {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .pill,
+  .btn {
+    min-block-size: 36px;
+    padding: 6px 10px;
+  }
 }

@@ -38,6 +38,12 @@ interface SummonDrawerProps {
   onTriggerCombatantActivity: (combatantName: string, act: Activity) => void;
   onDropConcentration: (sourceId: string) => void;
   onRollConcentrationSave: (dc?: number) => void;
+  selectedTargetIds: string[];
+  onToggleTarget: (id: string) => void;
+  onClearTargets: () => void;
+  onTargetAttack: (attackerName: string, targetIds: string[], act: Activity) => void;
+  onTargetSave: (attackerName: string, targetIds: string[], act: Activity) => void;
+  onOpenEncounterBuilder: () => void;
   onAddMonster: (
     name: string,
     ac: number,
@@ -88,6 +94,12 @@ export function SummonCombatDrawer({
   onTriggerCombatantActivity,
   onDropConcentration,
   onRollConcentrationSave,
+  selectedTargetIds,
+  onToggleTarget,
+  onClearTargets,
+  onTargetAttack,
+  onTargetSave,
+  onOpenEncounterBuilder,
   onAddMonster,
 }: SummonDrawerProps) {
   const [mobName, setMobName] = useState('');
@@ -220,7 +232,26 @@ export function SummonCombatDrawer({
 
       {!playerView && (
         <div className="card forge-stack">
-          <div className="forge-section-label">QUICK ADD SRD OR CUSTOM MONSTER</div>
+          <div className="forge-row-between">
+            <div className="forge-section-label">QUICK ADD SRD OR CUSTOM MONSTER</div>
+            <button type="button" className="btn btn-primary" onClick={onOpenEncounterBuilder}>
+              Builder / Forge
+            </button>
+          </div>
+          {selectedTargetIds.length > 0 && (
+            <div className="subpanel forge-row-between" style={{ padding: '4px 8px' }}>
+              <span className="badge">
+                Targeted ({selectedTargetIds.length}):{' '}
+                {encounter.combatants
+                  .filter((c) => selectedTargetIds.includes(c.id))
+                  .map((c) => c.name)
+                  .join(', ')}
+              </span>
+              <button type="button" className="btn" onClick={onClearTargets}>
+                Clear Targets
+              </button>
+            </div>
+          )}
           <div className="forge-row">
             <select
               aria-label="Quick add SRD monster"
@@ -418,6 +449,16 @@ export function SummonCombatDrawer({
                     Statblock
                   </button>
                 )}
+                {!playerView && (
+                  <button
+                    type="button"
+                    className={`pill ${selectedTargetIds.includes(node.id) ? 'active' : ''}`}
+                    onClick={() => onToggleTarget(node.id)}
+                    title="Select as attack/spell target"
+                  >
+                    {selectedTargetIds.includes(node.id) ? 'Targeted' : 'Target'}
+                  </button>
+                )}
                 {!playerView && node.kind !== 'pc' && (
                   <>
                     <button
@@ -460,6 +501,16 @@ export function SummonCombatDrawer({
                 <span className="tabular forge-muted">
                   • AC {hideHp ? '?' : node.ac}
                 </span>
+                {!playerView && (
+                  <button
+                    type="button"
+                    className={`pill ${selectedTargetIds.includes(node.id) ? 'active' : ''}`}
+                    onClick={() => onToggleTarget(node.id)}
+                    title="Select as attack/spell target"
+                  >
+                    {selectedTargetIds.includes(node.id) ? 'Targeted' : 'Target'}
+                  </button>
+                )}
                 {!playerView && node.kind !== 'pc' && (
                   <button
                     type="button"
@@ -626,14 +677,29 @@ export function SummonCombatDrawer({
             {!hideHp && node.actions && node.actions.length > 0 && (
               <div className="pill-row" style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid var(--border-subtle)' }}>
                 {node.actions.map((act) => (
-                  <button
-                    key={act.id}
-                    type="button"
-                    className="btn btn-primary tabular"
-                    onClick={() => onTriggerCombatantActivity(node.name, act)}
-                  >
-                    {act.name} {act.attackBonusFormula ? `(${act.attackBonusFormula})` : ''}
-                  </button>
+                  <span key={act.id} className="forge-row" style={{ gap: 4 }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary tabular"
+                      onClick={() => onTriggerCombatantActivity(node.name, act)}
+                    >
+                      {act.name} {act.attackBonusFormula ? `(${act.attackBonusFormula})` : ''}
+                    </button>
+                    {selectedTargetIds.length > 0 && (act.type === 'attack' || act.type === 'save') && (
+                      <button
+                        type="button"
+                        className="btn btn-danger tabular"
+                        title="Roll against selected target(s) & apply damage"
+                        onClick={() =>
+                          act.type === 'attack'
+                            ? onTargetAttack(node.name, selectedTargetIds, act)
+                            : onTargetSave(node.name, selectedTargetIds, act)
+                        }
+                      >
+                        {act.type === 'attack' ? 'Hit' : 'Save'} ({selectedTargetIds.length})
+                      </button>
+                    )}
+                  </span>
                 ))}
               </div>
             )}

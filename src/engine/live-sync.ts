@@ -45,6 +45,29 @@ export type LiveTableMessage =
       senderId: string;
       senderName: string;
       character: RawCharacterState;
+    }
+  | {
+      type: 'ping';
+      senderId: string;
+      senderName: string;
+      x: number;
+      y: number;
+      color: string;
+      timestamp: number;
+    }
+  | {
+      type: 'handout_show';
+      senderId: string;
+      senderName: string;
+      id: string;
+      title: string;
+      summary: string;
+      body: string;
+      imageDataUrl?: string;
+    }
+  | {
+      type: 'handout_hide';
+      senderId: string;
     };
 
 const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

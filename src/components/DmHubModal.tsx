@@ -10,7 +10,20 @@ import {
   TreasureTier,
 } from '../engine/dm-tools';
 import { evaluateEncounterDifficulty } from '../engine/encounter-math';
-import { CampaignCategory, CampaignEntry, CampaignRecord } from '../types/campaign';
+import {
+  GeneratedEncounter,
+  generateRandomEncounter,
+  generateRandomNpc,
+  generateRandomTavern,
+} from '../engine/improv';
+import { AmbientPresetId, SfxPresetId, tabletopSoundboard } from '../engine/soundboard';
+import {
+  CampaignCategory,
+  CampaignEntry,
+  CampaignRecord,
+  SharedHandoutPayload,
+  WorldMapPin,
+} from '../types/campaign';
 import { RawCharacterState } from '../types/character';
 import { CombatEncounterState } from '../types/combat';
 import { ModalDialog } from './ModalDialog';
@@ -38,6 +51,14 @@ interface DmHubModalProps {
   onAwardXp: (totalXp: number) => Promise<void>;
   onMilestoneLevelUp: () => Promise<void>;
   onRollExpression: (label: string, expr: string) => void;
+  activeSharedHandout?: SharedHandoutPayload | null;
+  onShareHandout?: (entry: CampaignEntry) => void;
+  onHideHandout?: () => void;
+  onSetWorldMapImage?: (url: string | undefined) => void;
+  onUpsertWorldMapPin?: (pin: WorldMapPin) => void;
+  onDeleteWorldMapPin?: (pinId: string) => void;
+  onSpawnImprovEncounter?: (enc: GeneratedEncounter) => void;
+  onPrintPacket?: () => void;
 }
 
 const CATEGORIES: Array<{ key: 'all' | CampaignCategory; label: string }> = [
@@ -73,8 +94,16 @@ export function DmHubModal({
   onAwardXp,
   onMilestoneLevelUp,
   onRollExpression,
+  activeSharedHandout,
+  onShareHandout,
+  onHideHandout,
+  onSetWorldMapImage,
+  onUpsertWorldMapPin,
+  onDeleteWorldMapPin,
+  onSpawnImprovEncounter,
+  onPrintPacket,
 }: DmHubModalProps) {
-  const [tab, setTab] = useState<'binder' | 'clock' | 'loot' | 'dmscreen' | 'xp'>('binder');
+  const [tab, setTab] = useState<'binder' | 'clock' | 'loot' | 'dmscreen' | 'xp' | 'improv' | 'worldmap' | 'soundboard'>('binder');
 
   // Campaign Binder State
   const [newCampName, setNewCampName] = useState('');
@@ -85,7 +114,28 @@ export function DmHubModal({
   const [entryTitle, setEntryTitle] = useState('');
   const [entrySummary, setEntrySummary] = useState('');
   const [entryBody, setEntryBody] = useState('');
+  const [entryImage, setEntryImage] = useState<string | undefined>(undefined);
   const [entryStatus, setEntryStatus] = useState<CampaignEntry['status']>('active');
+
+  // Improv State
+  const [improvEnv, setImprovEnv] = useState<'Forest' | 'Dungeon' | 'Urban' | 'Underdark'>('Dungeon');
+  const [previewNpc, setPreviewNpc] = useState<Omit<CampaignEntry, 'id' | 'updatedAt'> | null>(null);
+  const [previewTavern, setPreviewTavern] = useState<Omit<CampaignEntry, 'id' | 'updatedAt'> | null>(null);
+  const [previewEnc, setPreviewEnc] = useState<GeneratedEncounter | null>(null);
+
+  // World Map State
+  const [pinLabel, setPinLabel] = useState('');
+  const [pinKind, setPinKind] = useState<WorldMapPin['kind']>('location');
+  const [pinEntryId, setPinEntryId] = useState('');
+  const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
+
+  // Soundboard State
+  const [activeAmbient, setActiveAmbient] = useState<AmbientPresetId | null>(() =>
+    tabletopSoundboard.getActiveLoop()
+  );
+  const [boardVol, setBoardVol] = useState(() => tabletopSoundboard.getVolume());
+  const [customAudioUrl, setCustomAudioUrl] = useState<string | null>(null);
+  const [customAudioName, setCustomAudioName] = useState('');
 
   // World Clock State
   const [timerLabel, setTimerLabel] = useState('');
@@ -128,11 +178,13 @@ export function DmHubModal({
       body: entryBody.trim(),
       tags: [],
       status: entryStatus,
+      imageDataUrl: entryImage,
     });
     setEditingId(null);
     setEntryTitle('');
     setEntrySummary('');
     setEntryBody('');
+    setEntryImage(undefined);
   };
 
   const shopItems = generateShopInventory(shopTier);
@@ -198,9 +250,16 @@ export function DmHubModal({
               </button>
             )}
           </div>
-          <span className="tabular forge-muted" style={{ fontSize: 12 }}>
-            {formatWorldClock(campaign.clock)} • {campaign.clock.weather}
-          </span>
+          <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+            <span className="tabular forge-muted" style={{ fontSize: 12 }}>
+              {formatWorldClock(campaign.clock)} • {campaign.clock.weather}
+            </span>
+            {onPrintPacket && (
+              <button type="button" className="btn" onClick={onPrintPacket}>
+                Print Session Packet
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="pill-row">
@@ -211,6 +270,9 @@ export function DmHubModal({
               ['loot', 'Loot & Shops'],
               ['dmscreen', 'DM Screen'],
               ['xp', 'Party XP & Milestones'],
+              ['improv', 'Improv'],
+              ['worldmap', 'World Map'],
+              ['soundboard', 'Soundboard'],
             ] as const
           ).map(([k, label]) => (
             <button
@@ -264,10 +326,26 @@ export function DmHubModal({
                         </span>
                       </summary>
                       <div className="forge-stack" style={{ padding: '6px 8px 10px' }}>
+                        {entry.imageDataUrl && (
+                          <img
+                            src={entry.imageDataUrl}
+                            alt={entry.title}
+                            style={{ maxWidth: '100%', maxHeight: 160, objectFit: 'contain', borderRadius: 6 }}
+                          />
+                        )}
                         <div style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>
                           {entry.body || entry.summary}
                         </div>
-                        <div className="forge-row">
+                        <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+                          {onShareHandout && (
+                            <button
+                              type="button"
+                              className="btn btn-primary"
+                              onClick={() => onShareHandout(entry)}
+                            >
+                              Show to Players
+                            </button>
+                          )}
                           <button
                             type="button"
                             className="btn"
@@ -277,6 +355,7 @@ export function DmHubModal({
                               setEntryTitle(entry.title);
                               setEntrySummary(entry.summary);
                               setEntryBody(entry.body);
+                              setEntryImage(entry.imageDataUrl);
                               setEntryStatus(entry.status);
                             }}
                           >
@@ -361,6 +440,39 @@ export function DmHubModal({
                   placeholder="Motivations, clues, secret doors, box text..."
                 />
               </label>
+              <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+                <label className="btn" style={{ cursor: 'pointer' }}>
+                  Attach Handout / Portrait Image
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        if (typeof reader.result === 'string') setEntryImage(reader.result);
+                      };
+                      reader.readAsDataURL(file);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                {entryImage && (
+                  <button type="button" className="btn" onClick={() => setEntryImage(undefined)}>
+                    Clear Image
+                  </button>
+                )}
+              </div>
+              {activeSharedHandout && onHideHandout && (
+                <div className="subpanel forge-row-between" style={{ padding: '6px 10px' }}>
+                  <span className="badge">Showing to Players: {activeSharedHandout.title}</span>
+                  <button type="button" className="btn" onClick={onHideHandout}>
+                    Hide Handout
+                  </button>
+                </div>
+              )}
               <div className="forge-row">
                 <button type="submit" className="btn btn-primary">
                   {editingId ? 'Save Changes' : 'Add to Campaign Binder'}
@@ -805,6 +917,391 @@ export function DmHubModal({
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+        )}
+
+        {tab === 'improv' && (
+          <div className="forge-grid-2" style={{ alignItems: 'start' }}>
+            <div className="card forge-stack">
+              <div className="forge-section-label">ONE-CLICK NPC &amp; TAVERN GENERATORS</div>
+              <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => setPreviewNpc(generateRandomNpc())}
+                >
+                  Generate Random NPC
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => setPreviewTavern(generateRandomTavern())}
+                >
+                  Generate Random Tavern
+                </button>
+              </div>
+              {previewNpc && (
+                <div className="subpanel forge-stack" style={{ padding: 10 }}>
+                  <strong>{previewNpc.title}</strong>
+                  <span className="muted-label">{previewNpc.summary}</span>
+                  <div style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>{previewNpc.body}</div>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => {
+                      onUpsertEntry({ id: `npc-${Date.now().toString(36)}`, ...previewNpc });
+                      setPreviewNpc(null);
+                    }}
+                  >
+                    Save NPC to Binder
+                  </button>
+                </div>
+              )}
+              {previewTavern && (
+                <div className="subpanel forge-stack" style={{ padding: 10 }}>
+                  <strong>{previewTavern.title}</strong>
+                  <span className="muted-label">{previewTavern.summary}</span>
+                  <div style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>{previewTavern.body}</div>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => {
+                      onUpsertEntry({ id: `tav-${Date.now().toString(36)}`, ...previewTavern });
+                      setPreviewTavern(null);
+                    }}
+                  >
+                    Save Tavern to Binder
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="card forge-stack">
+              <div className="forge-section-label">RANDOM ENCOUNTER GENERATOR</div>
+              <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+                <select
+                  aria-label="Encounter environment"
+                  className="forge-input"
+                  value={improvEnv}
+                  onChange={(e) => setImprovEnv(e.target.value as typeof improvEnv)}
+                >
+                  <option value="Dungeon">Dungeon</option>
+                  <option value="Forest">Forest</option>
+                  <option value="Urban">Urban</option>
+                  <option value="Underdark">Underdark</option>
+                </select>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() =>
+                    setPreviewEnc(
+                      generateRandomEncounter(
+                        characterList.map((c) => c.classes.reduce((s, cl) => s + cl.level, 0)),
+                        improvEnv
+                      )
+                    )
+                  }
+                >
+                  Roll Random Encounter
+                </button>
+              </div>
+              {previewEnc && (
+                <div className="subpanel forge-stack" style={{ padding: 10 }}>
+                  <div className="forge-row-between">
+                    <strong>{previewEnc.title}</strong>
+                    <span className="badge tabular">
+                      {previewEnc.difficulty} ({previewEnc.adjustedXp} XP)
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 12 }}>{previewEnc.hook}</div>
+                  {onSpawnImprovEncounter && (
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => onSpawnImprovEncounter(previewEnc)}
+                    >
+                      Spawn into Active Encounter
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {tab === 'worldmap' && (
+          <div className="forge-stack">
+            <div className="card forge-row-between" style={{ flexWrap: 'wrap', gap: 8 }}>
+              <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+                <label className="btn" style={{ cursor: 'pointer' }}>
+                  Upload World / Region Map
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        if (typeof reader.result === 'string') onSetWorldMapImage?.(reader.result);
+                      };
+                      reader.readAsDataURL(file);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                {campaign.worldMapImageDataUrl && (
+                  <button type="button" className="btn" onClick={() => onSetWorldMapImage?.(undefined)}>
+                    Clear World Map
+                  </button>
+                )}
+              </div>
+              <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+                <input
+                  type="text"
+                  className="forge-input"
+                  style={{ width: 150 }}
+                  placeholder="Next pin label..."
+                  value={pinLabel}
+                  onChange={(e) => setPinLabel(e.target.value)}
+                />
+                <select
+                  aria-label="World map pin type"
+                  className="forge-input"
+                  value={pinKind}
+                  onChange={(e) => setPinKind(e.target.value as WorldMapPin['kind'])}
+                >
+                  <option value="location">Location</option>
+                  <option value="quest">Quest</option>
+                  <option value="npc">NPC</option>
+                  <option value="danger">Danger</option>
+                </select>
+                <select
+                  aria-label="Link pin to binder entry"
+                  className="forge-input"
+                  value={pinEntryId}
+                  onChange={(e) => setPinEntryId(e.target.value)}
+                >
+                  <option value="">Link Binder Note (optional)</option>
+                  {campaign.entries.map((ent) => (
+                    <option key={ent.id} value={ent.id}>
+                      {ent.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div
+              className="card"
+              style={{
+                position: 'relative',
+                minHeight: 320,
+                background: '#0b0e14',
+                overflow: 'hidden',
+                cursor: 'crosshair',
+              }}
+              onClick={(e) => {
+                if (!onUpsertWorldMapPin) return;
+                const rect = e.currentTarget.getBoundingClientRect();
+                const xPct = Math.max(2, Math.min(98, ((e.clientX - rect.left) / rect.width) * 100));
+                const yPct = Math.max(2, Math.min(98, ((e.clientY - rect.top) / rect.height) * 100));
+                const newPin: WorldMapPin = {
+                  id: `pin-${Date.now().toString(36)}`,
+                  xPct: Number(xPct.toFixed(1)),
+                  yPct: Number(yPct.toFixed(1)),
+                  label: pinLabel.trim() || `Pin ${(campaign.worldMapPins?.length ?? 0) + 1}`,
+                  kind: pinKind,
+                  entryId: pinEntryId || undefined,
+                };
+                onUpsertWorldMapPin(newPin);
+                setSelectedPinId(newPin.id);
+                setPinLabel('');
+              }}
+            >
+              {campaign.worldMapImageDataUrl ? (
+                <img
+                  src={campaign.worldMapImageDataUrl}
+                  alt="Campaign World Map"
+                  style={{ width: '100%', maxHeight: '52vh', objectFit: 'contain', display: 'block' }}
+                />
+              ) : (
+                <div style={{ padding: 40, textAlign: 'center' }} className="forge-muted">
+                  Upload a region/world map above, or click anywhere on this canvas to drop interactive campaign pins.
+                </div>
+              )}
+
+              {(campaign.worldMapPins ?? []).map((pin) => {
+                const bg =
+                  pin.kind === 'danger'
+                    ? '#f85149'
+                    : pin.kind === 'quest'
+                      ? '#d29922'
+                      : pin.kind === 'npc'
+                        ? '#bc8cff'
+                        : '#58a6ff';
+                return (
+                  <button
+                    key={pin.id}
+                    type="button"
+                    style={{
+                      position: 'absolute',
+                      left: `${pin.xPct}%`,
+                      top: `${pin.yPct}%`,
+                      transform: 'translate(-50%, -50%)',
+                      background: bg,
+                      color: '#0d1117',
+                      border: selectedPinId === pin.id ? '2px solid #f0f6fc' : '1px solid #0d1117',
+                      borderRadius: 999,
+                      padding: '2px 8px',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      setSelectedPinId(pin.id);
+                    }}
+                  >
+                    {pin.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {selectedPinId && (() => {
+              const activePin = (campaign.worldMapPins ?? []).find((p) => p.id === selectedPinId);
+              if (!activePin) return null;
+              const linked = activePin.entryId
+                ? campaign.entries.find((e) => e.id === activePin.entryId)
+                : undefined;
+              return (
+                <div className="card forge-row-between" style={{ flexWrap: 'wrap', gap: 8 }}>
+                  <div>
+                    <strong>{activePin.label}</strong>{' '}
+                    <span className="badge">{activePin.kind.toUpperCase()}</span>
+                    {linked && (
+                      <div className="muted-label">
+                        Linked Binder Note: <strong>{linked.title}</strong> — {linked.summary}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={() => {
+                      onDeleteWorldMapPin?.(activePin.id);
+                      setSelectedPinId(null);
+                    }}
+                  >
+                    Remove Pin
+                  </button>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {tab === 'soundboard' && (
+          <div className="forge-grid-2" style={{ alignItems: 'start' }}>
+            <div className="card forge-stack">
+              <div className="forge-section-label">AMBIENT LOOPS (OFFLINE WEB AUDIO)</div>
+              <label className="forge-row">
+                <span className="forge-label">MASTER VOLUME</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={boardVol}
+                  onChange={(e) => {
+                    const v = Number.parseFloat(e.target.value);
+                    setBoardVol(v);
+                    tabletopSoundboard.setVolume(v);
+                  }}
+                />
+                <span className="badge tabular">{Math.round(boardVol * 100)}%</span>
+              </label>
+              <div className="pill-row">
+                {(
+                  [
+                    ['tavern', 'Tavern Hearth'],
+                    ['rain', 'Steady Rain'],
+                    ['dungeon', 'Deep Dungeon'],
+                    ['battle', 'Tense Battle'],
+                  ] as Array<[AmbientPresetId, string]>
+                ).map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`pill ${activeAmbient === id ? 'active' : ''}`}
+                    onClick={() => setActiveAmbient(tabletopSoundboard.toggleAmbient(id))}
+                  >
+                    {activeAmbient === id ? `Playing: ${label}` : label}
+                  </button>
+                ))}
+                {activeAmbient && (
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={() => {
+                      tabletopSoundboard.stopAmbient();
+                      setActiveAmbient(null);
+                    }}
+                  >
+                    Stop Ambient
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="card forge-stack">
+              <div className="forge-section-label">ONE-SHOT SFX &amp; LOCAL TRACK PLAYER</div>
+              <div className="pill-row">
+                {(
+                  [
+                    ['sword', 'Sword Clash'],
+                    ['fireball', 'Fireball'],
+                    ['thunder', 'Thunder'],
+                    ['door', 'Door Creak'],
+                    ['coins', 'Coins'],
+                    ['fanfare', 'Victory Fanfare'],
+                  ] as Array<[SfxPresetId, string]>
+                ).map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className="btn"
+                    onClick={() => tabletopSoundboard.playSfx(id)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+                <label className="btn" style={{ cursor: 'pointer' }}>
+                  Load Local Audio Track (MP3/WAV/OGG)
+                  <input
+                    type="file"
+                    accept="audio/*"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      if (customAudioUrl) URL.revokeObjectURL(customAudioUrl);
+                      setCustomAudioUrl(URL.createObjectURL(f));
+                      setCustomAudioName(f.name);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                {customAudioName && <span className="muted-label">{customAudioName}</span>}
+              </div>
+              {customAudioUrl && (
+                <audio controls src={customAudioUrl} style={{ width: '100%' }} />
+              )}
             </div>
           </div>
         )}

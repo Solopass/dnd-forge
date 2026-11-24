@@ -10,6 +10,8 @@ interface SettingsModalProps {
   onClose: () => void;
   uiMode?: UiMode;
   onChangeUiMode?: (mode: UiMode) => void;
+  rulesetPresetLabel?: string;
+  onOpenRulesetModal?: () => void;
   onExportBackup: () => Promise<void>;
   onExportActiveCharacter: () => void;
 }
@@ -37,6 +39,8 @@ export function SettingsModal({
   onClose,
   uiMode,
   onChangeUiMode,
+  rulesetPresetLabel,
+  onOpenRulesetModal,
   onExportBackup,
   onExportActiveCharacter,
 }: SettingsModalProps) {
@@ -134,6 +138,30 @@ export function SettingsModal({
             Classic mimics the familiar D&amp;D Beyond character sheet with modal DM/VTT tools. Unified embeds DM Studio &amp; Tactical VTT directly in the main canvas with a left workspace rail.
           </div>
         </div>
+
+        {onOpenRulesetModal && (
+          <div className="card forge-stack">
+            <div className="card-header">
+              <div className="forge-section-label">RULESET &amp; HOUSE RULES</div>
+              <span className="badge">{rulesetPresetLabel ?? '2024 Revised'}</span>
+            </div>
+            <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 8 }}>
+              <div className="forge-muted" style={{ flex: 1, minWidth: 220 }}>
+                Compare 2014 vs 2024 rules (Exhaustion, Healing Potions, Weapon Mastery, Surprise, Flanking, Crits) or mix &amp; match your own custom ruleset.
+              </div>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  onClose();
+                  onOpenRulesetModal();
+                }}
+              >
+                Customize Ruleset...
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="card forge-stack">
           <div className="card-header">

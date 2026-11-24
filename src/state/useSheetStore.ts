@@ -28,6 +28,7 @@ import { adapt5eToolsPayload } from '../engine/five-tools-adapter';
 import { parseDndBeyondPdfBuffer } from '../engine/ddb-pdf-importer';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
 import { CUSTOM_REPO_CHARACTERS, parseCustomContentJson } from '../engine/custom-content-loader';
+import { HouseRulesConfig, readStoredHouseRules, saveHouseRules } from '../engine/ruleset-config';
 import {
   buildCharacterFromPreset,
   buildSubclassGrantEntities,
@@ -265,9 +266,15 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     };
   }, [initialCharacter, initialEncounter, defaultCampaign, appendLog]);
 
+  const [houseRules, setHouseRules] = useState<HouseRulesConfig>(() => readStoredHouseRules());
+  const updateHouseRules = useCallback((next: HouseRulesConfig) => {
+    setHouseRules(next);
+    saveHouseRules(next);
+  }, []);
+
   const resolvedSheet: ResolvedCharacterSheet = useMemo(
-    () => computeCharacterSheet(rawChar),
-    [rawChar]
+    () => computeCharacterSheet(rawChar, houseRules),
+    [rawChar, houseRules]
   );
 
   const persistCharacter = useCallback(
@@ -3449,6 +3456,8 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     activeBuffs,
     toggleBuff,
     divineSmite,
+    houseRules,
+    updateHouseRules,
     assignLootItemToCharacter,
     upsertDowntimeProject,
     advanceDowntimeDays,

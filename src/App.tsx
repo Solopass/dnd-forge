@@ -15,6 +15,9 @@ const BattlemapModal = lazy(() =>
 const SettingsModal = lazy(() =>
   import('./components/SettingsModal').then((m) => ({ default: m.SettingsModal }))
 );
+const RulesetModal = lazy(() =>
+  import('./components/RulesetModal').then((m) => ({ default: m.RulesetModal }))
+);
 const LevelUpModal = lazy(() =>
   import('./components/LevelUpModal').then((m) => ({ default: m.LevelUpModal }))
 );
@@ -49,6 +52,7 @@ const EncounterBuilderModal = lazy(() =>
   import('./components/EncounterBuilderModal').then((m) => ({ default: m.EncounterBuilderModal }))
 );
 import { BUILTIN_CONTENT_PACKS } from './engine/srd-packs';
+import { detectRulesetPreset } from './engine/ruleset-config';
 import { applyUiMode, readStoredUiMode, UiMode } from './engine/ui-mode';
 import { evaluateDiceExpression } from './engine/dice';
 import { exportFullBundle } from './storage/db';
@@ -233,6 +237,7 @@ export function App() {
   const [newCharOpen, setNewCharOpen] = useState(false);
   const [battlemapOpen, setBattlemapOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [rulesetOpen, setRulesetOpen] = useState(false);
   const [levelUpOpen, setLevelUpOpen] = useState(false);
   const [liveTableOpen, setLiveTableOpen] = useState(false);
   const [dmHubOpen, setDmHubOpen] = useState(false);
@@ -1107,8 +1112,20 @@ export function App() {
           onClose={() => setSettingsOpen(false)}
           uiMode={uiMode}
           onChangeUiMode={setUiMode}
+          rulesetPresetLabel={(() => {
+            const p = detectRulesetPreset(store.houseRules);
+            return p === '2014' ? '2014 Classic' : p === '2024' ? '2024 Revised' : 'Custom Mix';
+          })()}
+          onOpenRulesetModal={() => setRulesetOpen(true)}
           onExportBackup={handleExport}
           onExportActiveCharacter={handleExportActiveCharacter}
+        />
+
+        <RulesetModal
+          isOpen={rulesetOpen}
+          onClose={() => setRulesetOpen(false)}
+          houseRules={store.houseRules}
+          onUpdateHouseRules={store.updateHouseRules}
         />
       </Suspense>
 

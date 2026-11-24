@@ -5,6 +5,7 @@ import {
   SkillKey,
   StatModifier,
 } from '../types/core';
+import type { HouseRulesConfig } from './ruleset-config';
 import {
   AcFormulaRule,
   Activity,
@@ -316,7 +317,13 @@ function evaluateSimpleMath(expr: string): number {
   return tokens.reduce((sum, tok) => sum + Number.parseInt(tok, 10), 0);
 }
 
-export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacterSheet {
+export function computeCharacterSheet(
+  raw: RawCharacterState,
+  houseRules?: HouseRulesConfig
+): ResolvedCharacterSheet {
+  const effectiveExhaustionRule = houseRules?.exhaustionRule ?? raw.ruleset;
+  const effectiveWeaponMastery = houseRules?.weaponMastery ?? 'enabled';
+  const effectivePotionAction = houseRules?.potionAction;
   const totalLevel = raw.classes.reduce((sum, cls) => sum + cls.level, 0);
   const profStat = buildOverridable(
     computeProficiencyBonus(totalLevel),
@@ -460,7 +467,7 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
   }
 
   const exhaustion2024Penalty =
-    raw.ruleset === '2024' && raw.exhaustion > 0 ? -2 * raw.exhaustion : 0;
+    effectiveExhaustionRule === '2024' && raw.exhaustion > 0 ? -2 * raw.exhaustion : 0;
 
   const acStat = {
     ...buildOverridable(bestFormulaAc, acFlatModifiers, raw.overrides.ac),
@@ -646,11 +653,17 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
             }
           : undefined;
 
-      actionsByEconomy[act.actionEconomy].push({
+      const isHealingPotion =
+        item.name.toLowerCase().includes('potion of') && item.name.toLowerCase().includes('healing');
+      const targetEconomy: ActionEconomy =
+        isHealingPotion && effectivePotionAction ? effectivePotionAction : act.actionEconomy;
+
+      actionsByEconomy[targetEconomy].push({
         ...act,
+        actionEconomy: targetEconomy,
         parentItemId: item.id,
         parentItemName: item.name,
-        weaponMastery: item.weaponMastery,
+        weaponMastery: effectiveWeaponMastery === 'enabled' ? item.weaponMastery : undefined,
         concentration: Boolean(item.concentration),
         ritual: Boolean(item.ritual),
         spellMeta,
@@ -746,7 +759,7 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
     .map((cond) => CONDITION_RULE_NOTES[cond] ?? `${cond}: Active condition.`)
     .slice();
   if (raw.exhaustion > 0) {
-    if (raw.ruleset === '2024') {
+    if (effectiveExhaustionRule === '2024') {
       conditionWarnings.push(
         `Exhaustion ${raw.exhaustion}: ${-2 * raw.exhaustion} to d20 Tests & Save DCs; -${5 * raw.exhaustion} ft Speed.`
       );

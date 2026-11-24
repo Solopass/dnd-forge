@@ -168,6 +168,24 @@ export function advanceTurn(
   }
 
   let nextIndex = state.activeTurnIndex + 1;
+  if (expiredSummons.size > 0) {
+    const removedBeforeOrAt = nextCombatants.filter(
+      (c, idx) => idx <= state.activeTurnIndex && expiredSummons.has(c.id)
+    ).length;
+    nextCombatants = nextCombatants.filter((c) => !expiredSummons.has(c.id));
+    expiredSummons.clear();
+    if (nextCombatants.length === 0) {
+      return {
+        ...state,
+        activeTurnIndex: 0,
+        combatants: [],
+        activeEffects: nextEffects,
+        log: nextLog,
+      };
+    }
+    nextIndex = Math.max(0, state.activeTurnIndex - removedBeforeOrAt + 1);
+  }
+
   let nextRound = state.round;
   if (nextIndex >= nextCombatants.length) {
     nextIndex = 0;
@@ -250,13 +268,22 @@ export function advanceTurn(
         };
       });
 
-    nextLog.push(makeLog(nextRound, `Turn started: ${startingCombatant.name}`));
+    if (!expiredSummons.has(startingCombatant.id)) {
+      nextLog.push(makeLog(nextRound, `Turn started: ${startingCombatant.name}`));
+    }
   }
+
+  const pinnedIndex = startingCombatant
+    ? nextCombatants.findIndex((c) => c.id === startingCombatant.id)
+    : -1;
 
   return {
     ...state,
     round: nextRound,
-    activeTurnIndex: Math.min(nextIndex, Math.max(0, nextCombatants.length - 1)),
+    activeTurnIndex:
+      pinnedIndex >= 0
+        ? pinnedIndex
+        : Math.min(nextIndex, Math.max(0, nextCombatants.length - 1)),
     combatants: nextCombatants,
     activeEffects: nextEffects,
     log: nextLog,

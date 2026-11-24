@@ -1374,6 +1374,16 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
             if (healedNames.length > 0) {
               appendLog(`Applied +${healAmount} HP healing to: ${healedNames.join(', ')}.`, 'info');
             }
+            if (liveStatus.role === 'player' && liveSessionRef.current) {
+              liveSessionRef.current.broadcast({
+                type: 'target_heal',
+                senderId: liveSessionRef.current.senderId,
+                senderName: rawChar.name,
+                targetIds,
+                amount: healAmount,
+                sourceName: activity.name,
+              });
+            }
           } else {
             persistCharacter((prev) => ({
               ...prev,
@@ -1422,6 +1432,18 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
           });
           if (targetIds.length > 0 && activity.type !== 'summon' && targetNames.length > 0) {
             appendLog(`Applied ${activity.parentItemName || activity.name} to: ${targetNames.join(', ')}.`, 'info');
+          }
+          if (liveStatus.role === 'player' && targetIds.length > 0 && activity.type !== 'summon' && liveSessionRef.current) {
+            liveSessionRef.current.broadcast({
+              type: 'target_buff',
+              senderId: liveSessionRef.current.senderId,
+              senderName: rawChar.name,
+              targetIds,
+              effectName: activity.parentItemName || activity.name,
+              sourceCombatantId: rawChar.id,
+              isConcentration: activity.concentration,
+              durationRounds,
+            });
           }
 
           if (activity.type === 'summon') {
@@ -2388,6 +2410,52 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
 
     if (msg.type === 'claim_token' && liveStatus.role === 'host') {
       appendLog(`[LIVE] ${msg.senderName} claimed token "${msg.combatantId}".`, 'info');
+      return;
+    }
+
+    if (msg.type === 'party_stash_sync') {
+      persistCampaign((prev) => ({
+        ...prev,
+        partyLootGp: msg.partyLootGp,
+        partyStash: msg.partyStash,
+      }));
+      appendLog(`[LIVE] ${msg.senderName} updated Party Shared Inventory.`, 'info');
+      return;
+    }
+
+    if (msg.type === 'target_heal' && liveStatus.role === 'host') {
+      const healedNames: string[] = [];
+      persistEncounter((prev) => ({
+        ...prev,
+        combatants: prev.combatants.map((c) => {
+          if (!msg.targetIds.includes(c.id)) return c;
+          healedNames.push(c.name);
+          return { ...c, hp: { ...c.hp, current: Math.min(c.hp.max, c.hp.current + msg.amount) } };
+        }),
+      }));
+      if (healedNames.length > 0) {
+        appendLog(`[LIVE] ${msg.senderName} healed ${healedNames.join(', ')} (+${msg.amount} HP via ${msg.sourceName}).`, 'info');
+      }
+      return;
+    }
+
+    if (msg.type === 'target_buff' && liveStatus.role === 'host') {
+      persistEncounter((prev) => {
+        let updated = prev;
+        msg.targetIds.forEach((tid, idx) => {
+          updated = applyEffectWithConcentrationCheck(updated, {
+            id: `eff-live-${Date.now()}-${idx}`,
+            name: msg.effectName,
+            sourceCombatantId: msg.sourceCombatantId,
+            targetCombatantId: tid,
+            isConcentration: msg.isConcentration && idx === 0,
+            expiration: msg.isConcentration ? 'concentration' : msg.durationRounds ? 'rounds_remaining' : 'indefinite',
+            roundsRemaining: msg.durationRounds,
+          });
+        });
+        return updated;
+      });
+      appendLog(`[LIVE] ${msg.senderName} applied ${msg.effectName} to ${msg.targetIds.length} target(s).`, 'info');
     }
   };
 
@@ -3731,6 +3799,22 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
               ];
         return { ...prev, partyStash: nextStash };
       });
+      if (liveSessionRef.current && liveStatus.role !== 'idle') {
+        const nextStash = (() => {
+          const stash = campaign?.partyStash ?? [];
+          const existingIdx = stash.findIndex((s) => s.name === item.name && s.category === item.category);
+          return existingIdx >= 0
+            ? stash.map((s, idx) => (idx === existingIdx ? { ...s, quantity: (s.quantity ?? 1) + 1 } : s))
+            : [{ ...item, id: `stash-${Date.now()}`, equipped: false, attuned: false, quantity: 1 }, ...stash];
+        })();
+        liveSessionRef.current.broadcast({
+          type: 'party_stash_sync',
+          senderId: liveSessionRef.current.senderId,
+          senderName: rawChar.name,
+          partyLootGp: campaign?.partyLootGp ?? 0,
+          partyStash: nextStash,
+        });
+      }
       appendLog(`${rawChar.name} deposited "${item.name}" into Party Shared Inventory.`, 'info');
     },
     [rawChar.items, rawChar.name, persistCharacter, persistCampaign, appendLog]
@@ -3752,6 +3836,20 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
             : prevStash.filter((s) => s.id !== stashItemId);
         return { ...prev, partyStash: nextStash };
       });
+      if (liveSessionRef.current && liveStatus.role !== 'idle') {
+        const prevStash = campaign?.partyStash ?? [];
+        const nextStash =
+          qty > 1
+            ? prevStash.map((s) => (s.id === stashItemId ? { ...s, quantity: qty - 1 } : s))
+            : prevStash.filter((s) => s.id !== stashItemId);
+        liveSessionRef.current.broadcast({
+          type: 'party_stash_sync',
+          senderId: liveSessionRef.current.senderId,
+          senderName: rawChar.name,
+          partyLootGp: campaign?.partyLootGp ?? 0,
+          partyStash: nextStash,
+        });
+      }
       persistCharacter((prev) => {
         const existingIdx = prev.items.findIndex(
           (it) => it.name === item.name && it.category === item.category
@@ -3801,6 +3899,26 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         };
         return { ...prev, partyStash: [newItem, ...stash] };
       });
+      if (liveSessionRef.current && liveStatus.role !== 'idle') {
+        const stash = campaign?.partyStash ?? [];
+        const previewItem: CompendiumEntity = {
+          id: `stash-${Date.now()}`,
+          name: clean,
+          source: 'Party Stash',
+          ruleset: rawChar.ruleset,
+          category,
+          quantity: Math.max(1, quantity),
+          activities: [],
+          entries: notes?.trim() ? [notes.trim()] : [],
+        };
+        liveSessionRef.current.broadcast({
+          type: 'party_stash_sync',
+          senderId: liveSessionRef.current.senderId,
+          senderName: rawChar.name,
+          partyLootGp: campaign?.partyLootGp ?? 0,
+          partyStash: [previewItem, ...stash],
+        });
+      }
       appendLog(`Added "${clean}" (×${Math.max(1, quantity)}) to Party Shared Inventory.`, 'info');
     },
     [rawChar.ruleset, persistCampaign, appendLog]

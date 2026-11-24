@@ -1,6 +1,6 @@
 import { RawCharacterState } from '../types/character';
 import { CombatEncounterState } from '../types/combat';
-import { Activity } from '../types/compendium';
+import { Activity, CompendiumEntity } from '../types/compendium';
 import { WeaponMastery } from '../types/core';
 
 export type LiveTableRole = 'idle' | 'host' | 'player';
@@ -114,6 +114,31 @@ export type LiveTableMessage =
       senderId: string;
       senderName: string;
       combatantId: string;
+    }
+  | {
+      type: 'party_stash_sync';
+      senderId: string;
+      senderName: string;
+      partyLootGp: number;
+      partyStash: CompendiumEntity[];
+    }
+  | {
+      type: 'target_heal';
+      senderId: string;
+      senderName: string;
+      targetIds: string[];
+      amount: number;
+      sourceName: string;
+    }
+  | {
+      type: 'target_buff';
+      senderId: string;
+      senderName: string;
+      targetIds: string[];
+      effectName: string;
+      sourceCombatantId: string;
+      isConcentration: boolean;
+      durationRounds?: number;
     };
 
 const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

@@ -116,6 +116,7 @@ export function ActionEconomyBoard({
   const [beyondTab, setBeyondTab] = useState<'actions' | 'spells' | 'inventory' | 'features'>('actions');
   const [filter, setFilter] = useState<'all' | 'attack' | 'save' | 'heal' | 'summon' | 'concentration'>('all');
   const [search, setSearch] = useState('');
+  const [spellbookFilter, setSpellbookFilter] = useState<'all' | 'prepared'>('all');
   const [upcastOverrides, setUpcastOverrides] = useState<Record<string, number>>({});
   const [smiteLevel, setSmiteLevel] = useState(1);
   const [pinnedIds, setPinnedIds] = useState<string[]>(() => {
@@ -557,9 +558,25 @@ export function ActionEconomyBoard({
               <div className="pill-row tabular">
                 <span className="badge">Save DC {sheet.spellcasting.saveDc.final}</span>
                 <span className="badge">Atk +{sheet.spellcasting.attackBonus.final}</span>
-                <span className="badge">
+                <span
+                  className="badge"
+                  style={
+                    sheet.spellcasting.maxPrepared !== null &&
+                    sheet.spellcasting.preparedCount > sheet.spellcasting.maxPrepared
+                      ? { color: 'var(--accent-amber)', borderColor: 'rgba(245, 158, 11, 0.5)' }
+                      : undefined
+                  }
+                  title={
+                    sheet.spellcasting.maxPrepared !== null &&
+                    sheet.spellcasting.preparedCount > sheet.spellcasting.maxPrepared
+                      ? 'Over your class prepared spell limit'
+                      : undefined
+                  }
+                >
                   {sheet.spellcasting.maxPrepared !== null
-                    ? `Prepared ${sheet.spellcasting.preparedCount}/${sheet.spellcasting.maxPrepared}`
+                    ? `Prepared ${sheet.spellcasting.preparedCount}/${sheet.spellcasting.maxPrepared}${
+                        sheet.spellcasting.preparedCount > sheet.spellcasting.maxPrepared ? ' ⚠' : ''
+                      }`
                     : `Prepared ${sheet.spellcasting.preparedCount}`}
                 </span>
                 {onOpenCompendium && (
@@ -631,6 +648,13 @@ export function ActionEconomyBoard({
             {(() => {
               const allSpells = (rawChar?.items ?? [])
                 .filter((i) => i.category === 'spell')
+                .filter(
+                  (i) =>
+                    spellbookFilter === 'all' ||
+                    Boolean(i.prepared) ||
+                    Boolean(i.alwaysPrepared) ||
+                    (i.spellLevel ?? 0) === 0
+                )
                 .sort((a, b) => (a.spellLevel ?? 0) - (b.spellLevel ?? 0) || a.name.localeCompare(b.name));
               if (allSpells.length === 0) {
                 return (
@@ -641,7 +665,27 @@ export function ActionEconomyBoard({
               }
               return (
                 <div className="forge-stack" style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-subtle)', gap: 4 }}>
-                  <div className="forge-section-label">SPELLBOOK &amp; PREPARATION ({allSpells.length})</div>
+                  <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+                    <div className="forge-section-label" style={{ marginBottom: 0 }}>
+                      SPELLBOOK &amp; PREPARATION ({allSpells.length})
+                    </div>
+                    <div className="pill-row">
+                      <button
+                        type="button"
+                        className={`pill ${spellbookFilter === 'all' ? 'active' : ''}`}
+                        onClick={() => setSpellbookFilter('all')}
+                      >
+                        All Known
+                      </button>
+                      <button
+                        type="button"
+                        className={`pill ${spellbookFilter === 'prepared' ? 'active' : ''}`}
+                        onClick={() => setSpellbookFilter('prepared')}
+                      >
+                        Prepared Only
+                      </button>
+                    </div>
+                  </div>
                   {allSpells.map((sp) => (
                     <div key={sp.id} className="forge-list-row" style={{ padding: '4px 6px' }}>
                       <div className="forge-row" style={{ gap: 6, flexWrap: 'wrap' }}>

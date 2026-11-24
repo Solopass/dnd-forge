@@ -12,6 +12,7 @@ interface CharacterBuilderDrawerProps {
   onClose: () => void;
   onUpdateCharacter: (updater: (prev: RawCharacterState) => RawCharacterState) => void;
   onApplySubclassGrants: (className: string, subclassName: string) => number;
+  onOpenLevelUp: () => void;
   onDuplicateCharacter: () => Promise<void>;
   onDeleteCharacter: () => Promise<void>;
   onLog: (msg: string, tone?: 'info' | 'warn') => void;
@@ -27,6 +28,7 @@ export function CharacterBuilderDrawer({
   onClose,
   onUpdateCharacter,
   onApplySubclassGrants,
+  onOpenLevelUp,
   onDuplicateCharacter,
   onDeleteCharacter,
   onLog,
@@ -188,7 +190,21 @@ export function CharacterBuilderDrawer({
         </div>
 
         <div className="card">
-          <div className="forge-section-label">CLASSES &amp; MULTICLASS PROGRESSION</div>
+          <div className="forge-row-between" style={{ marginBottom: 6 }}>
+            <div className="forge-section-label" style={{ marginBottom: 0 }}>
+              CLASSES &amp; MULTICLASS PROGRESSION
+            </div>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => {
+                onClose();
+                onOpenLevelUp();
+              }}
+            >
+              Guided Level-Up Wizard
+            </button>
+          </div>
           {character.classes.map((cls) => {
             const subclasses = getSubclassPresets(cls.className);
             const activeSub = subclasses.find(

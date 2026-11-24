@@ -1,0 +1,18 @@
+{
+  "name": "D&D Forge",
+  "short_name": "D&D Forge",
+  "description": "Local-first D&D 5e character sheet, combat tracker, battlemap, and P2P live table VTT.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

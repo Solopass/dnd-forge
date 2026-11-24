@@ -9,6 +9,8 @@ interface EquipmentSpellDrawerProps {
   items: CompendiumEntity[];
   attunementCount: number;
   strScore: number;
+  preparedCount: number;
+  maxPrepared: number | null;
   currency?: RawCharacterState['currency'];
   notes?: RawCharacterState['notes'];
   onClose: () => void;
@@ -29,6 +31,8 @@ export function EquipmentSpellDrawer({
   items,
   attunementCount,
   strScore,
+  preparedCount,
+  maxPrepared,
   currency,
   notes,
   onClose,
@@ -153,10 +157,15 @@ export function EquipmentSpellDrawer({
 
       {tab === 'gear' && (
         <div className="forge-stack">
-          <div className="forge-row-between forge-muted tabular" style={{ fontSize: 11 }}>
+          <div className="forge-row-between forge-muted tabular" style={{ fontSize: 11, flexWrap: 'wrap', gap: 6 }}>
             <span>
               Carried Weight: <strong>{totalWeight.toFixed(1)}</strong> / {carryCapacity} lb
             </span>
+            {maxPrepared !== null && (
+              <span style={{ color: preparedCount > maxPrepared ? 'var(--accent-amber)' : 'var(--text-secondary)' }}>
+                Prepared Spells: <strong>{preparedCount}</strong> / {maxPrepared}
+              </span>
+            )}
             <span>
               Purse: <strong>{totalGpValue.toFixed(2)} gp</strong>
             </span>
@@ -214,13 +223,19 @@ export function EquipmentSpellDrawer({
                   )}
 
                   {item.category === 'spell' && (item.spellLevel ?? 0) > 0 && (
-                    <button
-                      type="button"
-                      className={`pill ${item.prepared !== false ? 'active' : ''}`}
-                      onClick={() => onTogglePrepared(item.id)}
-                    >
-                      {item.prepared !== false ? 'Prepared' : 'Unprepared'}
-                    </button>
+                    item.alwaysPrepared ? (
+                      <span className="pill active" title="Always prepared via subclass">
+                        Always Prepared
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        className={`pill ${item.prepared !== false ? 'active' : ''}`}
+                        onClick={() => onTogglePrepared(item.id)}
+                      >
+                        {item.prepared !== false ? 'Prepared' : 'Unprepared'}
+                      </button>
+                    )
                   )}
 
                   {item.requiresAttunement && (

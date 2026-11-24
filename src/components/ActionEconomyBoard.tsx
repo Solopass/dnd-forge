@@ -8,7 +8,7 @@ interface ActionEconomyBoardProps {
   sheet: ResolvedCharacterSheet;
   rollMode: RollMode;
   onChangeRollMode: (mode: RollMode) => void;
-  onTriggerActivity: (activity: ResolvedActivity, slotLevelOverride?: number) => void;
+  onTriggerActivity: (activity: ResolvedActivity, slotLevelOverride?: number, asRitual?: boolean) => void;
   onRollInlineExpression: (label: string, expression: string) => void;
 }
 
@@ -195,10 +195,18 @@ export function ActionEconomyBoard({
                         ({act.parentItemName})
                       </span>
                       {act.concentration && <span className="conc-badge">CONC</span>}
+                      {act.ritual && <span className="ritual-badge">RITUAL</span>}
                       {act.resourceCost && (
                         <span className="cost-badge">
                           {formatResourceBadge(act.resourceCost.poolId)}
                         </span>
+                      )}
+                      {act.spellMeta && (
+                        <div className="forge-muted" style={{ fontSize: 10 }}>
+                          {[act.spellMeta.castingTime, act.spellMeta.range, act.spellMeta.duration, act.spellMeta.components]
+                            .filter(Boolean)
+                            .join(' • ')}
+                        </div>
                       )}
                       {desc && (
                         <div className="forge-muted">
@@ -208,6 +216,16 @@ export function ActionEconomyBoard({
                     </div>
 
                     <div className="forge-row">
+                      {act.ritual && (
+                        <button
+                          type="button"
+                          className="btn forge-nowrap"
+                          title="Cast as Ritual (10 min, spends no spell slot)"
+                          onClick={() => onTriggerActivity(act, undefined, true)}
+                        >
+                          Ritual
+                        </button>
+                      )}
                       {higherSlots.length > 1 && (
                         <select
                           aria-label={`Cast level for ${act.name}`}

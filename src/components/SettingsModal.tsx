@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { isSoundEnabled, playTableSound, setSoundEnabled } from '../engine/sound';
 import { ModalDialog } from './ModalDialog';
 
 type SchemeChoice = 'system' | 'light' | 'dark';
@@ -7,6 +8,7 @@ interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onExportBackup: () => Promise<void>;
+  onExportActiveCharacter: () => void;
 }
 
 function readStoredScheme(): SchemeChoice {
@@ -27,9 +29,15 @@ function readStoredContrast(): boolean {
   }
 }
 
-export function SettingsModal({ isOpen, onClose, onExportBackup }: SettingsModalProps) {
+export function SettingsModal({
+  isOpen,
+  onClose,
+  onExportBackup,
+  onExportActiveCharacter,
+}: SettingsModalProps) {
   const [scheme, setScheme] = useState<SchemeChoice>(readStoredScheme);
   const [highContrast, setHighContrast] = useState<boolean>(readStoredContrast);
+  const [soundOn, setSoundOn] = useState<boolean>(isSoundEnabled);
   const [systemIsDark, setSystemIsDark] = useState<boolean>(() =>
     typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)').matches : true
   );
@@ -128,6 +136,25 @@ export function SettingsModal({ isOpen, onClose, onExportBackup }: SettingsModal
               {highContrast ? 'Enabled' : 'Disabled'}
             </button>
           </div>
+          <div className="forge-row-between">
+            <div>
+              <strong>Dice Roll Sound Effects</strong>
+              <div className="forge-muted">Plays a subtle synthesized chime on rolls, crits, and heals.</div>
+            </div>
+            <button
+              type="button"
+              className={`pill ${soundOn ? 'active' : ''}`}
+              aria-pressed={soundOn}
+              onClick={() => {
+                const next = !soundOn;
+                setSoundOn(next);
+                setSoundEnabled(next);
+                if (next) playTableSound('roll', true);
+              }}
+            >
+              {soundOn ? 'Enabled' : 'Muted'}
+            </button>
+          </div>
         </div>
 
         <div className="card forge-stack">
@@ -142,6 +169,13 @@ export function SettingsModal({ isOpen, onClose, onExportBackup }: SettingsModal
               }}
             >
               Print / Save Character Sheet PDF
+            </button>
+            <button
+              type="button"
+              className="btn"
+              onClick={onExportActiveCharacter}
+            >
+              Export Active Character (.json)
             </button>
             <button
               type="button"

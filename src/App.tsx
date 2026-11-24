@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './styles/tokens.css';
 import './styles/layout.css';
 import { useSheetStore } from './state/useSheetStore';
@@ -14,6 +14,9 @@ import { EquipmentSpellDrawer } from './components/EquipmentSpellDrawer';
 import { NewCharacterModal } from './components/NewCharacterModal';
 import { BattlemapModal } from './components/BattlemapModal';
 import { SettingsModal } from './components/SettingsModal';
+import { LevelUpModal } from './components/LevelUpModal';
+import { LiveTableModal } from './components/LiveTableModal';
+import { ToastStack } from './components/ToastStack';
 import { evaluateDiceExpression } from './engine/dice';
 import { exportFullBundle } from './storage/db';
 import { RawCharacterState } from './types/character';
@@ -170,18 +173,52 @@ export function App() {
   const [newCharOpen, setNewCharOpen] = useState(false);
   const [battlemapOpen, setBattlemapOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [levelUpOpen, setLevelUpOpen] = useState(false);
+  const [liveTableOpen, setLiveTableOpen] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'vitals' | 'actions' | 'combat'>('vitals');
   const [consoleSize, setConsoleSize] = useState<'normal' | 'expanded' | 'collapsed'>('normal');
+  const mobileTablistRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setPaletteOpen((open) => !open);
+        return;
+      }
+      const target = e.target as HTMLElement | null;
+      const isEditable =
+        target?.tagName === 'INPUT' ||
+        target?.tagName === 'TEXTAREA' ||
+        target?.tagName === 'SELECT' ||
+        Boolean(target?.isContentEditable);
+      if (isEditable) return;
+
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        store.undo();
+      } else if (
+        (e.ctrlKey || e.metaKey) &&
+        (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))
+      ) {
+        e.preventDefault();
+        store.redo();
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [store]);
+
+  const handleExportActiveCharacter = () => {
+    const blob = new Blob([JSON.stringify(store.rawChar, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${store.rawChar.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'character'}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    store.appendLog(`Exported single character "${store.rawChar.name}" (.json).`, 'info');
+  };
 
   const handleExport = async () => {
     const bundle = await exportFullBundle();
@@ -228,9 +265,30 @@ export function App() {
           </button>
         </div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          <button
+            type="button"
+            className="btn"
+            disabled={!store.canUndo}
+            onClick={store.undo}
+            title="Undo last sheet or combat change (Ctrl+Z)"
+          >
+            Undo
+          </button>
+          <button
+            type="button"
+            className="btn"
+            disabled={!store.canRedo}
+            onClick={store.redo}
+            title="Redo change (Ctrl+Y)"
+          >
+            Redo
+          </button>
+          <button type="button" className="btn btn-primary" onClick={() => setLevelUpOpen(true)}>
+            Level Up
+          </button>
           <button type="button" className="btn" onClick={() => setBuilderOpen(true)}>
-            Build / Level Up
+            Build / Stats
           </button>
           <button type="button" className="btn" onClick={() => setGearOpen(true)}>
             Gear &amp; Spells ({store.resolvedSheet.attunementCount}/3 Attuned)
@@ -241,15 +299,59 @@ export function App() {
           <button type="button" className="btn" onClick={() => setBattlemapOpen(true)}>
             Battlemap
           </button>
+          <button
+            type="button"
+            className={`btn ${store.liveStatus.role !== 'idle' ? 'btn-primary' : ''}`}
+            onClick={() => setLiveTableOpen(true)}
+          >
+            Live Table{store.liveStatus.role !== 'idle' ? ` (${store.liveStatus.peers.length + 1})` : ''}
+          </button>
           <button type="button" className="btn" onClick={() => setSettingsOpen(true)}>
             Theme / Print
           </button>
         </div>
       </header>
 
-      <div className="workspace-grid">
+      <div className="mobile-tab-bar" role="tablist" aria-label="Workspace panels" ref={mobileTablistRef}>
+        {(
+          [
+            { key: 'vitals', label: 'Vitals & Skills' },
+            { key: 'actions', label: 'Actions & Spells' },
+            { key: 'combat', label: 'Combat & Encounter' },
+          ] as const
+        ).map((tab, idx, arr) => (
+          <button
+            key={tab.key}
+            type="button"
+            role="tab"
+            id={`tab-${tab.key}`}
+            className="mobile-tab"
+            aria-selected={mobileTab === tab.key}
+            tabIndex={mobileTab === tab.key ? 0 : -1}
+            onClick={() => setMobileTab(tab.key)}
+            onKeyDown={(e) => {
+              let nextIdx: number | null = null;
+              if (e.key === 'ArrowRight') nextIdx = (idx + 1) % arr.length;
+              else if (e.key === 'ArrowLeft') nextIdx = (idx - 1 + arr.length) % arr.length;
+              else if (e.key === 'Home') nextIdx = 0;
+              else if (e.key === 'End') nextIdx = arr.length - 1;
+              if (nextIdx !== null && arr[nextIdx]) {
+                e.preventDefault();
+                setMobileTab(arr[nextIdx]!.key);
+                const buttons = mobileTablistRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
+                buttons?.[nextIdx]?.focus();
+              }
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="workspace-grid" data-active-tab={mobileTab}>
         <VitalsColumn
           sheet={store.resolvedSheet}
+          isDruid={store.rawChar.classes.some((c) => c.className.toLowerCase() === 'druid')}
           onAdjustHp={store.adjustHp}
           onSetTempHp={store.setTempHp}
           onSetExhaustion={store.setExhaustion}
@@ -257,6 +359,8 @@ export function App() {
           onRollDeathSave={store.rollDeathSave}
           onToggleInspiration={store.toggleInspiration}
           onToggleDefense={store.toggleDefense}
+          onEnterWildShape={store.enterWildShape}
+          onRevertWildShape={store.revertWildShape}
           onAdjustResource={store.adjustResourcePool}
           onAddResource={store.addCustomResourcePool}
           onSetAcOverride={(val) => store.setStatOverride('ac', val)}
@@ -332,6 +436,7 @@ export function App() {
         onClose={() => setBuilderOpen(false)}
         onUpdateCharacter={store.persistCharacter}
         onApplySubclassGrants={store.applySubclassGrants}
+        onOpenLevelUp={() => setLevelUpOpen(true)}
         onDuplicateCharacter={store.duplicateCharacter}
         onDeleteCharacter={() => store.deleteCharacter(store.rawChar.id)}
         onLog={store.appendLog}
@@ -343,11 +448,37 @@ export function App() {
         onCreate={store.createCharacterFromPreset}
       />
 
+      <LevelUpModal
+        isOpen={levelUpOpen}
+        character={store.rawChar}
+        onClose={() => setLevelUpOpen(false)}
+        onApplyLevelUp={store.applyLevelUpPlan}
+      />
+
+      <LiveTableModal
+        isOpen={liveTableOpen}
+        onClose={() => setLiveTableOpen(false)}
+        activeCharacter={store.rawChar}
+        liveStatus={store.liveStatus}
+        onHostLocalRoom={store.hostLocalTable}
+        onJoinLocalRoom={store.joinLocalTable}
+        onCreateWebRtcInvite={store.createWebRtcInvite}
+        onAcceptWebRtcInvite={store.acceptWebRtcInvite}
+        onCompleteWebRtcLink={store.completeWebRtcLink}
+        onDisconnect={store.disconnectLiveTable}
+        onPushEncounter={store.pushEncounterToPeers}
+        onShareCharacterToPeers={store.shareActiveCharacterToPeers}
+        onImportCharacter={store.importSingleCharacter}
+        onLog={store.appendLog}
+      />
+
       <EquipmentSpellDrawer
         isOpen={gearOpen}
         items={store.rawChar.items}
         attunementCount={store.resolvedSheet.attunementCount}
         strScore={store.resolvedSheet.abilities.str.score.final}
+        preparedCount={store.resolvedSheet.spellcasting.preparedCount}
+        maxPrepared={store.resolvedSheet.spellcasting.maxPrepared}
         currency={store.rawChar.currency}
         notes={store.rawChar.notes}
         onClose={() => setGearOpen(false)}
@@ -376,6 +507,22 @@ export function App() {
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         onExportBackup={handleExport}
+        onExportActiveCharacter={handleExportActiveCharacter}
+      />
+
+      <ToastStack
+        toasts={store.toasts}
+        suppressToasts={
+          paletteOpen ||
+          builderOpen ||
+          gearOpen ||
+          newCharOpen ||
+          battlemapOpen ||
+          settingsOpen ||
+          levelUpOpen ||
+          liveTableOpen
+        }
+        onDismiss={store.dismissToast}
       />
     </div>
   );

@@ -45,10 +45,73 @@
   min-width: 0;
 }
 
+.mobile-tab-bar {
+  display: none;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0 10px;
+  gap: 4px;
+}
+
+.mobile-tab {
+  position: relative;
+  flex: none;
+  background: transparent;
+  border: 0;
+  color: var(--text-secondary);
+  padding: 8px 12px;
+  min-block-size: 36px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.mobile-tab[aria-selected="true"] {
+  color: var(--text-primary);
+}
+
+.mobile-tab[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  border-block-end: 3px solid var(--accent-blue);
+}
+
 @media (max-width: 1080px) {
+  .app-shell {
+    grid-template-rows: auto auto 1fr 140px;
+  }
+
+  .app-shell.console-collapsed {
+    grid-template-rows: auto auto 1fr auto;
+  }
+
+  .app-shell.console-expanded {
+    grid-template-rows: auto auto 1fr 220px;
+  }
+
+  .mobile-tab-bar {
+    display: flex;
+  }
+
   .workspace-grid {
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: 1fr;
     overflow-y: auto;
+  }
+
+  .workspace-grid[data-active-tab="vitals"] > aside[aria-label="Encounter and Linked Summons"],
+  .workspace-grid[data-active-tab="vitals"] > main {
+    display: none;
+  }
+
+  .workspace-grid[data-active-tab="actions"] > aside {
+    display: none;
+  }
+
+  .workspace-grid[data-active-tab="combat"] > aside[aria-label="Character Vitals"],
+  .workspace-grid[data-active-tab="combat"] > main {
+    display: none;
   }
 
   .pane {
@@ -610,6 +673,109 @@ button.stat-tile:hover {
   max-height: 90dvh;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.ritual-badge {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent-green);
+  background: rgba(63, 185, 80, 0.12);
+  border: 1px solid rgba(63, 185, 80, 0.4);
+  border-radius: 3px;
+  padding: 0 4px;
+}
+
+.wild-shape-banner {
+  margin-top: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(63, 185, 80, 0.45);
+  background: rgba(63, 185, 80, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toast-region {
+  position: fixed;
+  top: 0;
+  right: 0;
+  pointer-events: none;
+}
+
+.toast-card[popover] {
+  position: fixed;
+  inset: auto;
+  top: 56px;
+  right: 14px;
+  margin: 0;
+  max-width: min(360px, 90dvw);
+  pointer-events: auto;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--accent-blue);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  font-size: 12px;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 150ms ease, transform 150ms ease, display 150ms ease;
+  transition-behavior: allow-discrete;
+}
+
+.toast-card[popover]:is(:popover-open, .\:popover-open) {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast-card[popover]:nth-of-type(2) {
+  top: 112px;
+}
+
+.toast-card[popover]:nth-of-type(3) {
+  top: 168px;
+}
+
+.toast-card.toast-crit {
+  border-left-color: var(--accent-green);
+}
+
+.toast-card.toast-warn {
+  border-left-color: var(--accent-amber);
+}
+
+@supports not selector(:popover-open) {
+  .toast-card[popover]:not(.\:popover-open) {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-card[popover] {
+    transition: none;
+    transform: none;
+  }
+}
+
 .battlemap-svg {
   width: 100%;
   height: auto;
@@ -639,6 +805,8 @@ button.stat-tile:hover {
   }
 
   .topbar,
+  .mobile-tab-bar,
+  .toast-region,
   .status-console-shell,
   aside[aria-label="Encounter and Linked Summons"],
   button,

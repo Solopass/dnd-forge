@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { ResolvedCharacterSheet } from '../types/character';
+import { ResolvedCharacterSheet, WildShapeForm } from '../types/character';
 import { AbilityKey, RecoveryTrigger, SkillKey, STANDARD_CONDITIONS } from '../types/core';
 import { SKILL_ABILITY_MAP } from '../engine/rules-math';
+import { WILD_SHAPE_BEAST_FORMS } from '../engine/srd-packs';
 
 interface VitalsColumnProps {
   sheet: ResolvedCharacterSheet;
+  isDruid?: boolean;
   onAdjustHp: (delta: number) => void;
   onSetTempHp: (temp: number) => void;
   onSetExhaustion: (level: number) => void;
@@ -12,6 +14,8 @@ interface VitalsColumnProps {
   onRollDeathSave: () => void;
   onToggleInspiration: () => void;
   onToggleDefense: (kind: 'resistances' | 'immunities' | 'vulnerabilities', damageType: string) => void;
+  onEnterWildShape: (form: WildShapeForm) => void;
+  onRevertWildShape: () => void;
   onAdjustResource: (poolId: string, delta: number) => void;
   onAddResource: (name: string, max: number, recovery: RecoveryTrigger) => void;
   onSetAcOverride: (val: number | null) => void;
@@ -42,6 +46,7 @@ function getHpBarClass(current: number, max: number): string {
 
 export function VitalsColumn({
   sheet,
+  isDruid,
   onAdjustHp,
   onSetTempHp,
   onSetExhaustion,
@@ -49,6 +54,8 @@ export function VitalsColumn({
   onRollDeathSave,
   onToggleInspiration,
   onToggleDefense,
+  onEnterWildShape,
+  onRevertWildShape,
   onAdjustResource,
   onAddResource,
   onSetAcOverride,
@@ -66,6 +73,8 @@ export function VitalsColumn({
   const [skillFilter, setSkillFilter] = useState('');
   const [selectedCondition, setSelectedCondition] = useState<string>(STANDARD_CONDITIONS[0]);
   const [showDefenseEditor, setShowDefenseEditor] = useState(false);
+  const [showWildShapePicker, setShowWildShapePicker] = useState(false);
+  const [selectedBeastId, setSelectedBeastId] = useState(WILD_SHAPE_BEAST_FORMS[0]?.id ?? '');
   const [defenseKind, setDefenseKind] = useState<'resistances' | 'immunities' | 'vulnerabilities'>('resistances');
   const [defenseType, setDefenseType] = useState('fire');
   const [newPoolName, setNewPoolName] = useState('');
@@ -349,7 +358,62 @@ export function VitalsColumn({
           >
             Defenses
           </button>
+          <button
+            type="button"
+            className={`btn ${sheet.wildShapeForm || showWildShapePicker ? 'btn-primary' : ''}`}
+            onClick={() => setShowWildShapePicker((v) => !v)}
+            title="Shift into Wild Shape / Polymorph beast form"
+          >
+            Wild Shape
+          </button>
         </div>
+
+        {sheet.wildShapeForm && (
+          <div className="wild-shape-banner">
+            <div className="forge-row-between">
+              <strong className="tabular">
+                Wild Shape: {sheet.wildShapeForm.name} • {sheet.wildShapeForm.hp.current}/{sheet.wildShapeForm.hp.max} HP
+              </strong>
+              <button type="button" className="btn btn-danger" onClick={onRevertWildShape}>
+                Revert Form
+              </button>
+            </div>
+            <div className="forge-muted" style={{ fontSize: 11 }}>
+              AC {sheet.wildShapeForm.ac} • Speed {sheet.wildShapeForm.speed} ft • Damage hits beast HP first
+            </div>
+          </div>
+        )}
+
+        {(showWildShapePicker || (isDruid && !sheet.wildShapeForm && showWildShapePicker)) && (
+          <div className="forge-row" style={{ marginTop: 6, flexWrap: 'wrap' }}>
+            <select
+              aria-label="Wild Shape beast form"
+              className="forge-input"
+              value={selectedBeastId}
+              onChange={(e) => setSelectedBeastId(e.target.value)}
+              style={{ flex: 1, padding: '3px 6px', fontSize: 11 }}
+            >
+              {WILD_SHAPE_BEAST_FORMS.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name} (AC {b.ac}, HP {b.hp.max}, {b.speed}ft)
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => {
+                const chosen = WILD_SHAPE_BEAST_FORMS.find((b) => b.id === selectedBeastId);
+                if (chosen) {
+                  onEnterWildShape(chosen);
+                  setShowWildShapePicker(false);
+                }
+              }}
+            >
+              Shift
+            </button>
+          </div>
+        )}
 
         {(sheet.defenses.resistances.length > 0 ||
           sheet.defenses.immunities.length > 0 ||

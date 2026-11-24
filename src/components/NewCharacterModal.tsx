@@ -2,6 +2,12 @@ import { FormEvent, useRef, useState } from 'react';
 import { BACKGROUND_PRESETS, SPECIES_PRESETS } from '../engine/backgrounds';
 import { CLASS_DEFINITIONS, NewCharacterPresetInput } from '../engine/classes';
 import { evaluateDiceExpression } from '../engine/dice';
+import {
+  canAdjustPointBuy,
+  computePointBuyTotal,
+  DEFAULT_POINT_BUY_SCORES,
+  POINT_BUY_BUDGET,
+} from '../engine/point-buy';
 import { AbilityKey, Ruleset } from '../types/core';
 import { ModalDialog } from './ModalDialog';
 
@@ -20,7 +26,10 @@ export function NewCharacterModal({ isOpen, onClose, onCreate }: NewCharacterMod
   const [backgroundName, setBackgroundName] = useState('Outlander');
   const [ruleset, setRuleset] = useState<Ruleset>('2014');
   const [level, setLevel] = useState(1);
-  const [abilityMode, setAbilityMode] = useState<'standard' | 'rolled'>('standard');
+  const [abilityMode, setAbilityMode] = useState<'standard' | 'point_buy' | 'rolled'>('standard');
+  const [pointBuyScores, setPointBuyScores] = useState<Record<AbilityKey, number>>({
+    ...DEFAULT_POINT_BUY_SCORES,
+  });
   const [rolledScores, setRolledScores] = useState<Record<AbilityKey, number>>({
     str: 15,
     dex: 14,
@@ -32,7 +41,14 @@ export function NewCharacterModal({ isOpen, onClose, onCreate }: NewCharacterMod
   const isSubmittingRef = useRef(false);
 
   const selectedClass = CLASS_DEFINITIONS.find((c) => c.className === className) ?? CLASS_DEFINITIONS[0]!;
-  const activeAbilities = abilityMode === 'standard' ? selectedClass.recommendedArray : rolledScores;
+  const activeAbilities =
+    abilityMode === 'standard'
+      ? selectedClass.recommendedArray
+      : abilityMode === 'point_buy'
+      ? pointBuyScores
+      : rolledScores;
+  const pointBuyUsed = computePointBuyTotal(pointBuyScores);
+  const pointBuyRemaining = POINT_BUY_BUDGET - pointBuyUsed;
 
   const rollAbilities = () => {
     const next: Record<AbilityKey, number> = {
@@ -175,6 +191,13 @@ export function NewCharacterModal({ isOpen, onClose, onCreate }: NewCharacterMod
               </button>
               <button
                 type="button"
+                className={`pill ${abilityMode === 'point_buy' ? 'active' : ''}`}
+                onClick={() => setAbilityMode('point_buy')}
+              >
+                Point Buy (27 pts)
+              </button>
+              <button
+                type="button"
                 className={`pill ${abilityMode === 'rolled' ? 'active' : ''}`}
                 onClick={rollAbilities}
               >
@@ -183,24 +206,72 @@ export function NewCharacterModal({ isOpen, onClose, onCreate }: NewCharacterMod
             </div>
           </div>
 
+          {abilityMode === 'point_buy' && (
+            <div className="forge-row-between">
+              <span className="tabular" style={{ fontSize: 12, color: pointBuyRemaining === 0 ? 'var(--accent-green)' : 'var(--accent-blue)' }}>
+                Points Remaining: <strong>{pointBuyRemaining}</strong> / {POINT_BUY_BUDGET}
+              </span>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setPointBuyScores({ ...DEFAULT_POINT_BUY_SCORES })}
+              >
+                Reset (8s)
+              </button>
+            </div>
+          )}
+
           <div className="forge-ability-grid-6">
-            {ABILITY_ORDER.map((key) => (
-              <label key={key} className="forge-field">
-                <span className="forge-label">{key.toUpperCase()}</span>
-                <input
-                  type="number"
-                  min={3}
-                  max={20}
-                  value={activeAbilities[key]}
-                  onChange={(e) => {
-                    const val = Math.max(3, Math.min(20, Number.parseInt(e.target.value, 10) || 10));
-                    setRolledScores({ ...activeAbilities, [key]: val });
-                    setAbilityMode('rolled');
-                  }}
-                  className="forge-input tabular"
-                />
-              </label>
-            ))}
+            {ABILITY_ORDER.map((key) =>
+              abilityMode === 'point_buy' ? (
+                <div key={key} className="forge-field card" style={{ padding: 6, alignItems: 'center' }}>
+                  <span className="forge-label">{key.toUpperCase()}</span>
+                  <div className="forge-row">
+                    <button
+                      type="button"
+                      className="btn"
+                      aria-label={`Decrease ${key.toUpperCase()} point buy`}
+                      disabled={!canAdjustPointBuy(pointBuyScores, key, -1)}
+                      onClick={() =>
+                        setPointBuyScores((prev) => ({ ...prev, [key]: prev[key] - 1 }))
+                      }
+                    >
+                      -
+                    </button>
+                    <strong className="tabular" style={{ minWidth: 20, textAlign: 'center' }}>
+                      {pointBuyScores[key]}
+                    </strong>
+                    <button
+                      type="button"
+                      className="btn"
+                      aria-label={`Increase ${key.toUpperCase()} point buy`}
+                      disabled={!canAdjustPointBuy(pointBuyScores, key, 1)}
+                      onClick={() =>
+                        setPointBuyScores((prev) => ({ ...prev, [key]: prev[key] + 1 }))
+                      }
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <label key={key} className="forge-field">
+                  <span className="forge-label">{key.toUpperCase()}</span>
+                  <input
+                    type="number"
+                    min={3}
+                    max={20}
+                    value={activeAbilities[key]}
+                    onChange={(e) => {
+                      const val = Math.max(3, Math.min(20, Number.parseInt(e.target.value, 10) || 10));
+                      setRolledScores({ ...activeAbilities, [key]: val });
+                      setAbilityMode('rolled');
+                    }}
+                    className="forge-input tabular"
+                  />
+                </label>
+              )
+            )}
           </div>
 
           <div className="forge-muted">

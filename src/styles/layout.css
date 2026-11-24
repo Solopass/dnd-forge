@@ -1720,3 +1720,97 @@ button.stat-tile:hover {
   background: var(--bg-surface);
   padding: 8px;
 }
+
+
+/* ============================================================================
+   UNIFIED COMMAND CONDENSED VITALS, ABILITY MATRIX & INLINE RESOURCE POOLS
+   ============================================================================ */
+
+.unified-vitals-pane {
+  gap: 8px;
+  padding: 10px;
+}
+
+.ability-matrix {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ability-matrix-head,
+.ability-matrix-row {
+  display: grid;
+  grid-template-columns: 44px 38px 1fr 1fr;
+  align-items: center;
+  gap: 5px;
+}
+
+.ability-matrix-head {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 0 2px 3px;
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: center;
+}
+
+.ability-matrix-head > :first-child {
+  text-align: start;
+}
+
+.ability-matrix-row {
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  transition: background-color 120ms ease;
+}
+
+.ability-matrix-row:hover {
+  background: color-mix(in oklab, var(--accent-brand) 7%, transparent);
+}
+
+.ability-matrix-row .btn {
+  min-block-size: 26px;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.resource-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.resource-slot-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+}
+
+.resource-inline-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--border-subtle) 65%, transparent);
+}
+
+.resource-inline-row:last-child {
+  border-bottom: 0;
+}
+
+.resource-inline-name {
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

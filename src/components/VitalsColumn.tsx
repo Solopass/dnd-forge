@@ -84,14 +84,23 @@ export function VitalsColumn({
   const [newPoolName, setNewPoolName] = useState('');
   const [newPoolMax, setNewPoolMax] = useState('3');
   const [showHpExtras, setShowHpExtras] = useState(false);
+  const [showAddPool, setShowAddPool] = useState(false);
+  const [proficientOnly, setProficientOnly] = useState(false);
 
+  const isUnified = layoutVariant === 'unified';
   const initSign = sheet.initiative.final >= 0 ? '+' : '';
   const hpPct = sheet.hp.max > 0 ? Math.max(0, Math.min(100, (sheet.hp.current / sheet.hp.max) * 100)) : 0;
   const exhaustionCheckPenalty = sheet.ruleset === '2024' ? -2 * sheet.exhaustion : 0;
 
-  const filteredSkills = ALL_SKILLS.filter((sk) =>
-    formatSkillLabel(sk).toLowerCase().includes(skillFilter.trim().toLowerCase())
-  );
+  const filteredSkills = ALL_SKILLS.filter((sk) => {
+    if (!formatSkillLabel(sk).toLowerCase().includes(skillFilter.trim().toLowerCase())) {
+      return false;
+    }
+    if (proficientOnly) {
+      return sheet.skills[sk].modifiers.some((m) => m.id.startsWith('skill-prof-'));
+    }
+    return true;
+  });
 
   const applyCustomHp = (sign: 1 | -1, multiplier = 1) => {
     const rawAmount = Math.abs(Number.parseInt(hpDeltaInput, 10));
@@ -105,7 +114,7 @@ export function VitalsColumn({
   };
 
   return (
-    <aside className="pane" aria-label="Character Vitals">
+    <aside className={`pane ${isUnified ? 'unified-vitals-pane' : ''}`} aria-label="Character Vitals">
       <div className="card">
         <div className="forge-row-between" style={{ gap: 6, flexWrap: 'wrap' }}>
           <div>
@@ -228,16 +237,27 @@ export function VitalsColumn({
           </div>
         )}
 
-        <div className="forge-row-between" style={{ marginTop: 10 }}>
+        <div className="forge-row-between" style={{ marginTop: 8, flexWrap: 'wrap', gap: 6 }}>
           <span className="tabular">
             HP <strong>{sheet.hp.current}</strong> / {sheet.hp.max}
             {sheet.hp.temp > 0 ? ` (+${sheet.hp.temp} tmp)` : ''}
           </span>
-          <div className="forge-row">
-            <button type="button" className="btn" onClick={() => onAdjustHp(-5)}>-5</button>
-            <button type="button" className="btn" onClick={() => onAdjustHp(-1)}>-1</button>
-            <button type="button" className="btn" onClick={() => onAdjustHp(1)}>+1</button>
-            <button type="button" className="btn" onClick={() => onAdjustHp(5)}>+5</button>
+          <div className="forge-row" style={{ gap: 4 }}>
+            <button type="button" className="btn" aria-label="Damage 5 HP" onClick={() => onAdjustHp(-5)}>-5</button>
+            <button type="button" className="btn" aria-label="Damage 1 HP" onClick={() => onAdjustHp(-1)}>-1</button>
+            <button type="button" className="btn" aria-label="Heal 1 HP" onClick={() => onAdjustHp(1)}>+1</button>
+            <button type="button" className="btn" aria-label="Heal 5 HP" onClick={() => onAdjustHp(5)}>+5</button>
+            {isUnified && (
+              <button
+                type="button"
+                className={`pill ${showHpExtras ? 'active' : ''}`}
+                aria-expanded={showHpExtras}
+                onClick={() => setShowHpExtras((v) => !v)}
+                title="Exact HP, Temp HP, Resistance/Vulnerability & Hit Die"
+              >
+                ±
+              </button>
+            )}
           </div>
         </div>
 
@@ -248,35 +268,57 @@ export function VitalsColumn({
           />
         </div>
 
-        <div className="forge-row" style={{ marginTop: 8, flexWrap: 'wrap' }}>
-          <input
-            aria-label="Exact damage or healing amount"
-            type="number"
-            min={1}
-            placeholder="Amt"
-            value={hpDeltaInput}
-            onChange={(e) => setHpDeltaInput(e.target.value)}
-            className="forge-input tabular"
-            style={{ width: 64, padding: '3px 6px' }}
-          />
-          <button type="button" className="btn btn-danger" onClick={() => applyCustomHp(-1)}>
-            Dmg
-          </button>
-          <button type="button" className="btn btn-primary" onClick={() => applyCustomHp(1)}>
-            Heal
-          </button>
-          <button
-            type="button"
-            className={`pill ${showHpExtras ? 'active' : ''}`}
-            onClick={() => setShowHpExtras((v) => !v)}
-            title="Half/Double damage and Temp HP"
-          >
-            Temp / ½×2
-          </button>
-        </div>
+        {!isUnified && (
+          <div className="forge-row" style={{ marginTop: 8, flexWrap: 'wrap' }}>
+            <input
+              aria-label="Exact damage or healing amount"
+              type="number"
+              min={1}
+              placeholder="Amt"
+              value={hpDeltaInput}
+              onChange={(e) => setHpDeltaInput(e.target.value)}
+              className="forge-input tabular"
+              style={{ width: 64, padding: '3px 6px' }}
+            />
+            <button type="button" className="btn btn-danger" onClick={() => applyCustomHp(-1)}>
+              Dmg
+            </button>
+            <button type="button" className="btn btn-primary" onClick={() => applyCustomHp(1)}>
+              Heal
+            </button>
+            <button
+              type="button"
+              className={`pill ${showHpExtras ? 'active' : ''}`}
+              onClick={() => setShowHpExtras((v) => !v)}
+              title="Half/Double damage and Temp HP"
+            >
+              Temp / ½×2
+            </button>
+          </div>
+        )}
 
         {showHpExtras && (
           <div className="forge-row" style={{ marginTop: 6, flexWrap: 'wrap' }}>
+            {isUnified && (
+              <>
+                <input
+                  aria-label="Exact damage or healing amount"
+                  type="number"
+                  min={1}
+                  placeholder="Amt"
+                  value={hpDeltaInput}
+                  onChange={(e) => setHpDeltaInput(e.target.value)}
+                  className="forge-input tabular"
+                  style={{ width: 56, padding: '3px 6px' }}
+                />
+                <button type="button" className="btn btn-danger" onClick={() => applyCustomHp(-1)}>
+                  Dmg
+                </button>
+                <button type="button" className="btn btn-primary" onClick={() => applyCustomHp(1)}>
+                  Heal
+                </button>
+              </>
+            )}
             <button
               type="button"
               className="btn"
@@ -300,7 +342,7 @@ export function VitalsColumn({
               value={tempHpInput}
               onChange={(e) => setTempHpInput(e.target.value)}
               className="forge-input tabular"
-              style={{ width: 64, padding: '3px 6px' }}
+              style={{ width: 60, padding: '3px 6px' }}
             />
             <button
               type="button"
@@ -313,6 +355,11 @@ export function VitalsColumn({
             >
               Set Temp
             </button>
+            {isUnified && (
+              <button type="button" className="btn" onClick={onSpendHitDie}>
+                Hit Die
+              </button>
+            )}
           </div>
         )}
 
@@ -351,17 +398,19 @@ export function VitalsColumn({
           </div>
         )}
 
-        <div className="forge-row" style={{ marginTop: 8 }}>
-          <button type="button" className="btn" style={{ flex: 1 }} onClick={() => onTakeRest('short_rest')}>
-            Short Rest
-          </button>
-          <button type="button" className="btn" style={{ flex: 1 }} onClick={onSpendHitDie}>
-            Spend Hit Die
-          </button>
-          <button type="button" className="btn" style={{ flex: 1 }} onClick={() => onTakeRest('long_rest')}>
-            Long Rest
-          </button>
-        </div>
+        {!isUnified && (
+          <div className="forge-row" style={{ marginTop: 8 }}>
+            <button type="button" className="btn" style={{ flex: 1 }} onClick={() => onTakeRest('short_rest')}>
+              Short Rest
+            </button>
+            <button type="button" className="btn" style={{ flex: 1 }} onClick={onSpendHitDie}>
+              Spend Hit Die
+            </button>
+            <button type="button" className="btn" style={{ flex: 1 }} onClick={() => onTakeRest('long_rest')}>
+              Long Rest
+            </button>
+          </div>
+        )}
 
         <div className="forge-row" style={{ marginTop: 8 }}>
           <select
@@ -567,49 +616,49 @@ export function VitalsColumn({
         <div className="card">
           <div className="card-header">
             <div className="forge-section-label">ABILITIES &amp; SAVING THROWS</div>
-            <span className="badge">Command</span>
+            <span className="badge">★ Proficient</span>
           </div>
-          <div className="ability-grid">
+          <div className="ability-matrix" role="table" aria-label="Abilities and saving throws">
+            <div className="ability-matrix-head" role="row">
+              <span role="columnheader">ABILITY</span>
+              <span role="columnheader">SCR</span>
+              <span role="columnheader">CHECK</span>
+              <span role="columnheader">SAVE</span>
+            </div>
             {ABILITIES.map((key) => {
               const ab = sheet.abilities[key];
               const checkMod = ab.modifier + exhaustionCheckPenalty;
               const modSign = checkMod >= 0 ? '+' : '';
               const saveSign = ab.save.final >= 0 ? '+' : '';
               const isSaveProf = ab.save.modifiers.some((m) => m.id.startsWith('save-prof-'));
+              const fullName = key.toUpperCase();
               return (
-                <div key={key} className="ability-tile">
-                  <div className="ability-tile-head">
-                    <strong>{key}</strong>
-                    <span className="badge tabular" style={{ padding: '0 5px' }}>{ab.score.final}</span>
-                  </div>
+                <div key={key} className="ability-matrix-row" role="row">
+                  <strong role="rowheader" style={{ fontSize: 12, letterSpacing: '0.04em' }}>
+                    {fullName}
+                  </strong>
+                  <span role="cell" className="badge tabular" style={{ justifySelf: 'center', padding: '1px 6px' }}>
+                    {ab.score.final}
+                  </span>
                   <button
                     type="button"
-                    className="ability-tile-mod tabular"
-                    style={{ background: 'transparent', border: 0, color: 'inherit', cursor: 'pointer', width: '100%' }}
-                    onClick={() => onRollCheck(`${key.toUpperCase()} Check`, checkMod)}
-                    title={`Roll ${key.toUpperCase()} ability check`}
+                    role="cell"
+                    className="btn tabular"
+                    onClick={() => onRollCheck(`${fullName} Check`, checkMod)}
+                    aria-label={`Roll ${fullName} check, ${modSign}${checkMod}`}
                   >
                     {modSign}{checkMod}
                   </button>
-                  <div className="ability-tile-actions">
-                    <button
-                      type="button"
-                      className="btn tabular"
-                      onClick={() => onRollCheck(`${key.toUpperCase()} Check`, checkMod)}
-                      title={`Roll ${key.toUpperCase()} ability check`}
-                    >
-                      Chk
-                    </button>
-                    <button
-                      type="button"
-                      className={`btn tabular ${isSaveProf ? 'btn-primary' : ''}`}
-                      onClick={() => onRollCheck(`${key.toUpperCase()} Save`, ab.save.final)}
-                      title={`Roll ${key.toUpperCase()} saving throw`}
-                    >
-                      {isSaveProf ? '★' : ''}
-                      {saveSign}{ab.save.final}
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    role="cell"
+                    className={`btn tabular ${isSaveProf ? 'btn-primary' : ''}`}
+                    onClick={() => onRollCheck(`${fullName} Save`, ab.save.final)}
+                    aria-label={`Roll ${fullName} saving throw${isSaveProf ? ', proficient' : ''}, ${saveSign}${ab.save.final}`}
+                  >
+                    {isSaveProf ? '★ ' : ''}
+                    {saveSign}{ab.save.final}
+                  </button>
                 </div>
               );
             })}
@@ -620,68 +669,177 @@ export function VitalsColumn({
       <div className="card">
         <div className="card-header">
           <div className="forge-section-label">RESOURCE POOLS</div>
+          {isUnified && (
+            <button
+              type="button"
+              className={`pill ${showAddPool ? 'active' : ''}`}
+              aria-expanded={showAddPool}
+              onClick={() => setShowAddPool((v) => !v)}
+            >
+              {showAddPool ? 'Close' : '+ Pool'}
+            </button>
+          )}
         </div>
-        {sheet.resources.map((pool) => (
-          <div key={pool.id} className="forge-list-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
-            <div className="forge-row-between">
-              <span>{pool.name}</span>
-              <div className="forge-row">
-                <button type="button" className="btn" onClick={() => onAdjustResource(pool.id, -1)}>-</button>
-                <span className="tabular" style={{ minWidth: 38, textAlign: 'center' }}>
-                  {pool.current}/{pool.max}
-                </span>
-                <button type="button" className="btn" onClick={() => onAdjustResource(pool.id, 1)}>+</button>
+        {isUnified ? (
+          (() => {
+            const spellSlots = sheet.resources.filter(
+              (p) => /^spell_slot_\d+$/.test(p.id) || p.id === 'pact_slot'
+            );
+            const otherPools = sheet.resources.filter(
+              (p) => !/^spell_slot_\d+$/.test(p.id) && p.id !== 'pact_slot'
+            );
+            return (
+              <div className="forge-stack" style={{ gap: 6 }}>
+                {spellSlots.length > 0 && (
+                  <div className="resource-slot-grid" role="group" aria-label="Spell slots">
+                    {spellSlots.map((pool) => {
+                      const shortLbl =
+                        pool.id === 'pact_slot'
+                          ? 'Pact'
+                          : `L${pool.id.replace('spell_slot_', '')}`;
+                      return (
+                        <div key={pool.id} className="resource-slot-chip">
+                          <span className="muted-label tabular" style={{ minWidth: 22 }}>
+                            {shortLbl}
+                          </span>
+                          <div className="pip-row" style={{ flex: 1, flexWrap: 'wrap', gap: 3 }}>
+                            {Array.from({ length: Math.min(pool.max, 9) }, (_, idx) => {
+                              const filled = idx < pool.current;
+                              return (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  className={`pip ${filled ? 'filled' : ''}`}
+                                  aria-pressed={filled}
+                                  aria-label={`${pool.name} slot ${idx + 1} of ${pool.max}`}
+                                  onClick={() => onAdjustResource(pool.id, filled ? -1 : 1)}
+                                />
+                              );
+                            })}
+                          </div>
+                          <span className="tabular forge-muted" style={{ fontSize: 10 }}>
+                            {pool.current}/{pool.max}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {otherPools.map((pool) => (
+                  <div key={pool.id} className="resource-inline-row">
+                    <span className="resource-inline-name" title={pool.name}>
+                      {pool.name}
+                    </span>
+                    {pool.max > 0 && pool.max <= 6 && (
+                      <div className="pip-row" style={{ gap: 3 }}>
+                        {Array.from({ length: pool.max }, (_, idx) => {
+                          const filled = idx < pool.current;
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              className={`pip ${filled ? 'filled' : ''}`}
+                              aria-pressed={filled}
+                              aria-label={`${pool.name} use ${idx + 1} of ${pool.max}`}
+                              onClick={() => onAdjustResource(pool.id, filled ? -1 : 1)}
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
+                    <div className="forge-row" style={{ gap: 3 }}>
+                      <button
+                        type="button"
+                        className="btn"
+                        aria-label={`Spend ${pool.name}`}
+                        onClick={() => onAdjustResource(pool.id, -1)}
+                      >
+                        -
+                      </button>
+                      <span className="tabular" style={{ minWidth: 32, textAlign: 'center', fontSize: 11 }}>
+                        {pool.current}/{pool.max}
+                      </span>
+                      <button
+                        type="button"
+                        className="btn"
+                        aria-label={`Restore ${pool.name}`}
+                        onClick={() => onAdjustResource(pool.id, 1)}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
+            );
+          })()
+        ) : (
+          sheet.resources.map((pool) => (
+            <div key={pool.id} className="forge-list-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
+              <div className="forge-row-between">
+                <span>{pool.name}</span>
+                <div className="forge-row">
+                  <button type="button" className="btn" onClick={() => onAdjustResource(pool.id, -1)}>-</button>
+                  <span className="tabular" style={{ minWidth: 38, textAlign: 'center' }}>
+                    {pool.current}/{pool.max}
+                  </span>
+                  <button type="button" className="btn" onClick={() => onAdjustResource(pool.id, 1)}>+</button>
+                </div>
+              </div>
+              {pool.max > 0 && pool.max <= 10 && (
+                <div className="pip-row">
+                  {Array.from({ length: pool.max }, (_, idx) => {
+                    const filled = idx < pool.current;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        className={`pip ${filled ? 'filled' : ''}`}
+                        aria-label={`${pool.name} slot ${idx + 1} of ${pool.max}`}
+                        onClick={() => onAdjustResource(pool.id, filled ? -1 : 1)}
+                      />
+                    );
+                  })}
+                </div>
+              )}
             </div>
-            {pool.max > 0 && pool.max <= 10 && (
-              <div className="pip-row">
-                {Array.from({ length: pool.max }, (_, idx) => {
-                  const filled = idx < pool.current;
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      className={`pip ${filled ? 'filled' : ''}`}
-                      aria-label={`${pool.name} slot ${idx + 1} of ${pool.max}`}
-                      onClick={() => onAdjustResource(pool.id, filled ? -1 : 1)}
-                    />
-                  );
-                })}
-              </div>
-            )}
+          ))
+        )}
+        {(!isUnified || showAddPool) && (
+          <div className="forge-row" style={{ marginTop: 6 }}>
+            <input
+              aria-label="Custom resource pool name"
+              type="text"
+              placeholder="Custom Pool (e.g. Luck)"
+              value={newPoolName}
+              onChange={(e) => setNewPoolName(e.target.value)}
+              className="forge-input"
+              style={{ flex: 1, padding: '3px 6px' }}
+            />
+            <input
+              aria-label="Custom resource pool max"
+              type="number"
+              value={newPoolMax}
+              onChange={(e) => setNewPoolMax(e.target.value)}
+              className="forge-input tabular"
+              style={{ width: 46, padding: '3px 4px' }}
+            />
+            <button
+              type="button"
+              className="btn"
+              aria-label="Add custom resource pool"
+              onClick={() => {
+                if (!newPoolName.trim()) return;
+                onAddResource(newPoolName, Number.parseInt(newPoolMax, 10) || 1, 'short_rest');
+                setNewPoolName('');
+                setShowAddPool(false);
+              }}
+            >
+              +
+            </button>
           </div>
-        ))}
-        <div className="forge-row" style={{ marginTop: 6 }}>
-          <input
-            aria-label="Custom resource pool name"
-            type="text"
-            placeholder="Custom Pool (e.g. Luck)"
-            value={newPoolName}
-            onChange={(e) => setNewPoolName(e.target.value)}
-            className="forge-input"
-            style={{ flex: 1, padding: '3px 6px' }}
-          />
-          <input
-            aria-label="Custom resource pool max"
-            type="number"
-            value={newPoolMax}
-            onChange={(e) => setNewPoolMax(e.target.value)}
-            className="forge-input tabular"
-            style={{ width: 46, padding: '3px 4px' }}
-          />
-          <button
-            type="button"
-            className="btn"
-            aria-label="Add custom resource pool"
-            onClick={() => {
-              if (!newPoolName.trim()) return;
-              onAddResource(newPoolName, Number.parseInt(newPoolMax, 10) || 1, 'short_rest');
-              setNewPoolName('');
-            }}
-          >
-            +
-          </button>
-        </div>
+        )}
       </div>
 
       <div className="card">
@@ -695,15 +853,26 @@ export function VitalsColumn({
         </div>
         {skillsExpanded && (
           <>
-            <input
-              aria-label="Filter skills"
-              type="text"
-              placeholder="Filter skills..."
-              value={skillFilter}
-              onChange={(e) => setSkillFilter(e.target.value)}
-              className="forge-input"
-              style={{ width: '100%', padding: '3px 6px', marginBottom: 6 }}
-            />
+            <div className="forge-row" style={{ marginBottom: 6, gap: 6 }}>
+              <input
+                aria-label="Filter skills"
+                type="text"
+                placeholder="Filter skills..."
+                value={skillFilter}
+                onChange={(e) => setSkillFilter(e.target.value)}
+                className="forge-input"
+                style={{ flex: 1, padding: '3px 6px' }}
+              />
+              <button
+                type="button"
+                className={`pill forge-nowrap ${proficientOnly ? 'active' : ''}`}
+                aria-pressed={proficientOnly}
+                onClick={() => setProficientOnly((v) => !v)}
+                title="Show only proficient or expertise skills"
+              >
+                Prof Only
+              </button>
+            </div>
             {filteredSkills.map((skillKey) => {
               const stat = sheet.skills[skillKey];
               const sign = stat.final >= 0 ? '+' : '';

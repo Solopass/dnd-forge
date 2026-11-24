@@ -67,6 +67,11 @@ export interface CompendiumEntity {
   attuned?: boolean;
   requiresAttunement?: boolean;
   concentration?: boolean;
+  ritual?: boolean;
+  castingTime?: string;
+  range?: string;
+  components?: string;
+  duration?: string;
   spellLevel?: number;
   acFormula?: AcFormulaRule;
   acFlatBonus?: number;

@@ -1,3 +1,4 @@
+import { WildShapeForm } from '../types/character';
 import { AcFormulaRule, CompendiumEntity, PassiveModifierRule } from '../types/compendium';
 import { AbilityKey, ActionEconomy, Ruleset } from '../types/core';
 
@@ -16,6 +17,11 @@ function makeSpell(
   actionEconomy: ActionEconomy,
   opts: {
     concentration?: boolean;
+    ritual?: boolean;
+    castingTime?: string;
+    range?: string;
+    components?: string;
+    duration?: string;
     attack?: boolean;
     saveAbility?: AbilityKey;
     damageFormula?: string;
@@ -36,6 +42,11 @@ function makeSpell(
     category: 'spell',
     spellLevel,
     concentration: opts.concentration,
+    ritual: opts.ritual,
+    castingTime: opts.castingTime ?? (actionEconomy === 'bonus_action' ? '1 Bonus Action' : actionEconomy === 'reaction' ? '1 Reaction' : '1 Action'),
+    range: opts.range,
+    components: opts.components,
+    duration: opts.duration,
     prepared: true,
     acFormula: opts.acFormula,
     activities: [
@@ -471,7 +482,84 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
       makeSpell('srd-spell-hold-monster', 'Hold Monster', 5, 'action', {
         concentration: true,
         saveAbility: 'wis',
+        range: '90 ft',
+        components: 'V, S, M',
+        duration: 'Conc. 1 min',
         description: '90 ft. {@save wis} or creature is Paralyzed for up to 1 minute.',
+      }),
+      makeSpell('srd-spell-detect-magic', 'Detect Magic', 1, 'action', {
+        concentration: true,
+        ritual: true,
+        range: 'Self (30 ft)',
+        components: 'V, S',
+        duration: 'Conc. 10 min',
+        description: 'Sense presence and school of magic within 30 feet for up to 10 minutes.',
+      }),
+      makeSpell('srd-spell-identify', 'Identify', 1, 'action', {
+        ritual: true,
+        castingTime: '1 Minute',
+        range: 'Touch',
+        components: 'V, S, M',
+        duration: 'Instantaneous',
+        description: 'Touch an object or creature to learn its magic properties, attunement, charges, and affecting spells.',
+      }),
+      makeSpell('srd-spell-find-familiar', 'Find Familiar', 1, 'action', {
+        ritual: true,
+        castingTime: '1 Hour',
+        range: '10 ft',
+        components: 'V, S, M',
+        duration: 'Instantaneous',
+        description: 'Summon a spirit in beast form (Owl, Cat, Raven, etc.) that acts independently and delivers touch spells.',
+      }),
+      makeSpell('srd-spell-comprehend-languages', 'Comprehend Languages', 1, 'action', {
+        ritual: true,
+        range: 'Self',
+        components: 'V, S, M',
+        duration: '1 Hour',
+        description: 'Understand literal meaning of any spoken or written language you hear or touch.',
+      }),
+      makeSpell('srd-spell-pass-without-trace', 'Pass without Trace', 2, 'action', {
+        concentration: true,
+        range: 'Self (30 ft aura)',
+        components: 'V, S, M',
+        duration: 'Conc. 1 hr',
+        description: 'You and chosen allies within 30 ft gain +10 to Stealth checks and leave no tracks.',
+      }),
+      makeSpell('srd-spell-hypnotic-pattern', 'Hypnotic Pattern', 3, 'action', {
+        concentration: true,
+        saveAbility: 'wis',
+        range: '120 ft (30-ft cube)',
+        components: 'S, M',
+        duration: 'Conc. 1 min',
+        description: 'Twisting colors in a 30-ft cube. {@save wis} or Charmed, Incapacitated, and Speed 0.',
+      }),
+      makeSpell('srd-spell-slow', 'Slow', 3, 'action', {
+        concentration: true,
+        saveAbility: 'wis',
+        range: '120 ft (40-ft cube)',
+        components: 'V, S, M',
+        duration: 'Conc. 1 min',
+        description: 'Up to 6 creatures: {@save wis} or half speed, -2 AC/DEX saves, no reactions, 1 attack limit.',
+      }),
+      makeSpell('srd-spell-leomunds-tiny-hut', "Leomund's Tiny Hut", 3, 'action', {
+        ritual: true,
+        castingTime: '1 Minute',
+        range: 'Self (10-ft dome)',
+        components: 'V, S, M',
+        duration: '8 Hours',
+        description: 'Immobile opaque dome shelters up to 9 Medium creatures for a Safe Long Rest.',
+      }),
+      makeSpell('srd-spell-sending', 'Sending', 3, 'action', {
+        range: 'Unlimited',
+        components: 'V, S, M',
+        duration: '1 Round',
+        description: 'Send a 25-word telepathic message across any distance or plane to a familiar creature.',
+      }),
+      makeSpell('srd-spell-greater-restoration', 'Greater Restoration', 5, 'action', {
+        range: 'Touch',
+        components: 'V, S, M',
+        duration: 'Instantaneous',
+        description: 'End one charmed/petrified condition, curse, ability/max-HP reduction, or reduce exhaustion by 1.',
       }),
     ],
   },
@@ -979,4 +1067,110 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
       }),
     ],
   },
+  {
+    id: 'pack-srd-class-subsystems',
+    name: 'Class Subsystems (Metamagic, Invocations & Infusions)',
+    ruleset: '2014',
+    description: 'Sorcerer Metamagic options, Warlock Eldritch Invocations, and Artificer Infusions.',
+    entities: [
+      makeFeature('srd-meta-quickened', 'Metamagic: Quickened Spell', 'bonus_action', 'Spend 2 Sorcery Points to change a spell casting time from 1 Action to 1 Bonus Action.', {
+        resourceCost: { poolId: 'auto_class_sorcery_points', amount: 2 },
+      }),
+      makeFeature('srd-meta-twinned', 'Metamagic: Twinned Spell', 'free', 'Spend Sorcery Points equal to spell level (1 for cantrip) to target a second creature with a single-target spell.', {
+        resourceCost: { poolId: 'auto_class_sorcery_points', amount: 1 },
+      }),
+      makeFeature('srd-meta-subtle', 'Metamagic: Subtle Spell', 'free', 'Spend 1 Sorcery Point to cast without somatic or verbal components.', {
+        resourceCost: { poolId: 'auto_class_sorcery_points', amount: 1 },
+      }),
+      makeFeature('srd-meta-careful', 'Metamagic: Careful Spell', 'free', 'Spend 1 Sorcery Point so up to CHA mod chosen creatures automatically succeed on the spell saving throw.', {
+        resourceCost: { poolId: 'auto_class_sorcery_points', amount: 1 },
+      }),
+      makeFeature('srd-meta-empowered', 'Metamagic: Empowered Spell', 'free', 'Spend 1 Sorcery Point to reroll up to CHA mod damage dice.', {
+        resourceCost: { poolId: 'auto_class_sorcery_points', amount: 1 },
+      }),
+      makeFeature('srd-inv-agonizing-blast', 'Invocation: Agonizing Blast', 'free', 'Add your CHA modifier to the damage roll of Eldritch Blast on each hit.'),
+      makeFeature('srd-inv-devils-sight', "Invocation: Devil's Sight", 'free', 'See normally in darkness, both magical and nonmagical, to a distance of 120 feet.'),
+      makeFeature('srd-inv-repelling-blast', 'Invocation: Repelling Blast', 'free', 'Push a creature up to 10 feet away in a straight line when you hit it with Eldritch Blast.'),
+      makeFeature('srd-inv-armor-of-shadows', 'Invocation: Armor of Shadows', 'free', 'Cast Mage Armor on yourself at will without expending a spell slot (AC 13 + DEX while unarmored).', {
+        acFormula: { base: 13, dexCap: null, requiresUnarmored: true },
+      }),
+      makeFeature('srd-inv-eldritch-mind', 'Invocation: Eldritch Mind', 'free', 'You have Advantage on CON saving throws made to maintain Concentration on a spell.'),
+      makeFeature('srd-inf-enhanced-defense', 'Infusion: Enhanced Defense (+1 AC)', 'free', 'Artificer Infusion: +1 bonus to Armor Class while wearing infused armor or shield.', {
+        modifiers: [{ target: 'ac.bonus', value: 1 }],
+      }),
+      makeFeature('srd-inf-enhanced-weapon', 'Infusion: Enhanced Weapon (+1)', 'free', 'Artificer Infusion: +1 magic bonus to weapon attack rolls.', {
+        modifiers: [{ target: 'attack.all', value: 1 }],
+      }),
+      makeFeature('srd-inf-repeating-shot', 'Infusion: Repeating Shot', 'free', 'Artificer Infusion: Weapon ignores Loading property, requires no ammunition, and deals +1 magic damage.'),
+      makeFeature('srd-inf-mind-sharpener', 'Infusion: Mind Sharpener', 'reaction', 'Artificer Infusion: Spend 1 charge (4/day) as a Reaction to succeed automatically on a failed Concentration save.'),
+    ],
+  },
+  {
+    id: 'pack-srd-beasts',
+    name: 'SRD Beasts (Wild Shape & Polymorph)',
+    ruleset: '2014',
+    description: 'Core SRD beast statblocks ready for Druid Wild Shape, Polymorph, and companions.',
+    entities: [
+      makeMonster('srd-beast-cat', 'Cat', 12, 2, 2, '0', [
+        { name: 'Claws', type: 'attack', bonusOrDc: '+0', damageFormula: '1', damageType: 'slashing' },
+      ], 'Speed 40 ft, Climb 30 ft. Keen Smell.'),
+      makeMonster('srd-beast-constrictor-snake', 'Constrictor Snake', 12, 13, 2, '1/4', [
+        { name: 'Bite', type: 'attack', bonusOrDc: '+4', damageFormula: '1d6+2', damageType: 'piercing' },
+        { name: 'Constrict', type: 'attack', bonusOrDc: '+4', damageFormula: '1d8+2', damageType: 'bludgeoning' },
+      ], 'Speed 30 ft, Swim 30 ft. Grapple DC 14 on Constrict hit.'),
+      makeMonster('srd-beast-giant-badger', 'Giant Badger', 10, 13, 0, '1/4', [
+        { name: 'Bite', type: 'attack', bonusOrDc: '+3', damageFormula: '1d6+1', damageType: 'piercing' },
+        { name: 'Claws', type: 'attack', bonusOrDc: '+3', damageFormula: '2d4+1', damageType: 'slashing' },
+      ], 'Speed 30 ft, Burrow 10 ft. Keen Smell, Multiattack.'),
+      makeMonster('srd-beast-brown-bear', 'Brown Bear', 11, 34, 0, '1', [
+        { name: 'Bite', type: 'attack', bonusOrDc: '+6', damageFormula: '1d8+4', damageType: 'piercing' },
+        { name: 'Claws', type: 'attack', bonusOrDc: '+6', damageFormula: '2d6+4', damageType: 'slashing' },
+      ], 'Speed 40 ft, Climb 30 ft. Multiattack (1 Bite, 1 Claws). Keen Smell.'),
+      makeMonster('srd-beast-giant-spider', 'Giant Spider', 14, 26, 3, '1', [
+        { name: 'Bite', type: 'attack', bonusOrDc: '+5', damageFormula: '1d8+3+2d8', damageType: 'piercing + poison' },
+        { name: 'Web (Recharge 5-6)', type: 'attack', bonusOrDc: '+5', damageFormula: '0', damageType: 'restrained' },
+      ], 'Speed 30 ft, Climb 30 ft. Spider Climb, Web Sense.'),
+      makeMonster('srd-beast-giant-eagle', 'Giant Eagle', 13, 26, 3, '1', [
+        { name: 'Beak', type: 'attack', bonusOrDc: '+5', damageFormula: '1d6+3', damageType: 'piercing' },
+        { name: 'Talons', type: 'attack', bonusOrDc: '+5', damageFormula: '2d6+3', damageType: 'slashing' },
+      ], 'Speed 10 ft, Fly 80 ft. Multiattack, Keen Sight.'),
+      makeMonster('srd-beast-giant-octopus', 'Giant Octopus', 11, 52, 1, '1', [
+        { name: 'Tentacles', type: 'attack', bonusOrDc: '+5', damageFormula: '2d6+3', damageType: 'bludgeoning' },
+      ], 'Speed 10 ft, Swim 60 ft. Grapple DC 16, Ink Cloud.'),
+      makeMonster('srd-beast-polar-bear', 'Polar Bear', 12, 42, 0, '2', [
+        { name: 'Bite', type: 'attack', bonusOrDc: '+7', damageFormula: '1d8+5', damageType: 'piercing' },
+        { name: 'Claws', type: 'attack', bonusOrDc: '+7', damageFormula: '2d6+5', damageType: 'slashing' },
+      ], 'Speed 40 ft, Swim 30 ft. Multiattack, Keen Smell.'),
+      makeMonster('srd-beast-giant-ape', 'Giant Ape', 12, 157, 2, '7', [
+        { name: 'Fist', type: 'attack', bonusOrDc: '+9', damageFormula: '3d10+6', damageType: 'bludgeoning' },
+        { name: 'Rock', type: 'attack', bonusOrDc: '+9', damageFormula: '7d6+6', damageType: 'bludgeoning' },
+      ], 'Speed 40 ft, Climb 40 ft. Multiattack (2 Fist attacks).'),
+    ],
+  },
 ];
+
+const BEAST_SPEEDS: Record<string, number> = {
+  'srd-beast-cat': 40,
+  'srd-beast-constrictor-snake': 30,
+  'srd-beast-giant-badger': 30,
+  'srd-beast-brown-bear': 40,
+  'srd-beast-giant-spider': 30,
+  'srd-beast-giant-eagle': 80,
+  'srd-beast-giant-octopus': 60,
+  'srd-beast-polar-bear': 40,
+  'srd-beast-giant-ape': 40,
+  'srd-mob-wolf': 40,
+  'srd-mob-dire-wolf': 50,
+};
+
+export const WILD_SHAPE_BEAST_FORMS: WildShapeForm[] = BUILTIN_CONTENT_PACKS
+  .flatMap((p) => p.entities)
+  .filter((e) => e.id in BEAST_SPEEDS && e.monsterMeta)
+  .map((e) => ({
+    id: e.id,
+    name: e.name,
+    ac: e.monsterMeta!.ac,
+    hp: { current: e.monsterMeta!.hp, max: e.monsterMeta!.hp },
+    speed: BEAST_SPEEDS[e.id] ?? 30,
+    attacks: e.activities.map((a) => ({ ...a })),
+  }));

@@ -26,6 +26,18 @@ export interface ResourcePool {
   isAutoClassPool?: boolean;
 }
 
+export interface WildShapeForm {
+  id: string;
+  name: string;
+  ac: number;
+  hp: {
+    current: number;
+    max: number;
+  };
+  speed: number;
+  attacks: Activity[];
+}
+
 export interface CharacterOverrides {
   abilities?: Partial<Record<AbilityKey, number>>;
   ac?: number | null;
@@ -69,6 +81,7 @@ export interface RawCharacterState {
   resources: ResourcePool[];
   items: CompendiumEntity[];
   overrides: CharacterOverrides;
+  wildShapeForm?: WildShapeForm | null;
   currency?: {
     cp: number;
     sp: number;
@@ -87,6 +100,13 @@ export interface ResolvedActivity extends Activity {
   parentItemId: string;
   parentItemName: string;
   concentration: boolean;
+  ritual?: boolean;
+  spellMeta?: {
+    castingTime?: string;
+    range?: string;
+    components?: string;
+    duration?: string;
+  };
   computedAttackBonus: number | null;
   computedSaveDc: number | null;
   computedDamage: string | null;
@@ -120,7 +140,10 @@ export interface ResolvedCharacterSheet {
     effectiveCasterLevel: number;
     saveDc: OverridableStat<number>;
     attackBonus: OverridableStat<number>;
+    preparedCount: number;
+    maxPrepared: number | null;
   };
+  wildShapeForm: WildShapeForm | null;
   hp: RawCharacterState['hp'];
   deathSaves: RawCharacterState['deathSaves'];
   exhaustion: number;

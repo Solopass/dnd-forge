@@ -635,11 +635,24 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
           )
         : undefined;
 
+      const spellMeta =
+        item.category === 'spell' &&
+        (item.castingTime || item.range || item.components || item.duration)
+          ? {
+              castingTime: item.castingTime,
+              range: item.range,
+              components: item.components,
+              duration: item.duration,
+            }
+          : undefined;
+
       actionsByEconomy[act.actionEconomy].push({
         ...act,
         parentItemId: item.id,
         parentItemName: item.name,
         concentration: Boolean(item.concentration),
+        ritual: Boolean(item.ritual),
+        spellMeta,
         computedAttackBonus: resolvedAttack,
         computedSaveDc: resolvedDc,
         computedDamage: resolvedDamage,
@@ -647,6 +660,60 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
       });
     }
   }
+
+  if (raw.wildShapeForm) {
+    const beast = raw.wildShapeForm;
+    const wildActions: ResolvedActivity[] = beast.attacks.map((atk) => ({
+      ...atk,
+      parentItemId: 'wild-shape',
+      parentItemName: beast.name,
+      concentration: false,
+      ritual: false,
+      computedAttackBonus: atk.attackBonusFormula
+        ? evaluateSimpleMath(atk.attackBonusFormula.replace(/^\+/, ''))
+        : null,
+      computedSaveDc: atk.saveDcFormula ? evaluateSimpleMath(atk.saveDcFormula) : null,
+      computedDamage: atk.damageFormula ?? null,
+      resolvedDescription: atk.description,
+    }));
+    actionsByEconomy.action = [...wildActions, ...actionsByEconomy.action];
+  }
+
+  const finalAcStat = raw.wildShapeForm
+    ? {
+        ...buildOverridable(raw.wildShapeForm.ac, [], raw.overrides.ac),
+        activeFormulaSource: `Wild Shape: ${raw.wildShapeForm.name}`,
+      }
+    : acStat;
+  const finalSpeedStat = raw.wildShapeForm
+    ? buildOverridable(raw.wildShapeForm.speed, [], raw.overrides.speed)
+    : buildOverridable(30, speedModifiers, raw.overrides.speed);
+
+  const PREPARED_CASTER_MAP: Record<string, { ability: AbilityKey; half: boolean }> = {
+    cleric: { ability: 'wis', half: false },
+    druid: { ability: 'wis', half: false },
+    wizard: { ability: 'int', half: false },
+    paladin: { ability: 'cha', half: true },
+    artificer: { ability: 'int', half: true },
+  };
+  let hasPreparedCaster = false;
+  let maxPreparedTotal = 0;
+  for (const cls of raw.classes) {
+    const rule = PREPARED_CASTER_MAP[cls.className.toLowerCase()];
+    if (!rule) continue;
+    hasPreparedCaster = true;
+    const mod = abilityModifiers[rule.ability];
+    const effective = rule.half ? Math.floor(cls.level / 2) : cls.level;
+    maxPreparedTotal += Math.max(1, effective + mod);
+  }
+  const maxPrepared = hasPreparedCaster ? maxPreparedTotal : null;
+  const preparedCount = raw.items.filter(
+    (i) =>
+      i.category === 'spell' &&
+      (i.spellLevel ?? 0) > 0 &&
+      i.prepared !== false &&
+      !i.alwaysPrepared
+  ).length;
 
   const spellExhaustionMods: StatModifier[] =
     exhaustion2024Penalty !== 0
@@ -700,9 +767,9 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
     passivePerception: 10 + resolvedSkills.perception.final,
     passiveInvestigation: 10 + resolvedSkills.investigation.final,
     passiveInsight: 10 + resolvedSkills.insight.final,
-    ac: acStat,
+    ac: finalAcStat,
     initiative: buildOverridable(abilityModifiers.dex, initiativeModifiers, raw.overrides.initiative),
-    speed: buildOverridable(30, speedModifiers, raw.overrides.speed),
+    speed: finalSpeedStat,
     attunementCount,
     spellcasting: {
       primaryAbility: primaryCastingAbility,
@@ -717,7 +784,10 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
         spellAttackMods,
         raw.overrides.spellAttackBonus
       ),
+      preparedCount,
+      maxPrepared,
     },
+    wildShapeForm: raw.wildShapeForm ?? null,
     hp: raw.hp,
     deathSaves: raw.deathSaves,
     exhaustion: raw.exhaustion,

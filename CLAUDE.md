@@ -5,6 +5,7 @@
 - Test: `npm test`
 - Typecheck & Bundle: `npm run build`
 - Dev Server: `npm run dev`
+- Version Bump (run before every push): `bun run version:bump` (`small` = +0.01, `medium` = +0.10, `major` = +1.00)
 
 ## Architectural Invariants
 1. **Strict One-Way Layer Flow (`components -> state -> engine -> storage`):**

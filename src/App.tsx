@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { APP_VERSION } from './version';
 import './styles/tokens.css';
 import './styles/layout.css';
 import { useSheetStore } from './state/useSheetStore';
@@ -746,9 +747,26 @@ export function App() {
     <div className={shellClass}>
       <header className="topbar">
         <div className="topbar-brand">
-          <span className="topbar-brand-badge">
-            <span className="topbar-brand-dot" aria-hidden="true" />
-            SIDEREROLL
+          <span
+            className="topbar-brand-badge"
+            style={{
+              display: 'inline-flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              lineHeight: 1.05,
+              gap: 1,
+            }}
+          >
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <span className="topbar-brand-dot" aria-hidden="true" />
+              SIDEREROLL
+            </span>
+            <span
+              className="tabular"
+              style={{ fontSize: 9, opacity: 0.72, letterSpacing: '0.06em', paddingLeft: 14 }}
+            >
+              {APP_VERSION}
+            </span>
           </span>
           <select
             aria-label="Active character"

@@ -1643,6 +1643,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
             x: 1,
             y: 1 + idx * 2,
             tokenColor: '#58a6ff',
+            portraitUrl: pc.avatarUrl,
             initiative: roll.total,
             dexModifier: sheet.abilities.dex.modifier,
             ac: sheet.ac.final,
@@ -2849,6 +2850,20 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     [persistEncounter]
   );
 
+  const setCharacterAvatar = useCallback(
+    (avatarUrl: string | undefined) => {
+      persistCharacter((prev) => ({ ...prev, avatarUrl }));
+      persistEncounter((prev) => ({
+        ...prev,
+        combatants: prev.combatants.map((c) =>
+          c.id === rawChar.id ? { ...c, portraitUrl: avatarUrl } : c
+        ),
+      }));
+      appendLog(avatarUrl ? 'Updated character portrait.' : 'Cleared character portrait.', 'info');
+    },
+    [persistCharacter, persistEncounter, rawChar.id, appendLog]
+  );
+
   const setCombatantVision = useCallback(
     (combatantId: string, visionFeet: number) => {
       const safeFeet = Math.max(5, Math.min(300, Math.round(visionFeet)));
@@ -3134,6 +3149,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     loadSceneToEncounter,
     deleteScene,
     setCombatantPortrait,
+    setCharacterAvatar,
     setCombatantVision,
     addMapSketchStroke,
     clearMapSketches,

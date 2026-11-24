@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { applyUiMode, readStoredUiMode, UI_MODE_STORAGE_KEY } from '../ui-mode';
 import { BUILTIN_MAP_PRESETS } from '../map-presets';
+import { CONDITION_RULES } from '../conditions';
+import { createDefaultCampaign, exportCampaignToMarkdown } from '../dm-tools';
 
 describe('Dual UI Mode Persistence & Map Presets', () => {
   it('defaults to classic mode and persists classic/unified toggles safely', () => {
@@ -36,5 +38,15 @@ describe('Dual UI Mode Persistence & Map Presets', () => {
       expect(preset.name.length).toBeGreaterThan(2);
       expect(preset.dataUrl.startsWith('data:image/svg+xml;utf8,')).toBe(true);
     }
+  });
+
+  it('exports campaign binder to Obsidian-ready Markdown and includes 5e condition summaries', () => {
+    const camp = createDefaultCampaign('camp-md', 'Frostmaiden');
+    const md = exportCampaignToMarkdown(camp);
+    expect(md).toContain('# Frostmaiden');
+    expect(md).toContain('## Session Recaps');
+    expect(md).toContain('## NPCs');
+    expect(CONDITION_RULES.Prone).toContain('Disadvantage');
+    expect(CONDITION_RULES.Stunned).toContain('Incapacitated');
   });
 });

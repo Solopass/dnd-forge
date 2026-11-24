@@ -57,6 +57,7 @@ export interface RawCharacterState {
   species: string;
   background: string;
   xp?: number;
+  avatarUrl?: string;
   classes: ClassLevel[];
   baseAbilities: Record<AbilityKey, number>;
   bonusAbilities: Record<AbilityKey, number>;

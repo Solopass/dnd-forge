@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ResolvedCharacterSheet, WildShapeForm } from '../types/character';
 import { AbilityKey, RecoveryTrigger, SkillKey, STANDARD_CONDITIONS } from '../types/core';
 import { SKILL_ABILITY_MAP } from '../engine/rules-math';
+import { CONDITION_RULES } from '../engine/conditions';
 import { WILD_SHAPE_BEAST_FORMS } from '../engine/srd-packs';
 import { UiMode } from '../engine/ui-mode';
 
@@ -530,7 +531,7 @@ export function VitalsColumn({
                 type="button"
                 className="pill active"
                 onClick={() => onToggleCondition(cond)}
-                title="Click to remove condition"
+                title={CONDITION_RULES[cond] ?? 'Click to remove condition'}
               >
                 {cond} ×
               </button>

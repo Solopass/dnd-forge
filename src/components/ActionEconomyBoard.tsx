@@ -16,6 +16,7 @@ interface ActionEconomyBoardProps {
   onRollInlineExpression: (label: string, expression: string) => void;
   onToggleEquipped?: (itemId: string) => void;
   onToggleAttuned?: (itemId: string) => void;
+  onAdjustResource?: (poolId: string, delta: number) => void;
   onOpenGearDrawer?: () => void;
   onOpenBuilderDrawer?: () => void;
 }
@@ -72,6 +73,7 @@ export function ActionEconomyBoard({
   onRollInlineExpression,
   onToggleEquipped,
   onToggleAttuned,
+  onAdjustResource,
   onOpenGearDrawer,
   onOpenBuilderDrawer,
 }: ActionEconomyBoardProps) {
@@ -291,26 +293,61 @@ export function ActionEconomyBoard({
         </div>
       )}
 
-      {layoutVariant === 'classic' && beyondTab === 'spells' && (
-        <section className="card forge-stack">
-          <div className="card-header">
-            <div className="forge-section-label">SPELLCASTING</div>
-            <div className="pill-row tabular">
-              <span className="badge">Save DC {sheet.spellcasting.saveDc.final}</span>
-              <span className="badge">Atk +{sheet.spellcasting.attackBonus.final}</span>
-              <span className="badge">
-                Prepared {sheet.spellcasting.preparedCount}/{sheet.spellcasting.maxPrepared}
-              </span>
+      {layoutVariant === 'classic' && beyondTab === 'spells' && (() => {
+        const spellSlotPools = sheet.resources
+          .map((r) => {
+            const m = r.id.match(/^spell_slot_(\d+)$/);
+            return m?.[1] ? { lvl: Number.parseInt(m[1], 10), pool: r } : null;
+          })
+          .filter((x): x is { lvl: number; pool: typeof sheet.resources[number] } => Boolean(x && x.pool.max > 0))
+          .sort((a, b) => a.lvl - b.lvl);
+
+        return (
+          <section className="card forge-stack">
+            <div className="card-header">
+              <div className="forge-section-label">SPELLCASTING</div>
+              <div className="pill-row tabular">
+                <span className="badge">Save DC {sheet.spellcasting.saveDc.final}</span>
+                <span className="badge">Atk +{sheet.spellcasting.attackBonus.final}</span>
+                <span className="badge">
+                  Prepared {sheet.spellcasting.preparedCount}/{sheet.spellcasting.maxPrepared}
+                </span>
+              </div>
             </div>
-          </div>
-          {ECONOMY_SECTIONS.flatMap((s) =>
-            (s.key === 'free'
-              ? [...sheet.actionsByEconomy.free, ...sheet.actionsByEconomy.special]
-              : sheet.actionsByEconomy[s.key]
-            ).filter((act) => isSpellActivity(act) && matchesFilter(act))
-          ).map(renderActivityRow)}
-        </section>
-      )}
+            {spellSlotPools.length > 0 && (
+              <div className="subpanel forge-row" style={{ padding: '6px 8px', flexWrap: 'wrap', gap: 10 }}>
+                {spellSlotPools.map(({ lvl, pool }) => (
+                  <div key={pool.id} className="forge-row" style={{ gap: 4 }}>
+                    <span className="muted-label tabular">L{lvl}</span>
+                    {Array.from({ length: pool.max }).map((_, idx) => {
+                      const filled = idx < pool.current;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          className={`pill ${filled ? 'active' : ''}`}
+                          style={{ minWidth: 22, padding: '1px 5px', fontSize: 11 }}
+                          aria-label={`Level ${lvl} spell slot ${idx + 1} (${filled ? 'available' : 'spent'})`}
+                          title={filled ? `Spend Level ${lvl} slot` : `Restore Level ${lvl} slot`}
+                          onClick={() => onAdjustResource?.(pool.id, filled ? -1 : 1)}
+                        >
+                          {filled ? '●' : '○'}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            )}
+            {ECONOMY_SECTIONS.flatMap((s) =>
+              (s.key === 'free'
+                ? [...sheet.actionsByEconomy.free, ...sheet.actionsByEconomy.special]
+                : sheet.actionsByEconomy[s.key]
+              ).filter((act) => isSpellActivity(act) && matchesFilter(act))
+            ).map(renderActivityRow)}
+          </section>
+        );
+      })()}
 
       {layoutVariant === 'classic' && beyondTab === 'inventory' && (() => {
         const gearItems = (rawChar?.items ?? []).filter(

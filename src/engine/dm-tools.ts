@@ -355,3 +355,45 @@ export function sizeToGridCells(size?: CreatureSize): number {
   if (size === 'gargantuan') return 4;
   return 1;
 }
+
+export function exportCampaignToMarkdown(campaign: CampaignRecord): string {
+  const lines: string[] = [
+    `# ${campaign.name}`,
+    '',
+    `- **Setting:** ${campaign.setting}`,
+    `- **World Clock:** ${formatWorldClock(campaign.clock)} (${campaign.clock.weather})`,
+    `- **Party XP Total:** ${campaign.partyXpTotal.toLocaleString()} XP`,
+    `- **Party Stash:** ${campaign.partyLootGp} GP`,
+    '',
+  ];
+
+  if (campaign.partyLootItems.length > 0) {
+    lines.push('## Party Loot Items', '');
+    for (const item of campaign.partyLootItems) {
+      lines.push(`- ${item}`);
+    }
+    lines.push('');
+  }
+
+  const order: Array<{ key: CampaignRecord['entries'][number]['category']; heading: string }> = [
+    { key: 'session', heading: 'Session Recaps' },
+    { key: 'quest', heading: 'Quests' },
+    { key: 'npc', heading: 'NPCs' },
+    { key: 'location', heading: 'Locations' },
+    { key: 'faction', heading: 'Factions' },
+    { key: 'handout', heading: 'Handouts' },
+  ];
+
+  for (const sec of order) {
+    const group = campaign.entries.filter((e) => e.category === sec.key);
+    if (group.length === 0) continue;
+    lines.push(`## ${sec.heading}`, '');
+    for (const entry of group) {
+      lines.push(`### ${entry.title} (${entry.status})`, '');
+      if (entry.summary) lines.push(`*${entry.summary}*`, '');
+      if (entry.body) lines.push(entry.body, '');
+    }
+  }
+
+  return lines.join('\n');
+}

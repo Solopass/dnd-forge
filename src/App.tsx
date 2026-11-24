@@ -11,6 +11,7 @@ import { SettingsModal } from './components/SettingsModal';
 import { LevelUpModal } from './components/LevelUpModal';
 import { DmHubModal } from './components/DmHubModal';
 import { MonsterStatblockModal } from './components/MonsterStatblockModal';
+import { ModalDialog } from './components/ModalDialog';
 import { ToastStack } from './components/ToastStack';
 
 const CharacterBuilderDrawer = lazy(() =>
@@ -231,6 +232,7 @@ export function App() {
   const [uiMode, setUiMode] = useState<UiMode>(readStoredUiMode);
   const [unifiedView, setUnifiedView] = useState<'sheet' | 'dm' | 'vtt'>('sheet');
   const [showClassicCombat, setShowClassicCombat] = useState(true);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [mobileTab, setMobileTab] = useState<'vitals' | 'actions' | 'combat'>('vitals');
   const inspectedCombatant =
     inspectedCombatantId ? (store.encounter.combatants.find((c) => c.id === inspectedCombatantId) ?? null) : null;
@@ -344,6 +346,7 @@ export function App() {
       onRollInlineExpression={store.rollInlineExpression}
       onToggleEquipped={store.toggleItemEquipped}
       onToggleAttuned={store.toggleItemAttuned}
+      onAdjustResource={store.adjustResourcePool}
       onOpenGearDrawer={() => setGearOpen(true)}
       onOpenBuilderDrawer={() => setBuilderOpen(true)}
     />
@@ -583,6 +586,9 @@ export function App() {
           >
             <RedoIcon />
           </button>
+          <button type="button" className="btn" onClick={() => setShortcutsOpen(true)} title="Keyboard Shortcuts & Tips">
+            ?
+          </button>
           <button type="button" className="btn" onClick={() => setSettingsOpen(true)} title="Settings & Theme">
             <SettingsIcon />
           </button>
@@ -592,9 +598,36 @@ export function App() {
       {uiMode === 'classic' && (
         <div className="beyond-hero-banner">
           <div className="beyond-hero-identity">
-            <div className="beyond-crest" aria-hidden="true">
-              {store.rawChar.name.slice(0, 2).toUpperCase()}
-            </div>
+            <label
+              className="beyond-crest"
+              style={{ cursor: 'pointer', overflow: 'hidden' }}
+              title="Click to upload character avatar"
+            >
+              {store.rawChar.avatarUrl ? (
+                <img
+                  src={store.rawChar.avatarUrl}
+                  alt={store.rawChar.name}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                store.rawChar.name.slice(0, 2).toUpperCase()
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    if (typeof reader.result === 'string') store.setCharacterAvatar(reader.result);
+                  };
+                  reader.readAsDataURL(file);
+                  e.target.value = '';
+                }}
+              />
+            </label>
             <div>
               <div style={{ fontWeight: 800, fontSize: 15, lineHeight: 1.15 }}>
                 {store.rawChar.name}
@@ -966,6 +999,46 @@ export function App() {
         onExportActiveCharacter={handleExportActiveCharacter}
       />
 
+      <ModalDialog
+        isOpen={shortcutsOpen}
+        onClose={() => setShortcutsOpen(false)}
+        title="Keyboard Shortcuts & Quick Tips"
+      >
+        <div className="forge-stack">
+          <div className="card forge-stack">
+            <div className="card-header">
+              <div className="forge-section-label">KEYBOARD SHORTCUTS</div>
+            </div>
+            <div className="forge-list-row">
+              <span>Open Compendium, Packs &amp; PDF Importer</span>
+              <span className="badge tabular">Ctrl + K</span>
+            </div>
+            <div className="forge-list-row">
+              <span>Undo / Redo last sheet or combat edit</span>
+              <span className="badge tabular">Ctrl + Z / Ctrl + Y</span>
+            </div>
+            <div className="forge-list-row">
+              <span>Nudge selected Battlemap token 1 cell</span>
+              <span className="badge tabular">Arrow Keys</span>
+            </div>
+            <div className="forge-list-row">
+              <span>Close active modal or dialog</span>
+              <span className="badge tabular">Esc</span>
+            </div>
+          </div>
+          <div className="card forge-stack">
+            <div className="card-header">
+              <div className="forge-section-label">QUICK WORKFLOW TIPS</div>
+            </div>
+            <div className="forge-muted">
+              • Switch anytime between <strong>Beyond Classic</strong> and <strong>Unified Command</strong> in the topbar.<br />
+              • Click the character crest in Classic mode to upload a custom portrait (auto-syncs to Battlemap tokens).<br />
+              • Use <strong>Target</strong> in the Combat Drawer or Battlemap to roll attacks/saves directly against enemies.
+            </div>
+          </div>
+        </div>
+      </ModalDialog>
+
       <ToastStack
         toasts={store.toasts}
         suppressToasts={
@@ -979,6 +1052,7 @@ export function App() {
           liveTableOpen ||
           dmHubOpen ||
           encounterBuilderOpen ||
+          shortcutsOpen ||
           Boolean(inspectedCombatantId)
         }
         onDismiss={store.dismissToast}

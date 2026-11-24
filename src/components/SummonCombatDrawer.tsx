@@ -3,6 +3,7 @@ import { CombatEncounterState } from '../types/combat';
 import { Activity, CompendiumEntity, CreatureSize, MonsterStatMeta } from '../types/compendium';
 import { ActionEconomy, STANDARD_CONDITIONS } from '../types/core';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
+import { CONDITION_RULES } from '../engine/conditions';
 import { getQualitativeHealthLabel } from '../engine/dm-tools';
 import { evaluateEncounterDifficulty } from '../engine/encounter-math';
 import { ConsoleLine } from '../state/useSheetStore';
@@ -716,6 +717,7 @@ export function SummonCombatDrawer({
                     key={c}
                     type="button"
                     className="pill active"
+                    title={CONDITION_RULES[c] ?? 'Click to toggle condition'}
                     onClick={() => !hideHp && onToggleCombatantCondition(node.id, c)}
                   >
                     {c} {!hideHp ? '×' : ''}
@@ -849,7 +851,7 @@ export function CommandPalette({
               }}
             />
             <div className="pill-row" style={{ marginBottom: 8 }}>
-              {(['all', 'spell', 'weapon', 'armor', 'feat', 'monster'] as const).map((cat) => (
+              {(['all', 'spell', 'monster', 'weapon', 'armor', 'gear', 'feat', 'feature'] as const).map((cat) => (
                 <button
                   key={cat}
                   type="button"

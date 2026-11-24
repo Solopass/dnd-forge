@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { getQualitativeHealthLabel, sizeToGridCells } from '../engine/dm-tools';
 import { BUILTIN_MAP_PRESETS } from '../engine/map-presets';
 import { computeVisibleCells } from '../engine/vtt-vision';
@@ -126,12 +126,41 @@ export function BattlemapModal({
   const [measureStart, setMeasureStart] = useState<{ x: number; y: number } | null>(null);
   const [measureEnd, setMeasureEnd] = useState<{ x: number; y: number } | null>(null);
   const [isPainting, setIsPainting] = useState(false);
+  const [hoverCell, setHoverCell] = useState<{ x: number; y: number } | null>(null);
   const lastPaintedCellRef = useRef<string>('');
   const svgRef = useRef<SVGSVGElement | null>(null);
 
   const cols = Math.max(8, Math.min(40, encounter.map?.cols ?? 20));
   const rows = Math.max(6, Math.min(30, encounter.map?.rows ?? 12));
   const gridFeet = encounter.map?.gridFeet ?? 5;
+
+  useEffect(() => {
+    if (!isOpen || embedded || !selectedTokenId || mode !== 'move') return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      let dx = 0;
+      let dy = 0;
+      if (e.key === 'ArrowLeft') dx = -1;
+      else if (e.key === 'ArrowRight') dx = 1;
+      else if (e.key === 'ArrowUp') dy = -1;
+      else if (e.key === 'ArrowDown') dy = 1;
+      if (dx === 0 && dy === 0) return;
+
+      const idx = encounter.combatants.findIndex((c) => c.id === selectedTokenId);
+      const node = idx >= 0 ? encounter.combatants[idx] : undefined;
+      if (!node) return;
+      e.preventDefault();
+      const span = sizeToGridCells(node.size);
+      const curX = node.x ?? (node.kind === 'pc' ? 2 : 12 + (idx % 5));
+      const curY = node.y ?? 2 + (idx % 6);
+      const nx = Math.max(0, Math.min(cols - span, curX + dx));
+      const ny = Math.max(0, Math.min(rows - span, curY + dy));
+      if (nx !== curX || ny !== curY) onMoveToken(node.id, nx, ny);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, embedded, selectedTokenId, mode, encounter.combatants, cols, rows, onMoveToken]);
   const gridOpacity = encounter.map?.gridOpacity ?? 0.25;
   const imageScale = encounter.map?.imageScale ?? 1;
   const imageOffsetX = encounter.map?.imageOffsetX ?? 0;
@@ -242,6 +271,12 @@ export function BattlemapModal({
     const { sx, sy } = toSvgCoords(e.clientX, e.clientY);
     const { gx, gy } = toGridCoords(e.clientX, e.clientY);
 
+    if (mode === 'sphere' || mode === 'cone' || mode === 'line' || mode === 'cube') {
+      setHoverCell({ x: gx, y: gy });
+    } else if (hoverCell) {
+      setHoverCell(null);
+    }
+
     if (dragPreview) {
       const node = encounter.combatants.find((c) => c.id === dragPreview.id);
       const span = sizeToGridCells(node?.size);
@@ -337,7 +372,10 @@ export function BattlemapModal({
         onPointerDown={handleSvgPointerDown}
         onPointerMove={handleSvgPointerMove}
         onPointerUp={handleSvgPointerUp}
-        onPointerLeave={handleSvgPointerUp}
+        onPointerLeave={() => {
+          setHoverCell(null);
+          handleSvgPointerUp();
+        }}
       >
         <defs>
           {visibleCombatants.map((node, idx) => {
@@ -473,6 +511,24 @@ export function BattlemapModal({
             />
           );
         })}
+
+        {/* AoE Ghost Hover Preview */}
+        {hoverCell && (mode === 'sphere' || mode === 'cone' || mode === 'line' || mode === 'cube') && (() => {
+          const radiusFeet = mode === 'cone' ? 15 : mode === 'line' ? 30 : 20;
+          const cx = hoverCell.x * CELL_PX + CELL_PX / 2;
+          const cy = hoverCell.y * CELL_PX + CELL_PX / 2;
+          const pxSize = (radiusFeet / gridFeet) * CELL_PX;
+          if (mode === 'sphere') {
+            return <circle cx={cx} cy={cy} r={pxSize} fill="rgba(248, 81, 73, 0.14)" stroke="#f85149" strokeWidth={1.5} strokeDasharray="5 4" style={{ pointerEvents: 'none' }} />;
+          }
+          if (mode === 'cone') {
+            return <polygon points={`${cx},${cy} ${cx + pxSize},${cy - pxSize * 0.55} ${cx + pxSize},${cy + pxSize * 0.55}`} fill="rgba(210, 153, 34, 0.14)" stroke="#d29922" strokeWidth={1.5} strokeDasharray="5 4" style={{ pointerEvents: 'none' }} />;
+          }
+          if (mode === 'line') {
+            return <rect x={cx} y={cy - CELL_PX * 0.4} width={pxSize} height={CELL_PX * 0.8} fill="rgba(88, 166, 255, 0.14)" stroke="#58a6ff" strokeWidth={1.5} strokeDasharray="5 4" style={{ pointerEvents: 'none' }} />;
+          }
+          return <rect x={hoverCell.x * CELL_PX} y={hoverCell.y * CELL_PX} width={pxSize} height={pxSize} fill="rgba(188, 140, 255, 0.14)" stroke="#bc8cff" strokeWidth={1.5} strokeDasharray="5 4" style={{ pointerEvents: 'none' }} />;
+        })()}
 
         {/* Freehand Sketches */}
         {[...sketches, ...(activeStroke ? [activeStroke] : [])].map((stroke) => (

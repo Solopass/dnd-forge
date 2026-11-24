@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import {
   DM_SCREEN_SECTIONS,
+  exportCampaignToMarkdown,
   formatWorldClock,
   generateShopInventory,
   getXpForNextLevel,
@@ -265,6 +266,22 @@ export function DmHubModal({
         <span className="tabular forge-muted" style={{ fontSize: 12 }}>
           {formatWorldClock(campaign.clock)} • {campaign.clock.weather}
         </span>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => {
+            const md = exportCampaignToMarkdown(campaign);
+            const blob = new Blob([md], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${campaign.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'campaign'}.md`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
+        >
+          Export .md
+        </button>
         {onPrintPacket && (
           <button type="button" className="btn" onClick={onPrintPacket}>
             Print Session Packet

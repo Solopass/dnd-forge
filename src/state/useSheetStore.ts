@@ -506,7 +506,10 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
           condition === 'Paralyzed' ||
           condition === 'Stunned' ||
           condition === 'Unconscious');
-      let concDropped = false;
+      const hadConc = encounter.activeEffects.some(
+        (e) => e.sourceCombatantId === rawChar.id && e.isConcentration
+      );
+
       persistEncounter((prev) => {
         const hasConc = prev.activeEffects.some(
           (e) => e.sourceCombatantId === rawChar.id && e.isConcentration
@@ -518,7 +521,6 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
           ),
         };
         if (breaksConc && hasConc) {
-          concDropped = true;
           updated = dropConcentrationForCombatant(
             updated,
             rawChar.id,
@@ -527,14 +529,14 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         }
         return updated;
       });
-      if (concDropped) {
+      if (breaksConc && hadConc) {
         setPendingConcDc(null);
         appendLog(`${condition} automatically ended ${rawChar.name}'s Concentration.`, 'warn');
       } else {
         appendLog(`Toggled condition: ${condition}.`, 'info');
       }
     },
-    [rawChar.conditions, rawChar.id, rawChar.name, persistCharacter, persistEncounter, appendLog]
+    [rawChar.conditions, rawChar.id, rawChar.name, encounter.activeEffects, persistCharacter, persistEncounter, appendLog]
   );
 
   const rollCharacterInitiative = useCallback(() => {
@@ -1029,16 +1031,19 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         toggleCondition(condition);
         return;
       }
-      let droppedName: string | null = null;
+      const target = encounter.combatants.find((c) => c.id === combatantId);
+      const adding = target ? !target.conditions.includes(condition) : false;
+      const breaksConc =
+        adding &&
+        (condition === 'Incapacitated' ||
+          condition === 'Paralyzed' ||
+          condition === 'Stunned' ||
+          condition === 'Unconscious');
+      const hadConc = encounter.activeEffects.some(
+        (e) => e.sourceCombatantId === combatantId && e.isConcentration
+      );
+
       persistEncounter((prev) => {
-        const target = prev.combatants.find((c) => c.id === combatantId);
-        const adding = target ? !target.conditions.includes(condition) : false;
-        const breaksConc =
-          adding &&
-          (condition === 'Incapacitated' ||
-            condition === 'Paralyzed' ||
-            condition === 'Stunned' ||
-            condition === 'Unconscious');
         let updated: CombatEncounterState = {
           ...prev,
           combatants: prev.combatants.map((c) => {
@@ -1054,7 +1059,6 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
           breaksConc &&
           updated.activeEffects.some((e) => e.sourceCombatantId === combatantId && e.isConcentration)
         ) {
-          droppedName = target?.name ?? 'Combatant';
           updated = dropConcentrationForCombatant(
             updated,
             combatantId,
@@ -1063,11 +1067,11 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         }
         return updated;
       });
-      if (droppedName) {
-        appendLog(`${condition} automatically ended ${droppedName}'s Concentration.`, 'warn');
+      if (breaksConc && hadConc) {
+        appendLog(`${condition} automatically ended ${target?.name ?? 'Combatant'}'s Concentration.`, 'warn');
       }
     },
-    [rawChar.id, toggleCondition, persistEncounter, appendLog]
+    [rawChar.id, encounter.combatants, encounter.activeEffects, toggleCondition, persistEncounter, appendLog]
   );
 
   const toggleCombatantEconomy = useCallback(

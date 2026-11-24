@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ResolvedActivity, ResolvedCharacterSheet } from '../types/character';
 import { ActionEconomy, RollMode } from '../types/core';
 import { parse5eToolsEntries } from '../engine/tags';
+import { scaleDiceForUpcast } from '../engine/dice';
 
 interface ActionEconomyBoardProps {
   sheet: ResolvedCharacterSheet;
@@ -31,23 +32,24 @@ function formatResourceBadge(poolId: string): string {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function formatActivityActionLabel(act: ResolvedActivity): string {
+function formatActivityActionLabel(act: ResolvedActivity, overrideDamage?: string | null): string {
+  const dmgText = overrideDamage ?? act.computedDamage;
   if (act.computedAttackBonus !== null) {
     const sign = act.computedAttackBonus >= 0 ? '+' : '';
-    return `${sign}${act.computedAttackBonus} / ${act.computedDamage ?? 'Roll'}`;
+    return `${sign}${act.computedAttackBonus} / ${dmgText ?? 'Roll'}`;
   }
   if (act.type === 'save' && act.computedSaveDc !== null && act.saveAbility) {
-    const dmg = act.computedDamage ? ` • ${act.computedDamage}` : '';
+    const dmg = dmgText ? ` • ${dmgText}` : '';
     return `DC ${act.computedSaveDc} ${act.saveAbility.toUpperCase()}${dmg}`;
   }
-  if (act.type === 'heal' && act.computedDamage) {
-    return `Heal ${act.computedDamage}`;
+  if (act.type === 'heal' && dmgText) {
+    return `Heal ${dmgText}`;
   }
   if (act.type === 'summon') {
     return 'Summon';
   }
-  if (act.computedDamage) {
-    return `Roll ${act.computedDamage}`;
+  if (dmgText) {
+    return `Roll ${dmgText}`;
   }
   return 'Use';
 }
@@ -180,6 +182,11 @@ export function ActionEconomyBoard({
                         .filter((x) => x.lvl >= baseSlotLvl && x.pool.max > 0)
                     : [];
                 const chosenSlot = upcastOverrides[act.id] ?? baseSlotLvl;
+                const extraLevels = baseSlotLvl > 0 ? Math.max(0, chosenSlot - baseSlotLvl) : 0;
+                const previewDamage =
+                  act.computedDamage && act.upcastDicePerLevel && extraLevels > 0
+                    ? scaleDiceForUpcast(act.computedDamage, act.upcastDicePerLevel, extraLevels)
+                    : act.computedDamage;
                 return (
                   <div key={act.id} className="forge-list-row">
                     <div>
@@ -226,7 +233,7 @@ export function ActionEconomyBoard({
                           onTriggerActivity(act, chosenSlot > baseSlotLvl ? chosenSlot : undefined)
                         }
                       >
-                        {formatActivityActionLabel(act)}
+                        {formatActivityActionLabel(act, previewDamage)}
                       </button>
                     </div>
                   </div>

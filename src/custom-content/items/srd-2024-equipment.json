@@ -1,0 +1,2187 @@
+[
+  {
+    "id": "srd24-gear-acid",
+    "name": "Acid",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "When you take the Attack action, you can replace one of your attacks with throwing a vial of Acid. Target one creature or object you can see within 20 feet of yourself. The target must succeed on a Dexterity saving throw (DC 8 plus your Dexterity modifier and Proficiency Bonus) or take 2d6 Acid damage."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-alchemist-s-fire",
+    "name": "Alchemist's Fire",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "When you take the Attack action, you can replace one of your attacks with throwing a flask of Alchemist's Fire. Target one creature or object you can see within 20 feet of yourself. The target must succeed on a Dexterity saving throw (DC 8 plus your Dexterity modifier and Proficiency Bonus) or take 1d4 Fire damage and start burning (see “Rules Glossary”)."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-alchemist-s-supplies",
+    "name": "Alchemist's Supplies",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Alchemist's Supplies"
+    ],
+    "activities": [],
+    "weight": 8
+  },
+  {
+    "id": "srd24-gear-amulet",
+    "name": "Amulet",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Holy Symbol takes one of the forms in the Holy Symbol table and is bejeweled or painted to channel divine magic. A Cleric or Paladin can use a Holy Symbol as a Spellcasting Focus.\nThe table indicates whether a Holy Symbol needs to be held, worn, or borne on fabric (such as a tabard or banner) or a Shield."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-antitoxin",
+    "name": "Antitoxin",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "As a Bonus Action, you can drink a vial of Antitoxin to gain Advantage on saving throws to avoid or end the Poisoned condition for 1 hour."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-arrows",
+    "name": "Arrows",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Arrows"
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-backpack",
+    "name": "Backpack",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Backpack holds up to 30 pounds within 1 cubic foot. It can also serve as a saddlebag."
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd24-gear-bagpipes",
+    "name": "Bagpipes",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Bagpipes"
+    ],
+    "activities": [],
+    "weight": 6
+  },
+  {
+    "id": "srd24-gear-ball-bearings",
+    "name": "Ball bearings",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "imageUrl": "/api/images/equipment/ball-bearings-bag-of-1000.png",
+    "entries": [
+      "As a Utilize action, you can spill Ball Bearings from their pouch. They spread to cover a level, 10-footsquare area within 10 feet of yourself. A creature that enters this area for the first time on a turn must succeed on a DC 10 Dexterity saving throw or have the Prone condition. It takes 10 minutes to recover the Ball Bearings."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-barrel",
+    "name": "Barrel",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Barrel holds up to 40 gallons of liquid or up to 4 cubic feet of dry goods."
+    ],
+    "activities": [],
+    "weight": 70
+  },
+  {
+    "id": "srd24-gear-basket",
+    "name": "Basket",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Basket holds up to 40 pounds within 2 cubic feet."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-battleaxe",
+    "name": "Battleaxe",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Battleaxe"
+    ],
+    "activities": [],
+    "weight": 4
+  },
+  {
+    "id": "srd24-gear-bedroll",
+    "name": "Bedroll",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Bedroll sleeps one Small or Medium creature. While in a Bedroll, you automatically succeed on saving throws against extreme cold (see “Gameplay Toolbox”)."
+    ],
+    "activities": [],
+    "weight": 25
+  },
+  {
+    "id": "srd24-gear-bell",
+    "name": "Bell",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "When rung as a Utilize action, a Bell produces a sound that can be heard up to 60 feet away."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-blanket",
+    "name": "Blanket",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "While wrapped in a blanket, you have Advantage on saving throws against extreme cold (see “Gameplay Toolbox”)."
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd24-gear-block-and-tackle",
+    "name": "Block and tackle",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Block and Tackle allows you to hoist up to four times the weight you can normally lift."
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd24-gear-blowgun",
+    "name": "Blowgun",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Blowgun"
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-book",
+    "name": "Book",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Book contains fiction or nonfiction. If you consult an accurate nonfiction Book about its topic, you gain a +5 bonus to Intelligence (Arcana, History, Nature, or Religion) checks you make about that topic."
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd24-gear-bolts",
+    "name": "Bolts",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Bolts"
+    ],
+    "activities": [],
+    "weight": 1.5
+  },
+  {
+    "id": "srd24-gear-bottle-glass",
+    "name": "Bottle, Glass",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Glass Bottle holds up to 11/2 pints."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-breastplate",
+    "name": "Breastplate",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Breastplate"
+    ],
+    "activities": [],
+    "weight": 20
+  },
+  {
+    "id": "srd24-gear-brewer-s-supplies",
+    "name": "Brewer's Supplies",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Brewer's Supplies"
+    ],
+    "activities": [],
+    "weight": 9
+  },
+  {
+    "id": "srd24-gear-bucket",
+    "name": "Bucket",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Bucket holds up to half a cubic foot of contents."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-bullets-firearm",
+    "name": "Bullets, Firearm",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Bullets, Firearm"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-bullets-sling",
+    "name": "Bullets, Sling",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Bullets, Sling"
+    ],
+    "activities": [],
+    "weight": 1.5
+  },
+  {
+    "id": "srd24-gear-burglar-s-pack",
+    "name": "Burglar's Pack",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Burglar's Pack contains the following items: Backpack, Ball Bearings, Bell, 10 Candles, Crowbar, Hooded Lantern, 7 flasks of Oil, 5 days of Rations, Rope, Tinderbox, and Waterskin."
+    ],
+    "activities": [],
+    "weight": 20
+  },
+  {
+    "id": "srd24-gear-calligrapher-s-supplies",
+    "name": "Calligrapher's Supplies",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Calligrapher's Supplies"
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd24-gear-caltrops",
+    "name": "Caltrops",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "As a Utilize action, you can spread Caltrops from their bag to cover a 5-foot-square area within 5 feet of yourself. A creature that enters this area for the first time on a turn must succeed on a DC 15 Dexterity saving throw or take 1 Piercing damage and have its Speed reduced to 0 until the start of its next turn. It takes 10 minutes to recover the Caltrops."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-candle",
+    "name": "Candle",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "For 1 hour, a lit Candle sheds Bright Light in a 5-foot radius and Dim Light for an additional 5 feet."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd24-gear-carpenter-s-tools",
+    "name": "Carpenter's Tools",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Carpenter's Tools"
+    ],
+    "activities": [],
+    "weight": 6
+  },
+  {
+    "id": "srd24-gear-cartographer-s-tools",
+    "name": "Cartographer's Tools",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Cartographer's Tools"
+    ],
+    "activities": [],
+    "weight": 6
+  },
+  {
+    "id": "srd24-gear-case-crossbow-bolt",
+    "name": "Case, Crossbow Bolt",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Crossbow Bolt Case holds up to 20 Bolts."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-case-map-or-scroll",
+    "name": "Case, Map or Scroll",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Map or Scroll Case holds up to 10 sheets of paper or 5 sheets of parchment."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-chain",
+    "name": "Chain",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "As a Utilize action, you can wrap a Chain around an unwilling creature within 5 feet of yourself that has the Grappled, Incapacitated, or Restrained condition if you succeed on a DC 13 Strength (Athletics) check. If the creature's legs are bound, the creature has the Restrained condition until it escapes. Escaping the Chain requires the creature to make a successful DC 18 Dexterity (Acrobatics) check as an action. Bursting the Chain requires a successful DC 20 Strength (Athletics) check as an action."
+    ],
+    "activities": [],
+    "weight": 6
+  },
+  {
+    "id": "srd24-gear-chain-mail",
+    "name": "Chain Mail",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Chain Mail"
+    ],
+    "activities": [],
+    "weight": 55
+  },
+  {
+    "id": "srd24-gear-chain-shirt",
+    "name": "Chain Shirt",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Chain Shirt"
+    ],
+    "activities": [],
+    "weight": 14
+  },
+  {
+    "id": "srd24-gear-chest",
+    "name": "Chest",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Chest holds up to 12 cubic feet of contents."
+    ],
+    "activities": [],
+    "weight": 20
+  },
+  {
+    "id": "srd24-gear-climber-s-kit",
+    "name": "Climber's Kit",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Climber's Kit includes boot tips, gloves, pitons, and a harness. As a Utilize action, you can use the Climber's Kit to anchor yourself; when you do, you can't fall more than 25 feet from the anchor point, and you can't move more than 25 feet from there without undoing the anchor as a Bonus Action."
+    ],
+    "activities": [],
+    "weight": 8
+  },
+  {
+    "id": "srd24-gear-clothes-fine",
+    "name": "Clothes, Fine",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Fine Clothes are made of expensive fabrics and adorned with expertly crafted details. Some events and locations admit only people wearing these clothes."
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd24-gear-clothes-traveler-s",
+    "name": "Clothes, Traveler's",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Traveler's Clothes are resilient garments designed for travel in various environments."
+    ],
+    "activities": [],
+    "weight": 4
+  },
+  {
+    "id": "srd24-gear-club",
+    "name": "Club",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Club"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-cobbler-s-tools",
+    "name": "Cobbler's Tools",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Cobbler's Tools"
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd24-gear-component-pouch",
+    "name": "Component Pouch",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Component Pouch is watertight and filled with compartments that hold all the free Material components of your spells."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-cook-s-utensils",
+    "name": "Cook's Utensils",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Cook's Utensils"
+    ],
+    "activities": [],
+    "weight": 8
+  },
+  {
+    "id": "srd24-gear-costume",
+    "name": "Costume",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "While wearing a Costume, you have Advantage on any ability check you make to impersonate the person or type of person it represents."
+    ],
+    "activities": [],
+    "weight": 4
+  },
+  {
+    "id": "srd24-gear-crowbar",
+    "name": "Crowbar",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Using a Crowbar gives you Advantage on Strength checks where the Crowbar's leverage can be applied."
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd24-gear-crystal",
+    "name": "Crystal",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Crystal"
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-dagger",
+    "name": "Dagger",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Dagger"
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-dart",
+    "name": "Dart",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Dart"
+    ],
+    "activities": [],
+    "weight": 0.25
+  },
+  {
+    "id": "srd24-gear-dice",
+    "name": "Dice",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Dice"
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd24-gear-diplomat-s-pack",
+    "name": "Diplomat's Pack",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Diplomat's Pack contains the following items: Chest, Fine Clothes, Ink, 5 Ink Pens, Lamp, 2 Map or Scroll Cases, 4 flasks of Oil, 5 sheets of Paper, 5 sheets of Parchment, Perfume, and Tinderbox."
+    ],
+    "activities": [],
+    "weight": 20
+  },
+  {
+    "id": "srd24-gear-disguise-kit",
+    "name": "Disguise Kit",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Disguise Kit"
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd24-gear-dragonchess",
+    "name": "Dragonchess",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Dragonchess"
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd24-gear-drum",
+    "name": "Drum",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Drum"
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd24-gear-dulcimer",
+    "name": "Dulcimer",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Dulcimer"
+    ],
+    "activities": [],
+    "weight": 10
+  },
+  {
+    "id": "srd24-gear-dungeoneer-s-pack",
+    "name": "Dungeoneer's Pack",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Dungeoneer's Pack contains the following items: Backpack, Caltrops, Crowbar, 2 flasks of Oil, 10 days of Rations, Rope, Tinderbox, 10 Torches, and Waterskin."
+    ],
+    "activities": [],
+    "weight": 55
+  },
+  {
+    "id": "srd24-gear-emblem",
+    "name": "Emblem",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Holy Symbol takes one of the forms in the Holy Symbol table and is bejeweled or painted to channel divine magic. A Cleric or Paladin can use a Holy Symbol as a Spellcasting Focus.\nThe table indicates whether a Holy Symbol needs to be held, worn, or borne on fabric (such as a tabard or banner) or a Shield."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd24-gear-entertainer-s-pack",
+    "name": "Entertainer's Pack",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Entertainer's Pack"
+    ],
+    "activities": []
+  },
+  {
+    "id": "srd24-gear-explorer-s-pack",
+    "name": "Explorer's Pack",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "An Explorer’s Pack contains the following items: Backpack, Bedroll, 2 flasks of Oil, 10 days of Rations, Rope, Tinderbox, 10 Torches, and Waterskin."
+    ],
+    "activities": [],
+    "weight": 55
+  },
+  {
+    "id": "srd24-gear-flail",
+    "name": "Flail",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Flail"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-flask",
+    "name": "Flask",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Flask holds up to 1 pint."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-flute",
+    "name": "Flute",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Flute"
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-forgery-kit",
+    "name": "Forgery Kit",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Forgery Kit"
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd24-gear-glaive",
+    "name": "Glaive",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Glaive"
+    ],
+    "activities": [],
+    "weight": 6
+  },
+  {
+    "id": "srd24-gear-glassblower-s-tools",
+    "name": "Glassblower's Tools",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Glassblower's Tools"
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd24-gear-grappling-hook",
+    "name": "Grappling Hook",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "As a Utilize action, you can throw the Grappling Hook at a railing, a ledge, or another catch within 50 feet of yourself, and the hook catches on if you succeed on a DC 13 Dexterity (Acrobatics) check. If you tied a Rope to the hook, you can then climb it."
+    ],
+    "activities": [],
+    "weight": 4
+  },
+  {
+    "id": "srd24-gear-greataxe",
+    "name": "Greataxe",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Greataxe"
+    ],
+    "activities": [],
+    "weight": 7
+  },
+  {
+    "id": "srd24-gear-greatclub",
+    "name": "Greatclub",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Greatclub"
+    ],
+    "activities": [],
+    "weight": 10
+  },
+  {
+    "id": "srd24-gear-greatsword",
+    "name": "Greatsword",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Greatsword"
+    ],
+    "activities": [],
+    "weight": 6
+  },
+  {
+    "id": "srd24-gear-halberd",
+    "name": "Halberd",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Halberd"
+    ],
+    "activities": [],
+    "weight": 6
+  },
+  {
+    "id": "srd24-gear-half-plate-armor",
+    "name": "Half-Plate Armor",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Half-Plate Armor"
+    ],
+    "activities": [],
+    "weight": 40
+  },
+  {
+    "id": "srd24-gear-hand-crossbow",
+    "name": "Hand Crossbow",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Hand Crossbow"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-handaxe",
+    "name": "Handaxe",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Handaxe"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-healer-s-kit",
+    "name": "Healer's Kit",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Healer's Kit has ten uses. As a Utilize action, you can expend one of its uses to stabilize an Unconscious creature that has 0 Hit Points without needing to make a Wisdom (Medicine) check."
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd24-gear-heavy-crossbow",
+    "name": "Heavy Crossbow",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "imageUrl": "/api/images/equipment/crossbow-heavy.png",
+    "entries": [
+      "Heavy Crossbow"
+    ],
+    "activities": [],
+    "weight": 18
+  },
+  {
+    "id": "srd24-gear-herbalism-kit",
+    "name": "Herbalism Kit",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Herbalism Kit"
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd24-gear-hide-armor",
+    "name": "Hide Armor",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Hide Armor"
+    ],
+    "activities": [],
+    "weight": 12
+  },
+  {
+    "id": "srd24-gear-holy-water",
+    "name": "Holy Water",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "When you take the Attack action, you can replace one of your attacks with throwing a flask of Holy Water. Target one creature you can see within 20 feet of yourself. The target must succeed on a Dexterity saving throw (DC 8 plus your Dexterity modifier and Proficiency Bonus) or take 2d8 Radiant damage if it is a Fiend or an Undead."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-horn",
+    "name": "Horn",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Horn"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-hunting-trap",
+    "name": "Hunting Trap",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "As a Utilize action, you can set a Hunting Trap, which is a sawtooth steel ring that snaps shut when a creature steps on a pressure plate in the center. The trap is affixed by a heavy chain to an immobile object, such as a tree or a spike driven into the ground. A creature that steps on the plate must succeed on a DC 13 Dexterity saving throw or take 1d4 Piercing damage and have its Speed reduced to 0 until the start of its next turn. Thereafter, until the creature breaks free of the trap, its movement is limited by the length of the chain (typically 3 feet). A creature can use its action to make a DC 13 Strength (Athletics) check, freeing itself or another creature within its reach on a success. Each failed check deals 1 Piercing damage to the trapped creature."
+    ],
+    "activities": [],
+    "weight": 25
+  },
+  {
+    "id": "srd24-gear-ink",
+    "name": "Ink",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Ink comes in a 1-ounce bottle, which provides enough ink to write about 500 pages."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd24-gear-ink-pen",
+    "name": "Ink Pen",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Using Ink, an Ink Pen is used to write or draw."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd24-gear-javelin",
+    "name": "Javelin",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Javelin"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-jeweler-s-tools",
+    "name": "Jeweler's Tools",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Jeweler's Tools"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-jug",
+    "name": "Jug",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Jug holds up to 1 gallon."
+    ],
+    "activities": [],
+    "weight": 4
+  },
+  {
+    "id": "srd24-gear-ladder",
+    "name": "Ladder",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Ladder is 10 feet tall. You must climb to move up or down it. Lamp (5 SP)"
+    ],
+    "activities": [],
+    "weight": 25
+  },
+  {
+    "id": "srd24-gear-lamp",
+    "name": "Lamp",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Lamp burns Oil as fuel to cast Bright Light in a 15- foot radius and Dim Light for an additional 30 feet"
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-lance",
+    "name": "Lance",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Lance"
+    ],
+    "activities": [],
+    "weight": 6
+  },
+  {
+    "id": "srd24-gear-lantern-bullseye",
+    "name": "Lantern, Bullseye",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Bullseye Lantern burns Oil as fuel to cast Bright Light in a 60-foot Cone and Dim Light for an additional 60 feet."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-lantern-hooded",
+    "name": "Lantern, Hooded",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Hooded Lantern burns Oil as fuel to cast Bright Light in a 30-foot radius and Dim Light for an additional 30 feet. As a Bonus Action, you can lower the hood, reducing the light to Dim Light in a 5-foot radius, or raise it again."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-leather-armor",
+    "name": "Leather Armor",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Leather Armor"
+    ],
+    "activities": [],
+    "weight": 10
+  },
+  {
+    "id": "srd24-gear-leatherworker-s-tools",
+    "name": "Leatherworker's Tools",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Leatherworker's Tools"
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd24-gear-light-crossbow",
+    "name": "Light Crossbow",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Light Crossbow"
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd24-gear-light-hammer",
+    "name": "Light Hammer",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Light Hammer"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-lock",
+    "name": "Lock",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Lock comes with a key. Without the key, a creature can use Thieves' Tools to pick this Lock with a successful DC 15 Dexterity (Sleight of Hand) check."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-longbow",
+    "name": "Longbow",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Longbow"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-longsword",
+    "name": "Longsword",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Longsword"
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd24-gear-lute",
+    "name": "Lute",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Lute"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-lyre",
+    "name": "Lyre",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Lyre"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-mace",
+    "name": "Mace",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Mace"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-magnifying-glass",
+    "name": "Magnifying Glass",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Magnifying Glass grants Advantage on any ability check made to appraise or inspect a highly detailed item. Lighting a fire with a Magnifying Glass requires light as bright as sunlight to focus, tinder to ignite, and about 5 minutes for the fire to ignite."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd24-gear-manacles",
+    "name": "Manacles",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "As a Utilize action, you can use Manacles to bind an unwilling Small or Medium creature within 5 feet of yourself that has the Grappled, Incapacitated, or Restrained condition if you succeed on a DC 13 Dexterity (Sleight of Hand) check. While bound, a creature has Disadvantage on attack rolls, and the creature is Restrained if the Manacles are attached to a chain or hook that is fixed in place. Escaping the Manacles requires a successful DC 20 Dexterity (Sleight of Hand) check as an action. Bursting them requires a successful DC 25 Strength (Athletics) check as an action.\nEach set of Manacles comes with a key. Without the key, a creature can use Thieves' Tools to pick the Manacles' lock with a successful DC 15 Dexterity (Sleight of Hand) check."
+    ],
+    "activities": [],
+    "weight": 6
+  },
+  {
+    "id": "srd24-gear-mason-s-tools",
+    "name": "Mason's Tools",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Mason's Tools"
+    ],
+    "activities": [],
+    "weight": 8
+  },
+  {
+    "id": "srd24-gear-map",
+    "name": "Map",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "If you consult an accurate Map, you gain a +5 bonus to Wisdom (Survival) checks you make to find your way in the place represented on it."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd24-gear-mirror",
+    "name": "Mirror",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A handheld steel Mirror is useful for personal cosmetics but also for peeking around corners and reflecting light as a signal."
+    ],
+    "activities": [],
+    "weight": 0.5
+  },
+  {
+    "id": "srd24-gear-maul",
+    "name": "Maul",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Maul"
+    ],
+    "activities": [],
+    "weight": 10
+  },
+  {
+    "id": "srd24-gear-morningstar",
+    "name": "Morningstar",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Morningstar"
+    ],
+    "activities": [],
+    "weight": 4
+  },
+  {
+    "id": "srd24-gear-musket",
+    "name": "Musket",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Musket"
+    ],
+    "activities": [],
+    "weight": 10
+  },
+  {
+    "id": "srd24-gear-navigator-s-tools",
+    "name": "Navigator's Tools",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Navigator's Tools"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-needles",
+    "name": "Needles",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Needles"
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-net",
+    "name": "Net",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "When you take the Attack action, you can replace one of your attacks with throwing a Net. Target a creature you can see within 15 feet of yourself. The target must succeed on a Dexterity saving throw (DC 8 plus your Dexterity modifier and Proficiency Bonus) or have the Restrained condition until it escapes. The target succeeds automatically if it is Huge or larger.\nTo escape, the target or a creature within 5 feet of it must take an action to make a DC 10 Strength (Athletics) check, freeing the Restrained creature on a success. Destroying the Net (AC 10; 5 HP; Immunity to Bludgeoning, Poison, and Psychic damage) also frees the target, ending the effect."
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd24-gear-oil",
+    "name": "Oil",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "You can douse a creature, object, or space with Oil or use it as fuel, as detailed below.\n**Dousing a Creature or an Object.** When you take the Attack action, you can replace one of your attacks with throwing an Oil flask. Target one creature or object within 20 feet of yourself. The target must succeed on a Dexterity saving throw (DC 8 plus your Dexterity modifier and Proficiency Bonus) or be covered in oil. If the target takes Fire damage before the oil dries (after 1 minute), the target takes an extra 5 Fire damage from burning oil.\n**Dousing a Space.** You can take the Utilize action to pour an Oil flask on level ground to cover a 5-foot-square area within 5 feet of yourself. If lit, the oil burns until the end of the turn 2 rounds from when the oil was lit (or 12 seconds) and deals 5 Fire damage to any creature that enters the area or ends its turn there. A creature can take this damage only once per turn.\n**Fuel.**  Oil serves as fuel for Lamps and Lanterns. Once lit, a flask of Oil burns for 6 hours in a Lamp or Lantern. That duration doesn't need to be consecutive; you can extinguish the burning Oil (as a Utilize action) and rekindle it again until it has burned for a total of 6 hours"
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-orb",
+    "name": "Orb",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Orb"
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd24-gear-padded-armor",
+    "name": "Padded Armor",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Padded Armor"
+    ],
+    "activities": [],
+    "weight": 8
+  },
+  {
+    "id": "srd24-gear-painter-s-supplies",
+    "name": "Painter's Supplies",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Painter's Supplies"
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd24-gear-pan-flute",
+    "name": "Pan flute",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Pan flute"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-paper",
+    "name": "Paper",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "One sheet of Paper can hold about 250 handwritten words."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd24-gear-parchment",
+    "name": "Parchment",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "One sheet of Parchment can hold about 250 handwritten words."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd24-gear-perfume",
+    "name": "Perfume",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Perfume comes in a 4-ounce vial. For 1 hour after applying Perfume to yourself, you have Advantage on Charisma (Persuasion) checks made to influence an Indifferent Humanoid within 5 feet of yourself."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd24-gear-pike",
+    "name": "Pike",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Pike"
+    ],
+    "activities": [],
+    "weight": 6
+  },
+  {
+    "id": "srd24-gear-pistol",
+    "name": "Pistol",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Pistol"
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd24-gear-poisoner-s-kit",
+    "name": "Poisoner's Kit",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Poisoner's Kit"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-plate-armor",
+    "name": "Plate Armor",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Plate Armor"
+    ],
+    "activities": [],
+    "weight": 65
+  },
+  {
+    "id": "srd24-gear-playing-cards",
+    "name": "Playing Cards",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Playing Cards"
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd24-gear-poison-basic",
+    "name": "Poison, Basic",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "As a Bonus Action, you can use a vial of Basic Poison to coat one weapon or up to three pieces of ammunition. A creature that takes Piercing or Slashing damage from the poisoned weapon or ammunition takes an extra 1d4 Poison damage. Once applied, the poison retains potency for 1 minute or until its damage is dealt, whichever comes first."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd24-gear-pole",
+    "name": "Pole",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Pole is 10 feet long. You can use it to touch something up to 10 feet away. If you must make a Strength (Athletics) check as part of a High or Long Jump, you can use the Pole to vault, giving yourself Advantage on the check."
+    ],
+    "activities": [],
+    "weight": 7
+  },
+  {
+    "id": "srd24-gear-pot-iron",
+    "name": "Pot, Iron",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "An Iron Pot holds up to 1 gallon."
+    ],
+    "activities": [],
+    "weight": 10
+  },
+  {
+    "id": "srd24-gear-potion-of-healing",
+    "name": "Potion of Healing",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "This potion is a magic item. As a Bonus Action, you can drink it or administer it to another creature within 5 feet of yourself. The creature that drinks the magical red fluid in this vial regains 2d4 + 2 Hit Points."
+    ],
+    "activities": [],
+    "weight": 0.5
+  },
+  {
+    "id": "srd24-gear-potter-s-tools",
+    "name": "Potter's Tools",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Potter's Tools"
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd24-gear-pouch",
+    "name": "Pouch",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Pouch holds up to 6 pounds within one-fifth of a cubic foot."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-priest-s-pack",
+    "name": "Priest's Pack",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Priest's Pack contains the following items: Backpack, Blanket, Holy Water, Lamp, 7 days of Rations, Robe, and Tinderbox."
+    ],
+    "activities": [],
+    "weight": 29
+  },
+  {
+    "id": "srd24-gear-quarterstaff",
+    "name": "Quarterstaff",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Quarterstaff"
+    ],
+    "activities": [],
+    "weight": 4
+  },
+  {
+    "id": "srd24-gear-quiver",
+    "name": "Quiver",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Quiver holds up to 20 Arrows."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-ram-portable",
+    "name": "Ram, Portable",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "You can use a Portable Ram to break down doors. When doing so, you gain a +4 bonus to the Strength check. One other character can help you use the ram, giving you Advantage on this check."
+    ],
+    "activities": [],
+    "weight": 35
+  },
+  {
+    "id": "srd24-gear-rapier",
+    "name": "Rapier",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Rapier"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-rations",
+    "name": "Rations",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Rations consist of travel-ready food, including jerky, dried fruit, hardtack, and nuts. See \"Malnutrition\" in \"Rules Glossary\" for the risks of not eating."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-reliquary",
+    "name": "Reliquary",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Holy Symbol takes one of the forms in the Holy Symbol table and is bejeweled or painted to channel divine magic. A Cleric or Paladin can use a Holy Symbol as a Spellcasting Focus.\nThe table indicates whether a Holy Symbol needs to be held, worn, or borne on fabric (such as a tabard or banner) or a Shield."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-ring-mail",
+    "name": "Ring Mail",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Ring Mail"
+    ],
+    "activities": [],
+    "weight": 40
+  },
+  {
+    "id": "srd24-gear-robe",
+    "name": "Robe",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Robe has vocational or ceremonial significance. Some events and locations admit only people wearing a Robe bearing certain colors or symbols."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-rod",
+    "name": "Rod",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Rod"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-rope",
+    "name": "Rope",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "As a Utilize action, you can tie a knot with Rope if you succeed on a DC 10 Dexterity (Sleight of Hand) check. The Rope can be burst with a successful DC 20 Strength (Athletics) check.\n You can bind an unwilling creature with the Rope only if the creature has the Grappled, Incapacitated, or Restrained condition. If the creature's legs are bound, the creature has the Restrained condition until it escapes. Escaping the Rope requires the creature to make a successful DC 15 Dexterity (Acrobatics) check as an action."
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd24-gear-sack",
+    "name": "Sack",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Sack holds up to 30 pounds within 1 cubic foot."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-scale-mail",
+    "name": "Scale Mail",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Scale Mail"
+    ],
+    "activities": [],
+    "weight": 45
+  },
+  {
+    "id": "srd24-gear-scholar-s-pack",
+    "name": "Scholar's Pack",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Scholar's Pack contains the following items: Backpack, Blanket, Book, Ink, Ink Pen, Lamp, 10 flasks of Oil, 10 sheets of Parchment, and Tinderbox."
+    ],
+    "activities": [],
+    "weight": 22
+  },
+  {
+    "id": "srd24-gear-scimitar",
+    "name": "Scimitar",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Scimitar"
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd24-gear-shawm",
+    "name": "Shawm",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Shawm"
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-shield",
+    "name": "Shield",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Shield"
+    ],
+    "activities": [],
+    "weight": 6
+  },
+  {
+    "id": "srd24-gear-shortbow",
+    "name": "Shortbow",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Shortbow"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-shortsword",
+    "name": "Shortsword",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Shortsword"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-shovel",
+    "name": "Shovel",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Working for 1 hour, you can use a Shovel to dig a hole that is 5 feet on each side in soil or similar material."
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd24-gear-sickle",
+    "name": "Sickle",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Sickle"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-signal-whistle",
+    "name": "Signal Whistle",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "When blown as a Utilize action, a Signal Whistle produces a sound that can be heard up to 600 feet away."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd24-gear-sling",
+    "name": "Sling",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Sling"
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd24-gear-smith-s-tools",
+    "name": "Smith's Tools",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Smith's Tools"
+    ],
+    "activities": [],
+    "weight": 8
+  },
+  {
+    "id": "srd24-gear-spear",
+    "name": "Spear",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Spear"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-spellbook",
+    "name": "Spellbook",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Essential for wizards, a spellbook is a leather-bound tome with 100 blank vellum pages suitable for recording spells."
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd24-gear-spell-scroll-cantrip",
+    "name": "Spell Scroll, Cantrip",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A *Spell Scroll* (Cantrip) or *Spell Scroll* (Level 1) is a magic item that bears the words of a cantrip or level 1 spell, respectively, determined by the scroll's creator. If the spell is on your class's spell list, you can read the scroll and cast the spell using its normal casting time and without providing any Material components.\nIf the spell requires a saving throw or an attack roll, the spell save DC is 13, and the attack bonus is +5. The scroll disintegrates when the casting is completed."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd24-gear-spell-scroll-level-1",
+    "name": "Spell Scroll, Level 1",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A *Spell Scroll* (Cantrip) or *Spell Scroll* (Level 1) is a magic item that bears the words of a cantrip or level 1 spell, respectively, determined by the scroll's creator. If the spell is on your class's spell list, you can read the scroll and cast the spell using its normal casting time and without providing any Material components.\nIf the spell requires a saving throw or an attack roll, the spell save DC is 13, and the attack bonus is +5. The scroll disintegrates when the casting is completed."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd24-gear-spikes-iron",
+    "name": "Spikes, Iron",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Iron Spikes come in bundles of ten. As a Utilize action, you can use a blunt object, such as a Light Hammer, to hammer a spike into wood, earth, or a similar material. You can do so to jam a door shut or to then tie a Rope or Chain to the Spike."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-splint-armor",
+    "name": "Splint Armor",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Splint Armor"
+    ],
+    "activities": [],
+    "weight": 60
+  },
+  {
+    "id": "srd24-gear-sprig-of-mistletoe",
+    "name": "Sprig of Mistletoe",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Sprig of Mistletoe"
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd24-gear-spyglass",
+    "name": "Spyglass",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Objects viewed through a Spyglass are magnified to twice their size."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-staff",
+    "name": "Staff",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Staff"
+    ],
+    "activities": [],
+    "weight": 4
+  },
+  {
+    "id": "srd24-gear-string",
+    "name": "String",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "String is 10 feet long. You can tie a knot in it as a Utilize action."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd24-gear-studded-leather-armor",
+    "name": "Studded Leather Armor",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Studded Leather Armor"
+    ],
+    "activities": [],
+    "weight": 13
+  },
+  {
+    "id": "srd24-gear-tent",
+    "name": "Tent",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Tent sleeps up to two Small or Medium creatures."
+    ],
+    "activities": [],
+    "weight": 20
+  },
+  {
+    "id": "srd24-gear-thieves-tools",
+    "name": "Thieves' Tools",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Thieves' Tools"
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-three-dragon-ante",
+    "name": "Three-Dragon Ante",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Three-Dragon Ante"
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd24-gear-tinderbox",
+    "name": "Tinderbox",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Tinderbox is a small container holding flint, fire steel, and tinder (usually dry cloth soaked in light oil) used to kindle a fire. Using it to light a Candle, Lamp, Lantern, or Torch—or anything else with exposed fuel—takes a Bonus Action. Lighting any other fire takes 1 minute."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-tinker-s-tools",
+    "name": "Tinker's Tools",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Tinker's Tools"
+    ],
+    "activities": [],
+    "weight": 10
+  },
+  {
+    "id": "srd24-gear-torch",
+    "name": "Torch",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Torch burns for 1 hour, casting Bright Light in a 20-foot radius and Dim Light for an additional 20 feet. When you take the Attack action, you can attack with the Torch, using it as a Simple Melee weapon. On a hit, the target takes 1 Fire damage."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-trident",
+    "name": "Trident",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Trident"
+    ],
+    "activities": [],
+    "weight": 4
+  },
+  {
+    "id": "srd24-gear-vial",
+    "name": "Vial",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Vial holds up to 4 ounces."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd24-gear-viol",
+    "name": "Viol",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Viol"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-wand",
+    "name": "Wand",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Wand"
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd24-gear-warhammer",
+    "name": "Warhammer",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Warhammer"
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd24-gear-war-pick",
+    "name": "War Pick",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "War Pick"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd24-gear-waterskin",
+    "name": "Waterskin",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "A Waterskin holds up to 4 pints. If you don't drink sufficient water, you risk dehydration (see “Rules Glossary”)."
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd24-gear-weaver-s-tools",
+    "name": "Weaver's Tools",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Weaver's Tools"
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd24-gear-whip",
+    "name": "Whip",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Whip"
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd24-gear-woodcarver-s-tools",
+    "name": "Woodcarver's Tools",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Woodcarver's Tools"
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd24-gear-yew-wand",
+    "name": "Yew Wand",
+    "source": "SRD 5.2",
+    "ruleset": "2024",
+    "category": "gear",
+    "entries": [
+      "Yew Wand"
+    ],
+    "activities": [],
+    "weight": 1
+  }
+]

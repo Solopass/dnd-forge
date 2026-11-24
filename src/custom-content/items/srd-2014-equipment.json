@@ -1,0 +1,3310 @@
+[
+  {
+    "id": "srd14-wpn-club",
+    "name": "Club",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Club"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-club",
+        "name": "Club",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d4+@mod",
+        "damageType": "bludgeoning"
+      }
+    ],
+    "weight": 2
+  },
+  {
+    "id": "srd14-wpn-dagger",
+    "name": "Dagger",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Dagger"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-dagger",
+        "name": "Dagger",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "dex",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d4+@mod",
+        "damageType": "piercing"
+      }
+    ],
+    "weight": 1
+  },
+  {
+    "id": "srd14-wpn-greatclub",
+    "name": "Greatclub",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Greatclub"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-greatclub",
+        "name": "Greatclub",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d8+@mod",
+        "damageType": "bludgeoning"
+      }
+    ],
+    "weight": 10
+  },
+  {
+    "id": "srd14-wpn-handaxe",
+    "name": "Handaxe",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Handaxe"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-handaxe",
+        "name": "Handaxe",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d6+@mod",
+        "damageType": "slashing"
+      }
+    ],
+    "weight": 2
+  },
+  {
+    "id": "srd14-wpn-javelin",
+    "name": "Javelin",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Javelin"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-javelin",
+        "name": "Javelin",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d6+@mod",
+        "damageType": "piercing"
+      }
+    ],
+    "weight": 2
+  },
+  {
+    "id": "srd14-wpn-light-hammer",
+    "name": "Light hammer",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Light hammer"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-light-hammer",
+        "name": "Light hammer",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d4+@mod",
+        "damageType": "bludgeoning"
+      }
+    ],
+    "weight": 2
+  },
+  {
+    "id": "srd14-wpn-mace",
+    "name": "Mace",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Mace"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-mace",
+        "name": "Mace",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d6+@mod",
+        "damageType": "bludgeoning"
+      }
+    ],
+    "weight": 4
+  },
+  {
+    "id": "srd14-wpn-quarterstaff",
+    "name": "Quarterstaff",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Quarterstaff"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-quarterstaff",
+        "name": "Quarterstaff",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d6+@mod",
+        "damageType": "bludgeoning"
+      }
+    ],
+    "weight": 4
+  },
+  {
+    "id": "srd14-wpn-sickle",
+    "name": "Sickle",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Sickle"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-sickle",
+        "name": "Sickle",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d4+@mod",
+        "damageType": "slashing"
+      }
+    ],
+    "weight": 2
+  },
+  {
+    "id": "srd14-wpn-spear",
+    "name": "Spear",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Spear"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-spear",
+        "name": "Spear",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d6+@mod",
+        "damageType": "piercing"
+      }
+    ],
+    "weight": 3
+  },
+  {
+    "id": "srd14-wpn-crossbow-light",
+    "name": "Crossbow, light",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Crossbow, light"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-crossbow-light",
+        "name": "Crossbow, light",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "dex",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d8+@mod",
+        "damageType": "piercing"
+      }
+    ],
+    "weight": 5
+  },
+  {
+    "id": "srd14-wpn-dart",
+    "name": "Dart",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Dart"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-dart",
+        "name": "Dart",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "dex",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d4+@mod",
+        "damageType": "piercing"
+      }
+    ],
+    "weight": 0.25
+  },
+  {
+    "id": "srd14-wpn-shortbow",
+    "name": "Shortbow",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Shortbow"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-shortbow",
+        "name": "Shortbow",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "dex",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d6+@mod",
+        "damageType": "piercing"
+      }
+    ],
+    "weight": 2
+  },
+  {
+    "id": "srd14-wpn-sling",
+    "name": "Sling",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Sling"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-sling",
+        "name": "Sling",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "dex",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d4+@mod",
+        "damageType": "bludgeoning"
+      }
+    ],
+    "weight": 0
+  },
+  {
+    "id": "srd14-wpn-battleaxe",
+    "name": "Battleaxe",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Battleaxe"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-battleaxe",
+        "name": "Battleaxe",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d8+@mod",
+        "damageType": "slashing"
+      }
+    ],
+    "weight": 4
+  },
+  {
+    "id": "srd14-wpn-flail",
+    "name": "Flail",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Flail"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-flail",
+        "name": "Flail",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d8+@mod",
+        "damageType": "bludgeoning"
+      }
+    ],
+    "weight": 2
+  },
+  {
+    "id": "srd14-wpn-glaive",
+    "name": "Glaive",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Glaive"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-glaive",
+        "name": "Glaive",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d10+@mod",
+        "damageType": "slashing"
+      }
+    ],
+    "weight": 6
+  },
+  {
+    "id": "srd14-wpn-greataxe",
+    "name": "Greataxe",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Greataxe"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-greataxe",
+        "name": "Greataxe",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d12+@mod",
+        "damageType": "slashing"
+      }
+    ],
+    "weight": 7
+  },
+  {
+    "id": "srd14-wpn-greatsword",
+    "name": "Greatsword",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Greatsword"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-greatsword",
+        "name": "Greatsword",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "2d6+@mod",
+        "damageType": "slashing"
+      }
+    ],
+    "weight": 6
+  },
+  {
+    "id": "srd14-wpn-halberd",
+    "name": "Halberd",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Halberd"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-halberd",
+        "name": "Halberd",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d10+@mod",
+        "damageType": "slashing"
+      }
+    ],
+    "weight": 6
+  },
+  {
+    "id": "srd14-wpn-lance",
+    "name": "Lance",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Lance"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-lance",
+        "name": "Lance",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d12+@mod",
+        "damageType": "piercing"
+      }
+    ],
+    "weight": 6
+  },
+  {
+    "id": "srd14-wpn-longsword",
+    "name": "Longsword",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Longsword"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-longsword",
+        "name": "Longsword",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d8+@mod",
+        "damageType": "slashing"
+      }
+    ],
+    "weight": 3
+  },
+  {
+    "id": "srd14-wpn-maul",
+    "name": "Maul",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Maul"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-maul",
+        "name": "Maul",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "2d6+@mod",
+        "damageType": "bludgeoning"
+      }
+    ],
+    "weight": 10
+  },
+  {
+    "id": "srd14-wpn-morningstar",
+    "name": "Morningstar",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Morningstar"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-morningstar",
+        "name": "Morningstar",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d8+@mod",
+        "damageType": "piercing"
+      }
+    ],
+    "weight": 4
+  },
+  {
+    "id": "srd14-wpn-pike",
+    "name": "Pike",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Pike"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-pike",
+        "name": "Pike",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d10+@mod",
+        "damageType": "piercing"
+      }
+    ],
+    "weight": 18
+  },
+  {
+    "id": "srd14-wpn-rapier",
+    "name": "Rapier",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Rapier"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-rapier",
+        "name": "Rapier",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "dex",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d8+@mod",
+        "damageType": "piercing"
+      }
+    ],
+    "weight": 2
+  },
+  {
+    "id": "srd14-wpn-scimitar",
+    "name": "Scimitar",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Scimitar"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-scimitar",
+        "name": "Scimitar",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "dex",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d6+@mod",
+        "damageType": "slashing"
+      }
+    ],
+    "weight": 3
+  },
+  {
+    "id": "srd14-wpn-shortsword",
+    "name": "Shortsword",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Shortsword"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-shortsword",
+        "name": "Shortsword",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "dex",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d6+@mod",
+        "damageType": "piercing"
+      }
+    ],
+    "weight": 2
+  },
+  {
+    "id": "srd14-wpn-trident",
+    "name": "Trident",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Trident"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-trident",
+        "name": "Trident",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d6+@mod",
+        "damageType": "piercing"
+      }
+    ],
+    "weight": 4
+  },
+  {
+    "id": "srd14-wpn-war-pick",
+    "name": "War pick",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "War pick"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-war-pick",
+        "name": "War pick",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d8+@mod",
+        "damageType": "piercing"
+      }
+    ],
+    "weight": 2
+  },
+  {
+    "id": "srd14-wpn-warhammer",
+    "name": "Warhammer",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Warhammer"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-warhammer",
+        "name": "Warhammer",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "str",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d8+@mod",
+        "damageType": "bludgeoning"
+      }
+    ],
+    "weight": 2
+  },
+  {
+    "id": "srd14-wpn-whip",
+    "name": "Whip",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Whip"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-whip",
+        "name": "Whip",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "dex",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d4+@mod",
+        "damageType": "slashing"
+      }
+    ],
+    "weight": 3
+  },
+  {
+    "id": "srd14-wpn-blowgun",
+    "name": "Blowgun",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Blowgun"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-blowgun",
+        "name": "Blowgun",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "dex",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1+@mod",
+        "damageType": "piercing"
+      }
+    ],
+    "weight": 1
+  },
+  {
+    "id": "srd14-wpn-crossbow-hand",
+    "name": "Crossbow, hand",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Crossbow, hand"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-crossbow-hand",
+        "name": "Crossbow, hand",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "dex",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d6+@mod",
+        "damageType": "piercing"
+      }
+    ],
+    "weight": 3
+  },
+  {
+    "id": "srd14-wpn-crossbow-heavy",
+    "name": "Crossbow, heavy",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "imageUrl": "/api/images/equipment/crossbow-heavy.png",
+    "entries": [
+      "Crossbow, heavy"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-crossbow-heavy",
+        "name": "Crossbow, heavy",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "dex",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d10+@mod",
+        "damageType": "piercing"
+      }
+    ],
+    "weight": 18
+  },
+  {
+    "id": "srd14-wpn-longbow",
+    "name": "Longbow",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Longbow"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-longbow",
+        "name": "Longbow",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "dex",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d8+@mod",
+        "damageType": "piercing"
+      }
+    ],
+    "weight": 2
+  },
+  {
+    "id": "srd14-wpn-net",
+    "name": "Net",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "weapon",
+    "entries": [
+      "Net"
+    ],
+    "activities": [
+      {
+        "id": "act-srd14-wpn-net",
+        "name": "Net",
+        "type": "attack",
+        "actionEconomy": "action",
+        "attackAbility": "dex",
+        "attackBonusFormula": "@mod+@prof",
+        "damageFormula": "1d8+@mod",
+        "damageType": "slashing"
+      }
+    ],
+    "weight": 3
+  },
+  {
+    "id": "srd14-arm-padded-armor",
+    "name": "Padded Armor",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "armor",
+    "entries": [
+      "Padded Armor"
+    ],
+    "activities": [],
+    "weight": 8,
+    "acFormula": {
+      "base": 11,
+      "dexCap": null
+    }
+  },
+  {
+    "id": "srd14-arm-leather-armor",
+    "name": "Leather Armor",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "armor",
+    "entries": [
+      "Leather Armor"
+    ],
+    "activities": [],
+    "weight": 10,
+    "acFormula": {
+      "base": 11,
+      "dexCap": null
+    }
+  },
+  {
+    "id": "srd14-arm-studded-leather-armor",
+    "name": "Studded Leather Armor",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "armor",
+    "entries": [
+      "Studded Leather Armor"
+    ],
+    "activities": [],
+    "weight": 13,
+    "acFormula": {
+      "base": 12,
+      "dexCap": null
+    }
+  },
+  {
+    "id": "srd14-arm-hide-armor",
+    "name": "Hide Armor",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "armor",
+    "entries": [
+      "Hide Armor"
+    ],
+    "activities": [],
+    "weight": 12,
+    "acFormula": {
+      "base": 12,
+      "dexCap": 2
+    }
+  },
+  {
+    "id": "srd14-arm-chain-shirt",
+    "name": "Chain Shirt",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "armor",
+    "entries": [
+      "Chain Shirt"
+    ],
+    "activities": [],
+    "weight": 20,
+    "acFormula": {
+      "base": 13,
+      "dexCap": 2
+    }
+  },
+  {
+    "id": "srd14-arm-scale-mail",
+    "name": "Scale Mail",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "armor",
+    "entries": [
+      "Scale Mail"
+    ],
+    "activities": [],
+    "weight": 45,
+    "acFormula": {
+      "base": 14,
+      "dexCap": 2
+    }
+  },
+  {
+    "id": "srd14-arm-breastplate",
+    "name": "Breastplate",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "armor",
+    "entries": [
+      "Breastplate"
+    ],
+    "activities": [],
+    "weight": 20,
+    "acFormula": {
+      "base": 14,
+      "dexCap": 2
+    }
+  },
+  {
+    "id": "srd14-arm-half-plate-armor",
+    "name": "Half Plate Armor",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "armor",
+    "entries": [
+      "Half Plate Armor"
+    ],
+    "activities": [],
+    "weight": 40,
+    "acFormula": {
+      "base": 15,
+      "dexCap": 2
+    }
+  },
+  {
+    "id": "srd14-arm-ring-mail",
+    "name": "Ring Mail",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "armor",
+    "entries": [
+      "Ring Mail"
+    ],
+    "activities": [],
+    "weight": 40,
+    "acFormula": {
+      "base": 14,
+      "dexCap": 0
+    }
+  },
+  {
+    "id": "srd14-arm-chain-mail",
+    "name": "Chain Mail",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "armor",
+    "entries": [
+      "Chain Mail"
+    ],
+    "activities": [],
+    "weight": 55,
+    "acFormula": {
+      "base": 16,
+      "dexCap": 0
+    }
+  },
+  {
+    "id": "srd14-arm-splint-armor",
+    "name": "Splint Armor",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "armor",
+    "entries": [
+      "Splint Armor"
+    ],
+    "activities": [],
+    "weight": 60,
+    "acFormula": {
+      "base": 17,
+      "dexCap": 0
+    }
+  },
+  {
+    "id": "srd14-arm-plate-armor",
+    "name": "Plate Armor",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "armor",
+    "entries": [
+      "Plate Armor"
+    ],
+    "activities": [],
+    "weight": 65,
+    "acFormula": {
+      "base": 18,
+      "dexCap": 0
+    }
+  },
+  {
+    "id": "srd14-arm-shield",
+    "name": "Shield",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "armor",
+    "entries": [
+      "Shield"
+    ],
+    "activities": [],
+    "weight": 6,
+    "acFormula": {
+      "base": 2,
+      "dexCap": 0
+    }
+  },
+  {
+    "id": "srd14-gear-abacus",
+    "name": "Abacus",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Abacus"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd14-gear-acid-vial",
+    "name": "Acid (vial)",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "As an action, you can splash the contents of this vial onto a creature within 5 feet of you or throw the vial up to 20 feet, shattering it on impact. In either case, make a ranged attack against a creature or object, treating the acid as an improvised weapon.",
+      "On a hit, the target takes 2d6 acid damage."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-alchemist-s-fire-flask",
+    "name": "Alchemist's fire (flask)",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "This sticky, adhesive fluid ignites when exposed to air.",
+      "As an action, you can throw this flask up to 20 feet, shattering it on impact. Make a ranged attack against a creature or object, treating the alchemist's fire as an improvised weapon.",
+      "On a hit, the target takes 1d4 fire damage at the start of each of its turns. A creature can end this damage by using its action to make a DC 10 Dexterity check to extinguish the flames."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-alms-box",
+    "name": "Alms box",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A small box for alms, typically found in a priest's pack."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-arrow",
+    "name": "Arrow",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Arrow"
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-block-of-incense",
+    "name": "Block of incense",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A block of incense, typically found in a priest's pack."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-blowgun-needle",
+    "name": "Blowgun needle",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Blowgun needle"
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-censer",
+    "name": "Censer",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A censer, typically found in a priest's pack."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-crossbow-bolt",
+    "name": "Crossbow bolt",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Crossbow bolt"
+    ],
+    "activities": [],
+    "weight": 1.5
+  },
+  {
+    "id": "srd14-gear-sling-bullet",
+    "name": "Sling bullet",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Sling bullet"
+    ],
+    "activities": [],
+    "weight": 1.5
+  },
+  {
+    "id": "srd14-gear-amulet",
+    "name": "Amulet",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A holy symbol is a representation of a god or pantheon. It might be an amulet depicting a symbol representing a deity, the same symbol carefully engraved or inlaid as an emblem on a shield, or a tiny box holding a fragment of a sacred relic.",
+      "Appendix B lists the symbols commonly associated with many gods in the multiverse. A cleric or paladin can use a holy symbol as a spellcasting focus. To use the symbol in this way, the caster must hold it in hand, wear it visibly, or bear it on a shield."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-antitoxin-vial",
+    "name": "Antitoxin (vial)",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A creature that drinks this vial of liquid gains advantage on saving throws against poison for 1 hour. It confers no benefit to undead or constructs."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-crystal",
+    "name": "Crystal",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "An arcane focus is a special item--an orb, a crystal, a rod, a specially constructed staff, a wand-like length of wood, or some similar item--designed to channel the power of arcane spells. A sorcerer, warlock, or wizard can use such an item as a spellcasting focus."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-orb",
+    "name": "Orb",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "An arcane focus is a special item--an orb, a crystal, a rod, a specially constructed staff, a wand-like length of wood, or some similar item--designed to channel the power of arcane spells. A sorcerer, warlock, or wizard can use such an item as a spellcasting focus."
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd14-gear-rod",
+    "name": "Rod",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "An arcane focus is a special item--an orb, a crystal, a rod, a specially constructed staff, a wand-like length of wood, or some similar item--designed to channel the power of arcane spells. A sorcerer, warlock, or wizard can use such an item as a spellcasting focus."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd14-gear-staff",
+    "name": "Staff",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "An arcane focus is a special item--an orb, a crystal, a rod, a specially constructed staff, a wand-like length of wood, or some similar item--designed to channel the power of arcane spells. A sorcerer, warlock, or wizard can use such an item as a spellcasting focus."
+    ],
+    "activities": [],
+    "weight": 4
+  },
+  {
+    "id": "srd14-gear-wand",
+    "name": "Wand",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "An arcane focus is a special item--an orb, a crystal, a rod, a specially constructed staff, a wand-like length of wood, or some similar item--designed to channel the power of arcane spells. A sorcerer, warlock, or wizard can use such an item as a spellcasting focus."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-backpack",
+    "name": "Backpack",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Backpack"
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd14-gear-ball-bearings-bag-of-1-000",
+    "name": "Ball bearings (bag of 1,000)",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "imageUrl": "/api/images/equipment/ball-bearings-bag-of-1000.png",
+    "entries": [
+      "As an action, you can spill these tiny metal balls from their pouch to cover a level, square area that is 10 feet on a side.",
+      "A creature moving across the covered area must succeed on a DC 10 Dexterity saving throw or fall prone.",
+      "A creature moving through the area at half speed doesn't need to make the save."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd14-gear-barrel",
+    "name": "Barrel",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Barrel"
+    ],
+    "activities": [],
+    "weight": 70
+  },
+  {
+    "id": "srd14-gear-basket",
+    "name": "Basket",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Basket"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd14-gear-bedroll",
+    "name": "Bedroll",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Bedroll"
+    ],
+    "activities": [],
+    "weight": 7
+  },
+  {
+    "id": "srd14-gear-bell",
+    "name": "Bell",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Bell"
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-blanket",
+    "name": "Blanket",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Blanket"
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd14-gear-block-and-tackle",
+    "name": "Block and tackle",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A set of pulleys with a cable threaded through them and a hook to attach to objects, a block and tackle allows you to hoist up to four times the weight you can normally lift."
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd14-gear-book",
+    "name": "Book",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A book might contain poetry, historical accounts, information pertaining to a particular field of lore, diagrams and notes on gnomish contraptions, or just about anything else that can be represented using text or pictures. A book of spells is a spellbook (described later in this section)."
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd14-gear-bottle-glass",
+    "name": "Bottle, glass",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Bottle, glass"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd14-gear-bucket",
+    "name": "Bucket",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Bucket"
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd14-gear-caltrops",
+    "name": "Caltrops",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "As an action, you can spread a bag of caltrops to cover a square area that is 5 feet on a side.",
+      "Any creature that enters the area must succeed on a DC 15 Dexterity saving throw or stop moving this turn and take 1 piercing damage.",
+      "Taking this damage reduces the creature's walking speed by 10 feet until the creature regains at least 1 hit point.",
+      "A creature moving through the area at half speed doesn't need to make the save."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd14-gear-candle",
+    "name": "Candle",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "For 1 hour, a candle sheds bright light in a 5-foot radius and dim light for an additional 5 feet."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-case-crossbow-bolt",
+    "name": "Case, crossbow bolt",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "This wooden case can hold up to twenty crossbow bolts."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-case-map-or-scroll",
+    "name": "Case, map or scroll",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "This cylindrical leather case can hold up to ten rolled-up sheets of paper or five rolled-up sheets of parchment."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-chain-10-feet",
+    "name": "Chain (10 feet)",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A chain has 10 hit points. It can be burst with a successful DC 20 Strength check."
+    ],
+    "activities": [],
+    "weight": 10
+  },
+  {
+    "id": "srd14-gear-chalk-1-piece",
+    "name": "Chalk (1 piece)",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Chalk (1 piece)"
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-chest",
+    "name": "Chest",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Chest"
+    ],
+    "activities": [],
+    "weight": 25
+  },
+  {
+    "id": "srd14-gear-clothes-common",
+    "name": "Clothes, common",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Clothes, common"
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd14-gear-clothes-costume",
+    "name": "Clothes, costume",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Clothes, costume"
+    ],
+    "activities": [],
+    "weight": 4
+  },
+  {
+    "id": "srd14-gear-clothes-fine",
+    "name": "Clothes, fine",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Clothes, fine"
+    ],
+    "activities": [],
+    "weight": 6
+  },
+  {
+    "id": "srd14-gear-clothes-traveler-s",
+    "name": "Clothes, traveler's",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Clothes, traveler's"
+    ],
+    "activities": [],
+    "weight": 4
+  },
+  {
+    "id": "srd14-gear-component-pouch",
+    "name": "Component pouch",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A component pouch is a small, watertight leather belt pouch that has compartments to hold all the material components and other special items you need to cast your spells, except for those components that have a specific cost (as indicated in a spell's description)."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd14-gear-crowbar",
+    "name": "Crowbar",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Using a crowbar grants advantage to Strength checks where the crowbar's leverage can be applied."
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd14-gear-sprig-of-mistletoe",
+    "name": "Sprig of mistletoe",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A druidic focus might be a sprig of mistletoe or holly, a wand or scepter made of yew or another special wood, a staff drawn whole out of a living tree, or a totem object incorporating feathers, fur, bones, and teeth from sacred animals. A druid can use such an object as a spellcasting focus."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-totem",
+    "name": "Totem",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A druidic focus might be a sprig of mistletoe or holly, a wand or scepter made of yew or another special wood, a staff drawn whole out of a living tree, or a totem object incorporating feathers, fur, bones, and teeth from sacred animals. A druid can use such an object as a spellcasting focus."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-wooden-staff",
+    "name": "Wooden staff",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A druidic focus might be a sprig of mistletoe or holly, a wand or scepter made of yew or another special wood, a staff drawn whole out of a living tree, or a totem object incorporating feathers, fur, bones, and teeth from sacred animals. A druid can use such an object as a spellcasting focus."
+    ],
+    "activities": [],
+    "weight": 4
+  },
+  {
+    "id": "srd14-gear-yew-wand",
+    "name": "Yew wand",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A druidic focus might be a sprig of mistletoe or holly, a wand or scepter made of yew or another special wood, a staff drawn whole out of a living tree, or a totem object incorporating feathers, fur, bones, and teeth from sacred animals. A druid can use such an object as a spellcasting focus."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-emblem",
+    "name": "Emblem",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A holy symbol is a representation of a god or pantheon. It might be an amulet depicting a symbol representing a deity, the same symbol carefully engraved or inlaid as an emblem on a shield, or a tiny box holding a fragment of a sacred relic.",
+      "Appendix B lists the symbols commonly associated with many gods in the multiverse. A cleric or paladin can use a holy symbol as a spellcasting focus. To use the symbol in this way, the caster must hold it in hand, wear it visibly, or bear it on a shield."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-fishing-tackle",
+    "name": "Fishing tackle",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "This kit includes a wooden rod, silken line, corkwood bobbers, steel hooks, lead sinkers, velvet lures, and narrow netting."
+    ],
+    "activities": [],
+    "weight": 4
+  },
+  {
+    "id": "srd14-gear-flask-or-tankard",
+    "name": "Flask or tankard",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Flask or tankard"
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-grappling-hook",
+    "name": "Grappling hook",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Grappling hook"
+    ],
+    "activities": [],
+    "weight": 4
+  },
+  {
+    "id": "srd14-gear-hammer",
+    "name": "Hammer",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Hammer"
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd14-gear-hammer-sledge",
+    "name": "Hammer, sledge",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Hammer, sledge"
+    ],
+    "activities": [],
+    "weight": 10
+  },
+  {
+    "id": "srd14-gear-holy-water-flask",
+    "name": "Holy water (flask)",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "As an action, you can splash the contents of this flask onto a creature within 5 feet of you or throw it up to 20 feet, shattering it on impact. In either case, make a ranged attack against a target creature, treating the holy water as an improvised weapon.",
+      "If the target is a fiend or undead, it takes 2d6 radiant damage.",
+      "A cleric or paladin may create holy water by performing a special ritual.",
+      "The ritual takes 1 hour to perform, uses 25 gp worth of powdered silver, and requires the caster to expend a 1st-level spell slot."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-hourglass",
+    "name": "Hourglass",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Hourglass"
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-hunting-trap",
+    "name": "Hunting trap",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "When you use your action to set it, this trap forms a saw-toothed steel ring that snaps shut when a creature steps on a pressure plate in the center. The trap is affixed by a heavy chain to an immobile object, such as a tree or a spike driven into the ground.",
+      "A creature that steps on the plate must succeed on a DC 13 Dexterity saving throw or take 1d4 piercing damage and stop moving. Thereafter, until the creature breaks free of the trap, its movement is limited by the length of the chain (typically 3 feet long).",
+      "A creature can use its action to make a DC 13 Strength check, freeing itself or another creature within its reach on a success. Each failed check deals 1 piercing damage to the trapped creature."
+    ],
+    "activities": [],
+    "weight": 25
+  },
+  {
+    "id": "srd14-gear-ink-1-ounce-bottle",
+    "name": "Ink (1 ounce bottle)",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Ink (1 ounce bottle)"
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-ink-pen",
+    "name": "Ink pen",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Ink pen"
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-jug-or-pitcher",
+    "name": "Jug or pitcher",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Jug or pitcher"
+    ],
+    "activities": [],
+    "weight": 4
+  },
+  {
+    "id": "srd14-gear-climber-s-kit",
+    "name": "Climber's Kit",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A climber's kit includes special pitons, boot tips, gloves, and a harness. You can use the climber's kit as an action to anchor yourself; when you do, you can't fall more than 25 feet from the point where you anchored yourself, and you can't climb more than 25 feet away from that point without undoing the anchor."
+    ],
+    "activities": [],
+    "weight": 12
+  },
+  {
+    "id": "srd14-gear-disguise-kit",
+    "name": "Disguise Kit",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "This pouch of cosmetics, hair dye, and small props lets you create disguises that change your physical appearance. Proficiency with this kit lets you add your proficiency bonus to any ability checks you make to create a visual disguise."
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd14-gear-forgery-kit",
+    "name": "Forgery Kit",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "This small box contains a variety of papers and parchments, pens and inks, seals and sealing wax, gold and silver leaf, and other supplies necessary to create convincing forgeries of physical documents. Proficiency with this kit lets you add your proficiency bonus to any ability checks you make to create a physical forgery of a document."
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd14-gear-herbalism-kit",
+    "name": "Herbalism Kit",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "This kit contains a variety of instruments such as clippers, mortar and pestle, and pouches and vials used by herbalists to create remedies and potions. Proficiency with this kit lets you add your proficiency bonus to any ability checks you make to identify or apply herbs. Also, proficiency with this kit is required to create antitoxin and potions of healing."
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd14-gear-healer-s-kit",
+    "name": "Healer's Kit",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "This kit is a leather pouch containing bandages, salves, and splints. The kit has ten uses. As an action, you can expend one use of the kit to stabilize a creature that has 0 hit points, without needing to make a Wisdom (Medicine) check."
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd14-gear-mess-kit",
+    "name": "Mess Kit",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "This tin box contains a cup and simple cutlery. The box clamps together, and one side can be used as a cooking pan and the other as a plate or shallow bowl."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-poisoner-s-kit",
+    "name": "Poisoner's Kit",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A poisoner's kit includes the vials, chemicals, and other equipment necessary for the creation of poisons. Proficiency with this kit lets you add your proficiency bonus to any ability checks you make to craft or use poisons."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd14-gear-ladder-10-foot",
+    "name": "Ladder (10-foot)",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Ladder (10-foot)"
+    ],
+    "activities": [],
+    "weight": 25
+  },
+  {
+    "id": "srd14-gear-lamp",
+    "name": "Lamp",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A lamp casts bright light in a 15-foot radius and dim light for an additional 30 feet. Once lit, it burns for 6 hours on a flask (1 pint) of oil."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-lantern-bullseye",
+    "name": "Lantern, bullseye",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A bullseye lantern casts bright light in a 60-foot cone and dim light for an additional 60 feet. Once lit, it burns for 6 hours on a flask (1 pint) of oil."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd14-gear-lantern-hooded",
+    "name": "Lantern, hooded",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A hooded lantern casts bright light in a 30-foot radius and dim light for an additional 30 feet. Once lit, it burns for 6 hours on a flask (1 pint) of oil. As an action, you can lower the hood, reducing the light to dim light in a 5-foot radius."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd14-gear-little-bag-of-sand",
+    "name": "Little bag of sand",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A small bag of sand, typically found in a scholar's pack."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-lock",
+    "name": "Lock",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A key is provided with the lock. Without the key, a creature proficient with thieves' tools can pick this lock with a successful DC 15 Dexterity check. Your GM may decide that better locks are available for higher prices."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-magnifying-glass",
+    "name": "Magnifying glass",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "This lens allows a closer look at small objects. It is also useful as a substitute for flint and steel when starting fires. Lighting a fire with a magnifying glass requires light as bright as sunlight to focus, tinder to ignite, and about 5 minutes for the fire to ignite.",
+      "A magnifying glass grants advantage on any ability check made to appraise or inspect an item that is small or highly detailed."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-manacles",
+    "name": "Manacles",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "These metal restraints can bind a Small or Medium creature. Escaping the manacles requires a successful DC 20 Dexterity check. Breaking them requires a successful DC 20 Strength check.",
+      "Each set of manacles comes with one key. Without the key, a creature proficient with thieves' tools can pick the manacles' lock with a successful DC 15 Dexterity check. Manacles have 15 hit points."
+    ],
+    "activities": [],
+    "weight": 6
+  },
+  {
+    "id": "srd14-gear-mirror-steel",
+    "name": "Mirror, steel",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Mirror, steel"
+    ],
+    "activities": [],
+    "weight": 0.5
+  },
+  {
+    "id": "srd14-gear-oil-flask",
+    "name": "Oil (flask)",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Oil usually comes in a clay flask that holds 1 pint.",
+      "As an action, you can splash the oil in this flask onto a creature within 5 feet of you or throw it up to 20 feet, shattering it on impact. Make a ranged attack against a target creature or object, treating the oil as an improvised weapon.",
+      "On a hit, the target is covered in oil. If the target takes any fire damage before the oil dries (after 1 minute), the target takes an additional 5 fire damage from the burning oil.",
+      "You can also pour a flask of oil on the ground to cover a 5-foot-square area, provided that the surface is level.",
+      "If lit, the oil burns for 2 rounds and deals 5 fire damage to any creature that enters the area or ends its turn in the area. A creature can take this damage only once per turn."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-paper-one-sheet",
+    "name": "Paper (one sheet)",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Paper (one sheet)"
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-parchment-one-sheet",
+    "name": "Parchment (one sheet)",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Parchment (one sheet)"
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-perfume-vial",
+    "name": "Perfume (vial)",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Perfume (vial)"
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-pick-miner-s",
+    "name": "Pick, miner's",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Pick, miner's"
+    ],
+    "activities": [],
+    "weight": 10
+  },
+  {
+    "id": "srd14-gear-piton",
+    "name": "Piton",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Piton"
+    ],
+    "activities": [],
+    "weight": 0.25
+  },
+  {
+    "id": "srd14-gear-poison-basic-vial",
+    "name": "Poison, basic (vial)",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "You can use the poison in this vial to coat one slashing or piercing weapon or up to three pieces of ammunition. Applying the poison takes an action. A creature hit by the poisoned weapon or ammunition must make a DC 10 Constitution saving throw or take 1d4 poison damage. Once applied, the poison retains potency for 1 minute before drying."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-pole-10-foot",
+    "name": "Pole (10-foot)",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Pole (10-foot)"
+    ],
+    "activities": [],
+    "weight": 7
+  },
+  {
+    "id": "srd14-gear-pot-iron",
+    "name": "Pot, iron",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Pot, iron"
+    ],
+    "activities": [],
+    "weight": 10
+  },
+  {
+    "id": "srd14-gear-pouch",
+    "name": "Pouch",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A cloth or leather pouch can hold up to 20 sling bullets or 50 blowgun needles, among other things. A compartmentalized pouch for holding spell components is called a component pouch (described earlier in this section)."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-quiver",
+    "name": "Quiver",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A quiver can hold up to 20 arrows."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-ram-portable",
+    "name": "Ram, portable",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "You can use a portable ram to break down doors. When doing so, you gain a +4 bonus on the Strength check. One other character can help you use the ram, giving you advantage on this check."
+    ],
+    "activities": [],
+    "weight": 35
+  },
+  {
+    "id": "srd14-gear-rations-1-day",
+    "name": "Rations (1 day)",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Rations consist of dry foods suitable for extended travel, including jerky, dried fruit, hardtack, and nuts."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd14-gear-reliquary",
+    "name": "Reliquary",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A holy symbol is a representation of a god or pantheon. It might be an amulet depicting a symbol representing a deity, the same symbol carefully engraved or inlaid as an emblem on a shield, or a tiny box holding a fragment of a sacred relic.",
+      "Appendix B lists the symbols commonly associated with many gods in the multiverse. A cleric or paladin can use a holy symbol as a spellcasting focus. To use the symbol in this way, the caster must hold it in hand, wear it visibly, or bear it on a shield."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd14-gear-robes",
+    "name": "Robes",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Robes"
+    ],
+    "activities": [],
+    "weight": 4
+  },
+  {
+    "id": "srd14-gear-rope-hempen-50-feet",
+    "name": "Rope, hempen (50 feet)",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Rope, whether made of hemp or silk, has 2 hit points and can be burst with a DC 17 Strength check."
+    ],
+    "activities": [],
+    "weight": 10
+  },
+  {
+    "id": "srd14-gear-rope-silk-50-feet",
+    "name": "Rope, silk (50 feet)",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Rope, whether made of hemp or silk, has 2 hit points and can be burst with a DC 17 Strength check."
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd14-gear-sack",
+    "name": "Sack",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Sack"
+    ],
+    "activities": [],
+    "weight": 0.5
+  },
+  {
+    "id": "srd14-gear-scale-merchant-s",
+    "name": "Scale, merchant's",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A scale includes a small balance, pans, and a suitable assortment of weights up to 2 pounds. With it, you can measure the exact weight of small objects, such as raw precious metals or trade goods, to help determine their worth."
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd14-gear-sealing-wax",
+    "name": "Sealing wax",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Sealing wax"
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-shovel",
+    "name": "Shovel",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Shovel"
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd14-gear-signal-whistle",
+    "name": "Signal whistle",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Signal whistle"
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-signet-ring",
+    "name": "Signet ring",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Signet ring"
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-small-knife",
+    "name": "Small knife",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A small knife, typically found in a scholar's pack."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-soap",
+    "name": "Soap",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Soap"
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-spellbook",
+    "name": "Spellbook",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Essential for wizards, a spellbook is a leather-bound tome with 100 blank vellum pages suitable for recording spells."
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd14-gear-spike-iron",
+    "name": "Spike, iron",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Spike, iron"
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd14-gear-spyglass",
+    "name": "Spyglass",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Objects viewed through a spyglass are magnified to twice their size."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-string-10-feet",
+    "name": "String (10 feet)",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A 10-foot length of string, typically found in a burglar's pack."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-tent-two-person",
+    "name": "Tent, two-person",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A simple and portable canvas shelter, a tent sleeps two."
+    ],
+    "activities": [],
+    "weight": 20
+  },
+  {
+    "id": "srd14-gear-tinderbox",
+    "name": "Tinderbox",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "This small container holds flint, fire steel, and tinder (usually dry cloth soaked in light oil) used to kindle a fire. Using it to light a torch--or anything else with abundant, exposed fuel--takes an action.",
+      "Lighting any other fire takes 1 minute."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-torch",
+    "name": "Torch",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A torch burns for 1 hour, providing bright light in a 20-foot radius and dim light for an additional 20 feet. If you make a melee attack with a burning torch and hit, it deals 1 fire damage."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-vestments",
+    "name": "Vestments",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Religious clothing, typically found in a priest's pack."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-vial",
+    "name": "Vial",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Vial"
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-waterskin",
+    "name": "Waterskin",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Waterskin"
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd14-gear-whetstone",
+    "name": "Whetstone",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Whetstone"
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-burglar-s-pack",
+    "name": "Burglar's Pack",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Burglar's Pack"
+    ],
+    "activities": []
+  },
+  {
+    "id": "srd14-gear-diplomat-s-pack",
+    "name": "Diplomat's Pack",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Diplomat's Pack"
+    ],
+    "activities": []
+  },
+  {
+    "id": "srd14-gear-dungeoneer-s-pack",
+    "name": "Dungeoneer's Pack",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Dungeoneer's Pack"
+    ],
+    "activities": []
+  },
+  {
+    "id": "srd14-gear-entertainer-s-pack",
+    "name": "Entertainer's Pack",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Entertainer's Pack"
+    ],
+    "activities": []
+  },
+  {
+    "id": "srd14-gear-explorer-s-pack",
+    "name": "Explorer's Pack",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Explorer's Pack"
+    ],
+    "activities": []
+  },
+  {
+    "id": "srd14-gear-priest-s-pack",
+    "name": "Priest's Pack",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Priest's Pack"
+    ],
+    "activities": []
+  },
+  {
+    "id": "srd14-gear-scholar-s-pack",
+    "name": "Scholar's Pack",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Scholar's Pack"
+    ],
+    "activities": []
+  },
+  {
+    "id": "srd14-gear-alchemist-s-supplies",
+    "name": "Alchemist's Supplies",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "These special tools include the items needed to pursue a craft or trade. The table shows examples of the most common types of tools, each providing items related to a single craft. Proficiency with a set of artisan's tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft. Each type of artisan's tools requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 8
+  },
+  {
+    "id": "srd14-gear-brewer-s-supplies",
+    "name": "Brewer's Supplies",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "These special tools include the items needed to pursue a craft or trade. The table shows examples of the most common types of tools, each providing items related to a single craft. Proficiency with a set of artisan's tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft. Each type of artisan's tools requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 9
+  },
+  {
+    "id": "srd14-gear-calligrapher-s-supplies",
+    "name": "Calligrapher's Supplies",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "These special tools include the items needed to pursue a craft or trade. The table shows examples of the most common types of tools, each providing items related to a single craft. Proficiency with a set of artisan's tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft. Each type of artisan's tools requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd14-gear-carpenter-s-tools",
+    "name": "Carpenter's Tools",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "These special tools include the items needed to pursue a craft or trade. The table shows examples of the most common types of tools, each providing items related to a single craft. Proficiency with a set of artisan's tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft. Each type of artisan's tools requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 6
+  },
+  {
+    "id": "srd14-gear-cartographer-s-tools",
+    "name": "Cartographer's Tools",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "These special tools include the items needed to pursue a craft or trade. The table shows examples of the most common types of tools, each providing items related to a single craft. Proficiency with a set of artisan's tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft. Each type of artisan's tools requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 6
+  },
+  {
+    "id": "srd14-gear-cobbler-s-tools",
+    "name": "Cobbler's Tools",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "These special tools include the items needed to pursue a craft or trade. The table shows examples of the most common types of tools, each providing items related to a single craft. Proficiency with a set of artisan's tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft. Each type of artisan's tools requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd14-gear-cook-s-utensils",
+    "name": "Cook's utensils",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "These special tools include the items needed to pursue a craft or trade. The table shows examples of the most common types of tools, each providing items related to a single craft. Proficiency with a set of artisan's tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft. Each type of artisan's tools requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 8
+  },
+  {
+    "id": "srd14-gear-glassblower-s-tools",
+    "name": "Glassblower's Tools",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "These special tools include the items needed to pursue a craft or trade. The table shows examples of the most common types of tools, each providing items related to a single craft. Proficiency with a set of artisan's tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft. Each type of artisan's tools requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd14-gear-jeweler-s-tools",
+    "name": "Jeweler's Tools",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "These special tools include the items needed to pursue a craft or trade. The table shows examples of the most common types of tools, each providing items related to a single craft. Proficiency with a set of artisan's tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft. Each type of artisan's tools requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd14-gear-leatherworker-s-tools",
+    "name": "Leatherworker's Tools",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "These special tools include the items needed to pursue a craft or trade. The table shows examples of the most common types of tools, each providing items related to a single craft. Proficiency with a set of artisan's tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft. Each type of artisan's tools requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd14-gear-mason-s-tools",
+    "name": "Mason's Tools",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "These special tools include the items needed to pursue a craft or trade. The table shows examples of the most common types of tools, each providing items related to a single craft. Proficiency with a set of artisan's tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft. Each type of artisan's tools requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 8
+  },
+  {
+    "id": "srd14-gear-painter-s-supplies",
+    "name": "Painter's Supplies",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "These special tools include the items needed to pursue a craft or trade. The table shows examples of the most common types of tools, each providing items related to a single craft. Proficiency with a set of artisan's tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft. Each type of artisan's tools requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd14-gear-potter-s-tools",
+    "name": "Potter's Tools",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "These special tools include the items needed to pursue a craft or trade. The table shows examples of the most common types of tools, each providing items related to a single craft. Proficiency with a set of artisan's tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft. Each type of artisan's tools requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd14-gear-smith-s-tools",
+    "name": "Smith's Tools",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "These special tools include the items needed to pursue a craft or trade. The table shows examples of the most common types of tools, each providing items related to a single craft. Proficiency with a set of artisan's tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft. Each type of artisan's tools requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 8
+  },
+  {
+    "id": "srd14-gear-tinker-s-tools",
+    "name": "Tinker's Tools",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "These special tools include the items needed to pursue a craft or trade. The table shows examples of the most common types of tools, each providing items related to a single craft. Proficiency with a set of artisan's tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft. Each type of artisan's tools requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 10
+  },
+  {
+    "id": "srd14-gear-weaver-s-tools",
+    "name": "Weaver's Tools",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "These special tools include the items needed to pursue a craft or trade. The table shows examples of the most common types of tools, each providing items related to a single craft. Proficiency with a set of artisan's tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft. Each type of artisan's tools requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd14-gear-woodcarver-s-tools",
+    "name": "Woodcarver's Tools",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "These special tools include the items needed to pursue a craft or trade. The table shows examples of the most common types of tools, each providing items related to a single craft. Proficiency with a set of artisan's tools lets you add your proficiency bonus to any ability checks you make using the tools in your craft. Each type of artisan's tools requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 5
+  },
+  {
+    "id": "srd14-gear-dice-set",
+    "name": "Dice Set",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "This item encompasses a wide range of game pieces, including dice and decks of cards (for games such as Three-Dragon Ante). A few common examples appear on the Tools table, but other kinds of gaming sets exist. If you are proficient with a gaming set, you can add your proficiency bonus to ability checks you make to play a game with that set. Each type of gaming set requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-playing-card-set",
+    "name": "Playing Card Set",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "imageUrl": "/api/images/equipment/playing-card-set.png",
+    "entries": [
+      "This item encompasses a wide range of game pieces, including dice and decks of cards (for games such as Three-Dragon Ante). A few common examples appear on the Tools table, but other kinds of gaming sets exist. If you are proficient with a gaming set, you can add your proficiency bonus to ability checks you make to play a game with that set. Each type of gaming set requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-bagpipes",
+    "name": "Bagpipes",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Several of the most common types of musical instruments are shown on the table as examples. If you have proficiency with a given musical instrument, you can add your proficiency bonus to any ability checks you make to play music with the instrument. A bard can use a musical instrument as a spellcasting focus. Each type of musical instrument requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 6
+  },
+  {
+    "id": "srd14-gear-drum",
+    "name": "Drum",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Several of the most common types of musical instruments are shown on the table as examples. If you have proficiency with a given musical instrument, you can add your proficiency bonus to any ability checks you make to play music with the instrument. A bard can use a musical instrument as a spellcasting focus. Each type of musical instrument requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 3
+  },
+  {
+    "id": "srd14-gear-dulcimer",
+    "name": "Dulcimer",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "imageUrl": "/api/images/equipment/dulcimer.png",
+    "entries": [
+      "Several of the most common types of musical instruments are shown on the table as examples. If you have proficiency with a given musical instrument, you can add your proficiency bonus to any ability checks you make to play music with the instrument. A bard can use a musical instrument as a spellcasting focus. Each type of musical instrument requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 10
+  },
+  {
+    "id": "srd14-gear-flute",
+    "name": "Flute",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Several of the most common types of musical instruments are shown on the table as examples. If you have proficiency with a given musical instrument, you can add your proficiency bonus to any ability checks you make to play music with the instrument. A bard can use a musical instrument as a spellcasting focus. Each type of musical instrument requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-lute",
+    "name": "Lute",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Several of the most common types of musical instruments are shown on the table as examples. If you have proficiency with a given musical instrument, you can add your proficiency bonus to any ability checks you make to play music with the instrument. A bard can use a musical instrument as a spellcasting focus. Each type of musical instrument requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd14-gear-lyre",
+    "name": "Lyre",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Several of the most common types of musical instruments are shown on the table as examples. If you have proficiency with a given musical instrument, you can add your proficiency bonus to any ability checks you make to play music with the instrument. A bard can use a musical instrument as a spellcasting focus. Each type of musical instrument requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd14-gear-horn",
+    "name": "Horn",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Several of the most common types of musical instruments are shown on the table as examples. If you have proficiency with a given musical instrument, you can add your proficiency bonus to any ability checks you make to play music with the instrument. A bard can use a musical instrument as a spellcasting focus. Each type of musical instrument requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd14-gear-pan-flute",
+    "name": "Pan flute",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Several of the most common types of musical instruments are shown on the table as examples. If you have proficiency with a given musical instrument, you can add your proficiency bonus to any ability checks you make to play music with the instrument. A bard can use a musical instrument as a spellcasting focus. Each type of musical instrument requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd14-gear-shawm",
+    "name": "Shawm",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Several of the most common types of musical instruments are shown on the table as examples. If you have proficiency with a given musical instrument, you can add your proficiency bonus to any ability checks you make to play music with the instrument. A bard can use a musical instrument as a spellcasting focus. Each type of musical instrument requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-viol",
+    "name": "Viol",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Several of the most common types of musical instruments are shown on the table as examples. If you have proficiency with a given musical instrument, you can add your proficiency bonus to any ability checks you make to play music with the instrument. A bard can use a musical instrument as a spellcasting focus. Each type of musical instrument requires a separate proficiency."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-navigator-s-tools",
+    "name": "Navigator's Tools",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "This set of instruments is used for navigation at sea. Proficiency with navigator's tools lets you chart a ship's course and follow navigation charts. In addition, these tools allow you to add your proficiency bonus to any ability check you make to avoid getting lost at sea."
+    ],
+    "activities": [],
+    "weight": 2
+  },
+  {
+    "id": "srd14-gear-thieves-tools",
+    "name": "Thieves' Tools",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "This set of tools includes a small file, a set of lock picks, a small mirror mounted on a metal handle, a set of narrow-bladed scissors, and a pair of pliers. Proficiency with these tools lets you add your proficiency bonus to any ability checks you make to disarm traps or open locks."
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-camel",
+    "name": "Camel",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Camel"
+    ],
+    "activities": []
+  },
+  {
+    "id": "srd14-gear-donkey",
+    "name": "Donkey",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Donkey"
+    ],
+    "activities": []
+  },
+  {
+    "id": "srd14-gear-mule",
+    "name": "Mule",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Mule"
+    ],
+    "activities": []
+  },
+  {
+    "id": "srd14-gear-elephant",
+    "name": "Elephant",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Elephant"
+    ],
+    "activities": []
+  },
+  {
+    "id": "srd14-gear-horse-draft",
+    "name": "Horse, draft",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Horse, draft"
+    ],
+    "activities": []
+  },
+  {
+    "id": "srd14-gear-horse-riding",
+    "name": "Horse, riding",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Horse, riding"
+    ],
+    "activities": []
+  },
+  {
+    "id": "srd14-gear-mastiff",
+    "name": "Mastiff",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Mastiff"
+    ],
+    "activities": []
+  },
+  {
+    "id": "srd14-gear-pony",
+    "name": "Pony",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Pony"
+    ],
+    "activities": []
+  },
+  {
+    "id": "srd14-gear-warhorse",
+    "name": "Warhorse",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Warhorse"
+    ],
+    "activities": []
+  },
+  {
+    "id": "srd14-gear-barding-padded",
+    "name": "Barding: Padded",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Barding is armor designed to protect an animal's head, neck, chest, and body. Any type of armor shown on the Armor table can be purchased as barding. The cost is four times the equivalent armor made for humanoids, and it weighs twice as much."
+    ],
+    "activities": [],
+    "weight": 16
+  },
+  {
+    "id": "srd14-gear-barding-leather",
+    "name": "Barding: Leather",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Barding is armor designed to protect an animal's head, neck, chest, and body. Any type of armor shown on the Armor table can be purchased as barding. The cost is four times the equivalent armor made for humanoids, and it weighs twice as much."
+    ],
+    "activities": [],
+    "weight": 20
+  },
+  {
+    "id": "srd14-gear-barding-studded-leather",
+    "name": "Barding: Studded Leather",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Barding is armor designed to protect an animal's head, neck, chest, and body. Any type of armor shown on the Armor table can be purchased as barding. The cost is four times the equivalent armor made for humanoids, and it weighs twice as much."
+    ],
+    "activities": [],
+    "weight": 26
+  },
+  {
+    "id": "srd14-gear-barding-hide",
+    "name": "Barding: Hide",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Barding is armor designed to protect an animal's head, neck, chest, and body. Any type of armor shown on the Armor table can be purchased as barding. The cost is four times the equivalent armor made for humanoids, and it weighs twice as much."
+    ],
+    "activities": [],
+    "weight": 24
+  },
+  {
+    "id": "srd14-gear-barding-chain-shirt",
+    "name": "Barding: Chain shirt",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Barding is armor designed to protect an animal's head, neck, chest, and body. Any type of armor shown on the Armor table can be purchased as barding. The cost is four times the equivalent armor made for humanoids, and it weighs twice as much."
+    ],
+    "activities": [],
+    "weight": 40
+  },
+  {
+    "id": "srd14-gear-barding-scale-mail",
+    "name": "Barding: Scale mail",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Barding is armor designed to protect an animal's head, neck, chest, and body. Any type of armor shown on the Armor table can be purchased as barding. The cost is four times the equivalent armor made for humanoids, and it weighs twice as much."
+    ],
+    "activities": [],
+    "weight": 90
+  },
+  {
+    "id": "srd14-gear-barding-breastplate",
+    "name": "Barding: Breastplate",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Barding is armor designed to protect an animal's head, neck, chest, and body. Any type of armor shown on the Armor table can be purchased as barding. The cost is four times the equivalent armor made for humanoids, and it weighs twice as much."
+    ],
+    "activities": [],
+    "weight": 40
+  },
+  {
+    "id": "srd14-gear-barding-half-plate",
+    "name": "Barding: Half plate",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Barding is armor designed to protect an animal's head, neck, chest, and body. Any type of armor shown on the Armor table can be purchased as barding. The cost is four times the equivalent armor made for humanoids, and it weighs twice as much."
+    ],
+    "activities": [],
+    "weight": 80
+  },
+  {
+    "id": "srd14-gear-barding-ring-mail",
+    "name": "Barding: Ring mail",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Barding is armor designed to protect an animal's head, neck, chest, and body. Any type of armor shown on the Armor table can be purchased as barding. The cost is four times the equivalent armor made for humanoids, and it weighs twice as much."
+    ],
+    "activities": [],
+    "weight": 80
+  },
+  {
+    "id": "srd14-gear-barding-chain-mail",
+    "name": "Barding: Chain mail",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Barding is armor designed to protect an animal's head, neck, chest, and body. Any type of armor shown on the Armor table can be purchased as barding. The cost is four times the equivalent armor made for humanoids, and it weighs twice as much."
+    ],
+    "activities": [],
+    "weight": 110
+  },
+  {
+    "id": "srd14-gear-barding-splint",
+    "name": "Barding: Splint",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Barding is armor designed to protect an animal's head, neck, chest, and body. Any type of armor shown on the Armor table can be purchased as barding. The cost is four times the equivalent armor made for humanoids, and it weighs twice as much."
+    ],
+    "activities": [],
+    "weight": 120
+  },
+  {
+    "id": "srd14-gear-barding-plate",
+    "name": "Barding: Plate",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Barding is armor designed to protect an animal's head, neck, chest, and body. Any type of armor shown on the Armor table can be purchased as barding. The cost is four times the equivalent armor made for humanoids, and it weighs twice as much."
+    ],
+    "activities": [],
+    "weight": 130
+  },
+  {
+    "id": "srd14-gear-bit-and-bridle",
+    "name": "Bit and bridle",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Bit and bridle"
+    ],
+    "activities": [],
+    "weight": 1
+  },
+  {
+    "id": "srd14-gear-carriage",
+    "name": "Carriage",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Carriage"
+    ],
+    "activities": [],
+    "weight": 600
+  },
+  {
+    "id": "srd14-gear-cart",
+    "name": "Cart",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Cart"
+    ],
+    "activities": [],
+    "weight": 200
+  },
+  {
+    "id": "srd14-gear-chariot",
+    "name": "Chariot",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Chariot"
+    ],
+    "activities": [],
+    "weight": 100
+  },
+  {
+    "id": "srd14-gear-animal-feed-1-day",
+    "name": "Animal Feed (1 day)",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Animal Feed (1 day)"
+    ],
+    "activities": [],
+    "weight": 10
+  },
+  {
+    "id": "srd14-gear-saddle-exotic",
+    "name": "Saddle, Exotic",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "An exotic saddle is required for riding any aquatic or flying mount."
+    ],
+    "activities": [],
+    "weight": 50
+  },
+  {
+    "id": "srd14-gear-saddle-military",
+    "name": "Saddle, Military",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "A military saddle braces the rider, helping you keep your seat on an active mount in battle. It gives you advantage on any check you make to remain mounted."
+    ],
+    "activities": [],
+    "weight": 30
+  },
+  {
+    "id": "srd14-gear-saddle-pack",
+    "name": "Saddle, Pack",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Saddle, Pack"
+    ],
+    "activities": [],
+    "weight": 15
+  },
+  {
+    "id": "srd14-gear-saddle-riding",
+    "name": "Saddle, Riding",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Saddle, Riding"
+    ],
+    "activities": [],
+    "weight": 25
+  },
+  {
+    "id": "srd14-gear-saddlebags",
+    "name": "Saddlebags",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Saddlebags"
+    ],
+    "activities": [],
+    "weight": 8
+  },
+  {
+    "id": "srd14-gear-sled",
+    "name": "Sled",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Sled"
+    ],
+    "activities": [],
+    "weight": 300
+  },
+  {
+    "id": "srd14-gear-stabling-1-day",
+    "name": "Stabling (1 day)",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Stabling (1 day)"
+    ],
+    "activities": [],
+    "weight": 0
+  },
+  {
+    "id": "srd14-gear-wagon",
+    "name": "Wagon",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Wagon"
+    ],
+    "activities": [],
+    "weight": 400
+  },
+  {
+    "id": "srd14-gear-galley",
+    "name": "Galley",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Galley"
+    ],
+    "activities": []
+  },
+  {
+    "id": "srd14-gear-keelboat",
+    "name": "Keelboat",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Keelboats and rowboats are used on lakes and rivers. If going downstream, add the speed of the current (typically 3 miles per hour) to the speed of the vehicle. These vehicles can't be rowed against any significant current, but they can be pulled upstream by draft animals on the shores. A rowboat weighs 100 pounds, in case adventurers carry it over land."
+    ],
+    "activities": []
+  },
+  {
+    "id": "srd14-gear-longship",
+    "name": "Longship",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Longship"
+    ],
+    "activities": []
+  },
+  {
+    "id": "srd14-gear-rowboat",
+    "name": "Rowboat",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Keelboats and rowboats are used on lakes and rivers. If going downstream, add the speed of the current (typically 3 miles per hour) to the speed of the vehicle. These vehicles can't be rowed against any significant current, but they can be pulled upstream by draft animals on the shores. A rowboat weighs 100 pounds, in case adventurers carry it over land."
+    ],
+    "activities": []
+  },
+  {
+    "id": "srd14-gear-sailing-ship",
+    "name": "Sailing ship",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Sailing ship"
+    ],
+    "activities": []
+  },
+  {
+    "id": "srd14-gear-warship",
+    "name": "Warship",
+    "source": "SRD 5.1",
+    "ruleset": "2014",
+    "category": "gear",
+    "entries": [
+      "Warship"
+    ],
+    "activities": []
+  }
+]

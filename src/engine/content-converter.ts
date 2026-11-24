@@ -241,7 +241,8 @@ export function convertRawEntityToSidereroll(
   raw: Record<string, unknown>,
   defaultCategory: ItemCategory,
   ruleset: Ruleset = '2014',
-  sourceOverride?: string
+  sourceOverride?: string,
+  idPrefix = 'custom'
 ): CompendiumEntity | null {
   const name = typeof raw.name === 'string' ? raw.name.trim() : '';
   if (!name) return null;
@@ -273,7 +274,7 @@ export function convertRawEntityToSidereroll(
   const id =
     typeof raw.id === 'string' && raw.id.trim()
       ? raw.id.trim()
-      : `custom-${prefix}-${slugify(name)}`;
+      : `${idPrefix}-${prefix}-${slugify(name)}`;
 
   const baseEntries = normalizeEntries(raw.entries ?? raw.desc, raw.description);
   const higherEntries = normalizeEntries(raw.higher_level);

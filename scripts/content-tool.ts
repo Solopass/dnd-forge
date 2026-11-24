@@ -286,6 +286,7 @@ async function runCli() {
     const category = (explicitCategory ?? 'gear') as ItemCategory | 'character';
     const ruleset = (getFlag('--ruleset') === '2024' ? '2024' : '2014') as Ruleset;
     const source = getFlag('--source');
+    const idPrefix = getFlag('--id-prefix') ?? 'custom';
     const baseNameNoExt = path.basename(resolvedInput, ext);
 
     if (ext === '.pdf') {
@@ -371,10 +372,20 @@ async function runCli() {
         );
         rawList = arrayProp ? (obj[arrayProp] as unknown[]) : [obj];
       }
-      converted = rawList
+      const rawConverted = rawList
         .filter((x): x is Record<string, unknown> => Boolean(x && typeof x === 'object'))
-        .map((item) => convertRawEntityToSidereroll(item, category as ItemCategory, ruleset, source))
+        .map((item) => convertRawEntityToSidereroll(item, category as ItemCategory, ruleset, source, idPrefix))
         .filter((x): x is CompendiumEntity => x !== null);
+      const seenIds = new Set<string>();
+      converted = rawConverted.map((entity) => {
+        let finalId = entity.id;
+        let suffix = 2;
+        while (seenIds.has(finalId)) {
+          finalId = `${entity.id}-${suffix++}`;
+        }
+        seenIds.add(finalId);
+        return finalId === entity.id ? entity : { ...entity, id: finalId };
+      });
     }
 
     const outPath = path.resolve(

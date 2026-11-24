@@ -43,26 +43,31 @@ Any spell, item, feat, or monster can include an optional `imageUrl` field:
 
 ---
 
-## 3. Converting External JSON with `content:convert`
+## 3. Converting External Files (PDF, Markdown, TXT, CSV, JSON) with `content:convert`
 
-If you have raw 5e JSON (arrays of spells, monsters, items, feats, or `{ spell: [...] }` / `{ monster: [...] }` bundles), use the built-in CLI converter:
+`bun run content:convert` supports **`.pdf`**, **`.md` / `.txt`**, **`.csv` / `.tsv`**, and **`.json`**:
 
 ```powershell
-# Convert a raw spells pack into src/custom-content/spells/
+# 1. Extract a D&D Beyond character sheet PDF -> src/custom-content/characters/
+bun run content:convert path/to/hero-sheet.pdf
+
+# 2. Extract monsters, spells, items, or feats from a rulebook/homebrew PDF
+bun run content:convert path/to/monster-book.pdf --category monster --ruleset 2024 --source "Homebrew" --dump-text
+
+# 3. Convert a multi-entry Markdown or TXT file (split by --- or # Headings)
+bun run content:convert path/to/spells.md --category spell --ruleset 2024 --source "PHB 2024"
+
+# 4. Convert a CSV/TSV spreadsheet of gear, weapons, or spells
+bun run content:convert path/to/items.csv --category gear --out src/custom-content/items/gear-pack.json
+
+# 5. Convert raw 5e JSON arrays or { spell / monster / item / feat } bundles
 bun run content:convert path/to/raw-spells.json --category spell --ruleset 2024 --source "PHB 2024"
-
-# Convert a raw monsters pack into src/custom-content/monsters/
-bun run content:convert path/to/raw-monsters.json --category monster --ruleset 2014 --source "MM"
-
-# Convert weapons or gear into a custom output path
-bun run content:convert path/to/raw-weapons.json --category weapon --out src/custom-content/items/weapons-pack.json
 ```
 
 What `content:convert` does automatically:
-- Generates deterministic unique `id`s (`custom-spl-...`, `custom-mob-...`, `custom-wpn-...`).
-- Flattens nested `{ type: "entries" }`, `{ type: "list" }`, and `description` strings into clean `entries: string[]` while preserving `{@damage}`, `{@dice}`, `{@hit}`, `{@dc}`, `{@save}`, and `{@scaledamage}` tags so they render as clickable roll chips.
-- Extracts spell metadata (`spellLevel`, `castingTime`, `range`, `components`, `duration`, `concentration`, `ritual`) and `monsterMeta` (`ac`, `hp`, `dexModifier`, `cr`, `size`, resistances/immunities/senses).
-- Synthesizes rollable `activities[]` for spells and weapons so they immediately have **Attack / Cast / Save / Heal** buttons.
+- **PDFs**: reads AcroForm character fields (for character sheet PDFs) OR extracts formatted page text (`--dump-text` saves the raw `.extracted.md` alongside the JSON if you want to inspect/clean up multi-column layouts).
+- **Markdown / TXT**: splits multi-entry files on `---` or `# ` / `## ` headings and parses statblocks, AC/HP/CR, spell levels, dice, and save DCs.
+- **JSON / CSV / TSV**: generates deterministic unique `id`s (`custom-spl-...`, `custom-mob-...`, `custom-wpn-...`), flattens nested `{ type: "entries" }` / `{ type: "list" }` / `description` blocks into `entries: string[]`, preserves `{@damage}` / `{@dc}` / `{@scaledamage}` tags, and synthesizes rollable `activities[]`.
 
 ---
 

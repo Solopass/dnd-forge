@@ -1,4 +1,5 @@
 import { normalizeEntries } from './entries';
+import { parseHomebrewMarkdownBlock } from './statblock-parser';
 import { Activity, CompendiumEntity, CreatureSize, ItemCategory } from '../types/compendium';
 import { AbilityKey, Ruleset } from '../types/core';
 
@@ -226,4 +227,110 @@ export function convertRawEntityToSidereroll(
   }
 
   return entity;
+}
+
+export function splitMarkdownBlocks(rawText: string): string[] {
+  const normalized = rawText.replace(/\r\n/g, '\n').trim();
+  if (!normalized) return [];
+
+  // Split by horizontal rules (`---`) first if present
+  const hrParts = normalized
+    .split(/\n-{3,}\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (hrParts.length > 1) return hrParts;
+
+  // Otherwise split on top-level `# ` or `## ` headings when multiple headings exist
+  const headingParts = normalized
+    .split(/\n(?=#{1,2}\s+[^\n]+)/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (headingParts.length > 1) return headingParts;
+
+  return [normalized];
+}
+
+export function convertMarkdownToSidererollList(
+  rawText: string,
+  defaultCategory: ItemCategory,
+  ruleset: Ruleset = '2014',
+  sourceOverride?: string
+): CompendiumEntity[] {
+  const blocks = splitMarkdownBlocks(rawText);
+  const out: CompendiumEntity[] = [];
+  const seenIds = new Set<string>();
+
+  for (const block of blocks) {
+    const parsed = parseHomebrewMarkdownBlock(block, defaultCategory, ruleset);
+    const entity = parsed.data;
+    if (!entity.name || entity.name === 'Unnamed Homebrew Entry') continue;
+    if (sourceOverride) entity.source = sourceOverride;
+    entity.ruleset = ruleset;
+
+    let finalId = entity.id;
+    let suffix = 2;
+    while (seenIds.has(finalId)) {
+      finalId = `${entity.id}-${suffix++}`;
+    }
+    seenIds.add(finalId);
+    entity.id = finalId;
+    out.push(entity);
+  }
+  return out;
+}
+
+function splitCsvLine(line: string, delimiter: string): string[] {
+  const cells: string[] = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i]!;
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        cur += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === delimiter && !inQuotes) {
+      cells.push(cur.trim());
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  cells.push(cur.trim());
+  return cells;
+}
+
+export function convertCsvToSidererollList(
+  rawText: string,
+  defaultCategory: ItemCategory,
+  ruleset: Ruleset = '2014',
+  sourceOverride?: string,
+  delimiter = ','
+): CompendiumEntity[] {
+  const lines = rawText
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (lines.length < 2) return [];
+
+  const headers = splitCsvLine(lines[0]!, delimiter).map((h) => h.trim());
+  const out: CompendiumEntity[] = [];
+
+  for (let i = 1; i < lines.length; i += 1) {
+    const values = splitCsvLine(lines[i]!, delimiter);
+    const row: Record<string, unknown> = {};
+    headers.forEach((h, idx) => {
+      const val = values[idx];
+      if (val !== undefined && val !== '') {
+        row[h] = /^\d+$/.test(val) ? Number.parseInt(val, 10) : val;
+      }
+    });
+    const entity = convertRawEntityToSidereroll(row, defaultCategory, ruleset, sourceOverride);
+    if (entity) out.push(entity);
+  }
+  return out;
 }

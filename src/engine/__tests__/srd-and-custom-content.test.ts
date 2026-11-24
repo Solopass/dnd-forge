@@ -6,7 +6,11 @@ import {
   parseCustomContentJson,
 } from '../custom-content-loader';
 import { parse5eToolsEntries } from '../tags';
-import { convertRawEntityToSidereroll } from '../content-converter';
+import {
+  convertCsvToSidererollList,
+  convertMarkdownToSidererollList,
+  convertRawEntityToSidereroll,
+} from '../content-converter';
 import monsterTemplate from '../../custom-content/_templates/monster.json';
 import itemTemplate from '../../custom-content/_templates/item.json';
 import spellTemplate from '../../custom-content/_templates/spell.json';
@@ -117,5 +121,17 @@ describe('Custom Content Templates & JSON Loader', () => {
     expect(convertedSpell?.range).toBe('90 feet');
     expect(convertedSpell?.activities[0]?.type).toBe('attack');
     expect(convertedSpell?.activities[0]?.damageFormula).toBe('3d8');
+
+    const mdMulti = `# Frost Bolt\n1st-level evocation\nMake a ranged spell attack dealing 2d8 cold damage.\n---\n# Shadow Hound\nAC 14 HP 33 CR 1\nBite: +5 to hit, 1d8+3 piercing damage.`;
+    const fromMd = convertMarkdownToSidererollList(mdMulti, 'spell', '2024', 'Custom MD');
+    expect(fromMd).toHaveLength(2);
+    expect(fromMd[0]?.name).toBe('Frost Bolt');
+    expect(fromMd[1]?.name).toBe('Shadow Hound');
+
+    const csvRaw = `name,damageFormula,description\nSilver Dagger,1d4+@mod,Counts as silvered.\nRope of Climbing,,60 feet of silk rope.`;
+    const fromCsv = convertCsvToSidererollList(csvRaw, 'gear', '2014', 'Custom CSV');
+    expect(fromCsv).toHaveLength(2);
+    expect(fromCsv[0]?.name).toBe('Silver Dagger');
+    expect(fromCsv[1]?.entries[0]).toBe('60 feet of silk rope.');
   });
 });

@@ -6,6 +6,7 @@ import {
   parseCustomContentJson,
 } from '../custom-content-loader';
 import { parse5eToolsEntries } from '../tags';
+import { convertRawEntityToSidereroll } from '../content-converter';
 import monsterTemplate from '../../custom-content/_templates/monster.json';
 import itemTemplate from '../../custom-content/_templates/item.json';
 import spellTemplate from '../../custom-content/_templates/spell.json';
@@ -91,5 +92,30 @@ describe('Custom Content Templates & JSON Loader', () => {
       'weapon'
     );
     expect(withImg?.imageUrl).toBe('./images/items/moonblade.webp');
+  });
+
+  it('converts external 5e-style spells/monsters and validates repo custom-content', () => {
+    const convertedSpell = convertRawEntityToSidereroll(
+      {
+        name: 'Chromatic Orb',
+        level: 1,
+        time: [{ number: 1, unit: 'action' }],
+        range: { distance: { amount: 90, type: 'feet' } },
+        components: { v: true, s: true, m: 'a diamond worth at least 50 gp' },
+        duration: [{ type: 'instant' }],
+        spellAttack: ['R'],
+        damageInflict: ['acid'],
+        entries: ['You hurl a 4-inch-diameter sphere of energy. On a hit, the target takes {@damage 3d8} acid damage.'],
+      },
+      'spell',
+      '2014',
+      'PHB'
+    );
+    expect(convertedSpell?.id).toBe('custom-spl-chromatic-orb');
+    expect(convertedSpell?.spellLevel).toBe(1);
+    expect(convertedSpell?.castingTime).toBe('1 action');
+    expect(convertedSpell?.range).toBe('90 feet');
+    expect(convertedSpell?.activities[0]?.type).toBe('attack');
+    expect(convertedSpell?.activities[0]?.damageFormula).toBe('3d8');
   });
 });

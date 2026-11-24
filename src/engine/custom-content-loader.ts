@@ -3,6 +3,8 @@ import type { ContentPack } from './srd-packs';
 import { RawCharacterState } from '../types/character';
 import type { ThemeDefinition } from '../types/theme';
 import type { WorkspaceLayoutConfig } from '../types/layout';
+import { normalizeEntries } from './entries';
+export { normalizeEntries };
 
 /**
  * Automatically discovers and loads any .json file placed into:
@@ -15,95 +17,34 @@ import type { WorkspaceLayoutConfig } from '../types/layout';
  * Files in src/custom-content/_templates/ are ignored by auto-loading and serve
  * purely as reference templates for AI formatting.
  */
-const monsterModules = import.meta.glob<Record<string, unknown>>(
-  '../custom-content/monsters/*.json',
-  { eager: true, import: 'default' }
-);
-const itemModules = import.meta.glob<Record<string, unknown>>(
-  '../custom-content/items/*.json',
-  { eager: true, import: 'default' }
-);
-const spellModules = import.meta.glob<Record<string, unknown>>(
-  '../custom-content/spells/*.json',
-  { eager: true, import: 'default' }
-);
-const featureModules = import.meta.glob<Record<string, unknown>>(
-  '../custom-content/features/*.json',
-  { eager: true, import: 'default' }
-);
-const characterModules = import.meta.glob<Record<string, unknown>>(
-  '../custom-content/characters/*.json',
-  { eager: true, import: 'default' }
-);
-const themeModules = import.meta.glob<Record<string, unknown>>(
-  '../custom-content/themes/*.json',
-  { eager: true, import: 'default' }
-);
-const layoutModules = import.meta.glob<Record<string, unknown>>(
-  '../custom-content/layouts/*.json',
-  { eager: true, import: 'default' }
-);
+const hasGlob = typeof import.meta.glob === 'function';
+const monsterModules = hasGlob
+  ? import.meta.glob<Record<string, unknown>>('../custom-content/monsters/*.json', { eager: true, import: 'default' })
+  : {};
+const itemModules = hasGlob
+  ? import.meta.glob<Record<string, unknown>>('../custom-content/items/*.json', { eager: true, import: 'default' })
+  : {};
+const spellModules = hasGlob
+  ? import.meta.glob<Record<string, unknown>>('../custom-content/spells/*.json', { eager: true, import: 'default' })
+  : {};
+const featureModules = hasGlob
+  ? import.meta.glob<Record<string, unknown>>('../custom-content/features/*.json', { eager: true, import: 'default' })
+  : {};
+const characterModules = hasGlob
+  ? import.meta.glob<Record<string, unknown>>('../custom-content/characters/*.json', { eager: true, import: 'default' })
+  : {};
+const themeModules = hasGlob
+  ? import.meta.glob<Record<string, unknown>>('../custom-content/themes/*.json', { eager: true, import: 'default' })
+  : {};
+const layoutModules = hasGlob
+  ? import.meta.glob<Record<string, unknown>>('../custom-content/layouts/*.json', { eager: true, import: 'default' })
+  : {};
 
 function slugify(value: string): string {
   return value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
-}
-
-function flattenEntryNode(node: unknown, out: string[]): void {
-  if (typeof node === 'string') {
-    const trimmed = node.trim();
-    if (trimmed) out.push(trimmed);
-    return;
-  }
-  if (Array.isArray(node)) {
-    for (const child of node) flattenEntryNode(child, out);
-    return;
-  }
-  if (node && typeof node === 'object') {
-    const obj = node as Record<string, unknown>;
-    const heading = typeof obj.name === 'string' && obj.name.trim() ? `${obj.name.trim()}: ` : '';
-    if (Array.isArray(obj.entries)) {
-      const sub: string[] = [];
-      for (const child of obj.entries) flattenEntryNode(child, sub);
-      if (sub.length > 0) {
-        if (heading) sub[0] = `${heading}${sub[0]}`;
-        out.push(...sub);
-      }
-      return;
-    }
-    if (Array.isArray(obj.items)) {
-      if (heading) out.push(heading.replace(/:\s*$/, ''));
-      for (const item of obj.items) {
-        const sub: string[] = [];
-        flattenEntryNode(item, sub);
-        for (const line of sub) out.push(`• ${line}`);
-      }
-      return;
-    }
-    if (typeof obj.entry === 'string' && obj.entry.trim()) {
-      out.push(`${heading}${obj.entry.trim()}`);
-      return;
-    }
-    if (typeof obj.text === 'string' && obj.text.trim()) {
-      out.push(`${heading}${obj.text.trim()}`);
-    }
-  }
-}
-
-export function normalizeEntries(rawEntries: unknown, rawDescription?: unknown): string[] {
-  const out: string[] = [];
-  if (rawEntries !== undefined) {
-    flattenEntryNode(rawEntries, out);
-  }
-  if (out.length === 0 && typeof rawDescription === 'string' && rawDescription.trim()) {
-    for (const para of rawDescription.split(/\n{2,}/)) {
-      const t = para.trim();
-      if (t) out.push(t);
-    }
-  }
-  return out;
 }
 
 export function normalizeCustomEntity(

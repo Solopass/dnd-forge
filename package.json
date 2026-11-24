@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "content:validate": "bun run scripts/content-tool.ts validate",
+    "content:convert": "bun run scripts/content-tool.ts convert"
   },
   "dependencies": {
     "dexie": "^4.0.10",

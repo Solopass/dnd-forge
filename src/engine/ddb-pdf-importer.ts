@@ -1,7 +1,37 @@
 import { ClassLevel, RawCharacterState } from '../types/character';
-import { AbilityKey, SkillKey } from '../types/core';
-import { CompendiumEntity } from '../types/compendium';
+import { AbilityKey, Ruleset, SkillKey } from '../types/core';
+import { CompendiumEntity, ItemCategory } from '../types/compendium';
 import { createBlankCharacter, syncSpellSlotPools } from './rules-math';
+import { BUILTIN_CONTENT_PACKS } from './srd-packs';
+
+function normalizeLookupName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, '')
+    .replace(/\s*[+-]\d+\s*$/, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function findSrdEntityMatch(
+  rawName: string,
+  categories: ItemCategory[],
+  ruleset: Ruleset
+): CompendiumEntity | undefined {
+  const exact = rawName.trim().toLowerCase();
+  const norm = normalizeLookupName(rawName);
+  const allEntities = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities).filter((e) =>
+    categories.includes(e.category)
+  );
+
+  return (
+    allEntities.find((e) => e.ruleset === ruleset && e.name.toLowerCase() === exact) ??
+    allEntities.find((e) => e.name.toLowerCase() === exact) ??
+    allEntities.find((e) => e.ruleset === ruleset && normalizeLookupName(e.name) === norm) ??
+    allEntities.find((e) => normalizeLookupName(e.name) === norm)
+  );
+}
 
 export interface PdfImportSummary {
   character: RawCharacterState;
@@ -166,6 +196,43 @@ export function buildCharacterFromDdbFields(
     }
   }
 
+  // Extract Speed, Senses, Proficiencies, and Details if present
+  const speedRaw = getField('Speed');
+  const walkMatch = speedRaw.match(/(\d+)\s*ft/i);
+  if (walkMatch?.[1]) {
+    char.speeds = { walk: Number.parseInt(walkMatch[1], 10) };
+  }
+  const sensesRaw = getField('Senses', 'Passive1');
+  const dvMatch = sensesRaw.match(/darkvision\s*(\d+)\s*ft/i);
+  if (dvMatch?.[1]) {
+    char.senses = { darkvision: Number.parseInt(dvMatch[1], 10) };
+  }
+  const profLangRaw = getField('ProficienciesLang', 'Proficiencies');
+  if (profLangRaw) {
+    char.notes = {
+      bio: char.notes?.bio ?? '',
+      campaign: char.notes?.campaign ?? '',
+      proficiencies: profLangRaw,
+    };
+  }
+  const alignment = getField('Alignment');
+  const traits = getField('PersonalityTraits ', 'PersonalityTraits');
+  const ideals = getField('Ideals');
+  const bonds = getField('Bonds');
+  const flaws = getField('Flaws');
+  const backstory = getField('Backstory');
+  if (alignment || traits || ideals || bonds || flaws || backstory) {
+    char.details = {
+      ...(char.details ?? {}),
+      alignment: alignment || undefined,
+      traits: traits || undefined,
+      ideals: ideals || undefined,
+      bonds: bonds || undefined,
+      flaws: flaws || undefined,
+      backstory: backstory || undefined,
+    };
+  }
+
   // Extract Weapons / Attacks (Wpn Name, Wpn1 AtkBonus, Wpn1 Damage)
   const importedItems: CompendiumEntity[] = [];
   for (let i = 1; i <= 5; i++) {
@@ -174,6 +241,21 @@ export function buildCharacterFromDdbFields(
     const atkBonus = getField(`Wpn${i} AtkBonus`, `Wpn${i} AtkBonus `);
     const dmgRaw = getField(`Wpn${i} Damage`, `Wpn${i} Damage `);
     const dmgParts = dmgRaw.split(/\s+/);
+
+    const srdWpn = findSrdEntityMatch(wpnName, ['weapon', 'gear'], char.ruleset);
+    if (srdWpn) {
+      const clone = structuredClone(srdWpn);
+      clone.id = `ddb-wpn-${i}-${srdWpn.id}`;
+      clone.name = wpnName;
+      clone.equipped = true;
+      if (clone.activities[0]) {
+        if (atkBonus) clone.activities[0].attackBonusFormula = atkBonus;
+        if (dmgParts[0]) clone.activities[0].damageFormula = dmgParts[0];
+        if (dmgParts[1]) clone.activities[0].damageType = dmgParts[1].toLowerCase();
+      }
+      importedItems.push(clone);
+      continue;
+    }
 
     importedItems.push({
       id: `ddb-wpn-${i}-${Date.now().toString(36)}`,
@@ -199,9 +281,26 @@ export function buildCharacterFromDdbFields(
   }
 
   // Extract Spells (Spells 1014..1099 in D&D Beyond PDF exports)
+  const seenSpellKeys = new Set<string>();
   for (const [k, v] of Object.entries(fields)) {
     if (/^Spells\s+\d+$/i.test(k) && v.trim().length > 1) {
       const spellName = v.trim();
+      const normKey = normalizeLookupName(spellName);
+      if (seenSpellKeys.has(normKey)) continue;
+      seenSpellKeys.add(normKey);
+
+      const isAlwaysPrep = /\balways\s+prepared\b/i.test(spellName);
+      const srdSpell = findSrdEntityMatch(spellName, ['spell'], char.ruleset);
+      if (srdSpell) {
+        const clone = structuredClone(srdSpell);
+        clone.id = `ddb-spell-${srdSpell.id}`;
+        clone.equipped = true;
+        clone.prepared = true;
+        if (isAlwaysPrep) clone.alwaysPrepared = true;
+        importedItems.push(clone);
+        continue;
+      }
+
       importedItems.push({
         id: `ddb-spell-${spellName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString(36)}`,
         name: spellName,
@@ -210,6 +309,7 @@ export function buildCharacterFromDdbFields(
         category: 'spell',
         equipped: true,
         prepared: true,
+        alwaysPrepared: isAlwaysPrep || undefined,
         spellLevel: 1,
         activities: [
           {
@@ -221,6 +321,30 @@ export function buildCharacterFromDdbFields(
           },
         ],
         entries: [`Imported spell: ${spellName}`],
+      });
+    }
+  }
+
+  // Extract Equipment lines (EqName0..EqName17 or Equipment) & match against SRD Gear/Armor
+  for (let i = 0; i < 20; i++) {
+    const eqName = getField(`EqName${i}`);
+    if (!eqName || importedItems.some((it) => it.name.toLowerCase() === eqName.toLowerCase())) continue;
+    const srdEq = findSrdEntityMatch(eqName, ['armor', 'shield', 'gear', 'weapon'], char.ruleset);
+    if (srdEq) {
+      const clone = structuredClone(srdEq);
+      clone.id = `ddb-eq-${i}-${srdEq.id}`;
+      clone.equipped = clone.category === 'armor' || clone.category === 'shield';
+      importedItems.push(clone);
+    } else {
+      importedItems.push({
+        id: `ddb-eq-${i}-${eqName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+        name: eqName,
+        source: 'D&D Beyond PDF',
+        ruleset: char.ruleset,
+        category: 'gear',
+        quantity: 1,
+        activities: [],
+        entries: [`Imported equipment: ${eqName}`],
       });
     }
   }

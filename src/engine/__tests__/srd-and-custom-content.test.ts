@@ -11,6 +11,7 @@ import {
   convertMarkdownToSidererollList,
   convertRawEntityToSidereroll,
 } from '../content-converter';
+import { buildCharacterFromDdbFields } from '../ddb-pdf-importer';
 import monsterTemplate from '../../custom-content/_templates/monster.json';
 import itemTemplate from '../../custom-content/_templates/item.json';
 import spellTemplate from '../../custom-content/_templates/spell.json';
@@ -177,5 +178,40 @@ describe('Custom Content Templates & JSON Loader', () => {
     expect(open5eSpell?.spellLevel).toBe(1);
     expect(open5eSpell?.source).toBe('5e Core Rules');
     expect(open5eSpell?.entries[1]).toContain('At Higher Levels:');
+  });
+
+  it('enriches D&D Beyond PDF fields against the SRD Compendium', () => {
+    const summary = buildCharacterFromDdbFields({
+      CharacterName: 'Lyra Silverwind',
+      ClassLevel: 'Wizard 5',
+      Race: 'Elf',
+      Background: 'Sage',
+      Speed: '30 ft',
+      Senses: 'Darkvision 60 ft.',
+      Alignment: 'Neutral Good',
+      'Wpn Name': 'Dagger',
+      'Wpn1 AtkBonus': '+5',
+      'Wpn1 Damage': '1d4+2 piercing',
+      'Spells 1014': 'Fireball (Always Prepared)',
+      'Spells 1015': 'Misty Step',
+      EqName0: 'Leather Armor',
+    });
+
+    expect(summary.character.speeds?.walk).toBe(30);
+    expect(summary.character.senses?.darkvision).toBe(60);
+    expect(summary.character.details?.alignment).toBe('Neutral Good');
+
+    const fireball = summary.character.items.find((i) => i.name === 'Fireball');
+    expect(fireball?.category).toBe('spell');
+    expect(fireball?.spellLevel).toBe(3);
+    expect(fireball?.alwaysPrepared).toBe(true);
+    expect(fireball?.entries[0]?.length).toBeGreaterThan(20);
+    expect(fireball?.activities[0]?.damageFormula).toBe('8d6');
+
+    const mistyStep = summary.character.items.find((i) => i.name === 'Misty Step');
+    expect(mistyStep?.spellLevel).toBe(2);
+
+    const armor = summary.character.items.find((i) => i.name === 'Leather Armor');
+    expect(armor?.acFormula?.base).toBe(11);
   });
 });

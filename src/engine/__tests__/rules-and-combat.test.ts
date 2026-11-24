@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyRestRecovery,
+  computeCantripDiceTier,
   computeCharacterSheet,
   computeEffectiveCasterLevel,
+  resolveResourcePoolForCost,
   syncSpellSlotPools,
 } from '../rules-math';
-import { resolveRollMode, evaluateDiceExpression } from '../dice';
+import { doubleDiceForCrit, resolveRollMode, evaluateDiceExpression } from '../dice';
 import {
   advanceTurn,
   applyEffectWithConcentrationCheck,
@@ -252,5 +254,87 @@ Claws. +7 to hit, 2d8 + 5 slashing damage`;
     expect(rested.deathSaves).toEqual({ successes: 0, failures: 0 });
     expect(rested.exhaustion).toBe(0);
     expect(rested.resources[0]?.current).toBe(3);
+  });
+
+  it('doubles dice expressions on critical hits without doubling flat bonuses', () => {
+    expect(doubleDiceForCrit('1d8 + 5')).toBe('2d8 + 5');
+    expect(doubleDiceForCrit('2d6 + 1d4 - 1')).toBe('4d6 + 2d4 - 1');
+    expect(doubleDiceForCrit('d10 + 3')).toBe('2d10 + 3');
+  });
+
+  it('computes cantrip tiers and resolves Warlock Pact Slot and upcast fallback', () => {
+    expect(computeCantripDiceTier(1)).toBe(1);
+    expect(computeCantripDiceTier(5)).toBe(2);
+    expect(computeCantripDiceTier(11)).toBe(3);
+    expect(computeCantripDiceTier(17)).toBe(4);
+
+    const warlockClasses: RawCharacterState['classes'] = [
+      { className: 'Warlock', level: 5, hitDie: 8, casterProgression: 'pact' },
+    ];
+    const pactOnlyPools = syncSpellSlotPools(warlockClasses, []);
+    const pactHit = resolveResourcePoolForCost(pactOnlyPools, warlockClasses, 'spell_slot_1', 1);
+    expect(pactHit).toEqual({ poolId: 'pact_slot', note: 'via Pact Slot Lvl 3' });
+
+    const tooHigh = resolveResourcePoolForCost(pactOnlyPools, warlockClasses, 'spell_slot_4', 1);
+    expect('error' in tooHigh).toBe(true);
+
+    const wizardClasses: RawCharacterState['classes'] = [
+      { className: 'Wizard', level: 3, hitDie: 6, casterProgression: 'full' },
+    ];
+    const upcastPools = [
+      { id: 'spell_slot_1', name: '1st-Level Slots', current: 0, max: 4, recovery: 'long_rest' as const, isAutoSpellSlot: true },
+      { id: 'spell_slot_2', name: '2nd-Level Slots', current: 2, max: 2, recovery: 'long_rest' as const, isAutoSpellSlot: true },
+    ];
+    const upcastRes = resolveResourcePoolForCost(upcastPools, wizardClasses, 'spell_slot_1', 1);
+    expect(upcastRes).toEqual({ poolId: 'spell_slot_2', note: 'upcast with Level 2 slot' });
+  });
+
+  it('keeps advanceTurn immutable when decrementing roundsRemaining effects', () => {
+    const state: CombatEncounterState = {
+      id: 'enc-imm',
+      name: 'Immutability Test',
+      round: 1,
+      activeTurnIndex: 0,
+      combatants: [
+        {
+          id: 'pc-1',
+          name: 'Hero',
+          kind: 'pc',
+          initiative: 15,
+          dexModifier: 2,
+          ac: 16,
+          hp: { current: 20, max: 20, temp: 0 },
+          conditions: [],
+          turnEconomyUsed: { action: false, bonus_action: false, reaction: false, free: false, special: false },
+        },
+        {
+          id: 'mob-1',
+          name: 'Goblin',
+          kind: 'monster',
+          initiative: 10,
+          dexModifier: 2,
+          ac: 15,
+          hp: { current: 7, max: 7, temp: 0 },
+          conditions: [],
+          turnEconomyUsed: { action: false, bonus_action: false, reaction: false, free: false, special: false },
+        },
+      ],
+      activeEffects: [
+        {
+          id: 'eff-1',
+          name: 'Bless',
+          sourceCombatantId: 'mob-1',
+          targetCombatantId: 'pc-1',
+          isConcentration: true,
+          expiration: 'rounds_remaining',
+          roundsRemaining: 3,
+        },
+      ],
+      log: [],
+    };
+
+    const next = advanceTurn(state);
+    expect(state.activeEffects[0]?.roundsRemaining).toBe(3);
+    expect(next.activeEffects[0]?.roundsRemaining).toBe(2);
   });
 });

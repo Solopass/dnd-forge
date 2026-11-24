@@ -6,6 +6,7 @@ import {
   syncClassResourcePools,
 } from '../classes';
 import { computeCharacterSheet } from '../rules-math';
+import { BUILTIN_CONTENT_PACKS } from '../srd-packs';
 
 describe('D&D Forge Class Definitions & Character Presets', () => {
   it('builds valid playable sheets for all 14 classes at level 5', () => {
@@ -102,5 +103,67 @@ describe('D&D Forge Class Definitions & Character Presets', () => {
     );
     expect(synced.find((r) => r.id === 'auto_class_ki')?.current).toBe(2);
     expect(synced.find((r) => r.id === 'auto_class_ki')?.max).toBe(6);
+  });
+
+  it('resolves @spell, @cantrip, @lvl, Alert, Tough, and 2024 Exhaustion properly', () => {
+    const cleric = buildCharacterFromPreset({
+      id: 'clr-5',
+      name: 'Aldous',
+      className: 'Cleric',
+      level: 5,
+      speciesName: 'Human',
+      backgroundName: 'Acolyte',
+      ruleset: '2014',
+    });
+    const resolvedCleric = computeCharacterSheet(cleric);
+    // Cleric WIS 15+1=16 (+3), Prof +3 => Save DC 14, Sacred Flame 2d8, Healing Word 1d4+3
+    expect(resolvedCleric.spellcasting.primaryAbility).toBe('wis');
+    expect(resolvedCleric.spellcasting.saveDc.final).toBe(14);
+    const sacredFlame = resolvedCleric.actionsByEconomy.action.find((a) => a.name === 'Sacred Flame');
+    expect(sacredFlame?.computedSaveDc).toBe(14);
+    expect(sacredFlame?.computedDamage).toBe('2d8');
+    const healingWord = resolvedCleric.actionsByEconomy.bonus_action.find((a) => a.name.includes('Healing Word'));
+    expect(healingWord?.computedDamage).toBe('1d4 + 3');
+
+    const warlock = buildCharacterFromPreset({
+      id: 'wlk-5',
+      name: 'Kael',
+      className: 'Warlock',
+      level: 5,
+      speciesName: 'Tiefling',
+      backgroundName: 'Sage',
+      ruleset: '2014',
+    });
+    const resolvedWarlock = computeCharacterSheet(warlock);
+    // Warlock CHA 15+2=17 (+3), Prof +3 => Eldritch Blast +6
+    expect(resolvedWarlock.spellcasting.primaryAbility).toBe('cha');
+    const eb = resolvedWarlock.actionsByEconomy.action.find((a) => a.name === 'Eldritch Blast');
+    expect(eb?.computedAttackBonus).toBe(6);
+
+    const fighter = buildCharacterFromPreset({
+      id: 'ftr-5',
+      name: 'Bryn',
+      className: 'Fighter',
+      level: 5,
+      speciesName: 'Human',
+      backgroundName: 'Soldier',
+      ruleset: '2024',
+    });
+    const allPackEntities = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities);
+    const alertFeat = allPackEntities.find((e) => e.id === 'srd-feat-alert')!;
+    const toughFeat = allPackEntities.find((e) => e.id === 'srd-feat-tough')!;
+    fighter.items.push(structuredClone(alertFeat), structuredClone(toughFeat));
+    fighter.exhaustion = 2;
+
+    const resolvedFighter = computeCharacterSheet(fighter);
+    const secondWind = resolvedFighter.actionsByEconomy.bonus_action.find((a) => a.name === 'Second Wind');
+    expect(secondWind?.computedDamage).toBe('1d10 + 5');
+    // Alert +5 on DEX 13+1=14 (+2) => Init +7
+    expect(resolvedFighter.initiative.final).toBe(7);
+    // 2024 Exhaustion 2 => -4 to skills & saves
+    expect(resolvedFighter.abilities.str.save.modifiers.some((m) => m.id === 'exhaustion-2024' && m.value === -4)).toBe(true);
+    // Tough adds +2 * 5 = +10 HP on Fighter Lvl 5 (CON 14+1=15 (+2) => 44 + 10 = 54)
+    const toughHp = computeFixedMaxHp(fighter.classes, fighter.baseAbilities.con + fighter.bonusAbilities.con, fighter.items);
+    expect(toughHp).toBe(54);
   });
 });

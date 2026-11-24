@@ -21,6 +21,7 @@ interface ActionEconomyBoardProps {
   onOpenGearDrawer?: () => void;
   onOpenBuilderDrawer?: () => void;
   activeBuffs?: ActiveBuffState;
+  flankingRule?: 'off' | 'advantage' | 'plus2';
   onToggleBuff?: (key: keyof ActiveBuffState) => void;
   onDivineSmite?: (slotLevel: number) => void;
 }
@@ -81,6 +82,7 @@ export function ActionEconomyBoard({
   onOpenGearDrawer,
   onOpenBuilderDrawer,
   activeBuffs,
+  flankingRule = 'off',
   onToggleBuff,
   onDivineSmite,
 }: ActionEconomyBoardProps) {
@@ -365,6 +367,16 @@ export function ActionEconomyBoard({
                 >
                   Sneak Atk +{Math.max(1, Math.ceil(sheet.totalLevel / 2))}d6
                 </button>
+                {flankingRule !== 'off' && (
+                  <button
+                    type="button"
+                    className={`pill ${activeBuffs?.flanking ? 'active' : ''}`}
+                    title={`Optional Flanking rule (${flankingRule === 'advantage' ? 'Advantage on melee attacks' : '+2 to melee attack rolls'})`}
+                    onClick={() => onToggleBuff('flanking')}
+                  >
+                    Flanking {flankingRule === 'advantage' ? '(ADV)' : '(+2)'}
+                  </button>
+                )}
                 {onDivineSmite && (() => {
                   const availableSmiteLevels = [1, 2, 3, 4, 5].filter(
                     (lvl) => (sheet.resources.find((r) => r.id === `spell_slot_${lvl}`)?.current ?? 0) > 0

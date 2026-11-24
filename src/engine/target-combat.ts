@@ -81,7 +81,8 @@ export function resolveTargetAttack(
   customAttackBonus?: number,
   diceRoller: (expr: string, mode: RollMode) => { total: number; isCrit: boolean; isFumble: boolean } = evaluateDiceExpression,
   weaponMastery?: WeaponMastery,
-  attackerAbilityMod = 3
+  attackerAbilityMod = 3,
+  critRule: 'standard' | 'crunchy' = 'standard'
 ): TargetAttackOutcome {
   const bonus =
     customAttackBonus ??
@@ -96,7 +97,9 @@ export function resolveTargetAttack(
   let masteryNote = '';
 
   if (hit && activity.damageFormula) {
-    const dmgExpr = atkRes.isCrit ? doubleDiceForCrit(activity.damageFormula) : activity.damageFormula;
+    const dmgExpr = atkRes.isCrit
+      ? doubleDiceForCrit(activity.damageFormula, critRule)
+      : activity.damageFormula;
     rawDamage = Math.max(0, diceRoller(dmgExpr, 'normal').total);
     const adjusted = adjustDamageForTargetDefenses(rawDamage, activity.damageType, target);
     appliedDamage = adjusted.appliedDamage;

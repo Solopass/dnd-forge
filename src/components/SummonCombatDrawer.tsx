@@ -790,12 +790,17 @@ export function CommandPalette({
 }: CommandPaletteProps) {
   const [tab, setTab] = useState<'search' | 'packs' | 'pdf' | 'markdown' | 'json'>('search');
   const [categoryFilter, setCategoryFilter] = useState<'all' | CompendiumEntity['category']>('all');
+  const [rulesetFilter, setRulesetFilter] = useState<'all' | '2014' | '2024'>('all');
   const [query, setQuery] = useState('');
   const [pasteText, setPasteText] = useState('');
 
-  const matches = searchCompendium(query).filter(
-    (item) => categoryFilter === 'all' || item.category === categoryFilter
-  );
+  const matches = searchCompendium(query)
+    .filter(
+      (item) =>
+        (categoryFilter === 'all' || item.category === categoryFilter) &&
+        (rulesetFilter === 'all' || item.ruleset === rulesetFilter)
+    )
+    .slice(0, 120);
 
   return (
     <ModalDialog isOpen={isOpen} onClose={onClose} title="Compendium, SRD Packs & Importers">
@@ -855,7 +860,7 @@ export function CommandPalette({
                 marginBottom: 8,
               }}
             />
-            <div className="pill-row" style={{ marginBottom: 8 }}>
+            <div className="pill-row" style={{ marginBottom: 8, flexWrap: 'wrap' }}>
               {(['all', 'spell', 'monster', 'weapon', 'armor', 'gear', 'feat', 'feature'] as const).map((cat) => (
                 <button
                   key={cat}
@@ -864,6 +869,17 @@ export function CommandPalette({
                   onClick={() => setCategoryFilter(cat)}
                 >
                   {cat.toUpperCase()}
+                </button>
+              ))}
+              <span style={{ opacity: 0.35 }}>|</span>
+              {(['all', '2014', '2024'] as const).map((rs) => (
+                <button
+                  key={rs}
+                  type="button"
+                  className={`pill ${rulesetFilter === rs ? 'active' : ''}`}
+                  onClick={() => setRulesetFilter(rs)}
+                >
+                  {rs === 'all' ? 'ALL RULES' : rs}
                 </button>
               ))}
             </div>

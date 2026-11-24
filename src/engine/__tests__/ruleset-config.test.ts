@@ -5,6 +5,9 @@ import {
   RULESET_2024_DEFAULTS,
 } from '../ruleset-config';
 import { computeCharacterSheet, createBlankCharacter } from '../rules-math';
+import { doubleDiceForCrit } from '../dice';
+import { rollAllInitiativeOrder } from '../combat-machine';
+import { CombatantNode } from '../../types/combat';
 
 describe('Custom Ruleset & House Rules Engine', () => {
   it('detects 2014, 2024, and custom mix presets accurately', () => {
@@ -78,5 +81,30 @@ describe('Custom Ruleset & House Rules Engine', () => {
     expect(customMix.actionsByEconomy.bonus_action.some((a) => a.name === 'Potion of Healing')).toBe(true);
     expect(customMix.actionsByEconomy.action.find((a) => a.name === 'Greatsword')?.weaponMastery).toBe('Graze');
     expect(customMix.abilities.str.save.final).toBe(baseSave - 4);
+  });
+
+  it('supports crunchy crits and 2024 Surprised initiative disadvantage', () => {
+    expect(doubleDiceForCrit('2d6+4', 'standard')).toBe('4d6+4');
+    expect(doubleDiceForCrit('2d6+4', 'crunchy')).toBe('2d6+12+4');
+
+    const mob: CombatantNode = {
+      id: 'm1',
+      name: 'Ambush Goblin',
+      kind: 'monster',
+      initiative: 0,
+      dexModifier: 2,
+      hp: { current: 7, max: 7, temp: 0 },
+      ac: 15,
+      conditions: ['Surprised'],
+      turnEconomyUsed: { action: false, bonus_action: false, reaction: false, free: false, special: false },
+    };
+
+    let idx = 0;
+    const seq = [18, 4]; // 2024 Disadvantage takes min(18, 4) = 4 -> +2 = 6
+    const res2024 = rollAllInitiativeOrder([mob], () => seq[idx++] ?? 10, '2024');
+    expect(res2024[0]?.initiative).toBe(6);
+
+    const res2014 = rollAllInitiativeOrder([mob], () => 18, '2014');
+    expect(res2014[0]?.initiative).toBe(20);
   });
 });

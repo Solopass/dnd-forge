@@ -30,9 +30,16 @@ export function resolveRollMode(advantageSources: number, disadvantageSources: n
   return 'normal';
 }
 
-export function doubleDiceForCrit(expression: string): string {
-  return expression.replace(/(\d*)d(\d+)/gi, (_match, countStr: string, sides: string) => {
+export function doubleDiceForCrit(
+  expression: string,
+  critRule: 'standard' | 'crunchy' = 'standard'
+): string {
+  return expression.replace(/(\d*)d(\d+)/gi, (_match, countStr: string, sidesStr: string) => {
     const count = countStr === '' ? 1 : Number.parseInt(countStr, 10);
+    const sides = Number.parseInt(sidesStr, 10);
+    if (critRule === 'crunchy') {
+      return `${count}d${sides}+${count * sides}`;
+    }
     return `${count * 2}d${sides}`;
   });
 }

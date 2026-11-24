@@ -1126,7 +1126,9 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         );
       }
       if (act.damageFormula) {
-        const dmgExpr = attackIsCrit ? doubleDiceForCrit(act.damageFormula) : act.damageFormula;
+        const dmgExpr = attackIsCrit
+          ? doubleDiceForCrit(act.damageFormula, houseRules.critRule)
+          : act.damageFormula;
         const dmg = evaluateDiceExpression(dmgExpr, 'normal');
         const critTag = attackIsCrit ? ' [CRIT DICE DOUBLED]' : '';
         appendLog(
@@ -1221,11 +1223,19 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
       let attackIsCrit = false;
       if (activity.computedAttackBonus !== null) {
         const condRoll = resolveConditionRollMode(rawChar.conditions, 'attack', undefined, rollMode);
+        const flankAdv = activeBuffs.flanking && houseRules.flankingRule === 'advantage';
+        const flankBonus = activeBuffs.flanking && houseRules.flankingRule === 'plus2' ? '+2' : '';
+        const effectiveAtkMode: RollMode =
+          flankAdv && condRoll.mode === 'disadvantage'
+            ? 'normal'
+            : flankAdv
+              ? 'advantage'
+              : condRoll.mode;
         const sign = activity.computedAttackBonus >= 0 ? '+' : '';
         const blessTerm = activeBuffs.bless ? '+1d4' : '';
         const atk = evaluateDiceExpression(
-          `1d20${sign}${activity.computedAttackBonus}${blessTerm}`,
-          condRoll.mode,
+          `1d20${sign}${activity.computedAttackBonus}${blessTerm}${flankBonus}`,
+          effectiveAtkMode,
           resolvedSheet.critThreshold
         );
         attackIsCrit = atk.isCrit;
@@ -1237,10 +1247,16 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
           ? ' [FUMBLE]'
           : '';
         const condTag = condRoll.reasons.length > 0 ? ` [${condRoll.reasons.join(', ')}]` : '';
+        const flankTag =
+          activeBuffs.flanking && houseRules.flankingRule !== 'off'
+            ? houseRules.flankingRule === 'advantage'
+              ? ' [Flanking ADV]'
+              : ' [Flanking +2]'
+            : '';
         const masteryTag = activity.weaponMastery ? ` [Mastery: ${activity.weaponMastery}]` : '';
         const blessTag = activeBuffs.bless ? ' [+Bless 1d4]' : '';
         appendLog(
-          `${activity.name}${spentNote} Attack (${atk.mode}): ${atk.total}${tag}${condTag}${blessTag}${masteryTag} [${atk.terms.map((t) => t.kept.join(',')).join('+')}]`,
+          `${activity.name}${spentNote} Attack (${atk.mode}): ${atk.total}${tag}${condTag}${flankTag}${blessTag}${masteryTag} [${atk.terms.map((t) => t.kept.join(',')).join('+')}]`,
           atk.isCrit ? 'crit' : 'roll'
         );
       }
@@ -1262,7 +1278,9 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
           upcastFormula = `${upcastFormula} + ${sneakDice}d6`;
           buffNotes.push(`Sneak +${sneakDice}d6`);
         }
-        const dmgExpr = attackIsCrit ? doubleDiceForCrit(upcastFormula) : upcastFormula;
+        const dmgExpr = attackIsCrit
+          ? doubleDiceForCrit(upcastFormula, houseRules.critRule)
+          : upcastFormula;
         const dmg = evaluateDiceExpression(dmgExpr, 'normal');
         const critTag = attackIsCrit ? ' [CRIT DICE DOUBLED]' : '';
         const upcastTag = extraLevels > 0 && activity.upcastDicePerLevel ? ` [UPCAST +${extraLevels}]` : '';
@@ -1335,7 +1353,18 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         appendLog(`Active effect started: ${activity.parentItemName}${spentNote}`, 'info');
       }
     },
-    [rawChar, resolvedSheet.spellcasting.attackBonus.final, resolvedSheet.critThreshold, rollMode, persistCharacter, persistEncounter, appendLog]
+    [
+      rawChar,
+      resolvedSheet.spellcasting.attackBonus.final,
+      resolvedSheet.critThreshold,
+      resolvedSheet.totalLevel,
+      rollMode,
+      activeBuffs,
+      houseRules,
+      persistCharacter,
+      persistEncounter,
+      appendLog,
+    ]
   );
 
   const stepCombatTurn = useCallback(() => {
@@ -1903,14 +1932,12 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   const searchCompendium = useCallback(
     (query: string): CompendiumEntity[] => {
       const rawQ = query.trim().toLowerCase();
-      if (!rawQ) return compendium.slice(0, 120);
+      if (!rawQ) return compendium;
       const normQ = normalizeSearchQuery(query);
-      return compendium
-        .filter((item) => {
-          if (item.name.toLowerCase().includes(rawQ)) return true;
-          return normQ ? buildSearchTokens(item).includes(normQ) : false;
-        })
-        .slice(0, 120);
+      return compendium.filter((item) => {
+        if (item.name.toLowerCase().includes(rawQ)) return true;
+        return normQ ? buildSearchTokens(item).includes(normQ) : false;
+      });
     },
     [compendium]
   );
@@ -2624,14 +2651,23 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   );
 
   const rollAllInitiative = useCallback(() => {
+    const surprisedNames = encounter.combatants
+      .filter((c) => c.conditions.some((cond) => cond.toLowerCase() === 'surprised'))
+      .map((c) => c.name);
     persistEncounter((prev) => ({
       ...prev,
       round: 1,
       activeTurnIndex: 0,
-      combatants: rollAllInitiativeOrder(prev.combatants),
+      combatants: rollAllInitiativeOrder(prev.combatants, undefined, houseRules.surpriseRule),
     }));
-    appendLog('Rolled Initiative for all combatants (Reset to Round 1).', 'roll');
-  }, [persistEncounter, appendLog]);
+    const surpriseNote =
+      surprisedNames.length > 0
+        ? houseRules.surpriseRule === '2024'
+          ? ` (2024 Surprised Disadvantage: ${surprisedNames.join(', ')})`
+          : ` (2014 Surprised — skips Turn 1: ${surprisedNames.join(', ')})`
+        : '';
+    appendLog(`Rolled Initiative for all combatants (Reset to Round 1).${surpriseNote}`, 'roll');
+  }, [encounter.combatants, houseRules.surpriseRule, persistEncounter, appendLog]);
 
   const toggleCombatantHidden = useCallback(
     (combatantId: string) => {
@@ -3068,7 +3104,16 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
       if (targets.length === 0) return;
 
       const outcomes = targets.map((t) =>
-        resolveTargetAttack(activity, t, rollMode, customBonus, undefined, weaponMastery, attackerAbilityMod)
+        resolveTargetAttack(
+          activity,
+          t,
+          rollMode,
+          customBonus,
+          undefined,
+          weaponMastery,
+          attackerAbilityMod,
+          houseRules.critRule
+        )
       );
       const hpUpdates = new Map(
         outcomes.filter((o) => o.targetId !== rawChar.id).map((o) => [o.targetId, o.nextHp])

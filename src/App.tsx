@@ -366,6 +366,7 @@ export function App() {
       onOpenGearDrawer={() => setGearOpen(true)}
       onOpenBuilderDrawer={() => setBuilderOpen(true)}
       activeBuffs={store.activeBuffs}
+      flankingRule={store.houseRules.flankingRule}
       onToggleBuff={store.toggleBuff}
       onDivineSmite={store.divineSmite}
     />
@@ -570,6 +571,18 @@ export function App() {
         </div>
 
         <div className="topbar-actions">
+          <button
+            type="button"
+            className="btn"
+            onClick={() => setRulesetOpen(true)}
+            title="View 2014 vs 2024 rule differences & customize house rules"
+          >
+            Rules:{' '}
+            {(() => {
+              const p = detectRulesetPreset(store.houseRules);
+              return p === '2014' ? '2014' : p === '2024' ? '2024' : 'Custom';
+            })()}
+          </button>
           <button type="button" className="btn" onClick={() => setPaletteOpen(true)} title="Compendium, Packs & PDF Import (Ctrl+K)">
             Packs (Ctrl+K)
           </button>

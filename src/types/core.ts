@@ -55,6 +55,7 @@ export interface ActiveBuffState {
   bless: boolean;
   rage: boolean;
   sneakAttack: boolean;
+  flanking?: boolean;
 }
 
 export const STANDARD_CONDITIONS = [

@@ -292,13 +292,17 @@ export function advanceTurn(
 
 export function rollAllInitiativeOrder(
   combatants: CombatantNode[],
-  rollD20: () => number = () => Math.floor(Math.random() * 20) + 1
+  rollD20: () => number = () => Math.floor(Math.random() * 20) + 1,
+  surpriseRule: '2014' | '2024' = '2024'
 ): CombatantNode[] {
   const updated = combatants.map((c) => {
     if (c.ownerId) return c;
+    const isSurprised = c.conditions.some((cond) => cond.toLowerCase() === 'surprised');
+    const die =
+      isSurprised && surpriseRule === '2024' ? Math.min(rollD20(), rollD20()) : rollD20();
     return {
       ...c,
-      initiative: rollD20() + c.dexModifier,
+      initiative: die + c.dexModifier,
     };
   });
   return sortInitiativeOrder(updated);

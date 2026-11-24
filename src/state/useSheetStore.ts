@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RawCharacterState, ResolvedActivity, ResolvedCharacterSheet } from '../types/character';
 import { CombatEncounterState, CombatLogEntry } from '../types/combat';
 import { Activity, CompendiumEntity } from '../types/compendium';
-import { RecoveryTrigger, RollMode } from '../types/core';
+import { ActionEconomy, RecoveryTrigger, RollMode } from '../types/core';
 import {
   applyRestRecovery,
   computeCharacterSheet,
@@ -10,7 +10,7 @@ import {
   resolveResourcePoolForCost,
   syncSpellSlotPools,
 } from '../engine/rules-math';
-import { doubleDiceForCrit, evaluateDiceExpression } from '../engine/dice';
+import { doubleDiceForCrit, evaluateDiceExpression, scaleDiceForUpcast } from '../engine/dice';
 import {
   advanceTurn,
   applyEffectWithConcentrationCheck,
@@ -24,6 +24,7 @@ import { parseDndBeyondPdfBuffer } from '../engine/ddb-pdf-importer';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
 import {
   buildCharacterFromPreset,
+  buildSubclassGrantEntities,
   NewCharacterPresetInput,
   syncClassResourcePools,
 } from '../engine/classes';
@@ -337,6 +338,117 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     [persistCharacter]
   );
 
+  const rollDeathSave = useCallback(() => {
+    const roll = evaluateDiceExpression('1d20', 'normal');
+    const d20 = roll.total;
+    if (d20 === 20) {
+      persistCharacter((prev) => ({
+        ...prev,
+        hp: { ...prev.hp, current: 1 },
+        deathSaves: { successes: 0, failures: 0 },
+      }));
+      persistEncounter((prev) => ({
+        ...prev,
+        combatants: prev.combatants.map((c) =>
+          c.id === rawChar.id ? { ...c, hp: { ...c.hp, current: 1 } } : c
+        ),
+      }));
+      appendLog(
+        `Death Save: Natural 20! ${rawChar.name} regains 1 HP and resets Death Saves.`,
+        'crit'
+      );
+      return;
+    }
+    if (d20 === 1) {
+      const nextFail = Math.min(3, rawChar.deathSaves.failures + 2);
+      persistCharacter((prev) => ({
+        ...prev,
+        deathSaves: { ...prev.deathSaves, failures: Math.min(3, prev.deathSaves.failures + 2) },
+      }));
+      appendLog(`Death Save: Natural 1! +2 Failures (${nextFail}/3).`, 'warn');
+      return;
+    }
+    if (d20 >= 10) {
+      const nextSucc = Math.min(3, rawChar.deathSaves.successes + 1);
+      persistCharacter((prev) => ({
+        ...prev,
+        deathSaves: { ...prev.deathSaves, successes: Math.min(3, prev.deathSaves.successes + 1) },
+      }));
+      appendLog(
+        `Death Save: ${d20} — Success (${nextSucc}/3)${nextSucc >= 3 ? ' (Stabilized)' : '.'}`,
+        'info'
+      );
+      return;
+    }
+    const nextFail = Math.min(3, rawChar.deathSaves.failures + 1);
+    persistCharacter((prev) => ({
+      ...prev,
+      deathSaves: { ...prev.deathSaves, failures: Math.min(3, prev.deathSaves.failures + 1) },
+    }));
+    appendLog(`Death Save: ${d20} — Failure (${nextFail}/3).`, 'warn');
+  }, [
+    rawChar.id,
+    rawChar.name,
+    rawChar.deathSaves.successes,
+    rawChar.deathSaves.failures,
+    persistCharacter,
+    persistEncounter,
+    appendLog,
+  ]);
+
+  const toggleInspiration = useCallback(() => {
+    persistCharacter((prev) => ({ ...prev, inspiration: !prev.inspiration }));
+    appendLog(
+      rawChar.inspiration
+        ? `${rawChar.name} used Heroic Inspiration.`
+        : `${rawChar.name} gained Heroic Inspiration!`,
+      'info'
+    );
+  }, [rawChar.inspiration, rawChar.name, persistCharacter, appendLog]);
+
+  const toggleDefense = useCallback(
+    (kind: 'resistances' | 'immunities' | 'vulnerabilities', damageType: string) => {
+      const clean = damageType.trim().toLowerCase();
+      if (!clean) return;
+      persistCharacter((prev) => {
+        const current = prev.defenses ?? { resistances: [], immunities: [], vulnerabilities: [] };
+        const list = current[kind];
+        const exists = list.includes(clean);
+        return {
+          ...prev,
+          defenses: {
+            ...current,
+            [kind]: exists ? list.filter((d) => d !== clean) : [...list, clean],
+          },
+        };
+      });
+      appendLog(`Toggled ${kind.slice(0, -1)}: ${clean}.`, 'info');
+    },
+    [persistCharacter, appendLog]
+  );
+
+  const applySubclassGrants = useCallback(
+    (className: string, subclassName: string) => {
+      const grants = buildSubclassGrantEntities(className, subclassName, rawChar.ruleset);
+      if (grants.length === 0) {
+        appendLog(`No automatic SRD grants matched "${subclassName}" for ${className}.`, 'info');
+        return 0;
+      }
+      persistCharacter((prev) => {
+        const existingIds = new Set(prev.items.map((i) => i.id));
+        const existingNames = new Set(prev.items.map((i) => i.name.toLowerCase()));
+        const toAdd = grants.filter(
+          (g) => !existingIds.has(g.id) && !existingNames.has(g.name.toLowerCase())
+        );
+        if (toAdd.length === 0) return prev;
+        return { ...prev, items: [...prev.items, ...toAdd] };
+      });
+      appendLog(`Applied ${grants.length} ${subclassName} feature/spell grant(s).`, 'info');
+      return grants.length;
+    },
+    [rawChar.ruleset, persistCharacter, appendLog]
+  );
+
   const adjustResourcePool = useCallback(
     (poolId: string, delta: number) => {
       persistCharacter((prev) => ({
@@ -376,16 +488,53 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
 
   const toggleCondition = useCallback(
     (condition: string) => {
-      persistCharacter((prev) => {
-        const exists = prev.conditions.includes(condition);
-        const nextConditions = exists
+      const adding = !rawChar.conditions.includes(condition);
+      const nextConditions = adding
+        ? [...rawChar.conditions, condition]
+        : rawChar.conditions.filter((c) => c !== condition);
+
+      persistCharacter((prev) => ({
+        ...prev,
+        conditions: prev.conditions.includes(condition)
           ? prev.conditions.filter((c) => c !== condition)
-          : [...prev.conditions, condition];
-        return { ...prev, conditions: nextConditions };
+          : [...prev.conditions, condition],
+      }));
+
+      const breaksConc =
+        adding &&
+        (condition === 'Incapacitated' ||
+          condition === 'Paralyzed' ||
+          condition === 'Stunned' ||
+          condition === 'Unconscious');
+      let concDropped = false;
+      persistEncounter((prev) => {
+        const hasConc = prev.activeEffects.some(
+          (e) => e.sourceCombatantId === rawChar.id && e.isConcentration
+        );
+        let updated: CombatEncounterState = {
+          ...prev,
+          combatants: prev.combatants.map((c) =>
+            c.id === rawChar.id ? { ...c, conditions: nextConditions } : c
+          ),
+        };
+        if (breaksConc && hasConc) {
+          concDropped = true;
+          updated = dropConcentrationForCombatant(
+            updated,
+            rawChar.id,
+            `${condition} broke Concentration`
+          );
+        }
+        return updated;
       });
-      appendLog(`Toggled condition: ${condition}.`, 'info');
+      if (concDropped) {
+        setPendingConcDc(null);
+        appendLog(`${condition} automatically ended ${rawChar.name}'s Concentration.`, 'warn');
+      } else {
+        appendLog(`Toggled condition: ${condition}.`, 'info');
+      }
     },
-    [persistCharacter, appendLog]
+    [rawChar.conditions, rawChar.id, rawChar.name, persistCharacter, persistEncounter, appendLog]
   );
 
   const rollCharacterInitiative = useCallback(() => {
@@ -646,15 +795,22 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   );
 
   const triggerActivity = useCallback(
-    (activity: ResolvedActivity) => {
+    (activity: ResolvedActivity, slotLevelOverride?: number) => {
       let spentNote = '';
-      let effectiveSlotLevel = activity.resourceCost?.amount ?? 4;
+      const baseSlotMatch = activity.resourceCost?.poolId.match(/^spell_slot_(\d+)$/);
+      const baseSpellLevel = baseSlotMatch?.[1] ? Number.parseInt(baseSlotMatch[1], 10) : 0;
+      let effectiveSlotLevel = baseSpellLevel > 0 ? baseSpellLevel : activity.resourceCost?.amount ?? 4;
 
       if (activity.resourceCost) {
+        const requestedPoolId =
+          baseSpellLevel > 0 && slotLevelOverride && slotLevelOverride > baseSpellLevel
+            ? `spell_slot_${slotLevelOverride}`
+            : activity.resourceCost.poolId;
+
         const resolution = resolveResourcePoolForCost(
           rawChar.resources,
           rawChar.classes,
-          activity.resourceCost.poolId,
+          requestedPoolId,
           activity.resourceCost.amount
         );
         if ('error' in resolution) {
@@ -663,6 +819,13 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         }
         if (resolution.note) {
           spentNote = ` (${resolution.note})`;
+        } else if (
+          baseSpellLevel > 0 &&
+          slotLevelOverride &&
+          slotLevelOverride > baseSpellLevel &&
+          resolution.poolId === `spell_slot_${slotLevelOverride}`
+        ) {
+          spentNote = ` (upcast Level ${slotLevelOverride} slot)`;
         }
         const slotMatch = resolution.poolId.match(/^spell_slot_(\d+)$/);
         if (slotMatch && slotMatch[1]) {
@@ -687,12 +850,43 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         }
       }
 
+      if (
+        activity.actionEconomy === 'action' ||
+        activity.actionEconomy === 'bonus_action' ||
+        activity.actionEconomy === 'reaction'
+      ) {
+        persistEncounter((prev) => ({
+          ...prev,
+          combatants: prev.combatants.map((c) =>
+            c.id === rawChar.id
+              ? {
+                  ...c,
+                  turnEconomyUsed: {
+                    ...c.turnEconomyUsed,
+                    [activity.actionEconomy]: true,
+                  },
+                }
+              : c
+          ),
+        }));
+      }
+
       let attackIsCrit = false;
       if (activity.computedAttackBonus !== null) {
         const sign = activity.computedAttackBonus >= 0 ? '+' : '';
-        const atk = evaluateDiceExpression(`1d20${sign}${activity.computedAttackBonus}`, rollMode);
+        const atk = evaluateDiceExpression(
+          `1d20${sign}${activity.computedAttackBonus}`,
+          rollMode,
+          resolvedSheet.critThreshold
+        );
         attackIsCrit = atk.isCrit;
-        const tag = atk.isCrit ? ' [CRIT!]' : atk.isFumble ? ' [FUMBLE]' : '';
+        const tag = atk.isCrit
+          ? resolvedSheet.critThreshold < 20
+            ? ` [CRIT ${resolvedSheet.critThreshold}-20!]`
+            : ' [CRIT!]'
+          : atk.isFumble
+          ? ' [FUMBLE]'
+          : '';
         appendLog(
           `${activity.name}${spentNote} Attack (${atk.mode}): ${atk.total}${tag} [${atk.terms.map((t) => t.kept.join(',')).join('+')}]`,
           atk.isCrit ? 'crit' : 'roll'
@@ -700,12 +894,19 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
       }
 
       if (activity.computedDamage) {
-        const dmgExpr = attackIsCrit ? doubleDiceForCrit(activity.computedDamage) : activity.computedDamage;
+        const extraLevels = baseSpellLevel > 0 ? Math.max(0, effectiveSlotLevel - baseSpellLevel) : 0;
+        const upcastFormula = scaleDiceForUpcast(
+          activity.computedDamage,
+          activity.upcastDicePerLevel,
+          extraLevels
+        );
+        const dmgExpr = attackIsCrit ? doubleDiceForCrit(upcastFormula) : upcastFormula;
         const dmg = evaluateDiceExpression(dmgExpr, 'normal');
         const critTag = attackIsCrit ? ' [CRIT DICE DOUBLED]' : '';
+        const upcastTag = extraLevels > 0 && activity.upcastDicePerLevel ? ` [UPCAST +${extraLevels}]` : '';
         const kindLabel = activity.type === 'heal' ? 'Healing' : 'Damage';
         appendLog(
-          `${activity.name}${activity.computedAttackBonus === null ? spentNote : ''} ${kindLabel}: ${dmg.total} ${activity.damageType ?? ''} (${dmgExpr})${critTag}`,
+          `${activity.name}${activity.computedAttackBonus === null ? spentNote : ''} ${kindLabel}: ${dmg.total} ${activity.damageType ?? ''} (${dmgExpr})${upcastTag}${critTag}`,
           attackIsCrit ? 'crit' : 'roll'
         );
       } else if (spentNote) {
@@ -763,7 +964,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         appendLog(`Active effect started: ${activity.parentItemName}${spentNote}`, 'info');
       }
     },
-    [rawChar, resolvedSheet.spellcasting.attackBonus.final, rollMode, persistCharacter, persistEncounter, appendLog]
+    [rawChar, resolvedSheet.spellcasting.attackBonus.final, resolvedSheet.critThreshold, rollMode, persistCharacter, persistEncounter, appendLog]
   );
 
   const stepCombatTurn = useCallback(() => {
@@ -824,16 +1025,66 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
 
   const toggleCombatantCondition = useCallback(
     (combatantId: string, condition: string) => {
+      if (combatantId === rawChar.id) {
+        toggleCondition(condition);
+        return;
+      }
+      let droppedName: string | null = null;
+      persistEncounter((prev) => {
+        const target = prev.combatants.find((c) => c.id === combatantId);
+        const adding = target ? !target.conditions.includes(condition) : false;
+        const breaksConc =
+          adding &&
+          (condition === 'Incapacitated' ||
+            condition === 'Paralyzed' ||
+            condition === 'Stunned' ||
+            condition === 'Unconscious');
+        let updated: CombatEncounterState = {
+          ...prev,
+          combatants: prev.combatants.map((c) => {
+            if (c.id !== combatantId) return c;
+            const has = c.conditions.includes(condition);
+            return {
+              ...c,
+              conditions: has ? c.conditions.filter((x) => x !== condition) : [...c.conditions, condition],
+            };
+          }),
+        };
+        if (
+          breaksConc &&
+          updated.activeEffects.some((e) => e.sourceCombatantId === combatantId && e.isConcentration)
+        ) {
+          droppedName = target?.name ?? 'Combatant';
+          updated = dropConcentrationForCombatant(
+            updated,
+            combatantId,
+            `${condition} broke Concentration`
+          );
+        }
+        return updated;
+      });
+      if (droppedName) {
+        appendLog(`${condition} automatically ended ${droppedName}'s Concentration.`, 'warn');
+      }
+    },
+    [rawChar.id, toggleCondition, persistEncounter, appendLog]
+  );
+
+  const toggleCombatantEconomy = useCallback(
+    (combatantId: string, economy: ActionEconomy) => {
       persistEncounter((prev) => ({
         ...prev,
-        combatants: prev.combatants.map((c) => {
-          if (c.id !== combatantId) return c;
-          const has = c.conditions.includes(condition);
-          return {
-            ...c,
-            conditions: has ? c.conditions.filter((x) => x !== condition) : [...c.conditions, condition],
-          };
-        }),
+        combatants: prev.combatants.map((c) =>
+          c.id === combatantId
+            ? {
+                ...c,
+                turnEconomyUsed: {
+                  ...c.turnEconomyUsed,
+                  [economy]: !c.turnEconomyUsed[economy],
+                },
+              }
+            : c
+        ),
       }));
     },
     [persistEncounter]
@@ -1263,6 +1514,10 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     setTempHp,
     setExhaustion,
     updateDeathSaves,
+    rollDeathSave,
+    toggleInspiration,
+    toggleDefense,
+    applySubclassGrants,
     adjustResourcePool,
     addCustomResourcePool,
     toggleCondition,
@@ -1282,6 +1537,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     adjustCombatantHp,
     setCombatantInitiative,
     toggleCombatantCondition,
+    toggleCombatantEconomy,
     removeCombatant,
     dropConcentration,
     rollConcentrationSave,

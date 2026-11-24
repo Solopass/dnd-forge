@@ -967,7 +967,7 @@ export function CommandPalette({
                   className={`pill ${rulesetFilter === rs ? 'active' : ''}`}
                   onClick={() => setRulesetFilter(rs)}
                 >
-                  {rs === 'all' ? 'ALL RULES' : rs}
+                  {rs === 'all' ? 'ALL RULES' : rs === '2024' ? '2024 (Modern)' : '2014'}
                 </button>
               ))}
               <button

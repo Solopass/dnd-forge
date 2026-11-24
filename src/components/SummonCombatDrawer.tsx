@@ -834,6 +834,7 @@ export function CommandPalette({
   const [categoryFilter, setCategoryFilter] = useState<'all' | CompendiumEntity['category']>(initialCategory);
   const [rulesetFilter, setRulesetFilter] = useState<'all' | '2014' | '2024'>(initialRuleset);
   const [spellLevelFilter, setSpellLevelFilter] = useState<'all' | number>('all');
+  const [spellTagFilter, setSpellTagFilter] = useState<'all' | 'conc' | 'ritual'>('all');
   const [query, setQuery] = useState('');
   const [pasteText, setPasteText] = useState('');
 
@@ -851,7 +852,11 @@ export function CommandPalette({
       (item) =>
         (categoryFilter === 'all' || item.category === categoryFilter) &&
         (rulesetFilter === 'all' || item.ruleset === rulesetFilter) &&
-        (categoryFilter !== 'spell' || spellLevelFilter === 'all' || (item.spellLevel ?? 0) === spellLevelFilter)
+        (categoryFilter !== 'spell' || spellLevelFilter === 'all' || (item.spellLevel ?? 0) === spellLevelFilter) &&
+      (categoryFilter !== 'spell' ||
+        spellTagFilter === 'all' ||
+        (spellTagFilter === 'conc' && Boolean(item.concentration)) ||
+        (spellTagFilter === 'ritual' && Boolean(item.ritual)))
     )
     .sort((a, b) => {
       if (categoryFilter === 'spell') {
@@ -966,6 +971,21 @@ export function CommandPalette({
                     {lvl === 0 ? 'Cantrip' : `L${lvl}`}
                   </button>
                 ))}
+                <span style={{ opacity: 0.35 }}>|</span>
+                <button
+                  type="button"
+                  className={`pill ${spellTagFilter === 'conc' ? 'active' : ''}`}
+                  onClick={() => setSpellTagFilter((t) => (t === 'conc' ? 'all' : 'conc'))}
+                >
+                  CONC
+                </button>
+                <button
+                  type="button"
+                  className={`pill ${spellTagFilter === 'ritual' ? 'active' : ''}`}
+                  onClick={() => setSpellTagFilter((t) => (t === 'ritual' ? 'all' : 'ritual'))}
+                >
+                  RITUAL
+                </button>
               </div>
             )}
             <div style={{ maxHeight: 280, overflowY: 'auto' }}>

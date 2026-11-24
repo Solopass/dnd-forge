@@ -668,6 +668,9 @@ export function App() {
       ),
     onSetTokenPortrait: store.setCombatantPortrait,
     onSetTokenVision: store.setCombatantVision,
+    onAdjustTokenHp: store.adjustCombatantHp,
+    onToggleTokenCondition: store.toggleCombatantCondition,
+    onInspectToken: setInspectedCombatantId,
     ownedCharacterId: isPlayerRole ? (store.claimedTokenId ?? store.rawChar.id) : undefined,
     onOpenPopOutPlayer: () => {
       window.open('?player=1', 'dnd-forge-player-display', 'width=1280,height=800');
@@ -1542,6 +1545,36 @@ export function App() {
           onDeleteCharacter={store.deleteCharacter}
           onImportDdbPdf={store.importDdbPdfFile}
           onImportCharacterJson={store.importSingleCharacter}
+          onExportMarkdown={(c) => {
+            const lines = [
+              `# ${c.name}`,
+              `*${c.species} • ${c.classes.map((cl) => `${cl.className}${cl.subclassName ? ` (${cl.subclassName})` : ''} ${cl.level}`).join(' / ')} • ${c.background} (${c.ruleset})*`,
+              '',
+              `**HP:** ${c.hp.current}/${c.hp.max}${c.hp.temp ? ` (+${c.hp.temp} temp)` : ''}`,
+              c.speeds ? `**Speeds:** Walk ${c.speeds.walk ?? 30}ft${c.speeds.fly ? `, Fly ${c.speeds.fly}ft` : ''}${c.speeds.swim ? `, Swim ${c.speeds.swim}ft` : ''}${c.speeds.climb ? `, Climb ${c.speeds.climb}ft` : ''}${c.speeds.burrow ? `, Burrow ${c.speeds.burrow}ft` : ''}` : '',
+              c.senses ? `**Senses:** ${Object.entries(c.senses).filter(([, v]) => (v ?? 0) > 0).map(([k, v]) => `${k} ${v}ft`).join(', ') || 'Normal'}` : '',
+              '',
+              '## Ability Scores',
+              ...(['str', 'dex', 'con', 'int', 'wis', 'cha'] as const).map((ab) => {
+                const score = c.baseAbilities[ab] + c.bonusAbilities[ab];
+                const mod = Math.floor((score - 10) / 2);
+                return `- **${ab.toUpperCase()}:** ${score} (${mod >= 0 ? `+${mod}` : mod})`;
+              }),
+              '',
+              c.structuredProficiencies
+                ? `## Proficiencies & Languages\n- **Armor:** ${c.structuredProficiencies.armor.join(', ') || '—'}\n- **Weapons:** ${c.structuredProficiencies.weapons.join(', ') || '—'}\n- **Tools:** ${c.structuredProficiencies.tools.join(', ') || '—'}\n- **Languages:** ${c.structuredProficiencies.languages.join(', ') || 'Common'}\n`
+                : '',
+              '## Spells, Gear & Features',
+              ...c.items.map((it) => `- **${it.name}** (${it.category})${it.entries[0] ? `: ${it.entries[0]}` : ''}`),
+            ].filter(Boolean);
+            const blob = new Blob([lines.join('\n')], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'character'}.md`;
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
         />
       </Suspense>
 
@@ -1780,6 +1813,39 @@ export function App() {
           {String(store.campaign.clock.hour).padStart(2, '0')}:
           {String(store.campaign.clock.minute).padStart(2, '0')} ({store.campaign.clock.weather})
         </p>
+        <h2>Active Character: {store.rawChar.name}</h2>
+        <p>
+          {store.rawChar.species} • {classSummary} • Lvl {charLevel} • AC {store.resolvedSheet.ac.final} • HP {store.resolvedSheet.hp.current}/{store.resolvedSheet.hp.max} • Walk {store.resolvedSheet.speeds.walk}ft
+          {store.resolvedSheet.speeds.fly > 0 ? `, Fly ${store.resolvedSheet.speeds.fly}ft` : ''}
+          {store.resolvedSheet.speeds.swim > 0 ? `, Swim ${store.resolvedSheet.speeds.swim}ft` : ''}
+          {store.resolvedSheet.senses.darkvision > 0 ? ` • Darkvision ${store.resolvedSheet.senses.darkvision}ft` : ''}
+        </p>
+        {store.rawChar.structuredProficiencies && (
+          <p style={{ fontSize: 12 }}>
+            <strong>Proficiencies:</strong>{' '}
+            {[
+              store.rawChar.structuredProficiencies.armor.length ? `Armor (${store.rawChar.structuredProficiencies.armor.join(', ')})` : '',
+              store.rawChar.structuredProficiencies.weapons.length ? `Weapons (${store.rawChar.structuredProficiencies.weapons.join(', ')})` : '',
+              store.rawChar.structuredProficiencies.tools.length ? `Tools (${store.rawChar.structuredProficiencies.tools.join(', ')})` : '',
+              store.rawChar.structuredProficiencies.languages.length ? `Languages (${store.rawChar.structuredProficiencies.languages.join(', ')})` : '',
+            ]
+              .filter(Boolean)
+              .join(' • ')}
+          </p>
+        )}
+        {store.rawChar.details && (
+          <p style={{ fontSize: 12 }}>
+            {[
+              store.rawChar.details.alignment,
+              store.rawChar.details.traits ? `Traits: ${store.rawChar.details.traits}` : '',
+              store.rawChar.details.ideals ? `Ideals: ${store.rawChar.details.ideals}` : '',
+              store.rawChar.details.bonds ? `Bonds: ${store.rawChar.details.bonds}` : '',
+              store.rawChar.details.flaws ? `Flaws: ${store.rawChar.details.flaws}` : '',
+            ]
+              .filter(Boolean)
+              .join(' • ')}
+          </p>
+        )}
         <h2>Campaign Binder ({store.campaign.entries.length} Entries)</h2>
         {store.campaign.entries.map((entry) => (
           <div key={entry.id} style={{ marginBottom: 10, borderBottom: '1px solid #ccc', paddingBottom: 6 }}>

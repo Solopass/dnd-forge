@@ -117,6 +117,23 @@ export function LevelUpModal({
       .slice(0, 60);
   }, [allPackEntities, ownedIds, maxNewSpellLevel, spellFilter, matchCharRulesetOnly, character.ruleset]);
 
+  const matchingClassFeatures = useMemo(() => {
+    const clsLower = selectedClass.toLowerCase();
+    const subLower = effectiveSub.toLowerCase();
+    return allPackEntities
+      .filter(
+        (e) =>
+          e.category === 'feature' &&
+          !ownedIds.has(e.id) &&
+          (!matchCharRulesetOnly || e.ruleset === character.ruleset || e.ruleset === 'homebrew')
+      )
+      .filter((e) => {
+        const text = `${e.name} ${e.entries.join(' ')}`.toLowerCase();
+        return text.includes(clsLower) || (subLower && text.includes(subLower));
+      })
+      .slice(0, 24);
+  }, [allPackEntities, ownedIds, selectedClass, effectiveSub, matchCharRulesetOnly, character.ruleset]);
+
   const toggleSpell = (id: string) => {
     setSelectedSpellIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
@@ -326,6 +343,35 @@ export function LevelUpModal({
                 </select>
               </label>
             )}
+          </div>
+        )}
+
+        {matchingClassFeatures.length > 0 && (
+          <div className="card forge-stack">
+            <div className="forge-row-between">
+              <span className="forge-section-label" style={{ marginBottom: 0 }}>
+                SRD {selectedClass.toUpperCase()} FEATURES
+              </span>
+              <span className="forge-muted" style={{ fontSize: 11 }}>
+                Optional — click to add to sheet
+              </span>
+            </div>
+            <div className="pill-row">
+              {matchingClassFeatures.map((feat) => {
+                const picked = selectedSpellIds.includes(feat.id);
+                return (
+                  <button
+                    key={feat.id}
+                    type="button"
+                    className={`pill ${picked ? 'active' : ''}`}
+                    title={feat.entries[0] ?? feat.name}
+                    onClick={() => toggleSpell(feat.id)}
+                  >
+                    {picked ? '✓ ' : '+ '}{feat.name}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 

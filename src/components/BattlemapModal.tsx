@@ -43,6 +43,9 @@ interface BattlemapModalProps {
   onToggleTarget?: (combatantId: string) => void;
   onSetTokenPortrait?: (combatantId: string, url: string | undefined) => void;
   onSetTokenVision?: (combatantId: string, feet: number) => void;
+  onAdjustTokenHp?: (combatantId: string, delta: number) => void;
+  onToggleTokenCondition?: (combatantId: string, condition: string) => void;
+  onInspectToken?: (combatantId: string) => void;
   onOpenPopOutPlayer?: () => void;
   ownedCharacterId?: string;
 }
@@ -114,6 +117,9 @@ export function BattlemapModal({
   onToggleTarget,
   onSetTokenPortrait,
   onSetTokenVision,
+  onAdjustTokenHp,
+  onToggleTokenCondition,
+  onInspectToken,
   onOpenPopOutPlayer,
 }: BattlemapModalProps) {
   const [mode, setMode] = useState<MapMode>('move');
@@ -1050,12 +1056,56 @@ export function BattlemapModal({
         </div>
       )}
 
-        {/* Selected Token Portrait & Vision Editor */}
+        {/* Selected Token Quick Actions, Portrait & Vision Editor */}
         {selectedToken && !playerView && (
           <div className="subpanel forge-row-between" style={{ padding: '6px 10px', flexWrap: 'wrap', gap: 6 }}>
-            <span className="badge">
-              Token: <strong>{selectedToken.name}</strong>
-            </span>
+            <div className="forge-row" style={{ flexWrap: 'wrap', gap: 6 }}>
+              <span className="badge tabular">
+                Token: <strong>{selectedToken.name}</strong> • HP {selectedToken.hp.current}/{selectedToken.hp.max} • AC {selectedToken.ac}
+              </span>
+              {onAdjustTokenHp && (
+                <div className="forge-row" style={{ gap: 3 }}>
+                  {[-5, -1, 1, 5].map((delta) => (
+                    <button
+                      key={delta}
+                      type="button"
+                      className="btn"
+                      style={{ padding: '1px 6px', fontSize: 11 }}
+                      onClick={() => onAdjustTokenHp(selectedToken.id, delta)}
+                    >
+                      {delta > 0 ? `+${delta}` : delta}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {onToggleTokenCondition && (
+                <div className="forge-row" style={{ gap: 3 }}>
+                  {['Prone', 'Poisoned', 'Stunned'].map((cond) => {
+                    const active = selectedToken.conditions.includes(cond);
+                    return (
+                      <button
+                        key={cond}
+                        type="button"
+                        className={`pill ${active ? 'active' : ''}`}
+                        onClick={() => onToggleTokenCondition(selectedToken.id, cond)}
+                      >
+                        {cond}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {onInspectToken && (
+                <button
+                  type="button"
+                  className="btn"
+                  style={{ fontSize: 11 }}
+                  onClick={() => onInspectToken(selectedToken.id)}
+                >
+                  Inspect
+                </button>
+              )}
+            </div>
             <div className="forge-row" style={{ flexWrap: 'wrap' }}>
               <label className="btn" style={{ cursor: 'pointer' }}>
                 Upload Portrait

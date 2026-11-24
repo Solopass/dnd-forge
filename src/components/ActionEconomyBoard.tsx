@@ -11,12 +11,46 @@ interface ActionEconomyBoardProps {
   onRollInlineExpression: (label: string, expression: string) => void;
 }
 
-const ECONOMY_SECTIONS: Array<{ key: ActionEconomy; label: string }> = [
+const ECONOMY_SECTIONS: Array<{ key: Exclude<ActionEconomy, 'special'>; label: string }> = [
   { key: 'action', label: 'Actions' },
   { key: 'bonus_action', label: 'Bonus Actions' },
   { key: 'reaction', label: 'Reactions' },
   { key: 'free', label: 'Free & Special' },
 ];
+
+function formatResourceBadge(poolId: string): string {
+  const slotMatch = poolId.match(/^spell_slot_(\d+)$/);
+  if (slotMatch && slotMatch[1]) {
+    const lvl = Number.parseInt(slotMatch[1], 10);
+    const ord = lvl === 1 ? '1st' : lvl === 2 ? '2nd' : lvl === 3 ? '3rd' : `${lvl}th`;
+    return `${ord} Slot`;
+  }
+  return poolId
+    .replace(/^auto_class_/, '')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function formatActivityActionLabel(act: ResolvedActivity): string {
+  if (act.computedAttackBonus !== null) {
+    const sign = act.computedAttackBonus >= 0 ? '+' : '';
+    return `${sign}${act.computedAttackBonus} / ${act.computedDamage ?? 'Roll'}`;
+  }
+  if (act.type === 'save' && act.computedSaveDc !== null && act.saveAbility) {
+    const dmg = act.computedDamage ? ` • ${act.computedDamage}` : '';
+    return `DC ${act.computedSaveDc} ${act.saveAbility.toUpperCase()}${dmg}`;
+  }
+  if (act.type === 'heal' && act.computedDamage) {
+    return `Heal ${act.computedDamage}`;
+  }
+  if (act.type === 'summon') {
+    return 'Summon';
+  }
+  if (act.computedDamage) {
+    return `Roll ${act.computedDamage}`;
+  }
+  return 'Use';
+}
 
 export function ActionEconomyBoard({
   sheet,
@@ -25,10 +59,18 @@ export function ActionEconomyBoard({
   onTriggerActivity,
   onRollInlineExpression,
 }: ActionEconomyBoardProps) {
-  const [filter, setFilter] = useState<'all' | 'attack' | 'summon' | 'concentration'>('all');
+  const [filter, setFilter] = useState<'all' | 'attack' | 'save' | 'heal' | 'summon' | 'concentration'>('all');
+  const [search, setSearch] = useState('');
 
   const matchesFilter = (act: ResolvedActivity): boolean => {
+    const q = search.trim().toLowerCase();
+    if (q) {
+      const hay = `${act.name} ${act.parentItemName} ${act.resolvedDescription ?? act.description ?? ''}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
     if (filter === 'attack') return act.type === 'attack';
+    if (filter === 'save') return act.type === 'save';
+    if (filter === 'heal') return act.type === 'heal';
     if (filter === 'summon') return act.type === 'summon';
     if (filter === 'concentration') return act.concentration;
     return true;
@@ -69,39 +111,54 @@ export function ActionEconomyBoard({
 
   return (
     <main className="pane" aria-label="Action Economy Dashboard">
-      <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div className="pill-row">
-          {(['all', 'attack', 'summon', 'concentration'] as const).map((pill) => (
-            <button
-              key={pill}
-              type="button"
-              className={`pill ${filter === pill ? 'active' : ''}`}
-              onClick={() => setFilter(pill)}
-            >
-              {pill.toUpperCase()}
-            </button>
-          ))}
+      <div className="card forge-stack">
+        <div className="forge-row-between" style={{ flexWrap: 'wrap' }}>
+          <div className="pill-row">
+            {(['all', 'attack', 'save', 'heal', 'summon', 'concentration'] as const).map((pill) => (
+              <button
+                key={pill}
+                type="button"
+                className={`pill ${filter === pill ? 'active' : ''}`}
+                onClick={() => setFilter(pill)}
+              >
+                {pill === 'concentration' ? 'CONC' : pill.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
+          <div className="pill-row">
+            {(['disadvantage', 'normal', 'advantage'] as RollMode[]).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                className={`pill ${rollMode === mode ? 'active' : ''}`}
+                onClick={() => onChangeRollMode(mode)}
+              >
+                {mode === 'disadvantage' ? 'DIS' : mode === 'advantage' ? 'ADV' : 'FLAT'}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="pill-row">
-          {(['disadvantage', 'normal', 'advantage'] as RollMode[]).map((mode) => (
-            <button
-              key={mode}
-              type="button"
-              className={`pill ${rollMode === mode ? 'active' : ''}`}
-              onClick={() => onChangeRollMode(mode)}
-            >
-              {mode === 'disadvantage' ? 'DIS' : mode === 'advantage' ? 'ADV' : 'FLAT'}
-            </button>
-          ))}
-        </div>
+        <input
+          aria-label="Filter actions and spells"
+          type="text"
+          className="forge-input"
+          placeholder="Filter actions, spells, features..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
 
       {ECONOMY_SECTIONS.map(({ key, label }) => {
-        const items = sheet.actionsByEconomy[key].filter(matchesFilter);
+        const pool =
+          key === 'free'
+            ? [...sheet.actionsByEconomy.free, ...sheet.actionsByEconomy.special]
+            : sheet.actionsByEconomy[key];
+        const items = pool.filter(matchesFilter);
         return (
           <section key={key} className="card">
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6 }}>
+            <div className="forge-section-label">
               {label.toUpperCase()} ({items.length})
             </div>
             {items.length === 0 ? (
@@ -110,38 +167,20 @@ export function ActionEconomyBoard({
               items.map((act) => {
                 const desc = act.resolvedDescription ?? act.description;
                 return (
-                  <div
-                    key={act.id}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      gap: 10,
-                      padding: '6px 0',
-                      borderBottom: '1px solid var(--border-subtle)',
-                    }}
-                  >
+                  <div key={act.id} className="forge-list-row">
                     <div>
                       <strong>{act.name}</strong>{' '}
-                      <span style={{ color: 'var(--text-secondary)', fontSize: 11 }}>
+                      <span className="forge-muted" style={{ fontSize: 11 }}>
                         ({act.parentItemName})
                       </span>
-                      {act.concentration && (
-                        <span
-                          style={{
-                            marginLeft: 6,
-                            fontSize: 10,
-                            color: 'var(--accent-amber)',
-                            border: '1px solid var(--accent-amber)',
-                            borderRadius: 3,
-                            padding: '0 4px',
-                          }}
-                        >
-                          CONC
+                      {act.concentration && <span className="conc-badge">CONC</span>}
+                      {act.resourceCost && (
+                        <span className="cost-badge">
+                          {formatResourceBadge(act.resourceCost.poolId)}
                         </span>
                       )}
                       {desc && (
-                        <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
+                        <div className="forge-muted">
                           {renderTaggedDescription(act.name, desc)}
                         </div>
                       )}
@@ -149,14 +188,10 @@ export function ActionEconomyBoard({
 
                     <button
                       type="button"
-                      className="btn btn-primary tabular"
+                      className="btn btn-primary tabular forge-nowrap"
                       onClick={() => onTriggerActivity(act)}
                     >
-                      {act.computedAttackBonus !== null
-                        ? `+${act.computedAttackBonus} / ${act.computedDamage ?? 'Roll'}`
-                        : act.type === 'summon'
-                        ? 'Summon'
-                        : 'Use'}
+                      {formatActivityActionLabel(act)}
                     </button>
                   </div>
                 );

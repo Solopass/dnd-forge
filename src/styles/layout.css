@@ -1,9 +1,17 @@
 .app-shell {
   display: grid;
-  grid-template-rows: auto 1fr 142px;
+  grid-template-rows: auto 1fr 152px;
   height: 100dvh;
   width: 100%;
   overflow: hidden;
+}
+
+.app-shell.console-collapsed {
+  grid-template-rows: auto 1fr auto;
+}
+
+.app-shell.console-expanded {
+  grid-template-rows: auto 1fr 260px;
 }
 
 .topbar {
@@ -131,15 +139,18 @@
   background: var(--bg-surface);
   border-top: 1px solid var(--border-subtle);
   display: grid;
-  grid-template-rows: 32px 1fr;
+  grid-template-rows: auto 1fr;
   overflow: hidden;
 }
 
 .status-console-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  padding: 0 14px;
+  min-block-size: 34px;
+  padding: 4px 14px;
   border-bottom: 1px solid var(--border-subtle);
   background: var(--bg-elevated);
 }
@@ -257,8 +268,12 @@ dialog.forge-dialog::backdrop {
 
 .forge-ability-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
   gap: 8px;
+}
+
+.forge-nowrap {
+  white-space: nowrap;
 }
 
 .forge-ability-edit {
@@ -339,4 +354,178 @@ dialog.forge-dialog::backdrop {
 
 .pip.filled {
   background: var(--accent-blue);
+}
+
+/* Tactical VTT Sheet & Combat Polish */
+.stat-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 4px;
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  text-align: center;
+}
+
+button.stat-tile {
+  cursor: pointer;
+}
+
+button.stat-tile:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-accent);
+}
+
+.stat-tile-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.stat-tile-val {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.hp-bar-track {
+  position: relative;
+  height: 7px;
+  width: 100%;
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.hp-bar-fill {
+  height: 100%;
+  transition: width 150ms ease;
+}
+
+.hp-bar-fill.hp-high {
+  background: var(--accent-green);
+}
+
+.hp-bar-fill.hp-mid {
+  background: var(--accent-amber);
+}
+
+.hp-bar-fill.hp-low {
+  background: var(--accent-red);
+}
+
+.ability-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.ability-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 6px;
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+}
+
+.ability-tile-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  width: 100%;
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.ability-tile-mod {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.ability-tile-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  width: 100%;
+}
+
+.ability-tile-actions .btn {
+  padding: 2px 4px;
+  font-size: 11px;
+  min-block-size: 24px;
+}
+
+.combatant-active {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.35);
+}
+
+.turn-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent-blue);
+  background: rgba(88, 166, 255, 0.14);
+  border: 1px solid rgba(88, 166, 255, 0.45);
+  border-radius: 3px;
+  padding: 0 5px;
+  margin-left: 6px;
+}
+
+.conc-badge {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 10px;
+  color: var(--accent-amber);
+  border: 1px solid var(--accent-amber);
+  border-radius: 3px;
+  padding: 0 4px;
+}
+
+.cost-badge {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 10px;
+  color: var(--accent-purple);
+  background: rgba(188, 140, 255, 0.12);
+  border: 1px solid rgba(188, 140, 255, 0.38);
+  border-radius: 3px;
+  padding: 0 4px;
+}
+
+.dice-tray {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.dice-tray .btn {
+  padding: 2px 7px;
+  font-size: 11px;
+  min-block-size: 24px;
+}
+
+.console-collapsed .status-console-log {
+  display: none;
 }

@@ -166,6 +166,7 @@ export function App() {
   const [builderOpen, setBuilderOpen] = useState(false);
   const [gearOpen, setGearOpen] = useState(false);
   const [newCharOpen, setNewCharOpen] = useState(false);
+  const [consoleSize, setConsoleSize] = useState<'normal' | 'expanded' | 'collapsed'>('normal');
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -190,8 +191,15 @@ export function App() {
     store.appendLog('Exported full local IndexedDB bundle (.json).', 'info');
   };
 
+  const shellClass =
+    consoleSize === 'collapsed'
+      ? 'app-shell console-collapsed'
+      : consoleSize === 'expanded'
+      ? 'app-shell console-expanded'
+      : 'app-shell';
+
   return (
-    <div className="app-shell">
+    <div className={shellClass}>
       <header className="topbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <strong>D&amp;D FORGE // LOCAL VTT</strong>
@@ -232,11 +240,12 @@ export function App() {
         </div>
       </header>
 
-      <main className="workspace-grid">
+      <div className="workspace-grid">
         <VitalsColumn
           sheet={store.resolvedSheet}
           onAdjustHp={store.adjustHp}
           onSetTempHp={store.setTempHp}
+          onSetExhaustion={store.setExhaustion}
           onUpdateDeathSaves={store.updateDeathSaves}
           onAdjustResource={store.adjustResourcePool}
           onAddResource={store.addCustomResourcePool}
@@ -262,6 +271,7 @@ export function App() {
 
         <SummonCombatDrawer
           encounter={store.encounter}
+          pendingConcDc={store.pendingConcDc}
           onNextTurn={store.stepCombatTurn}
           onResetEncounter={store.resetEncounter}
           onAdjustCombatantHp={store.adjustCombatantHp}
@@ -270,12 +280,18 @@ export function App() {
           onRemoveCombatant={store.removeCombatant}
           onTriggerCombatantActivity={store.triggerCombatantActivity}
           onDropConcentration={store.dropConcentration}
+          onRollConcentrationSave={store.rollConcentrationSave}
           onAddMonster={store.addMonsterToEncounter}
         />
-      </main>
+      </div>
 
       <StatusConsole
         lines={store.consoleLines}
+        consoleSize={consoleSize}
+        onCycleConsoleSize={() =>
+          setConsoleSize((s) => (s === 'normal' ? 'expanded' : s === 'expanded' ? 'collapsed' : 'normal'))
+        }
+        onClearLog={store.clearConsoleLog}
         onRollExpression={store.rollInlineExpression}
       />
 

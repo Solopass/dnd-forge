@@ -56,7 +56,7 @@ export function CharacterBuilderDrawer({
         .filter((cls) => cls.level > 0);
       const nextClasses = updated.length > 0 ? updated : prev.classes;
       const conScore = prev.baseAbilities.con + prev.bonusAbilities.con;
-      const newMaxHp = computeFixedMaxHp(nextClasses, conScore);
+      const newMaxHp = computeFixedMaxHp(nextClasses, conScore, prev.items);
       const hpDiff = newMaxHp - prev.hp.max;
       return {
         ...prev,
@@ -99,7 +99,7 @@ export function CharacterBuilderDrawer({
             },
           ];
       const conScore = prev.baseAbilities.con + prev.bonusAbilities.con;
-      const newMaxHp = computeFixedMaxHp(nextClasses, conScore);
+      const newMaxHp = computeFixedMaxHp(nextClasses, conScore, prev.items);
       const hpDiff = newMaxHp - prev.hp.max;
       return {
         ...prev,
@@ -245,7 +245,7 @@ export function CharacterBuilderDrawer({
                     <span className="forge-label">{key.toUpperCase()}</span>
                     <button
                       type="button"
-                      className={`pill ${saveActive ? 'active' : ''}`}
+                      className={`pill forge-nowrap ${saveActive ? 'active' : ''}`}
                       onClick={() => toggleSaveProf(key)}
                       title="Toggle saving throw proficiency"
                     >

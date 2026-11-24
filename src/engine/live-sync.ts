@@ -82,6 +82,14 @@ export type LiveTableMessage =
       dc?: number;
     }
   | {
+      type: 'initiative_alert';
+      senderId: string;
+      senderName: string;
+      encounterName: string;
+      soundUrl?: string;
+      timestamp: number;
+    }
+  | {
       type: 'token_move';
       senderId: string;
       senderName: string;

@@ -1,6 +1,29 @@
 export type AmbientPresetId = 'tavern' | 'rain' | 'dungeon' | 'battle';
 
-export type SfxPresetId = 'sword' | 'fireball' | 'thunder' | 'door' | 'fanfare' | 'coins';
+export type SfxPresetId = 'sword' | 'fireball' | 'thunder' | 'door' | 'fanfare' | 'coins' | 'initiative';
+
+const CUSTOM_INITIATIVE_SFX_KEY = 'sidereroll-initiative-sfx-url';
+
+export function getCustomInitiativeSoundUrl(): string {
+  try {
+    return localStorage.getItem(CUSTOM_INITIATIVE_SFX_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+export function setCustomInitiativeSoundUrl(url: string): void {
+  try {
+    const clean = url.trim();
+    if (clean) {
+      localStorage.setItem(CUSTOM_INITIATIVE_SFX_KEY, clean);
+    } else {
+      localStorage.removeItem(CUSTOM_INITIATIVE_SFX_KEY);
+    }
+  } catch {
+    // ignore storage errors
+  }
+}
 
 class TabletopSoundboard {
   private ctx: AudioContext | null = null;
@@ -164,6 +187,10 @@ class TabletopSoundboard {
       } else if (sfx === 'coins') {
         tone(1567.98, 0, 0.09, 'sine', 0.18);
         tone(2093, 0.06, 0.12, 'sine', 0.18);
+      } else if (sfx === 'initiative') {
+        tone(293.66, 0, 0.14, 'sawtooth', 0.18);
+        tone(440, 0.11, 0.16, 'sawtooth', 0.2);
+        tone(587.33, 0.22, 0.42, 'triangle', 0.24);
       } else {
         tone(523.25, 0, 0.15, 'triangle', 0.18);
         tone(659.25, 0.12, 0.15, 'triangle', 0.18);
@@ -172,6 +199,23 @@ class TabletopSoundboard {
     } catch {
       // ignore audio restrictions
     }
+  }
+
+  playInitiativeAlertSound(overrideUrl?: string): void {
+    const url = (overrideUrl ?? getCustomInitiativeSoundUrl()).trim();
+    if (url && typeof Audio !== 'undefined') {
+      try {
+        const audio = new Audio(url);
+        audio.volume = Math.max(0.1, Math.min(1, this.volume));
+        void audio.play().catch(() => {
+          this.playSfx('initiative');
+        });
+        return;
+      } catch {
+        // fallback to synth horn
+      }
+    }
+    this.playSfx('initiative');
   }
 }
 

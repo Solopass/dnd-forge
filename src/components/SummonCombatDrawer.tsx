@@ -48,6 +48,7 @@ interface SummonDrawerProps {
   onTargetAttack: (attackerName: string, targetIds: string[], act: Activity) => void;
   onTargetSave: (attackerName: string, targetIds: string[], act: Activity) => void;
   onOpenEncounterBuilder: () => void;
+  onStartEncounterAlert?: () => void;
   hideBattlemapButton?: boolean;
   isPlayerRole?: boolean;
   onAddMonster: (
@@ -107,6 +108,7 @@ export function SummonCombatDrawer({
   onTargetAttack,
   onTargetSave,
   onOpenEncounterBuilder,
+  onStartEncounterAlert,
   hideBattlemapButton = false,
   isPlayerRole = false,
   onAddMonster,
@@ -220,6 +222,16 @@ export function SummonCombatDrawer({
           <div className="forge-row" style={{ flexWrap: 'wrap' }}>
             {!isPlayerRole && (
               <>
+                {onStartEncounterAlert && (
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={onStartEncounterAlert}
+                    title="Flash Roll Initiative alert and play sound on all connected players' browsers"
+                  >
+                    Start! (Roll Init)
+                  </button>
+                )}
                 <button type="button" className="btn" onClick={onAddPartyToEncounter} title="Drop all saved PCs into encounter">
                   + Party
                 </button>
@@ -710,18 +722,18 @@ export function SummonCombatDrawer({
                           <option value="huge">H (3x3)</option>
                           <option value="gargantuan">G (4x4)</option>
                         </select>
-                        <button
-                          type="button"
-                          className="btn btn-danger"
-                          style={{ marginLeft: 'auto' }}
-                          title="Remove from encounter"
-                          aria-label={`Remove ${node.name}`}
-                          onClick={() => onRemoveCombatant(node.id)}
-                        >
-                          Remove
-                        </button>
                       </>
                     )}
+                    <button
+                      type="button"
+                      className="btn btn-danger"
+                      style={{ marginLeft: 'auto' }}
+                      title="Remove from encounter"
+                      aria-label={`Remove ${node.name}`}
+                      onClick={() => onRemoveCombatant(node.id)}
+                    >
+                      Remove
+                    </button>
                   </div>
                 )}
 

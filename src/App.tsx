@@ -300,7 +300,7 @@ export function App() {
       return 'dm';
     }
   });
-  const [centerStage, setCenterStage] = useState<'auto' | 'sheet' | 'battlemap'>('auto');
+  const [centerStage, setCenterStage] = useState<'auto' | 'sheet' | 'battlemap'>('sheet');
   const [playerView, setPlayerView] = useState(false);
   const [inspectedCombatantId, setInspectedCombatantId] = useState<string | null>(null);
   const [rightTab, setRightTab] = useState<'combat' | 'inspector'>('combat');
@@ -572,6 +572,7 @@ export function App() {
       onTargetAttack={store.targetAttackCombatants}
       onTargetSave={store.targetSaveCombatants}
       onOpenEncounterBuilder={() => setEncounterBuilderOpen(true)}
+      onStartEncounterAlert={store.startEncounterAlert}
       hideBattlemapButton={uiMode === 'unified' && unifiedView === 'vtt'}
       onAddMonster={store.addMonsterToEncounter}
     />
@@ -1105,6 +1106,47 @@ export function App() {
         </div>
       )}
 
+      {store.initiativeAlert && (
+        <div
+          className="subpanel forge-row-between initiative-alert-banner"
+          role="alert"
+          style={{
+            padding: '10px 14px',
+            margin: '6px 14px 0',
+            flexWrap: 'wrap',
+            gap: 8,
+            flexShrink: 0,
+          }}
+        >
+          <span>
+            <strong style={{ color: 'var(--accent-red)', letterSpacing: '0.06em' }}>
+              ⚔ ROLL INITIATIVE!
+            </strong>{' '}
+            {store.initiativeAlert.senderName} started{' '}
+            <strong>{store.initiativeAlert.encounterName}</strong>
+          </span>
+          <div className="forge-row" style={{ gap: 6 }}>
+            <button
+              type="button"
+              className="btn btn-primary tabular"
+              onClick={() => {
+                store.rollCharacterInitiative();
+                store.dismissInitiativeAlert();
+              }}
+            >
+              Roll Initiative (
+              {store.resolvedSheet.initiative.final >= 0
+                ? `+${store.resolvedSheet.initiative.final}`
+                : store.resolvedSheet.initiative.final}
+              )
+            </button>
+            <button type="button" className="btn" onClick={store.dismissInitiativeAlert}>
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
       {store.pendingConcDc !== null && (
         <div
           className="subpanel forge-row-between"
@@ -1336,8 +1378,8 @@ export function App() {
                   </button>
                 </div>
               </div>
-              {showCenterBattlemap && (
-                <div className="center-battlemap-slot" style={{ flexShrink: 0 }}>
+              {showCenterBattlemap ? (
+                <div className="center-battlemap-slot" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
                   <Suspense fallback={null}>
                     <BattlemapModal
                       isOpen
@@ -1348,8 +1390,9 @@ export function App() {
                     />
                   </Suspense>
                 </div>
+              ) : (
+                actionBoardNode
               )}
-              {actionBoardNode}
             </div>
             {showClassicCombat && rightSlotNode}
           </div>

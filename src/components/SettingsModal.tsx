@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
 import { isSoundEnabled, playTableSound, setSoundEnabled } from '../engine/sound';
+import {
+  getCustomInitiativeSoundUrl,
+  setCustomInitiativeSoundUrl,
+  tabletopSoundboard,
+} from '../engine/soundboard';
 import { applyUiMode, readStoredUiMode, UiMode } from '../engine/ui-mode';
 import { getStoredGithubPat, setStoredGithubPat } from '../engine/campaign-repo-sync';
 import { ModalDialog } from './ModalDialog';
@@ -61,6 +66,8 @@ export function SettingsModal({
   const [soundOn, setSoundOn] = useState<boolean>(isSoundEnabled);
   const [githubPat, setGithubPat] = useState<string>(getStoredGithubPat);
   const [patSavedNotice, setPatSavedNotice] = useState(false);
+  const [initiativeSfxUrl, setInitiativeSfxUrl] = useState<string>(getCustomInitiativeSoundUrl);
+  const [sfxSavedNotice, setSfxSavedNotice] = useState(false);
   const [systemIsDark, setSystemIsDark] = useState<boolean>(() =>
     typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)').matches : true
   );
@@ -288,6 +295,45 @@ export function SettingsModal({
           </div>
           <div className="forge-muted">
             All characters, custom maps, homebrew entries, and encounters are saved offline in your browser IndexedDB.
+          </div>
+        </div>
+
+        <div className="card forge-stack">
+          <div className="card-header">
+            <div className="forge-section-label">INITIATIVE ALERT SOUND (OPTIONAL)</div>
+          </div>
+          <div className="forge-muted" style={{ fontSize: 12 }}>
+            Optional audio URL (<code>.mp3</code>, <code>.wav</code>, <code>.ogg</code>) played on all connected players&apos; browsers when the DM clicks <strong>Start! (Roll Init)</strong>. Leave blank to use the built-in horn fanfare.
+          </div>
+          <div className="forge-row" style={{ gap: 6, flexWrap: 'wrap' }}>
+            <input
+              type="text"
+              className="forge-input"
+              style={{ flex: '1 1 200px' }}
+              placeholder="https://... or ./sounds/roll-initiative.mp3"
+              value={initiativeSfxUrl}
+              onChange={(e) => {
+                setInitiativeSfxUrl(e.target.value);
+                setSfxSavedNotice(false);
+              }}
+            />
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => {
+                setCustomInitiativeSoundUrl(initiativeSfxUrl);
+                setSfxSavedNotice(true);
+              }}
+            >
+              {sfxSavedNotice ? 'Saved ✓' : 'Save URL'}
+            </button>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => tabletopSoundboard.playInitiativeAlertSound(initiativeSfxUrl || undefined)}
+            >
+              Test Sound
+            </button>
           </div>
         </div>
 

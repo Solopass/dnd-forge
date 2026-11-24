@@ -58,6 +58,7 @@ import {
   LiveTableSession,
 } from '../engine/live-sync';
 import { playTableSound } from '../engine/sound';
+import { getCustomInitiativeSoundUrl, tabletopSoundboard } from '../engine/soundboard';
 import {
   buildSearchTokens,
   db,
@@ -132,6 +133,11 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   });
   const [rollMode, setRollMode] = useState<RollMode>('normal');
   const [pendingConcDc, setPendingConcDc] = useState<number | null>(null);
+  const [initiativeAlert, setInitiativeAlert] = useState<{
+    senderName: string;
+    encounterName: string;
+    timestamp: number;
+  } | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [liveStatus, setLiveStatus] = useState<{
     role: LiveTableRole;
@@ -2380,6 +2386,17 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
       return;
     }
 
+    if (msg.type === 'initiative_alert') {
+      tabletopSoundboard.playInitiativeAlertSound(msg.soundUrl);
+      setInitiativeAlert({
+        senderName: msg.senderName,
+        encounterName: msg.encounterName,
+        timestamp: msg.timestamp,
+      });
+      appendLog(`${msg.senderName} signaled: ROLL INITIATIVE for "${msg.encounterName}"!`, 'warn');
+      return;
+    }
+
     if (msg.type === 'token_move' && liveStatus.role === 'host') {
       persistEncounter((prev) => {
         const nextCombatants = prev.combatants.map((c) =>
@@ -4070,6 +4087,33 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     [campaign, compendium, persistCampaign, appendLog, pushToast]
   );
 
+  const dismissInitiativeAlert = useCallback(() => {
+    setInitiativeAlert(null);
+  }, []);
+
+  const startEncounterAlert = useCallback(() => {
+    const customUrl = getCustomInitiativeSoundUrl();
+    tabletopSoundboard.playInitiativeAlertSound(customUrl || undefined);
+    const alertPayload = {
+      senderName: rawChar.name || 'DM',
+      encounterName: encounter.name,
+      timestamp: Date.now(),
+    };
+    setInitiativeAlert(alertPayload);
+    appendLog(`Encounter started — ROLL INITIATIVE for "${encounter.name}"!`, 'warn');
+    const session = liveSessionRef.current;
+    if (session && session.getState().role === 'host') {
+      session.broadcast({
+        type: 'initiative_alert',
+        senderId: session.senderId,
+        senderName: alertPayload.senderName,
+        encounterName: alertPayload.encounterName,
+        soundUrl: customUrl || undefined,
+        timestamp: alertPayload.timestamp,
+      });
+    }
+  }, [rawChar.name, encounter.name, appendLog]);
+
   const upsertDowntimeProject = useCallback(
     (project: DowntimeProject) => {
       persistCampaign((prev) => {
@@ -4225,6 +4269,9 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     rollMode,
     setRollMode,
     pendingConcDc,
+    initiativeAlert,
+    startEncounterAlert,
+    dismissInitiativeAlert,
     toasts,
     dismissToast,
     pushToast,

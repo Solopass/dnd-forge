@@ -432,12 +432,28 @@ export interface NewCharacterPresetInput {
   id: string;
   name: string;
   className: string;
+  subclassName?: string;
   level: number;
   speciesName: string;
   backgroundName: string;
   ruleset: Ruleset;
+  avatarUrl?: string;
+  alignment?: string;
   baseAbilities?: Record<AbilityKey, number>;
+  extraEntityIds?: string[];
 }
+
+const SPECIES_LANGUAGES: Record<string, string[]> = {
+  Human: ['Common'],
+  Elf: ['Common', 'Elvish'],
+  Dwarf: ['Common', 'Dwarvish'],
+  Halfling: ['Common', 'Halfling'],
+  Dragonborn: ['Common', 'Draconic'],
+  Gnome: ['Common', 'Gnomish'],
+  'Half-Elf': ['Common', 'Elvish'],
+  'Half-Orc': ['Common', 'Orc'],
+  Tiefling: ['Common', 'Infernal'],
+};
 
 export function buildCharacterFromPreset(input: NewCharacterPresetInput): RawCharacterState {
   const classDef = getClassDefinition(input.className) ?? CLASS_DEFINITIONS[6]!; // Fighter fallback
@@ -449,15 +465,34 @@ export function buildCharacterFromPreset(input: NewCharacterPresetInput): RawCha
   char.ruleset = input.ruleset;
   char.species = species.name;
   char.background = background.name;
+  if (input.avatarUrl?.trim()) {
+    char.avatarUrl = input.avatarUrl.trim();
+  }
   char.inspiration = false;
   char.defenses = {
     resistances: [...(species.resistances ?? [])],
     immunities: [],
     vulnerabilities: [],
   };
+  char.speeds = { walk: species.speed };
+  const hasDarkvision = species.traits.some((t) => /darkvision\s*60/i.test(t));
+  if (hasDarkvision) {
+    char.senses = { darkvision: 60 };
+  }
+  char.structuredProficiencies = {
+    armor: [],
+    weapons: [],
+    tools: [],
+    languages: SPECIES_LANGUAGES[species.name] ?? ['Common'],
+  };
+  char.details = {
+    alignment: input.alignment?.trim() || undefined,
+    size: species.name === 'Halfling' || species.name === 'Gnome' ? 'Small' : 'Medium',
+  };
   char.classes = [
     {
       className: classDef.className,
+      subclassName: input.subclassName?.trim() || undefined,
       level,
       hitDie: classDef.hitDie,
       casterProgression: classDef.casterProgression,
@@ -530,6 +565,41 @@ export function buildCharacterFromPreset(input: NewCharacterPresetInput): RawCha
     });
   }
 
+  for (const trait of species.traits) {
+    items.push({
+      id: `trait-${species.name.toLowerCase()}-${trait.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+      name: trait,
+      source: species.name,
+      ruleset: input.ruleset,
+      category: 'feature',
+      activities: [],
+      entries: [`${species.name} racial trait: ${trait}.`],
+    });
+  }
+
+  if (input.subclassName?.trim()) {
+    const subGrants = buildSubclassGrantEntities(classDef.className, input.subclassName.trim(), input.ruleset);
+    for (const g of subGrants) {
+      if (!items.some((it) => it.id === g.id)) {
+        items.push({ ...g, ruleset: input.ruleset });
+      }
+    }
+  }
+
+  for (const extraId of input.extraEntityIds ?? []) {
+    const found = allPackEntities.get(extraId);
+    if (!found || items.some((it) => it.id === found.id)) continue;
+    const clone = structuredClone(found);
+    clone.ruleset = input.ruleset;
+    if (clone.category === 'armor' || clone.category === 'shield' || clone.category === 'weapon') {
+      clone.equipped = true;
+    }
+    if (clone.category === 'spell') {
+      clone.prepared = true;
+    }
+    items.push(clone);
+  }
+
   char.items = items;
 
   const totalAbilities: Record<AbilityKey, number> = {
@@ -542,10 +612,6 @@ export function buildCharacterFromPreset(input: NewCharacterPresetInput): RawCha
   };
   const classPools = syncClassResourcePools(char.classes, [], totalAbilities);
   char.resources = syncSpellSlotPools(char.classes, classPools);
-
-  if (species.speed !== 30) {
-    char.overrides.speed = species.speed;
-  }
 
   return char;
 }

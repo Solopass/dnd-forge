@@ -2610,17 +2610,30 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
 
   const updateEncounterMapSettings = useCallback(
     (patch: Partial<NonNullable<CombatEncounterState['map']>>) => {
-      persistEncounter((prev) => ({
-        ...prev,
-        map: {
+      persistEncounter((prev) => {
+        const nextMap = {
           cols: 20,
           rows: 12,
           gridFeet: 5,
           templates: [],
           ...(prev.map ?? {}),
           ...patch,
-        },
-      }));
+        };
+        if (nextMap.dynamicVision && nextMap.autoRevealFog && nextMap.fogCells?.length) {
+          const visible = computeVisibleCells(
+            prev.combatants,
+            nextMap.cols,
+            nextMap.rows,
+            nextMap.gridFeet,
+            nextMap.terrainCells ?? []
+          );
+          nextMap.fogCells = nextMap.fogCells.filter((cell) => !visible.has(cell));
+        }
+        return {
+          ...prev,
+          map: nextMap,
+        };
+      });
     },
     [persistEncounter]
   );
@@ -2921,15 +2934,19 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
       if (targets.length === 0) return;
 
       const outcomes = targets.map((t) => resolveTargetAttack(activity, t, rollMode, customBonus));
-      const hpUpdates = new Map(outcomes.map((o) => [o.targetId, o.nextHp]));
+      const hpUpdates = new Map(
+        outcomes.filter((o) => o.targetId !== rawChar.id).map((o) => [o.targetId, o.nextHp])
+      );
 
-      persistEncounter((prev) => ({
-        ...prev,
-        combatants: prev.combatants.map((c) => {
-          const nextHp = hpUpdates.get(c.id);
-          return nextHp !== undefined ? { ...c, hp: { ...c.hp, current: nextHp } } : c;
-        }),
-      }));
+      if (hpUpdates.size > 0) {
+        persistEncounter((prev) => ({
+          ...prev,
+          combatants: prev.combatants.map((c) => {
+            const nextHp = hpUpdates.get(c.id);
+            return nextHp !== undefined ? { ...c, hp: { ...c.hp, current: nextHp } } : c;
+          }),
+        }));
+      }
 
       for (const o of outcomes) {
         if (!o.hit) {
@@ -2972,15 +2989,19 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
       if (targets.length === 0) return;
 
       const outcomes = resolveTargetSaves(activity, targets, explicitDc);
-      const hpUpdates = new Map(outcomes.map((o) => [o.targetId, o.nextHp]));
+      const hpUpdates = new Map(
+        outcomes.filter((o) => o.targetId !== rawChar.id).map((o) => [o.targetId, o.nextHp])
+      );
 
-      persistEncounter((prev) => ({
-        ...prev,
-        combatants: prev.combatants.map((c) => {
-          const nextHp = hpUpdates.get(c.id);
-          return nextHp !== undefined ? { ...c, hp: { ...c.hp, current: nextHp } } : c;
-        }),
-      }));
+      if (hpUpdates.size > 0) {
+        persistEncounter((prev) => ({
+          ...prev,
+          combatants: prev.combatants.map((c) => {
+            const nextHp = hpUpdates.get(c.id);
+            return nextHp !== undefined ? { ...c, hp: { ...c.hp, current: nextHp } } : c;
+          }),
+        }));
+      }
 
       for (const o of outcomes) {
         const noteStr = o.modifierNote ? ` [${o.modifierNote}]` : '';

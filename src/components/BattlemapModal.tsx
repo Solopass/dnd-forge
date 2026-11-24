@@ -187,6 +187,11 @@ export function BattlemapModal({
       return;
     }
     if (mode === 'sketch') {
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // ignore synthetic event capture errors
+      }
       setActiveStroke({
         id: `sk-${Date.now().toString(36)}`,
         color: sketchColor,
@@ -196,6 +201,11 @@ export function BattlemapModal({
       return;
     }
     if (mode === 'measure') {
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // ignore synthetic event capture errors
+      }
       setMeasureStart({ x: gx, y: gy });
       setMeasureEnd({ x: gx, y: gy });
       return;
@@ -212,6 +222,11 @@ export function BattlemapModal({
       mode === 'difficult' ||
       mode === 'erase_terrain'
     ) {
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // ignore synthetic event capture errors
+      }
       setIsPainting(true);
       lastPaintedCellRef.current = '';
       applyPaintAt(gx, gy);

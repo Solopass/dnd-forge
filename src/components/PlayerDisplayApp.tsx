@@ -59,14 +59,7 @@ export function PlayerDisplayApp() {
         <span className="muted-label">Player Display (No DM Spoilers)</span>
       </header>
 
-      <div
-        style={{
-          display: 'grid',
-          gap: 14,
-          gridTemplateColumns: 'minmax(0, 1fr) 280px',
-          alignItems: 'start',
-        }}
-      >
+      <div className="player-display-grid">
         <section className="panel" style={{ padding: 10 }}>
           <BattlemapModal
             isOpen

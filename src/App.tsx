@@ -63,6 +63,9 @@ const EncounterBuilderModal = lazy(() =>
 const ShortRestModal = lazy(() =>
   import('./components/ShortRestModal').then((m) => ({ default: m.ShortRestModal }))
 );
+const ItemInspectorPanel = lazy(() =>
+  import('./components/ItemInspectorPanel').then((m) => ({ default: m.ItemInspectorPanel }))
+);
 import { BUILTIN_CONTENT_PACKS } from './engine/srd-packs';
 import { detectRulesetPreset } from './engine/ruleset-config';
 import {
@@ -293,6 +296,8 @@ export function App() {
   const [centerStage, setCenterStage] = useState<'auto' | 'sheet' | 'battlemap'>('auto');
   const [playerView, setPlayerView] = useState(false);
   const [inspectedCombatantId, setInspectedCombatantId] = useState<string | null>(null);
+  const [rightTab, setRightTab] = useState<'combat' | 'inspector'>('combat');
+  const [inspectedItemId, setInspectedItemId] = useState<string | null>(null);
   const [uiMode, setUiMode] = useState<UiMode>(readStoredUiMode);
   const [unifiedView, setUnifiedView] = useState<'sheet' | 'dm' | 'vtt'>('sheet');
   const [showClassicCombat, setShowClassicCombat] = useState(true);
@@ -501,6 +506,11 @@ export function App() {
       onDepositToPartyStash={store.depositItemToPartyStash}
       onClaimPartyStashItem={store.claimPartyStashItem}
       onAddPartyStashItem={store.addPartyStashItem}
+      onInspectItem={(itemId) => {
+        setInspectedItemId(itemId);
+        setRightTab('inspector');
+        if (uiMode === 'classic') setShowClassicCombat(true);
+      }}
     />
   );
 
@@ -550,6 +560,66 @@ export function App() {
       hideBattlemapButton={uiMode === 'unified' && unifiedView === 'vtt'}
       onAddMonster={store.addMonsterToEncounter}
     />
+  );
+
+  const inspectedItem =
+    inspectedItemId !== null
+      ? store.rawChar.items.find((it) => it.id === inspectedItemId) ?? null
+      : null;
+
+  const rightSlotNode = (
+    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0 }}>
+      <div
+        className="subpanel forge-row"
+        role="tablist"
+        aria-label="Right panel tabs"
+        style={{ padding: '4px 8px', gap: 6, margin: '8px 10px 0', flexShrink: 0 }}
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={rightTab === 'combat'}
+          className={`pill ${rightTab === 'combat' ? 'active' : ''}`}
+          onClick={() => setRightTab('combat')}
+        >
+          Combat ({store.encounter.combatants.length})
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={rightTab === 'inspector'}
+          className={`pill ${rightTab === 'inspector' ? 'active' : ''}`}
+          onClick={() => setRightTab('inspector')}
+        >
+          {inspectedItem ? `Inspector: ${inspectedItem.name}` : 'Inspector'}
+        </button>
+      </div>
+      {rightTab === 'combat' ? (
+        combatDrawerNode
+      ) : (
+        <div className="pane" style={{ padding: '10px 12px', overflowY: 'auto', flex: 1, minHeight: 0 }}>
+          <Suspense fallback={null}>
+            <ItemInspectorPanel
+              item={inspectedItem}
+              sheet={store.resolvedSheet}
+              onTriggerActivity={store.triggerActivity}
+              onRollInlineExpression={store.rollInlineExpression}
+              onToggleEquipped={store.toggleItemEquipped}
+              onTogglePrepared={store.toggleItemPrepared}
+              onToggleAttuned={store.toggleItemAttuned}
+              onUpdateQuantity={store.updateItemQuantity}
+              onUpdateContainer={store.updateItemContainer}
+              onDepositToPartyStash={store.depositItemToPartyStash}
+              onRemoveItem={(id) => {
+                store.removeSheetItem(id);
+                setInspectedItemId(null);
+              }}
+              onBackToCombat={() => setRightTab('combat')}
+            />
+          </Suspense>
+        </div>
+      )}
+    </div>
   );
 
   const sharedBattlemapProps = {
@@ -1227,7 +1297,7 @@ export function App() {
               )}
               {actionBoardNode}
             </div>
-            {showClassicCombat && combatDrawerNode}
+            {showClassicCombat && rightSlotNode}
           </div>
         </>
       ) : (
@@ -1371,7 +1441,7 @@ export function App() {
                 </div>
               )}
             </div>
-            {combatDrawerNode}
+            {rightSlotNode}
           </div>
         </div>
       )}

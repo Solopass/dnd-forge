@@ -20,6 +20,7 @@ interface InventoryHubProps {
   onClaimPartyStashItem?: (stashId: string) => void;
   onAddPartyStashItem?: (name: string, category: ItemCategory, quantity: number) => void;
   onOpenGearDrawer?: () => void;
+  onInspectItem?: (itemId: string) => void;
 }
 
 const CONTAINERS = ['All', 'Equipped', 'Carried', 'Backpack', 'Bag of Holding', 'Pouch'] as const;
@@ -42,6 +43,7 @@ export const InventoryHub: React.FC<InventoryHubProps> = ({
   onClaimPartyStashItem,
   onAddPartyStashItem,
   onOpenGearDrawer,
+  onInspectItem,
 }) => {
   const [activeView, setActiveView] = useState<'personal' | 'party'>(
     mode === 'party' ? 'party' : 'personal'
@@ -173,7 +175,29 @@ export const InventoryHub: React.FC<InventoryHubProps> = ({
               filteredPersonal.map((item) => (
                 <div key={item.id} className="forge-list-row">
                   <div style={{ minWidth: 0 }}>
-                    <strong>{item.name}</strong>{' '}
+                    {onInspectItem ? (
+                      <button
+                        type="button"
+                        onClick={() => onInspectItem(item.id)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          color: 'inherit',
+                          font: 'inherit',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          textDecoration: 'underline',
+                          textDecorationColor: 'var(--border-subtle)',
+                          textUnderlineOffset: 2,
+                        }}
+                        title="Open full details in right Inspector panel"
+                      >
+                        <strong>{item.name}</strong>
+                      </button>
+                    ) : (
+                      <strong>{item.name}</strong>
+                    )}{' '}
                     <span className="forge-muted" style={{ fontSize: 10 }}>
                       {item.category.toUpperCase()}
                       {item.container ? ` • ${item.container}` : ''}

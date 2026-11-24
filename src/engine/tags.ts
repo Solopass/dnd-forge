@@ -7,6 +7,7 @@ export type ParsedTagSegment =
 const TAG_REGEX = /\{@(\w+)(?:\s+([^}]+))?\}/g;
 
 export function parse5eToolsEntries(entry: string): ParsedTagSegment[] {
+  if (typeof entry !== 'string') return [];
   const segments: ParsedTagSegment[] = [];
   let lastIndex = 0;
 
@@ -42,6 +43,30 @@ export function parse5eToolsEntries(entry: string): ParsedTagSegment[] {
         expression: normalizedExpr,
         display: displayOverride || (tagName === 'hit' ? `+${primary.replace(/^\+/, '')}` : primary),
       });
+    } else if (tagName === 'scaledamage' || tagName === 'scaledice') {
+      const incr = parts[2] || parts[1] || primary;
+      segments.push({
+        kind: 'roll',
+        tag: 'damage',
+        expression: incr,
+        display: `+${incr}/lvl`,
+      });
+    } else if (tagName === 'dc') {
+      segments.push({
+        kind: 'save',
+        ability: 'DC',
+        dc: primary,
+        display: `DC ${primary}`,
+      });
+    } else if (tagName === 'recharge') {
+      segments.push({
+        kind: 'ref',
+        category: 'recharge',
+        name: primary,
+        display: primary ? `(Recharge ${primary}–6)` : '(Recharge 6)',
+      });
+    } else if (tagName === 'h') {
+      segments.push({ kind: 'text', value: 'Hit: ' });
     } else if (tagName === 'save') {
       segments.push({
         kind: 'save',

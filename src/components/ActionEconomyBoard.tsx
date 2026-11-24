@@ -36,6 +36,7 @@ interface ActionEconomyBoardProps {
   onDepositToPartyStash?: (itemId: string) => void;
   onClaimPartyStashItem?: (stashId: string) => void;
   onAddPartyStashItem?: (name: string, category: ItemCategory, quantity: number) => void;
+  onInspectItem?: (itemId: string) => void;
 }
 
 const ECONOMY_SECTIONS: Array<{ key: Exclude<ActionEconomy, 'special'>; label: string }> = [
@@ -106,6 +107,7 @@ export function ActionEconomyBoard({
   onDepositToPartyStash,
   onClaimPartyStashItem,
   onAddPartyStashItem,
+  onInspectItem,
 }: ActionEconomyBoardProps) {
   const [beyondTab, setBeyondTab] = useState<'actions' | 'spells' | 'inventory' | 'features'>('actions');
   const [filter, setFilter] = useState<'all' | 'attack' | 'save' | 'heal' | 'summon' | 'concentration'>('all');
@@ -160,7 +162,29 @@ export function ActionEconomyBoard({
     return (
       <div key={act.id} className="forge-list-row">
         <div>
-          <strong>{act.name}</strong>{' '}
+          {onInspectItem ? (
+            <button
+              type="button"
+              onClick={() => onInspectItem(act.parentItemId)}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                color: 'inherit',
+                font: 'inherit',
+                cursor: 'pointer',
+                textAlign: 'left',
+                textDecoration: 'underline',
+                textDecorationColor: 'var(--border-subtle)',
+                textUnderlineOffset: 2,
+              }}
+              title="Open full details in right Inspector panel"
+            >
+              <strong>{act.name}</strong>
+            </button>
+          ) : (
+            <strong>{act.name}</strong>
+          )}{' '}
           <span className="forge-muted" style={{ fontSize: 11 }}>
             ({act.parentItemName})
           </span>
@@ -573,6 +597,7 @@ export function ActionEconomyBoard({
             onClaimPartyStashItem={onClaimPartyStashItem}
             onAddPartyStashItem={onAddPartyStashItem}
             onOpenGearDrawer={onOpenGearDrawer}
+            onInspectItem={onInspectItem}
           />
         </section>
       )}
@@ -678,7 +703,29 @@ export function ActionEconomyBoard({
               featItems.map((feat) => (
                 <div key={feat.id} className="forge-list-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
                   <div>
-                    <strong>{feat.name}</strong>{' '}
+                    {onInspectItem ? (
+                      <button
+                        type="button"
+                        onClick={() => onInspectItem(feat.id)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                          color: 'inherit',
+                          font: 'inherit',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          textDecoration: 'underline',
+                          textDecorationColor: 'var(--border-subtle)',
+                          textUnderlineOffset: 2,
+                        }}
+                        title="Open full details in right Inspector panel"
+                      >
+                        <strong>{feat.name}</strong>
+                      </button>
+                    ) : (
+                      <strong>{feat.name}</strong>
+                    )}{' '}
                     <span className="badge">{feat.category.toUpperCase()}</span>
                     {feat.source && <span className="forge-muted" style={{ fontSize: 11 }}> • {feat.source}</span>}
                   </div>

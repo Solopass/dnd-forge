@@ -5,6 +5,7 @@ import {
   normalizeCustomEntity,
   parseCustomContentJson,
 } from '../custom-content-loader';
+import { parse5eToolsEntries } from '../tags';
 import monsterTemplate from '../../custom-content/_templates/monster.json';
 import itemTemplate from '../../custom-content/_templates/item.json';
 import spellTemplate from '../../custom-content/_templates/spell.json';
@@ -53,5 +54,36 @@ describe('Custom Content Templates & JSON Loader', () => {
     const pc = parseCustomContentJson(JSON.stringify(characterTemplate));
     expect(pc.characters).toHaveLength(1);
     expect(pc.characters[0]?.name).toBe('Kaelen Voss');
+  });
+
+  it('flattens nested entry blocks, lists, and description fallbacks and parses 5e tags', () => {
+    const richItem = normalizeCustomEntity(
+      {
+        name: 'Solar Flare',
+        category: 'spell',
+        entries: [
+          'Target makes a {@dc 15} DEX save or takes {@damage 8d6} fire damage.',
+          { type: 'entries', name: 'At Higher Levels', entries: ['Deals {@scaledamage 8d6|3-9|1d6} extra.'] },
+          { type: 'list', items: ['Bright light 30 ft', 'Ignites flammable objects'] },
+        ],
+      },
+      'spell'
+    );
+    expect(richItem?.entries).toEqual([
+      'Target makes a {@dc 15} DEX save or takes {@damage 8d6} fire damage.',
+      'At Higher Levels: Deals {@scaledamage 8d6|3-9|1d6} extra.',
+      '• Bright light 30 ft',
+      '• Ignites flammable objects',
+    ]);
+
+    const descFallback = normalizeCustomEntity(
+      { name: 'Note Ring', description: 'First paragraph.\n\nSecond paragraph.' },
+      'gear'
+    );
+    expect(descFallback?.entries).toEqual(['First paragraph.', 'Second paragraph.']);
+
+    const segs = parse5eToolsEntries('Save {@dc 15} or {@scaledamage 8d6|3-9|1d6}');
+    expect(segs.some((s) => s.kind === 'save' && s.display === 'DC 15')).toBe(true);
+    expect(segs.some((s) => s.kind === 'roll' && s.display === '+1d6/lvl')).toBe(true);
   });
 });

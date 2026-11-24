@@ -91,7 +91,7 @@ export async function exportFullBundle(): Promise<BackupBundle> {
 export async function importBackupBundle(
   rawJson: unknown,
   mode: 'merge' | 'replace'
-): Promise<{ importedCharacters: number; importedEntities: number; warnings: string[] }> {
+): Promise<{ importedCharacters: number; importedEntities: number; importedEncounters: number; warnings: string[] }> {
   if (typeof rawJson !== 'object' || rawJson === null) {
     throw new Error('Invalid JSON payload: expected a root object.');
   }
@@ -113,14 +113,22 @@ export async function importBackupBundle(
       )
     : [];
 
+  const validEncounters = Array.isArray(candidate.encounters)
+    ? candidate.encounters.filter(
+        (enc): enc is CombatEncounterState =>
+          typeof enc === 'object' && enc !== null && typeof enc.id === 'string' && typeof enc.name === 'string'
+      )
+    : [];
+
   if (Array.isArray(candidate.characters) && validCharacters.length < candidate.characters.length) {
     warnings.push(`Skipped ${candidate.characters.length - validCharacters.length} malformed character record(s).`);
   }
 
-  await db.transaction('rw', db.characters, db.compendium, async () => {
+  await db.transaction('rw', db.characters, db.compendium, db.encounters, async () => {
     if (mode === 'replace') {
       await db.characters.clear();
       await db.compendium.clear();
+      await db.encounters.clear();
     }
     if (validCharacters.length > 0) {
       await db.characters.bulkPut(structuredClone(validCharacters));
@@ -128,11 +136,15 @@ export async function importBackupBundle(
     if (validCompendium.length > 0) {
       await upsertCompendiumEntities(validCompendium);
     }
+    if (validEncounters.length > 0) {
+      await db.encounters.bulkPut(structuredClone(validEncounters));
+    }
   });
 
   return {
     importedCharacters: validCharacters.length,
     importedEntities: validCompendium.length,
+    importedEncounters: validEncounters.length,
     warnings,
   };
 }

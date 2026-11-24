@@ -47,6 +47,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   const [rawChar, setRawChar] = useState<RawCharacterState>(initialCharacter);
   const [characterList, setCharacterList] = useState<RawCharacterState[]>([initialCharacter]);
   const [encounter, setEncounter] = useState<CombatEncounterState>(initialEncounter);
+  const [encounterList, setEncounterList] = useState<CombatEncounterState[]>([initialEncounter]);
   const [compendium, setCompendium] = useState<CompendiumEntity[]>(initialCharacter.items);
   const [rollMode, setRollMode] = useState<RollMode>('normal');
   const [pendingConcDc, setPendingConcDc] = useState<number | null>(null);
@@ -75,9 +76,9 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     let active = true;
     (async () => {
       try {
-        const [allSaved, savedEncounter] = await Promise.all([
+        const [allSaved, savedEncounters] = await Promise.all([
           db.characters.toArray(),
-          db.encounters.get(initialEncounter.id),
+          db.encounters.toArray(),
         ]);
         if (active && allSaved.length > 0) {
           setCharacterList(allSaved);
@@ -86,10 +87,14 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
           await saveCharacter(initialCharacter);
           await upsertCompendiumEntities(initialCharacter.items);
         }
-        if (active && savedEncounter) {
-          setEncounter(savedEncounter);
+        if (active && savedEncounters.length > 0) {
+          setEncounterList(savedEncounters);
+          const primary =
+            savedEncounters.find((e) => e.id === initialEncounter.id) ?? savedEncounters[0]!;
+          setEncounter(primary);
         } else {
           await saveEncounter(initialEncounter);
+          if (active) setEncounterList([initialEncounter]);
         }
         const basePackEntities = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities);
         await upsertCompendiumEntities(basePackEntities);
@@ -139,6 +144,11 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     setEncounter((prev) => {
       const next = updater(prev);
       void saveEncounter(next);
+      setEncounterList((list) =>
+        list.some((e) => e.id === next.id)
+          ? list.map((e) => (e.id === next.id ? next : e))
+          : [...list, next]
+      );
       return next;
     });
   }, []);
@@ -500,26 +510,33 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   );
 
   const addMonsterToEncounter = useCallback(
-    (name: string, ac: number, maxHp: number, dexMod = 0, actions?: Activity[]) => {
+    (name: string, ac: number, maxHp: number, dexMod = 0, actions?: Activity[], cr?: string) => {
       const initRoll = evaluateDiceExpression(`1d20${dexMod >= 0 ? `+${dexMod}` : dexMod}`, 'normal');
-      persistEncounter((prev) => ({
-        ...prev,
-        combatants: sortInitiativeOrder([
-          ...prev.combatants,
-          {
-            id: `mob-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
-            name,
-            kind: 'monster',
-            initiative: initRoll.total,
-            dexModifier: dexMod,
-            ac,
-            hp: { current: maxHp, max: maxHp, temp: 0 },
-            conditions: [],
-            actions,
-            turnEconomyUsed: { action: false, bonus_action: false, reaction: false, free: false, special: false },
-          },
-        ]),
-      }));
+      persistEncounter((prev) => {
+        const mobCount = prev.combatants.filter((c) => c.kind === 'monster').length;
+        return {
+          ...prev,
+          combatants: sortInitiativeOrder([
+            ...prev.combatants,
+            {
+              id: `mob-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+              name,
+              kind: 'monster',
+              cr,
+              x: 12 + (mobCount % 6),
+              y: 2 + Math.floor(mobCount / 6) * 2,
+              tokenColor: '#f85149',
+              initiative: initRoll.total,
+              dexModifier: dexMod,
+              ac,
+              hp: { current: maxHp, max: maxHp, temp: 0 },
+              conditions: [],
+              actions,
+              turnEconomyUsed: { action: false, bonus_action: false, reaction: false, free: false, special: false },
+            },
+          ]),
+        };
+      });
       appendLog(`Added ${name} to encounter (Init ${initRoll.total}, AC ${ac}, HP ${maxHp}).`, 'info');
     },
     [persistEncounter, appendLog]
@@ -533,7 +550,8 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
           entity.monsterMeta.ac,
           entity.monsterMeta.hp,
           entity.monsterMeta.dexModifier,
-          entity.activities
+          entity.activities,
+          entity.monsterMeta.cr
         );
         return;
       }
@@ -889,7 +907,8 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
           result.data.monsterMeta.ac,
           result.data.monsterMeta.hp,
           result.data.monsterMeta.dexModifier,
-          result.data.activities
+          result.data.activities,
+          result.data.monsterMeta.cr
         );
       } else {
         persistCharacter((prev) => ({
@@ -915,17 +934,22 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         const parsed: unknown = JSON.parse(rawText);
         if (typeof parsed === 'object' && parsed !== null && (parsed as { app?: string }).app === 'dnd-forge') {
           const summary = await importBackupBundle(parsed, 'merge');
-          const [refreshedChars, refreshedCompendium] = await Promise.all([
+          const [refreshedChars, refreshedCompendium, refreshedEncounters] = await Promise.all([
             db.characters.toArray(),
             db.compendium.toArray(),
+            db.encounters.toArray(),
           ]);
           if (refreshedChars.length > 0) {
             setCharacterList(refreshedChars);
             setRawChar(refreshedChars[0]!);
           }
           setCompendium(refreshedCompendium);
+          if (refreshedEncounters.length > 0) {
+            setEncounterList(refreshedEncounters);
+            setEncounter(refreshedEncounters[0]!);
+          }
           appendLog(
-            `Merged backup bundle: ${summary.importedCharacters} character(s), ${summary.importedEntities} compendium item(s).`,
+            `Merged backup bundle: ${summary.importedCharacters} character(s), ${summary.importedEntities} compendium item(s), ${summary.importedEncounters} encounter(s).`,
             'info'
           );
           return;
@@ -947,6 +971,247 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
       }
     },
     [appendLog]
+  );
+
+  const switchEncounter = useCallback(
+    (encounterId: string) => {
+      const found = encounterList.find((e) => e.id === encounterId);
+      if (found) {
+        setEncounter(found);
+        setPendingConcDc(null);
+        appendLog(`Switched encounter to "${found.name}".`, 'info');
+      }
+    },
+    [encounterList, appendLog]
+  );
+
+  const createEncounter = useCallback(
+    async (name: string) => {
+      const cleanName = name.trim() || `Encounter ${encounterList.length + 1}`;
+      const fresh: CombatEncounterState = {
+        id: `enc-${Date.now().toString(36)}`,
+        name: cleanName,
+        round: 1,
+        activeTurnIndex: 0,
+        combatants: [],
+        activeEffects: [],
+        log: [],
+        map: { cols: 20, rows: 12, gridFeet: 5, templates: [] },
+      };
+      await saveEncounter(fresh);
+      setEncounterList((prev) => [...prev, fresh]);
+      setEncounter(fresh);
+      setPendingConcDc(null);
+      appendLog(`Created encounter "${fresh.name}".`, 'info');
+    },
+    [encounterList.length, appendLog]
+  );
+
+  const duplicateEncounter = useCallback(async () => {
+    const copy: CombatEncounterState = {
+      ...structuredClone(encounter),
+      id: `enc-${Date.now().toString(36)}`,
+      name: `${encounter.name} (Copy)`,
+    };
+    await saveEncounter(copy);
+    setEncounterList((prev) => [...prev, copy]);
+    setEncounter(copy);
+    setPendingConcDc(null);
+    appendLog(`Duplicated encounter as "${copy.name}".`, 'info');
+  }, [encounter, appendLog]);
+
+  const deleteEncounter = useCallback(
+    async (encounterId: string) => {
+      if (encounterList.length <= 1) {
+        appendLog('Cannot delete the only remaining encounter.', 'warn');
+        return;
+      }
+      await db.encounters.delete(encounterId);
+      const remaining = encounterList.filter((e) => e.id !== encounterId);
+      setEncounterList(remaining);
+      if (encounter.id === encounterId && remaining[0]) {
+        setEncounter(remaining[0]);
+        setPendingConcDc(null);
+      }
+      appendLog('Deleted encounter from local storage.', 'warn');
+    },
+    [encounterList, encounter.id, appendLog]
+  );
+
+  const addPartyToEncounter = useCallback(() => {
+    let addedCount = 0;
+    persistEncounter((prev) => {
+      const existingIds = new Set(prev.combatants.map((c) => c.id));
+      const newNodes = characterList
+        .filter((pc) => !existingIds.has(pc.id))
+        .map((pc, idx) => {
+          const sheet = computeCharacterSheet(pc);
+          const initMod = sheet.initiative.final;
+          const sign = initMod >= 0 ? '+' : '';
+          const roll = evaluateDiceExpression(`1d20${sign}${initMod}`, rollMode);
+          addedCount += 1;
+          return {
+            id: pc.id,
+            name: pc.name,
+            kind: 'pc' as const,
+            characterId: pc.id,
+            x: 1,
+            y: 1 + idx * 2,
+            tokenColor: '#58a6ff',
+            initiative: roll.total,
+            dexModifier: sheet.abilities.dex.modifier,
+            ac: sheet.ac.final,
+            hp: { ...pc.hp },
+            conditions: [...pc.conditions],
+            turnEconomyUsed: { action: false, bonus_action: false, reaction: false, free: false, special: false },
+          };
+        });
+      if (newNodes.length === 0) return prev;
+      return { ...prev, combatants: sortInitiativeOrder([...prev.combatants, ...newNodes]) };
+    });
+    appendLog(
+      addedCount > 0 ? `Added ${addedCount} party member(s) to encounter.` : 'All saved PCs are already in this encounter.',
+      'info'
+    );
+  }, [characterList, rollMode, persistEncounter, appendLog]);
+
+  const moveCombatantToken = useCallback(
+    (combatantId: string, x: number, y: number) => {
+      persistEncounter((prev) => ({
+        ...prev,
+        combatants: prev.combatants.map((c) =>
+          c.id === combatantId ? { ...c, x, y } : c
+        ),
+      }));
+    },
+    [persistEncounter]
+  );
+
+  const setEncounterMapImage = useCallback(
+    (imageDataUrl: string | undefined) => {
+      persistEncounter((prev) => ({
+        ...prev,
+        map: {
+          cols: prev.map?.cols ?? 20,
+          rows: prev.map?.rows ?? 12,
+          gridFeet: prev.map?.gridFeet ?? 5,
+          templates: prev.map?.templates ?? [],
+          imageDataUrl,
+        },
+      }));
+      appendLog(imageDataUrl ? 'Loaded custom battlemap image.' : 'Cleared custom battlemap image.', 'info');
+    },
+    [persistEncounter, appendLog]
+  );
+
+  const addMapTemplate = useCallback(
+    (kind: 'sphere' | 'cone' | 'line' | 'cube', x: number, y: number, radiusFeet: number) => {
+      const colorMap = {
+        sphere: 'rgba(248, 81, 73, 0.28)',
+        cone: 'rgba(210, 153, 34, 0.28)',
+        line: 'rgba(88, 166, 255, 0.30)',
+        cube: 'rgba(188, 140, 255, 0.28)',
+      } as const;
+      persistEncounter((prev) => ({
+        ...prev,
+        map: {
+          cols: prev.map?.cols ?? 20,
+          rows: prev.map?.rows ?? 12,
+          gridFeet: prev.map?.gridFeet ?? 5,
+          imageDataUrl: prev.map?.imageDataUrl,
+          templates: [
+            ...(prev.map?.templates ?? []),
+            {
+              id: `tpl-${Date.now().toString(36)}`,
+              kind,
+              x,
+              y,
+              radiusFeet,
+              color: colorMap[kind],
+            },
+          ],
+        },
+      }));
+    },
+    [persistEncounter]
+  );
+
+  const clearMapTemplates = useCallback(() => {
+    persistEncounter((prev) => ({
+      ...prev,
+      map: {
+        cols: prev.map?.cols ?? 20,
+        rows: prev.map?.rows ?? 12,
+        gridFeet: prev.map?.gridFeet ?? 5,
+        imageDataUrl: prev.map?.imageDataUrl,
+        templates: [],
+      },
+    }));
+  }, [persistEncounter]);
+
+  const updateCurrency = useCallback(
+    (coin: 'cp' | 'sp' | 'ep' | 'gp' | 'pp', value: number) => {
+      const safe = Math.max(0, Math.floor(value) || 0);
+      persistCharacter((prev) => ({
+        ...prev,
+        currency: {
+          cp: prev.currency?.cp ?? 0,
+          sp: prev.currency?.sp ?? 0,
+          ep: prev.currency?.ep ?? 0,
+          gp: prev.currency?.gp ?? 0,
+          pp: prev.currency?.pp ?? 0,
+          [coin]: safe,
+        },
+      }));
+    },
+    [persistCharacter]
+  );
+
+  const updateItemQuantity = useCallback(
+    (itemId: string, delta: number) => {
+      persistCharacter((prev) => ({
+        ...prev,
+        items: prev.items.map((it) =>
+          it.id === itemId
+            ? { ...it, quantity: Math.max(0, (it.quantity ?? 1) + delta) }
+            : it
+        ),
+      }));
+    },
+    [persistCharacter]
+  );
+
+  const updateCharacterNotes = useCallback(
+    (patch: Partial<NonNullable<RawCharacterState['notes']>>) => {
+      persistCharacter((prev) => ({
+        ...prev,
+        notes: {
+          bio: prev.notes?.bio ?? '',
+          campaign: prev.notes?.campaign ?? '',
+          proficiencies: prev.notes?.proficiencies ?? '',
+          ...patch,
+        },
+      }));
+    },
+    [persistCharacter]
+  );
+
+  const createHomebrewEntity = useCallback(
+    async (entity: CompendiumEntity, addToSheet: boolean) => {
+      await upsertCompendiumEntities([entity]);
+      setCompendium((prev) => [entity, ...prev.filter((i) => i.id !== entity.id)]);
+      if (addToSheet && entity.category !== 'monster') {
+        persistCharacter((prev) => ({
+          ...prev,
+          items: [
+            { ...structuredClone(entity), equipped: true, prepared: true },
+            ...prev.items,
+          ],
+        }));
+      }
+      appendLog(`Created homebrew "${entity.name}" (${entity.category}).`, 'info');
+    },
+    [persistCharacter, appendLog]
   );
 
   const searchCompendium = useCallback(
@@ -972,6 +1237,20 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     persistCharacter,
     resolvedSheet,
     encounter,
+    encounterList,
+    switchEncounter,
+    createEncounter,
+    duplicateEncounter,
+    deleteEncounter,
+    addPartyToEncounter,
+    moveCombatantToken,
+    setEncounterMapImage,
+    addMapTemplate,
+    clearMapTemplates,
+    updateCurrency,
+    updateItemQuantity,
+    updateCharacterNotes,
+    createHomebrewEntity,
     compendium,
     rollMode,
     setRollMode,

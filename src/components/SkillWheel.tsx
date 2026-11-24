@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ResolvedCharacterSheet } from '../types/character';
 import { AbilityKey, SkillKey } from '../types/core';
 import { SKILL_ABILITY_MAP } from '../engine/rules-math';
@@ -83,6 +84,47 @@ export function SkillWheel({
   const [hovered, setHovered] = useState<{ title: string; subtitle: string; bonus: number } | null>(
     null
   );
+  const [isPopped, setIsPopped] = useState(false);
+  const closeTimerRef = useRef<number | null>(null);
+
+  const openPopout = () => {
+    if (closeTimerRef.current !== null) {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    setIsPopped(true);
+  };
+
+  const scheduleClosePopout = () => {
+    if (closeTimerRef.current !== null) {
+      window.clearTimeout(closeTimerRef.current);
+    }
+    closeTimerRef.current = window.setTimeout(() => {
+      setIsPopped(false);
+      setHovered(null);
+      closeTimerRef.current = null;
+    }, 150);
+  };
+
+  useEffect(() => {
+    if (!isPopped) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsPopped(false);
+        setHovered(null);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isPopped]);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current !== null) {
+        window.clearTimeout(closeTimerRef.current);
+      }
+    };
+  }, []);
 
   const allSkillKeys = Object.keys(SKILL_ABILITY_MAP) as SkillKey[];
 
@@ -160,14 +202,13 @@ export function SkillWheel({
     });
   }
 
-  return (
-    <div className="skill-wheel-wrap">
-      <svg
-        viewBox="0 0 340 340"
-        className="skill-wheel-svg"
-        role="img"
-        aria-label="Ability and specialized skills wheel"
-      >
+  const renderWheelSvg = (svgClassName: string) => (
+    <svg
+      viewBox="0 0 340 340"
+      className={svgClassName}
+      role="img"
+      aria-label="Ability and specialized skills wheel"
+    >
         {/* Outer Ring: Specialized Skills */}
         {abilityArcs.flatMap((arc) =>
           arc.items.map((item) => {
@@ -412,19 +453,60 @@ export function SkillWheel({
           </>
         )}
       </svg>
+  );
 
-      <div className="skill-wheel-caption">
-        {hovered ? (
-          <span>
-            <strong>{hovered.title}</strong> ({hovered.subtitle}) — Click to roll{' '}
-            <span className="tabular">{hovered.bonus >= 0 ? `+${hovered.bonus}` : hovered.bonus}</span>
-          </span>
-        ) : (
-          <span className="forge-muted">
-            Center: Base Stats • Outer Ring: Specialized Skills (click any slice to roll)
-          </span>
-        )}
+  const captionNode = (
+    <div className="skill-wheel-caption">
+      {hovered ? (
+        <span>
+          <strong>{hovered.title}</strong> ({hovered.subtitle}) —{' '}
+          <span className="tabular">{hovered.bonus >= 0 ? `+${hovered.bonus}` : hovered.bonus}</span>
+        </span>
+      ) : (
+        <span className="forge-muted">Hover wheel to zoom • Click any slice to roll</span>
+      )}
+    </div>
+  );
+
+  return (
+    <div
+      className="skill-wheel-wrap"
+      onMouseEnter={openPopout}
+      onMouseLeave={scheduleClosePopout}
+    >
+      <div style={{ visibility: isPopped ? 'hidden' : 'visible', width: '100%', display: 'flex', justifyContent: 'center' }}>
+        {renderWheelSvg('skill-wheel-svg')}
       </div>
+      {captionNode}
+
+      {isPopped &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div className="skill-wheel-popout-layer" aria-hidden={false}>
+            <div
+              className="skill-wheel-popout-card"
+              onMouseEnter={openPopout}
+              onMouseLeave={scheduleClosePopout}
+            >
+              <div className="forge-row-between" style={{ width: '100%' }}>
+                <span className="forge-section-label">ABILITIES &amp; SPECIALIZED SKILLS</span>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => {
+                    setIsPopped(false);
+                    setHovered(null);
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+              {renderWheelSvg('skill-wheel-svg-large')}
+              {captionNode}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

@@ -4,7 +4,7 @@ export type ParsedTagSegment =
   | { kind: 'save'; ability: string; dc?: string; display: string }
   | { kind: 'ref'; category: string; name: string; display: string };
 
-const TAG_REGEX = /\{@(\w+)\s+([^}]+)\}/g;
+const TAG_REGEX = /\{@(\w+)(?:\s+([^}]+))?\}/g;
 
 export function parse5eToolsEntries(entry: string): ParsedTagSegment[] {
   const segments: ParsedTagSegment[] = [];
@@ -20,11 +20,18 @@ export function parse5eToolsEntries(entry: string): ParsedTagSegment[] {
 
     const tagName = (match[1] ?? '').toLowerCase();
     const rawBody = match[2] ?? '';
-    const parts = rawBody.split('|').map((p) => p.trim());
+    const parts = rawBody ? rawBody.split('|').map((p) => p.trim()) : [];
     const primary = parts[0] ?? '';
     const displayOverride = parts[2] || parts[1];
 
-    if (tagName === 'dice' || tagName === 'damage' || tagName === 'hit') {
+    if (!rawBody && ['str', 'dex', 'con', 'int', 'wis', 'cha'].includes(tagName)) {
+      segments.push({
+        kind: 'ref',
+        category: 'ability',
+        name: tagName,
+        display: `${tagName.toUpperCase()} mod`,
+      });
+    } else if (tagName === 'dice' || tagName === 'damage' || tagName === 'hit') {
       const normalizedExpr =
         tagName === 'hit' && !primary.includes('d')
           ? `1d20${primary.startsWith('-') ? primary : `+${primary.replace(/^\+/, '')}`}`

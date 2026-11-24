@@ -6,13 +6,24 @@ import { VitalsColumn } from './components/VitalsColumn';
 import { ActionEconomyBoard } from './components/ActionEconomyBoard';
 import { SummonCombatDrawer, CommandPalette, StatusConsole } from './components/SummonCombatDrawer';
 import { NewCharacterModal } from './components/NewCharacterModal';
-import { BattlemapModal } from './components/BattlemapModal';
-import { SettingsModal } from './components/SettingsModal';
-import { LevelUpModal } from './components/LevelUpModal';
-import { DmHubModal } from './components/DmHubModal';
-import { MonsterStatblockModal } from './components/MonsterStatblockModal';
 import { ModalDialog } from './components/ModalDialog';
 import { ToastStack } from './components/ToastStack';
+
+const BattlemapModal = lazy(() =>
+  import('./components/BattlemapModal').then((m) => ({ default: m.BattlemapModal }))
+);
+const SettingsModal = lazy(() =>
+  import('./components/SettingsModal').then((m) => ({ default: m.SettingsModal }))
+);
+const LevelUpModal = lazy(() =>
+  import('./components/LevelUpModal').then((m) => ({ default: m.LevelUpModal }))
+);
+const DmHubModal = lazy(() =>
+  import('./components/DmHubModal').then((m) => ({ default: m.DmHubModal }))
+);
+const MonsterStatblockModal = lazy(() =>
+  import('./components/MonsterStatblockModal').then((m) => ({ default: m.MonsterStatblockModal }))
+);
 
 const CharacterBuilderDrawer = lazy(() =>
   import('./components/CharacterBuilderDrawer').then((m) => ({ default: m.CharacterBuilderDrawer }))
@@ -894,22 +905,54 @@ export function App() {
           </nav>
 
           <div className="unified-main-with-combat">
-            {unifiedView === 'sheet' && (
-              <div className="unified-sheet-split">
-                {vitalsNode}
-                {actionBoardNode}
-              </div>
-            )}
-            {unifiedView === 'dm' && (
-              <div className="pane" style={{ padding: 14 }}>
-                <DmHubModal isOpen embedded onClose={() => setUnifiedView('sheet')} {...sharedDmHubProps} />
-              </div>
-            )}
-            {unifiedView === 'vtt' && (
-              <div className="pane" style={{ padding: 14 }}>
-                <BattlemapModal isOpen embeddedFull onClose={() => setUnifiedView('sheet')} {...sharedBattlemapProps} />
-              </div>
-            )}
+            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+              {unifiedView !== 'sheet' && (
+                <div
+                  className="subpanel forge-row-between"
+                  style={{
+                    margin: '10px 14px 0',
+                    padding: '6px 10px',
+                    flexWrap: 'wrap',
+                    gap: 8,
+                  }}
+                >
+                  <div className="forge-row" style={{ gap: 8, flexWrap: 'wrap' }}>
+                    <span className="badge tabular">
+                      Round {store.encounter.round} • Turn:{' '}
+                      {store.encounter.combatants[store.encounter.activeTurnIndex]?.name ?? 'None'}
+                    </span>
+                    {store.consoleLines.length > 0 && (
+                      <span className="forge-muted" style={{ fontSize: 11, maxWidth: 460, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        Latest: {store.consoleLines[store.consoleLines.length - 1]?.text}
+                      </span>
+                    )}
+                  </div>
+                  <button type="button" className="btn" onClick={() => setUnifiedView('sheet')}>
+                    ← Play Sheet
+                  </button>
+                </div>
+              )}
+              {unifiedView === 'sheet' && (
+                <div className="unified-sheet-split">
+                  {vitalsNode}
+                  {actionBoardNode}
+                </div>
+              )}
+              {unifiedView === 'dm' && (
+                <div className="pane" style={{ padding: 14 }}>
+                  <Suspense fallback={null}>
+                    <DmHubModal isOpen embedded onClose={() => setUnifiedView('sheet')} {...sharedDmHubProps} />
+                  </Suspense>
+                </div>
+              )}
+              {unifiedView === 'vtt' && (
+                <div className="pane" style={{ padding: 14 }}>
+                  <Suspense fallback={null}>
+                    <BattlemapModal isOpen embeddedFull onClose={() => setUnifiedView('sheet')} {...sharedBattlemapProps} />
+                  </Suspense>
+                </div>
+              )}
+            </div>
             {combatDrawerNode}
           </div>
         </div>
@@ -957,12 +1000,14 @@ export function App() {
         onCreate={store.createCharacterFromPreset}
       />
 
-      <LevelUpModal
-        isOpen={levelUpOpen}
-        character={store.rawChar}
-        onClose={() => setLevelUpOpen(false)}
-        onApplyLevelUp={store.applyLevelUpPlan}
-      />
+      <Suspense fallback={null}>
+        <LevelUpModal
+          isOpen={levelUpOpen}
+          character={store.rawChar}
+          onClose={() => setLevelUpOpen(false)}
+          onApplyLevelUp={store.applyLevelUpPlan}
+        />
+      </Suspense>
 
       <Suspense fallback={null}>
         <LiveTableModal
@@ -1006,17 +1051,19 @@ export function App() {
         />
       </Suspense>
 
-      <BattlemapModal
-        isOpen={battlemapOpen}
-        onClose={() => setBattlemapOpen(false)}
-        {...sharedBattlemapProps}
-      />
+      <Suspense fallback={null}>
+        <BattlemapModal
+          isOpen={battlemapOpen}
+          onClose={() => setBattlemapOpen(false)}
+          {...sharedBattlemapProps}
+        />
 
-      <DmHubModal
-        isOpen={dmHubOpen}
-        onClose={() => setDmHubOpen(false)}
-        {...sharedDmHubProps}
-      />
+        <DmHubModal
+          isOpen={dmHubOpen}
+          onClose={() => setDmHubOpen(false)}
+          {...sharedDmHubProps}
+        />
+      </Suspense>
 
       <Suspense fallback={null}>
         <EncounterBuilderModal
@@ -1045,23 +1092,25 @@ export function App() {
         />
       </Suspense>
 
-      <MonsterStatblockModal
-        combatant={inspectedCombatant}
-        playerView={playerView}
-        onClose={() => setInspectedCombatantId(null)}
-        onTriggerActivity={store.triggerCombatantActivity}
-        onAdjustLegendary={store.adjustLegendaryActions}
-        onToggleOrRollRecharge={store.toggleOrRollRecharge}
-      />
+      <Suspense fallback={null}>
+        <MonsterStatblockModal
+          combatant={inspectedCombatant}
+          playerView={playerView}
+          onClose={() => setInspectedCombatantId(null)}
+          onTriggerActivity={store.triggerCombatantActivity}
+          onAdjustLegendary={store.adjustLegendaryActions}
+          onToggleOrRollRecharge={store.toggleOrRollRecharge}
+        />
 
-      <SettingsModal
-        isOpen={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        uiMode={uiMode}
-        onChangeUiMode={setUiMode}
-        onExportBackup={handleExport}
-        onExportActiveCharacter={handleExportActiveCharacter}
-      />
+        <SettingsModal
+          isOpen={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          uiMode={uiMode}
+          onChangeUiMode={setUiMode}
+          onExportBackup={handleExport}
+          onExportActiveCharacter={handleExportActiveCharacter}
+        />
+      </Suspense>
 
       <ModalDialog
         isOpen={shortcutsOpen}

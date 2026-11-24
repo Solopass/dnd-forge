@@ -256,14 +256,19 @@ export function SummonCombatDrawer({
             </div>
           </div>
           {selectedTargetIds.length > 0 && (
-            <div className="subpanel forge-row-between" style={{ padding: '4px 8px' }}>
-              <span className="badge">
-                Targeted ({selectedTargetIds.length}):{' '}
+            <div className="subpanel forge-row-between" style={{ padding: '4px 8px', flexWrap: 'wrap', gap: 6 }}>
+              <div className="pill-row">
+                <span className="muted-label">Targets ({selectedTargetIds.length}):</span>
                 {encounter.combatants
                   .filter((c) => selectedTargetIds.includes(c.id))
-                  .map((c) => c.name)
-                  .join(', ')}
-              </span>
+                  .map((c) => (
+                    <span key={c.id} className="badge tabular">
+                      {c.kind === 'pc' || !playerView
+                        ? `${c.name} (AC ${c.ac} • ${c.hp.current}/${c.hp.max})`
+                        : c.name}
+                    </span>
+                  ))}
+              </div>
               <button type="button" className="btn" onClick={onClearTargets}>
                 Clear Targets
               </button>

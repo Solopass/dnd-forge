@@ -88,6 +88,27 @@ export function ActionEconomyBoard({
   const [filter, setFilter] = useState<'all' | 'attack' | 'save' | 'heal' | 'summon' | 'concentration'>('all');
   const [search, setSearch] = useState('');
   const [upcastOverrides, setUpcastOverrides] = useState<Record<string, number>>({});
+  const [smiteLevel, setSmiteLevel] = useState(1);
+  const [pinnedIds, setPinnedIds] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem('dnd-forge-pinned-actions');
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const togglePin = (actId: string) => {
+    setPinnedIds((prev) => {
+      const next = prev.includes(actId) ? prev.filter((id) => id !== actId) : [...prev, actId];
+      try {
+        localStorage.setItem('dnd-forge-pinned-actions', JSON.stringify(next));
+      } catch {
+        // Ignore storage errors
+      }
+      return next;
+    });
+  };
 
   const isSpellActivity = (act: ResolvedActivity): boolean =>
     Boolean(act.spellMeta || act.resourceCost?.poolId.startsWith('spell_slot_'));
@@ -151,6 +172,16 @@ export function ActionEconomyBoard({
         </div>
 
         <div className="forge-row">
+          <button
+            type="button"
+            className="btn"
+            style={{ padding: '2px 6px', fontSize: 11, color: pinnedIds.includes(act.id) ? 'var(--accent-amber)' : 'var(--text-muted)' }}
+            title={pinnedIds.includes(act.id) ? 'Unpin from favorites' : 'Pin to favorites'}
+            aria-label={pinnedIds.includes(act.id) ? `Unpin ${act.name}` : `Pin ${act.name}`}
+            onClick={() => togglePin(act.id)}
+          >
+            {pinnedIds.includes(act.id) ? '★' : '☆'}
+          </button>
           {act.ritual && (
             <button
               type="button"
@@ -334,17 +365,44 @@ export function ActionEconomyBoard({
                 >
                   Sneak Atk +{Math.max(1, Math.ceil(sheet.totalLevel / 2))}d6
                 </button>
-                {onDivineSmite && (sheet.resources.find((r) => r.id === 'spell_slot_1')?.current ?? 0) > 0 && (
-                  <button
-                    type="button"
-                    className="pill"
-                    style={{ borderColor: 'rgba(245, 158, 11, 0.45)', color: 'var(--accent-amber)' }}
-                    title="Spend a 1st-level slot to roll 2d8 Radiant Divine Smite"
-                    onClick={() => onDivineSmite(1)}
-                  >
-                    Smite L1 (2d8)
-                  </button>
-                )}
+                {onDivineSmite && (() => {
+                  const availableSmiteLevels = [1, 2, 3, 4, 5].filter(
+                    (lvl) => (sheet.resources.find((r) => r.id === `spell_slot_${lvl}`)?.current ?? 0) > 0
+                  );
+                  if (availableSmiteLevels.length === 0) return null;
+                  const chosen = availableSmiteLevels.includes(smiteLevel)
+                    ? smiteLevel
+                    : availableSmiteLevels[0]!;
+                  const diceCount = Math.min(6, chosen + 1);
+                  return (
+                    <div className="forge-row" style={{ gap: 4 }}>
+                      {availableSmiteLevels.length > 1 && (
+                        <select
+                          aria-label="Divine Smite slot level"
+                          className="forge-input tabular"
+                          style={{ padding: '2px 4px', fontSize: 11, width: 52 }}
+                          value={chosen}
+                          onChange={(e) => setSmiteLevel(Number.parseInt(e.target.value, 10))}
+                        >
+                          {availableSmiteLevels.map((lvl) => (
+                            <option key={lvl} value={lvl}>
+                              L{lvl}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      <button
+                        type="button"
+                        className="pill"
+                        style={{ borderColor: 'rgba(245, 158, 11, 0.45)', color: 'var(--accent-amber)' }}
+                        title={`Spend a Level ${chosen} slot to roll ${diceCount}d8 Radiant Divine Smite`}
+                        onClick={() => onDivineSmite(chosen)}
+                      >
+                        Smite L{chosen} ({diceCount}d8)
+                      </button>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
@@ -550,6 +608,28 @@ export function ActionEconomyBoard({
                 )}
               </div>
             )}
+          </section>
+        );
+      })()}
+
+      {(layoutVariant === 'unified' || beyondTab === 'actions') && (() => {
+        const allAvailable = [
+          ...sheet.actionsByEconomy.action,
+          ...sheet.actionsByEconomy.bonus_action,
+          ...sheet.actionsByEconomy.reaction,
+          ...sheet.actionsByEconomy.free,
+          ...sheet.actionsByEconomy.special,
+        ];
+        const pinnedItems = allAvailable.filter((act) => pinnedIds.includes(act.id) && matchesFilter(act));
+        if (pinnedItems.length === 0) return null;
+        return (
+          <section className="card" style={{ borderColor: 'rgba(245, 158, 11, 0.35)' }}>
+            <div className="card-header">
+              <div className="forge-section-label" style={{ color: 'var(--accent-amber)' }}>
+                ★ PINNED FAVORITES ({pinnedItems.length})
+              </div>
+            </div>
+            {pinnedItems.map(renderActivityRow)}
           </section>
         );
       })()}

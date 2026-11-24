@@ -6,7 +6,7 @@ import { computeVisibleCells } from '../engine/vtt-vision';
 import { resolveConditionRollMode } from '../engine/conditions';
 import { resolveTargetAttack, resolveTargetSaves } from '../engine/target-combat';
 import { Activity, CompendiumEntity, CreatureSize, MonsterStatMeta } from '../types/compendium';
-import { AbilityKey, ActionEconomy, ActiveBuffState, RecoveryTrigger, RollMode } from '../types/core';
+import { AbilityKey, ActionEconomy, ActiveBuffState, RecoveryTrigger, RollMode, WeaponMastery } from '../types/core';
 import {
   applyRestRecovery,
   computeCharacterSheet,
@@ -3014,7 +3014,14 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   );
 
   const targetAttackCombatants = useCallback(
-    (attackerName: string, targetIds: string[], activity: Activity, customBonus?: number) => {
+    (
+      attackerName: string,
+      targetIds: string[],
+      activity: Activity,
+      customBonus?: number,
+      weaponMastery?: WeaponMastery,
+      attackerAbilityMod = 3
+    ) => {
       if (targetIds.length === 0) {
         appendLog('Select one or more targets first.', 'warn');
         return;
@@ -3022,31 +3029,71 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
       const targets = encounter.combatants.filter((c) => targetIds.includes(c.id));
       if (targets.length === 0) return;
 
-      const outcomes = targets.map((t) => resolveTargetAttack(activity, t, rollMode, customBonus));
+      const outcomes = targets.map((t) =>
+        resolveTargetAttack(activity, t, rollMode, customBonus, undefined, weaponMastery, attackerAbilityMod)
+      );
       const hpUpdates = new Map(
         outcomes.filter((o) => o.targetId !== rawChar.id).map((o) => [o.targetId, o.nextHp])
       );
+      const proneTargets = new Set<string>();
+      const toppleDc = 8 + resolvedSheet.proficiencyBonus.final + attackerAbilityMod;
 
-      if (hpUpdates.size > 0) {
+      for (const o of outcomes) {
+        if (o.hit && weaponMastery === 'Topple') {
+          const tNode = targets.find((t) => t.id === o.targetId);
+          const conMatch = tNode?.monsterMeta?.saves?.match(/Con\s*([+-]\d+)/i);
+          const conBonus = conMatch?.[1] ? Number.parseInt(conMatch[1], 10) : 0;
+          const conSign = conBonus >= 0 ? '+' : '';
+          const saveRoll = evaluateDiceExpression(`1d20${conSign}${conBonus}`, 'normal');
+          if (saveRoll.total < toppleDc) {
+            proneTargets.add(o.targetId);
+            appendLog(
+              `Topple: ${o.targetName} CON save ${saveRoll.total} vs DC ${toppleDc} — FAILED (knocked Prone).`,
+              'warn'
+            );
+          } else {
+            appendLog(
+              `Topple: ${o.targetName} CON save ${saveRoll.total} vs DC ${toppleDc} — resisted.`,
+              'info'
+            );
+          }
+        }
+      }
+
+      if (hpUpdates.size > 0 || proneTargets.size > 0) {
         persistEncounter((prev) => ({
           ...prev,
           combatants: prev.combatants.map((c) => {
             const nextHp = hpUpdates.get(c.id);
-            return nextHp !== undefined ? { ...c, hp: { ...c.hp, current: nextHp } } : c;
+            const addProne = proneTargets.has(c.id) && !c.conditions.includes('Prone');
+            if (nextHp === undefined && !addProne) return c;
+            return {
+              ...c,
+              hp: nextHp !== undefined ? { ...c.hp, current: nextHp } : c.hp,
+              conditions: addProne ? [...c.conditions, 'Prone'] : c.conditions,
+            };
           }),
         }));
       }
 
       for (const o of outcomes) {
         if (!o.hit) {
-          appendLog(
-            `${attackerName} → ${o.targetName} (${activity.name}): Rolled ${o.attackTotal} vs AC — MISS${o.isFumble ? ' [FUMBLE]' : ''}.`,
-            'info'
-          );
+          if (o.appliedDamage > 0 && o.masteryNote) {
+            appendLog(
+              `${attackerName} → ${o.targetName} (${activity.name}): Rolled ${o.attackTotal} vs AC — MISS, ${o.masteryNote} (HP -> ${o.nextHp}).`,
+              'roll'
+            );
+          } else {
+            appendLog(
+              `${attackerName} → ${o.targetName} (${activity.name}): Rolled ${o.attackTotal} vs AC — MISS${o.isFumble ? ' [FUMBLE]' : ''}.`,
+              'info'
+            );
+          }
         } else {
-          const noteStr = o.modifierNote ? ` [${o.modifierNote}]` : '';
+          const noteStr = [o.modifierNote, o.masteryNote].filter(Boolean).join(' • ');
+          const badge = noteStr ? ` [${noteStr}]` : '';
           appendLog(
-            `${attackerName} → ${o.targetName} (${activity.name}): ${o.isCrit ? 'CRIT ' : 'HIT '} (${o.attackTotal}) for ${o.appliedDamage} dmg${noteStr} (HP -> ${o.nextHp}).`,
+            `${attackerName} → ${o.targetName} (${activity.name}): ${o.isCrit ? 'CRIT ' : 'HIT '} (${o.attackTotal}) for ${o.appliedDamage} dmg${badge} (HP -> ${o.nextHp}).`,
             o.isCrit ? 'crit' : 'roll'
           );
           if (o.targetId === rawChar.id) {
@@ -3065,7 +3112,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         }
       }
     },
-    [encounter.combatants, encounter.activeEffects, rollMode, persistEncounter, appendLog, rawChar.id, adjustHp]
+    [encounter.combatants, encounter.activeEffects, rollMode, persistEncounter, appendLog, rawChar.id, adjustHp, resolvedSheet.proficiencyBonus.final]
   );
 
   const targetSaveCombatants = useCallback(

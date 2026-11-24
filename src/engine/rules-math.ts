@@ -297,17 +297,17 @@ export function resolveFormulaVariables(
   const modVal = attackAbility ? abilityMods[attackAbility] : 0;
   const cantripDice = computeCantripDiceTier(totalLevel);
   return formula
-    .replace(/@prof/gi, String(profBonus))
-    .replace(/@mod/gi, String(modVal))
-    .replace(/@spell/gi, String(castingMod))
-    .replace(/@lvl/gi, String(totalLevel))
-    .replace(/@cantrip/gi, String(cantripDice))
-    .replace(/@str/gi, String(abilityMods.str))
-    .replace(/@dex/gi, String(abilityMods.dex))
-    .replace(/@con/gi, String(abilityMods.con))
-    .replace(/@int/gi, String(abilityMods.int))
-    .replace(/@wis/gi, String(abilityMods.wis))
-    .replace(/@cha/gi, String(abilityMods.cha));
+    .replace(/(?<!\{)@prof/gi, String(profBonus))
+    .replace(/(?<!\{)@mod/gi, String(modVal))
+    .replace(/(?<!\{)@spell/gi, String(castingMod))
+    .replace(/(?<!\{)@lvl/gi, String(totalLevel))
+    .replace(/(?<!\{)@cantrip/gi, String(cantripDice))
+    .replace(/(?<!\{)@str/gi, String(abilityMods.str))
+    .replace(/(?<!\{)@dex/gi, String(abilityMods.dex))
+    .replace(/(?<!\{)@con/gi, String(abilityMods.con))
+    .replace(/(?<!\{)@int/gi, String(abilityMods.int))
+    .replace(/(?<!\{)@wis/gi, String(abilityMods.wis))
+    .replace(/(?<!\{)@cha/gi, String(abilityMods.cha));
 }
 
 function evaluateSimpleMath(expr: string): number {

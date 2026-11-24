@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { resolveConditionRollMode } from '../conditions';
 import { resolveTargetAttack } from '../target-combat';
 import { BUILTIN_CONTENT_PACKS } from '../srd-packs';
+import { parse5eToolsEntries } from '../tags';
 import { CombatantNode } from '../../types/combat';
 import { Activity } from '../../types/compendium';
 
@@ -97,5 +98,14 @@ describe('2024 Weapon Mastery & Target Combat', () => {
     const ls = allEntities.find((e) => e.id === 'srd24-longsword');
     expect(gs?.weaponMastery).toBe('Graze');
     expect(ls?.weaponMastery).toBe('Sap');
+  });
+
+  it('parses bare ability tags like {@str} cleanly', () => {
+    const segs = parse5eToolsEntries('On a miss, deal {@str} slashing damage.');
+    expect(segs).toEqual([
+      { kind: 'text', value: 'On a miss, deal ' },
+      { kind: 'ref', category: 'ability', name: 'str', display: 'STR mod' },
+      { kind: 'text', value: ' slashing damage.' },
+    ]);
   });
 });

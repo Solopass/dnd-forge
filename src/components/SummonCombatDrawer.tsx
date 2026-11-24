@@ -3,12 +3,21 @@ import { CombatEncounterState } from '../types/combat';
 import { Activity, CompendiumEntity } from '../types/compendium';
 import { STANDARD_CONDITIONS } from '../types/core';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
+import { evaluateEncounterDifficulty } from '../engine/encounter-math';
 import { ConsoleLine } from '../state/useSheetStore';
 import { ModalDialog } from './ModalDialog';
 
 interface SummonDrawerProps {
   encounter: CombatEncounterState;
+  encounterList: CombatEncounterState[];
+  partyLevels: number[];
   pendingConcDc: number | null;
+  onSwitchEncounter: (id: string) => void;
+  onCreateEncounter: (name: string) => Promise<void>;
+  onDuplicateEncounter: () => Promise<void>;
+  onDeleteEncounter: (id: string) => Promise<void>;
+  onAddPartyToEncounter: () => void;
+  onOpenBattlemap: () => void;
   onNextTurn: () => void;
   onResetEncounter: () => void;
   onAdjustCombatantHp: (id: string, delta: number) => void;
@@ -18,7 +27,7 @@ interface SummonDrawerProps {
   onTriggerCombatantActivity: (combatantName: string, act: Activity) => void;
   onDropConcentration: (sourceId: string) => void;
   onRollConcentrationSave: (dc?: number) => void;
-  onAddMonster: (name: string, ac: number, hp: number, dexMod: number) => void;
+  onAddMonster: (name: string, ac: number, hp: number, dexMod: number, actions?: Activity[], cr?: string) => void;
 }
 
 function getCombatHpClass(current: number, max: number): string {
@@ -31,7 +40,15 @@ function getCombatHpClass(current: number, max: number): string {
 
 export function SummonCombatDrawer({
   encounter,
+  encounterList,
+  partyLevels,
   pendingConcDc,
+  onSwitchEncounter,
+  onCreateEncounter,
+  onDuplicateEncounter,
+  onDeleteEncounter,
+  onAddPartyToEncounter,
+  onOpenBattlemap,
   onNextTurn,
   onResetEncounter,
   onAdjustCombatantHp,
@@ -46,8 +63,15 @@ export function SummonCombatDrawer({
   const [mobName, setMobName] = useState('');
   const [mobAc, setMobAc] = useState('14');
   const [mobHp, setMobHp] = useState('32');
+  const [mobCr, setMobCr] = useState('1');
   const [mobCond, setMobCond] = useState<string>(STANDARD_CONDITIONS[10]);
   const [hpDeltas, setHpDeltas] = useState<Record<string, string>>({});
+
+  const monsterCrs = encounter.combatants
+    .filter((c) => c.kind === 'monster')
+    .map((c) => c.cr ?? '1');
+  const difficulty =
+    monsterCrs.length > 0 ? evaluateEncounterDifficulty(partyLevels, monsterCrs) : null;
 
   const applyCombatantDelta = (id: string, sign: 1 | -1) => {
     const raw = hpDeltas[id] ?? '';
@@ -60,26 +84,91 @@ export function SummonCombatDrawer({
 
   return (
     <aside className="pane" aria-label="Encounter and Linked Summons">
-      <div className="card forge-row-between">
-        <div>
-          <strong>{encounter.name}</strong>
-          <div className="tabular forge-muted" style={{ fontSize: 11 }}>
-            Round {encounter.round} • {encounter.combatants.length} Combatants
+      <div className="card forge-stack">
+        <div className="forge-row-between">
+          <select
+            aria-label="Active encounter"
+            className="forge-input"
+            value={encounter.id}
+            onChange={(e) => onSwitchEncounter(e.target.value)}
+            style={{ flex: 1, fontWeight: 700, padding: '3px 6px' }}
+          >
+            {encounterList.map((enc) => (
+              <option key={enc.id} value={enc.id}>
+                {enc.name}
+              </option>
+            ))}
+          </select>
+          <div className="forge-row">
+            <button
+              type="button"
+              className="btn"
+              onClick={() => void onCreateEncounter(`Encounter ${encounterList.length + 1}`)}
+              title="Create new encounter"
+            >
+              + New
+            </button>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => void onDuplicateEncounter()}
+              title="Duplicate current encounter"
+            >
+              Dup
+            </button>
+            {encounterList.length > 1 && (
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={() => void onDeleteEncounter(encounter.id)}
+                title="Delete current encounter"
+              >
+                Del
+              </button>
+            )}
           </div>
         </div>
-        <div className="forge-row">
-          <button type="button" className="btn" onClick={onResetEncounter} title="Clear monsters/summons and reset to Round 1">
-            Reset
-          </button>
-          <button type="button" className="btn btn-primary" onClick={onNextTurn}>
-            Next Turn
-          </button>
+
+        <div className="forge-row-between" style={{ flexWrap: 'wrap' }}>
+          <div className="tabular forge-muted" style={{ fontSize: 11 }}>
+            Round {encounter.round} • {encounter.combatants.length} Combatants
+            {difficulty && (
+              <span
+                className="cost-badge"
+                style={{
+                  color:
+                    difficulty.rating === 'Deadly'
+                      ? 'var(--accent-red)'
+                      : difficulty.rating === 'Hard'
+                      ? 'var(--accent-amber)'
+                      : 'var(--accent-green)',
+                  borderColor: 'currentColor',
+                }}
+              >
+                {difficulty.rating.toUpperCase()} • {difficulty.adjustedXp.toLocaleString()} adj XP
+              </span>
+            )}
+          </div>
+          <div className="forge-row">
+            <button type="button" className="btn" onClick={onAddPartyToEncounter} title="Drop all saved PCs into encounter">
+              + Party
+            </button>
+            <button type="button" className="btn" onClick={onOpenBattlemap}>
+              Battlemap
+            </button>
+            <button type="button" className="btn" onClick={onResetEncounter} title="Clear monsters/summons and reset to Round 1">
+              Reset
+            </button>
+            <button type="button" className="btn btn-primary" onClick={onNextTurn}>
+              Next Turn
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="card">
         <div className="forge-section-label">QUICK ADD ENEMY / NPC</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 48px 54px auto', gap: 4 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 44px 48px 46px auto', gap: 4 }}>
           <input
             aria-label="Enemy or NPC name"
             type="text"
@@ -107,6 +196,15 @@ export function SummonCombatDrawer({
             className="forge-input tabular"
             style={{ padding: '3px 4px' }}
           />
+          <input
+            aria-label="Enemy CR"
+            type="text"
+            title="CR (e.g. 1/4, 3)"
+            value={mobCr}
+            onChange={(e) => setMobCr(e.target.value)}
+            className="forge-input tabular"
+            style={{ padding: '3px 4px' }}
+          />
           <button
             type="button"
             className="btn"
@@ -116,7 +214,9 @@ export function SummonCombatDrawer({
                 mobName.trim(),
                 Number.parseInt(mobAc, 10) || 12,
                 Number.parseInt(mobHp, 10) || 20,
-                1
+                1,
+                undefined,
+                mobCr.trim() || '1'
               );
               setMobName('');
             }}

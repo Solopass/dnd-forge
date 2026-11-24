@@ -3,8 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="dark" />
-    <title>D&D Forge // Local VTT &amp; Sheet</title>
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      try {
+        var meta = document.querySelector('meta[name="color-scheme"]');
+        if (meta) meta.content = localStorage.getItem('color-scheme') || 'light dark';
+        if (localStorage.getItem('dnd-forge-contrast') === 'high') {
+          document.documentElement.dataset.contrast = 'high';
+        }
+      } catch (e) {}
+    </script>
+    <title>D&amp;D Forge // Local VTT &amp; Sheet</title>
   </head>
   <body>
     <div id="root"></div>

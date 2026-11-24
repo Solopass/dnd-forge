@@ -3,6 +3,7 @@ import { ReactNode, useEffect, useId, useRef } from 'react';
 interface ModalDialogProps {
   isOpen: boolean;
   title: ReactNode;
+  wide?: boolean;
   onClose: () => void;
   children: ReactNode;
 }
@@ -11,7 +12,7 @@ interface ModalDialogProps {
  * Native top-layer modal dialog using `<dialog>` + `showModal()` and `closedby="any"`.
  * Includes a pointerdown/pointerup bounding-box fallback for browsers without `closedBy`.
  */
-export function ModalDialog({ isOpen, title, onClose, children }: ModalDialogProps) {
+export function ModalDialog({ isOpen, title, wide, onClose, children }: ModalDialogProps) {
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const titleId = useId();
 
@@ -76,7 +77,7 @@ export function ModalDialog({ isOpen, title, onClose, children }: ModalDialogPro
   return (
     <dialog
       ref={dialogRef}
-      className="forge-dialog"
+      className={wide ? 'forge-dialog forge-dialog-wide' : 'forge-dialog'}
       aria-labelledby={titleId}
       {...({ closedby: 'any' } as Record<string, string>)}
     >

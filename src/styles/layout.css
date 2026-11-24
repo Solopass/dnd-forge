@@ -545,3 +545,68 @@ button.stat-tile:hover {
 .console-collapsed .status-console-log {
   display: none;
 }
+
+.forge-dialog-wide {
+  width: min(1060px, 96dvw);
+  max-height: 90dvh;
+}
+
+.battlemap-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  user-select: none;
+  touch-action: none;
+}
+
+@media print {
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    overflow: visible;
+    background: #fff;
+    color: #000;
+  }
+
+  .app-shell {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+
+  .topbar,
+  .status-console-shell,
+  aside[aria-label="Encounter and Linked Summons"],
+  button,
+  input[type="text"],
+  input[type="number"],
+  select {
+    display: none !important;
+  }
+
+  .workspace-grid {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 12px;
+    background: #fff;
+    overflow: visible;
+  }
+
+  .pane {
+    overflow: visible;
+    background: #fff;
+    color: #000;
+  }
+
+  .card {
+    background: #fff;
+    color: #000;
+    border-color: #999;
+    break-inside: avoid;
+  }
+}

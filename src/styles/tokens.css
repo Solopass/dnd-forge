@@ -1,22 +1,104 @@
 :root {
-  color-scheme: dark;
+  color-scheme: light dark;
 
-  --bg-base: #0d1117;
-  --bg-surface: #161b22;
-  --bg-elevated: #21262d;
-  --bg-hover: #30363d;
-  --border-subtle: #30363d;
-  --border-accent: #58a6ff;
+  &:has(> head > meta[name="color-scheme"][content="dark"]) {
+    color-scheme: dark;
+  }
+  &:has(> head > meta[name="color-scheme"][content="light"]) {
+    color-scheme: light;
+  }
 
-  --text-primary: #f0f6fc;
-  --text-secondary: #8b949e;
-  --text-muted: #6e7681;
+  --bg-base-light: #f6f8fa;
+  --bg-base-dark: #0d1117;
+  --bg-surface-light: #ffffff;
+  --bg-surface-dark: #161b22;
+  --bg-elevated-light: #eaeef2;
+  --bg-elevated-dark: #21262d;
+  --bg-hover-light: #d8dee4;
+  --bg-hover-dark: #30363d;
+  --border-subtle-light: #d0d7de;
+  --border-subtle-dark: #30363d;
+  --border-accent-light: #0969da;
+  --border-accent-dark: #58a6ff;
 
-  --accent-blue: #58a6ff;
-  --accent-green: #3fb950;
-  --accent-amber: #d29922;
-  --accent-red: #f85149;
-  --accent-purple: #bc8cff;
+  --text-primary-light: #1f2328;
+  --text-primary-dark: #f0f6fc;
+  --text-secondary-light: #59636e;
+  --text-secondary-dark: #8b949e;
+  --text-muted-light: #6e7781;
+  --text-muted-dark: #6e7681;
+
+  --accent-blue-light: #0969da;
+  --accent-blue-dark: #58a6ff;
+  --accent-green-light: #1a7f37;
+  --accent-green-dark: #3fb950;
+  --accent-amber-light: #9a6700;
+  --accent-amber-dark: #d29922;
+  --accent-red-light: #cf222e;
+  --accent-red-dark: #f85149;
+  --accent-purple-light: #8250df;
+  --accent-purple-dark: #bc8cff;
+
+  --scrollbar-track-light: #f0f2f5;
+  --scrollbar-track-dark: #0d1117;
+  --scrollbar-thumb-light: #afb8c1;
+  --scrollbar-thumb-dark: #30363d;
+
+  /* Default light tokens + @media fallback */
+  --bg-base: var(--bg-base-light);
+  --bg-surface: var(--bg-surface-light);
+  --bg-elevated: var(--bg-elevated-light);
+  --bg-hover: var(--bg-hover-light);
+  --border-subtle: var(--border-subtle-light);
+  --border-accent: var(--border-accent-light);
+  --text-primary: var(--text-primary-light);
+  --text-secondary: var(--text-secondary-light);
+  --text-muted: var(--text-muted-light);
+  --accent-blue: var(--accent-blue-light);
+  --accent-green: var(--accent-green-light);
+  --accent-amber: var(--accent-amber-light);
+  --accent-red: var(--accent-red-light);
+  --accent-purple: var(--accent-purple-light);
+  --scrollbar-track: var(--scrollbar-track-light);
+  --scrollbar-thumb: var(--scrollbar-thumb-light);
+
+  @media (prefers-color-scheme: dark) {
+    --bg-base: var(--bg-base-dark);
+    --bg-surface: var(--bg-surface-dark);
+    --bg-elevated: var(--bg-elevated-dark);
+    --bg-hover: var(--bg-hover-dark);
+    --border-subtle: var(--border-subtle-dark);
+    --border-accent: var(--border-accent-dark);
+    --text-primary: var(--text-primary-dark);
+    --text-secondary: var(--text-secondary-dark);
+    --text-muted: var(--text-muted-dark);
+    --accent-blue: var(--accent-blue-dark);
+    --accent-green: var(--accent-green-dark);
+    --accent-amber: var(--accent-amber-dark);
+    --accent-red: var(--accent-red-dark);
+    --accent-purple: var(--accent-purple-dark);
+    --scrollbar-track: var(--scrollbar-track-dark);
+    --scrollbar-thumb: var(--scrollbar-thumb-dark);
+  }
+
+  @supports (color: light-dark(white, black)) {
+    --bg-base: light-dark(var(--bg-base-light), var(--bg-base-dark));
+    --bg-surface: light-dark(var(--bg-surface-light), var(--bg-surface-dark));
+    --bg-elevated: light-dark(var(--bg-elevated-light), var(--bg-elevated-dark));
+    --bg-hover: light-dark(var(--bg-hover-light), var(--bg-hover-dark));
+    --border-subtle: light-dark(var(--border-subtle-light), var(--border-subtle-dark));
+    --border-accent: light-dark(var(--border-accent-light), var(--border-accent-dark));
+    --text-primary: light-dark(var(--text-primary-light), var(--text-primary-dark));
+    --text-secondary: light-dark(var(--text-secondary-light), var(--text-secondary-dark));
+    --text-muted: light-dark(var(--text-muted-light), var(--text-muted-dark));
+    --accent-blue: light-dark(var(--accent-blue-light), var(--accent-blue-dark));
+    --accent-green: light-dark(var(--accent-green-light), var(--accent-green-dark));
+    --accent-amber: light-dark(var(--accent-amber-light), var(--accent-amber-dark));
+    --accent-red: light-dark(var(--accent-red-light), var(--accent-red-dark));
+    --accent-purple: light-dark(var(--accent-purple-light), var(--accent-purple-dark));
+    --scrollbar-track: light-dark(var(--scrollbar-track-light), var(--scrollbar-track-dark));
+    --scrollbar-thumb: light-dark(var(--scrollbar-thumb-light), var(--scrollbar-thumb-dark));
+  }
 
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
@@ -28,11 +110,14 @@
   --z-drawer: 40;
   --z-palette: 100;
 
-  --scrollbar-track: #0d1117;
-  --scrollbar-thumb: #30363d;
-
   accent-color: var(--accent-blue);
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+:root[data-contrast='high'] {
+  --border-subtle: light-dark(#57606a, #8b949e);
+  --text-secondary: light-dark(#24292f, #c9d1d9);
+  --text-muted: light-dark(#424a53, #adbac7);
 }
 
 * {

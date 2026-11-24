@@ -12,6 +12,8 @@ import {
 import { CharacterBuilderDrawer } from './components/CharacterBuilderDrawer';
 import { EquipmentSpellDrawer } from './components/EquipmentSpellDrawer';
 import { NewCharacterModal } from './components/NewCharacterModal';
+import { BattlemapModal } from './components/BattlemapModal';
+import { SettingsModal } from './components/SettingsModal';
 import { evaluateDiceExpression } from './engine/dice';
 import { exportFullBundle } from './storage/db';
 import { RawCharacterState } from './types/character';
@@ -166,6 +168,8 @@ export function App() {
   const [builderOpen, setBuilderOpen] = useState(false);
   const [gearOpen, setGearOpen] = useState(false);
   const [newCharOpen, setNewCharOpen] = useState(false);
+  const [battlemapOpen, setBattlemapOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [consoleSize, setConsoleSize] = useState<'normal' | 'expanded' | 'collapsed'>('normal');
 
   useEffect(() => {
@@ -234,8 +238,11 @@ export function App() {
           <button type="button" className="btn" onClick={() => setPaletteOpen(true)}>
             Packs / PDF / Import (Ctrl+K)
           </button>
-          <button type="button" className="btn" onClick={handleExport}>
-            Export JSON
+          <button type="button" className="btn" onClick={() => setBattlemapOpen(true)}>
+            Battlemap
+          </button>
+          <button type="button" className="btn" onClick={() => setSettingsOpen(true)}>
+            Theme / Print
           </button>
         </div>
       </header>
@@ -271,7 +278,15 @@ export function App() {
 
         <SummonCombatDrawer
           encounter={store.encounter}
+          encounterList={store.encounterList}
+          partyLevels={store.characterList.map((c) => c.classes.reduce((s, x) => s + x.level, 0))}
           pendingConcDc={store.pendingConcDc}
+          onSwitchEncounter={store.switchEncounter}
+          onCreateEncounter={store.createEncounter}
+          onDuplicateEncounter={store.duplicateEncounter}
+          onDeleteEncounter={store.deleteEncounter}
+          onAddPartyToEncounter={store.addPartyToEncounter}
+          onOpenBattlemap={() => setBattlemapOpen(true)}
           onNextTurn={store.stepCombatTurn}
           onResetEncounter={store.resetEncounter}
           onAdjustCombatantHp={store.adjustCombatantHp}
@@ -327,11 +342,35 @@ export function App() {
         isOpen={gearOpen}
         items={store.rawChar.items}
         attunementCount={store.resolvedSheet.attunementCount}
+        strScore={store.resolvedSheet.abilities.str.score.final}
+        currency={store.rawChar.currency}
+        notes={store.rawChar.notes}
         onClose={() => setGearOpen(false)}
         onToggleEquipped={store.toggleItemEquipped}
         onTogglePrepared={store.toggleItemPrepared}
         onToggleAttuned={store.toggleItemAttuned}
+        onUpdateQuantity={store.updateItemQuantity}
         onRemoveItem={store.removeSheetItem}
+        onUpdateCurrency={store.updateCurrency}
+        onUpdateNotes={store.updateCharacterNotes}
+        onCreateHomebrew={store.createHomebrewEntity}
+      />
+
+      <BattlemapModal
+        isOpen={battlemapOpen}
+        encounter={store.encounter}
+        onClose={() => setBattlemapOpen(false)}
+        onMoveToken={store.moveCombatantToken}
+        onSetMapImage={store.setEncounterMapImage}
+        onAddTemplate={store.addMapTemplate}
+        onClearTemplates={store.clearMapTemplates}
+        onNextTurn={store.stepCombatTurn}
+      />
+
+      <SettingsModal
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onExportBackup={handleExport}
       />
     </div>
   );

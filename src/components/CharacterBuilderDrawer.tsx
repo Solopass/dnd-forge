@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CLASS_DEFINITIONS, computeFixedMaxHp } from '../engine/classes';
+import { CLASS_DEFINITIONS, computeFixedMaxHp, getSubclassPresets } from '../engine/classes';
 import { SKILL_ABILITY_MAP } from '../engine/rules-math';
 import { ClassLevel, RawCharacterState } from '../types/character';
 import { AbilityKey, Ruleset, SkillKey } from '../types/core';
@@ -187,33 +187,68 @@ export function CharacterBuilderDrawer({
 
         <div className="card">
           <div className="forge-section-label">CLASSES &amp; MULTICLASS PROGRESSION</div>
-          {character.classes.map((cls) => (
-            <div key={cls.className} className="forge-list-row">
-              <div className="forge-row" style={{ flexWrap: 'wrap' }}>
-                <strong>{cls.className}</strong>
-                <input
-                  aria-label={`${cls.className} subclass`}
-                  type="text"
-                  className="forge-input"
-                  value={cls.subclassName ?? ''}
-                  onChange={(e) => updateSubclass(cls.className, e.target.value)}
-                  placeholder="Subclass (optional)"
-                  style={{ width: 150, padding: '3px 6px' }}
-                />
-                <span className="forge-muted">
-                  Lvl <span className="tabular">{cls.level}</span> (d{cls.hitDie})
-                </span>
+          {character.classes.map((cls) => {
+            const subclasses = getSubclassPresets(cls.className);
+            const activeSub = subclasses.find(
+              (s) => s.name.toLowerCase() === (cls.subclassName ?? '').toLowerCase()
+            );
+            const listId = `subclass-list-${cls.className.toLowerCase().replace(/\s+/g, '-')}`;
+            return (
+              <div key={cls.className} className="forge-list-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                <div className="forge-row-between">
+                  <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+                    <strong>{cls.className}</strong>
+                    <input
+                      aria-label={`${cls.className} subclass`}
+                      list={listId}
+                      type="text"
+                      className="forge-input"
+                      value={cls.subclassName ?? ''}
+                      onChange={(e) => updateSubclass(cls.className, e.target.value)}
+                      placeholder="Subclass (optional)"
+                      style={{ width: 170, padding: '3px 6px' }}
+                    />
+                    <datalist id={listId}>
+                      {subclasses.map((sc) => (
+                        <option key={sc.name} value={sc.name} />
+                      ))}
+                    </datalist>
+                    <span className="forge-muted">
+                      Lvl <span className="tabular">{cls.level}</span> (d{cls.hitDie})
+                    </span>
+                  </div>
+                  <div className="forge-row">
+                    <button type="button" className="btn" onClick={() => adjustClassLevel(cls.className, -1)}>
+                      -1
+                    </button>
+                    <button type="button" className="btn btn-primary" onClick={() => adjustClassLevel(cls.className, 1)}>
+                      +1 Level
+                    </button>
+                  </div>
+                </div>
+                {subclasses.length > 0 && (
+                  <div className="pill-row" style={{ marginTop: 4 }}>
+                    {subclasses.map((sc) => (
+                      <button
+                        key={sc.name}
+                        type="button"
+                        className={`pill ${cls.subclassName === sc.name ? 'active' : ''}`}
+                        onClick={() => updateSubclass(cls.className, sc.name)}
+                        title={sc.summary}
+                      >
+                        {sc.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {activeSub && (
+                  <div className="forge-muted" style={{ fontSize: 11, marginTop: 2 }}>
+                    {activeSub.summary}
+                  </div>
+                )}
               </div>
-              <div className="forge-row">
-                <button type="button" className="btn" onClick={() => adjustClassLevel(cls.className, -1)}>
-                  -1
-                </button>
-                <button type="button" className="btn btn-primary" onClick={() => adjustClassLevel(cls.className, 1)}>
-                  +1 Level
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
 
           <div className="forge-row" style={{ marginTop: 8 }}>
             <select

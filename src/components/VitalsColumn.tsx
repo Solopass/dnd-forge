@@ -5,6 +5,7 @@ import { SKILL_ABILITY_MAP } from '../engine/rules-math';
 import { CONDITION_RULES, resolveConditionRollMode } from '../engine/conditions';
 import { WILD_SHAPE_BEAST_FORMS } from '../engine/srd-packs';
 import { UiMode } from '../engine/ui-mode';
+import { SkillWheel } from './SkillWheel';
 
 interface VitalsColumnProps {
   sheet: ResolvedCharacterSheet;
@@ -86,6 +87,7 @@ export function VitalsColumn({
   const [showHpExtras, setShowHpExtras] = useState(false);
   const [showAddPool, setShowAddPool] = useState(false);
   const [proficientOnly, setProficientOnly] = useState(false);
+  const [skillView, setSkillView] = useState<'wheel' | 'list'>('wheel');
 
   const isUnified = layoutVariant === 'unified';
   const initSign = sheet.initiative.final >= 0 ? '+' : '';
@@ -843,15 +845,42 @@ export function VitalsColumn({
       </div>
 
       <div className="card">
-        <div className="forge-row-between" style={{ marginBottom: 6 }}>
+        <div className="forge-row-between" style={{ marginBottom: 6, flexWrap: 'wrap', gap: 4 }}>
           <span className="forge-label tabular">
             PASSIVE: PERC {sheet.passivePerception} • INV {sheet.passiveInvestigation} • INS {sheet.passiveInsight}
           </span>
-          <button type="button" className="btn" onClick={() => setSkillsExpanded((v) => !v)}>
-            {skillsExpanded ? 'Hide' : 'Show'}
-          </button>
+          <div className="forge-row" style={{ gap: 4 }}>
+            {isUnified && (
+              <div className="pill-row" role="group" aria-label="Skills display mode">
+                <button
+                  type="button"
+                  className={`pill ${skillView === 'wheel' ? 'active' : ''}`}
+                  onClick={() => setSkillView('wheel')}
+                >
+                  Wheel
+                </button>
+                <button
+                  type="button"
+                  className={`pill ${skillView === 'list' ? 'active' : ''}`}
+                  onClick={() => setSkillView('list')}
+                >
+                  List
+                </button>
+              </div>
+            )}
+            <button type="button" className="btn" onClick={() => setSkillsExpanded((v) => !v)}>
+              {skillsExpanded ? 'Hide' : 'Show'}
+            </button>
+          </div>
         </div>
-        {skillsExpanded && (
+        {skillsExpanded && isUnified && skillView === 'wheel' && (
+          <SkillWheel
+            sheet={sheet}
+            exhaustionCheckPenalty={exhaustionCheckPenalty}
+            onRollCheck={onRollCheck}
+          />
+        )}
+        {skillsExpanded && (!isUnified || skillView === 'list') && (
           <>
             <div className="forge-row" style={{ marginBottom: 6, gap: 6 }}>
               <input

@@ -1814,3 +1814,46 @@ button.stat-tile:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+
+/* Radial Ability-to-Skill Wheel */
+.skill-wheel-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.skill-wheel-svg {
+  width: 100%;
+  max-width: 308px;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  display: block;
+}
+
+.wheel-slice {
+  cursor: pointer;
+}
+
+.wheel-slice path {
+  transition: filter 120ms ease, stroke-width 120ms ease;
+}
+
+.wheel-slice:hover path,
+.wheel-slice:focus-visible path {
+  filter: brightness(1.18);
+  stroke: var(--accent-brand);
+  stroke-width: 1.8;
+}
+
+.wheel-slice:focus-visible {
+  outline: none;
+}
+
+.skill-wheel-caption {
+  font-size: 11px;
+  text-align: center;
+  min-height: 18px;
+  color: var(--text-primary);
+}

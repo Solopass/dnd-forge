@@ -276,6 +276,14 @@ export function App() {
   const [dmHubOpen, setDmHubOpen] = useState(false);
   const [encounterBuilderOpen, setEncounterBuilderOpen] = useState(false);
   const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
+  const [tableRole, setTableRole] = useState<'dm' | 'player'>(() => {
+    try {
+      return localStorage.getItem('dnd-forge-table-role') === 'player' ? 'player' : 'dm';
+    } catch {
+      return 'dm';
+    }
+  });
+  const [centerStage, setCenterStage] = useState<'auto' | 'sheet' | 'battlemap'>('auto');
   const [playerView, setPlayerView] = useState(false);
   const [inspectedCombatantId, setInspectedCombatantId] = useState<string | null>(null);
   const [uiMode, setUiMode] = useState<UiMode>(readStoredUiMode);
@@ -287,6 +295,21 @@ export function App() {
     inspectedCombatantId ? (store.encounter.combatants.find((c) => c.id === inspectedCombatantId) ?? null) : null;
   const [consoleSize, setConsoleSize] = useState<'normal' | 'expanded' | 'collapsed'>('normal');
   const mobileTablistRef = useRef<HTMLDivElement | null>(null);
+
+  const isPlayerRole = tableRole === 'player' || store.liveStatus.role === 'player';
+  const effectivePlayerView = isPlayerRole ? true : playerView;
+  const isCombatActive = store.encounter.combatants.length > 1 || store.encounter.round > 1;
+  const showCenterBattlemap =
+    centerStage === 'battlemap' || (centerStage === 'auto' && isCombatActive);
+
+  const setTableRolePersisted = (next: 'dm' | 'player') => {
+    setTableRole(next);
+    try {
+      localStorage.setItem('dnd-forge-table-role', next);
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     applyUiMode(uiMode);
@@ -477,7 +500,8 @@ export function App() {
       onToggleCombatantCondition={store.toggleCombatantCondition}
       onToggleCombatantEconomy={store.toggleCombatantEconomy}
       onRemoveCombatant={store.removeCombatant}
-      playerView={playerView}
+      playerView={effectivePlayerView}
+      isPlayerRole={isPlayerRole}
       onTogglePlayerView={() => setPlayerView((v) => !v)}
       onRollAllInitiative={store.rollAllInitiative}
       onInspectCombatant={setInspectedCombatantId}
@@ -671,6 +695,27 @@ export function App() {
         </div>
 
         <div className="topbar-actions">
+          <div className="mode-switcher" role="group" aria-label="Table role">
+            <button
+              type="button"
+              className={`mode-switcher-btn ${!isPlayerRole ? 'active' : ''}`}
+              aria-pressed={!isPlayerRole}
+              disabled={store.liveStatus.role === 'player'}
+              onClick={() => setTableRolePersisted('dm')}
+              title="DM View: full encounter, monster, and campaign controls"
+            >
+              DM
+            </button>
+            <button
+              type="button"
+              className={`mode-switcher-btn ${isPlayerRole ? 'active' : ''}`}
+              aria-pressed={isPlayerRole}
+              onClick={() => setTableRolePersisted('player')}
+              title="Player View: sheet, dice, and your own token only (hides monster tools)"
+            >
+              Player
+            </button>
+          </div>
           {modularMode && (
             <button
               type="button"
@@ -704,7 +749,7 @@ export function App() {
           <button type="button" className="btn" onClick={() => setPaletteOpen(true)} title="Compendium, Packs & PDF Import (Ctrl+K)">
             Packs (Ctrl+K)
           </button>
-          {(modularMode || uiMode === 'classic') && (
+          {!isPlayerRole && (modularMode || uiMode === 'classic') && (
             <>
               <button type="button" className="btn" onClick={() => setDmHubOpen(true)}>
                 DM Hub
@@ -1042,7 +1087,49 @@ export function App() {
             data-active-tab={mobileTab}
           >
             {vitalsNode}
-            {actionBoardNode}
+            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, gap: 8 }}>
+              <div className="subpanel forge-row-between" style={{ padding: '5px 10px', flexWrap: 'wrap', gap: 6 }}>
+                <div className="pill-row">
+                  <button
+                    type="button"
+                    className={`pill ${!showCenterBattlemap ? 'active' : ''}`}
+                    onClick={() => setCenterStage('sheet')}
+                  >
+                    Actions &amp; Sheet
+                  </button>
+                  <button
+                    type="button"
+                    className={`pill ${showCenterBattlemap ? 'active' : ''}`}
+                    onClick={() => setCenterStage('battlemap')}
+                  >
+                    Active Battlemap {isCombatActive ? '• Combat Live' : ''}
+                  </button>
+                  <button
+                    type="button"
+                    className={`pill ${centerStage === 'auto' ? 'active' : ''}`}
+                    onClick={() => setCenterStage('auto')}
+                    title="Automatically show Battlemap in the center when combat is active"
+                  >
+                    Auto
+                  </button>
+                </div>
+              </div>
+              {showCenterBattlemap ? (
+                <div className="pane" style={{ padding: 10 }}>
+                  <Suspense fallback={null}>
+                    <BattlemapModal
+                      isOpen
+                      embeddedFull
+                      onClose={() => setCenterStage('sheet')}
+                      {...sharedBattlemapProps}
+                      playerView={effectivePlayerView}
+                    />
+                  </Suspense>
+                </div>
+              ) : (
+                actionBoardNode
+              )}
+            </div>
             {showClassicCombat && combatDrawerNode}
           </div>
         </>
@@ -1057,14 +1144,16 @@ export function App() {
               <span className="forge-row" style={{ gap: 6 }}><SwordsIcon size={14} /> Play Sheet</span>
               <span className="badge">Lvl {charLevel}</span>
             </button>
-            <button
-              type="button"
-              className={`unified-rail-btn ${unifiedView === 'dm' ? 'active' : ''}`}
-              onClick={() => setUnifiedView('dm')}
-            >
-              <span className="forge-row" style={{ gap: 6 }}><BookIcon size={14} /> DM Studio</span>
-              <span className="badge">{store.campaign.entries.length}</span>
-            </button>
+            {!isPlayerRole && (
+              <button
+                type="button"
+                className={`unified-rail-btn ${unifiedView === 'dm' ? 'active' : ''}`}
+                onClick={() => setUnifiedView('dm')}
+              >
+                <span className="forge-row" style={{ gap: 6 }}><BookIcon size={14} /> DM Studio</span>
+                <span className="badge">{store.campaign.entries.length}</span>
+              </button>
+            )}
             <button
               type="button"
               className={`unified-rail-btn ${unifiedView === 'vtt' ? 'active' : ''}`}
@@ -1081,9 +1170,11 @@ export function App() {
               <span className="forge-row" style={{ gap: 6 }}><BackpackIcon size={14} /> Gear &amp; Spells</span>
               <span className="badge">{store.resolvedSheet.attunementCount}/3</span>
             </button>
-            <button type="button" className="unified-rail-btn" onClick={() => setEncounterBuilderOpen(true)}>
-              <span>Encounter Forge</span>
-            </button>
+            {!isPlayerRole && (
+              <button type="button" className="unified-rail-btn" onClick={() => setEncounterBuilderOpen(true)}>
+                <span>Encounter Forge</span>
+              </button>
+            )}
             <button type="button" className="unified-rail-btn" onClick={() => setPaletteOpen(true)}>
               <span>Compendium / PDF</span>
             </button>
@@ -1156,6 +1247,7 @@ export function App() {
       <CommandPalette
         isOpen={paletteOpen}
         onClose={() => setPaletteOpen(false)}
+        isPlayerRole={isPlayerRole}
         searchCompendium={store.searchCompendium}
         onAddCompendiumItem={store.addCompendiumItemToSheet}
         onInstallContentPack={store.installContentPack}

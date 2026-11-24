@@ -10,6 +10,7 @@ import {
   normalizeLayoutConfig,
   reorderWidget,
   resizeWidget,
+  setWidgetAccent,
   toggleWidgetVisibility,
 } from '../layout-engine';
 import {
@@ -48,9 +49,13 @@ describe('Modular Layout Engine', () => {
     const movedBack = moveWidgetById(reordered, firstId, -1);
     expect(movedBack.widgets[0]?.id).toBe(firstId);
 
-    const resized = resizeWidget(base, firstId, 8, 'tall');
-    expect(resized.widgets[0]?.colSpan).toBe(8);
+    const resized = resizeWidget(base, firstId, 7, 'tall', 420);
+    expect(resized.widgets[0]?.colSpan).toBe(7);
     expect(resized.widgets[0]?.heightPreset).toBe('tall');
+    expect(resized.widgets[0]?.heightPx).toBe(420);
+
+    const accented = setWidgetAccent(resized, firstId, 'gold');
+    expect(accented.widgets[0]?.accent).toBe('gold');
 
     const toggled = toggleWidgetVisibility(base, firstId);
     expect(toggled.widgets[0]?.visible).toBe(false);

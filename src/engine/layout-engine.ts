@@ -1,4 +1,11 @@
-import { WidgetColSpan, WidgetHeightPreset, WidgetId, WidgetLayoutItem, WorkspaceLayoutConfig } from '../types/layout';
+import {
+  WidgetAccent,
+  WidgetColSpan,
+  WidgetHeightPreset,
+  WidgetId,
+  WidgetLayoutItem,
+  WorkspaceLayoutConfig,
+} from '../types/layout';
 
 export const ACTIVE_LAYOUT_STORAGE_KEY = 'dnd-forge-active-layout';
 
@@ -151,7 +158,8 @@ export function resizeWidget(
   layout: WorkspaceLayoutConfig,
   widgetId: WidgetId,
   colSpan: WidgetColSpan,
-  heightPreset?: WidgetHeightPreset
+  heightPreset?: WidgetHeightPreset,
+  heightPx?: number | null
 ): WorkspaceLayoutConfig {
   return {
     ...layout,
@@ -161,9 +169,26 @@ export function resizeWidget(
             ...w,
             colSpan,
             heightPreset: heightPreset ?? w.heightPreset,
+            heightPx:
+              heightPx === null
+                ? undefined
+                : typeof heightPx === 'number'
+                  ? Math.max(180, Math.min(820, Math.round(heightPx)))
+                  : w.heightPx,
           }
         : w
     ),
+  };
+}
+
+export function setWidgetAccent(
+  layout: WorkspaceLayoutConfig,
+  widgetId: WidgetId,
+  accent: WidgetAccent
+): WorkspaceLayoutConfig {
+  return {
+    ...layout,
+    widgets: layout.widgets.map((w) => (w.id === widgetId ? { ...w, accent } : w)),
   };
 }
 
@@ -183,7 +208,7 @@ export function normalizeLayoutConfig(raw: Partial<WorkspaceLayoutConfig>): Work
   const fallback = BUILTIN_LAYOUT_PRESETS[0]!;
   const incomingWidgets = Array.isArray(raw.widgets) ? raw.widgets : [];
   const seen = new Set<WidgetId>();
-  const validSpans = new Set<WidgetColSpan>([3, 4, 6, 8, 12]);
+  const validSpans = new Set<WidgetColSpan>([3, 4, 5, 6, 7, 8, 9, 10, 12]);
   const normalized: WidgetLayoutItem[] = [];
 
   for (const w of incomingWidgets) {
@@ -197,11 +222,19 @@ export function normalizeLayoutConfig(raw: Partial<WorkspaceLayoutConfig>): Work
       : 4;
     const heightPreset: WidgetHeightPreset =
       w.heightPreset === 'compact' || w.heightPreset === 'tall' ? w.heightPreset : 'auto';
+    const heightPx =
+      typeof w.heightPx === 'number' && Number.isFinite(w.heightPx)
+        ? Math.max(180, Math.min(820, Math.round(w.heightPx)))
+        : undefined;
+    const accent: WidgetAccent =
+      w.accent === 'brand' || w.accent === 'gold' ? w.accent : 'default';
     normalized.push({
       id,
       label: WIDGET_LABELS[id],
       colSpan: span,
       heightPreset,
+      heightPx,
+      accent,
       visible: typeof w.visible === 'boolean' ? w.visible : true,
     });
   }

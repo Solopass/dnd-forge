@@ -4,9 +4,11 @@ import {
   moveWidgetById,
   reorderWidget,
   resizeWidget,
+  setWidgetAccent,
   toggleWidgetVisibility,
 } from '../engine/layout-engine';
 import {
+  WidgetAccent,
   WidgetColSpan,
   WidgetHeightPreset,
   WidgetId,
@@ -56,7 +58,8 @@ interface ModularCanvasProps {
   consoleLines: Array<{ id: string; text: string; tone: string }>;
 }
 
-const VALID_SPANS: WidgetColSpan[] = [3, 4, 6, 8, 12];
+const ALL_COL_SPANS: WidgetColSpan[] = [3, 4, 5, 6, 7, 8, 9, 10, 12];
+const QUICK_SPANS: WidgetColSpan[] = [3, 4, 6, 8, 12];
 
 export function ModularCanvas({
   layout,
@@ -92,6 +95,7 @@ export function ModularCanvas({
 }: ModularCanvasProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [resizingInfo, setResizingInfo] = useState<{ id: WidgetId; text: string } | null>(null);
   const [hpInput, setHpInput] = useState('5');
   const [condSelect, setCondSelect] = useState('Poisoned');
   const [pinnedIds, setPinnedIds] = useState<string[]>(() => {
@@ -127,20 +131,39 @@ export function ModularCanvas({
   const isSpell = (a: ResolvedActivity) =>
     Boolean(a.spellMeta || a.resourceCost?.poolId.startsWith('spell_slot_'));
 
-  const startResizePointer = (widgetId: WidgetId, startSpan: WidgetColSpan, startX: number) => {
+  const startResizePointer = (
+    widgetId: WidgetId,
+    startSpan: WidgetColSpan,
+    startHeightPx: number,
+    startX: number,
+    startY: number,
+    axis: 'x' | 'y' | 'both'
+  ) => {
     const canvasWidth = canvasRef.current?.getBoundingClientRect().width || 1100;
     const colWidth = canvasWidth / 12;
 
     const onMove = (ev: PointerEvent) => {
-      const deltaCols = Math.round((ev.clientX - startX) / Math.max(40, colWidth));
-      const targetRaw = Math.max(3, Math.min(12, startSpan + deltaCols));
-      const snapped = VALID_SPANS.reduce((best, cand) =>
-        Math.abs(cand - targetRaw) < Math.abs(best - targetRaw) ? cand : best
-      );
-      onChangeLayout(resizeWidget(layout, widgetId, snapped));
+      let nextSpan = startSpan;
+      let nextHeight: number | undefined = undefined;
+      if (axis === 'x' || axis === 'both') {
+        const deltaCols = Math.round((ev.clientX - startX) / Math.max(40, colWidth));
+        const targetRaw = Math.max(3, Math.min(12, startSpan + deltaCols));
+        nextSpan = ALL_COL_SPANS.reduce((best, cand) =>
+          Math.abs(cand - targetRaw) < Math.abs(best - targetRaw) ? cand : best
+        );
+      }
+      if (axis === 'y' || axis === 'both') {
+        nextHeight = Math.max(180, Math.min(820, Math.round(startHeightPx + (ev.clientY - startY))));
+      }
+      setResizingInfo({
+        id: widgetId,
+        text: nextHeight ? `${nextSpan}/12 cols • ${nextHeight}px` : `${nextSpan}/12 cols`,
+      });
+      onChangeLayout(resizeWidget(layout, widgetId, nextSpan, undefined, nextHeight));
     };
 
     const onUp = () => {
+      setResizingInfo(null);
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
     };
@@ -666,10 +689,14 @@ export function ModularCanvas({
           return (
             <section
               key={w.id}
+              data-accent={w.accent ?? 'default'}
               className={`widget-frame height-${w.heightPreset} ${isEditing ? 'editing' : ''} ${
                 dragOverIndex === idx ? 'drag-over' : ''
               }`}
-              style={{ gridColumn: `span ${w.colSpan}` }}
+              style={{
+                gridColumn: `span ${w.colSpan}`,
+                ...(w.heightPx ? { height: w.heightPx } : {}),
+              }}
               draggable={isEditing}
               onDragStart={() => setDragIndex(idx)}
               onDragOver={(e) => {
@@ -710,7 +737,7 @@ export function ModularCanvas({
                     >
                       →
                     </button>
-                    {VALID_SPANS.map((sp) => (
+                    {QUICK_SPANS.map((sp) => (
                       <button
                         key={sp}
                         type="button"
@@ -728,13 +755,26 @@ export function ModularCanvas({
                       value={w.heightPreset}
                       onChange={(e) =>
                         onChangeLayout(
-                          resizeWidget(layout, w.id, w.colSpan, e.target.value as WidgetHeightPreset)
+                          resizeWidget(layout, w.id, w.colSpan, e.target.value as WidgetHeightPreset, null)
                         )
                       }
                     >
                       <option value="auto">Auto H</option>
                       <option value="compact">Compact H</option>
                       <option value="tall">Tall H</option>
+                    </select>
+                    <select
+                      aria-label={`${w.label} accent`}
+                      className="forge-input"
+                      style={{ padding: '1px 4px', fontSize: 10 }}
+                      value={w.accent ?? 'default'}
+                      onChange={(e) =>
+                        onChangeLayout(setWidgetAccent(layout, w.id, e.target.value as WidgetAccent))
+                      }
+                    >
+                      <option value="default">Standard</option>
+                      <option value="brand">Brand Tint</option>
+                      <option value="gold">Gold Tint</option>
                     </select>
                     <button
                       type="button"
@@ -747,21 +787,54 @@ export function ModularCanvas({
                 )}
               </div>
 
+              {resizingInfo?.id === w.id && (
+                <div className="widget-resize-hud tabular">{resizingInfo.text}</div>
+              )}
+
               <div className="widget-body">{renderWidgetBody(w.id)}</div>
 
               {isEditing && (
-                <div
-                  role="separator"
-                  aria-orientation="vertical"
-                  aria-label={`Resize ${w.label} width`}
-                  tabIndex={0}
-                  className="widget-resize-handle"
-                  title="Drag horizontally to resize width"
-                  onPointerDown={(e) => {
-                    e.stopPropagation();
-                    startResizePointer(w.id, w.colSpan, e.clientX);
-                  }}
-                />
+                <>
+                  <div
+                    role="separator"
+                    aria-orientation="vertical"
+                    aria-label={`Resize ${w.label} width`}
+                    tabIndex={0}
+                    className="widget-resize-handle"
+                    title="Drag horizontally to resize width"
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                      const cardEl = e.currentTarget.parentElement;
+                      const h = cardEl ? cardEl.getBoundingClientRect().height : 320;
+                      startResizePointer(w.id, w.colSpan, h, e.clientX, e.clientY, 'x');
+                    }}
+                  />
+                  <div
+                    role="separator"
+                    aria-orientation="horizontal"
+                    aria-label={`Resize ${w.label} height`}
+                    tabIndex={0}
+                    className="widget-resize-handle-y"
+                    title="Drag vertically to resize height"
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                      const cardEl = e.currentTarget.parentElement;
+                      const h = cardEl ? cardEl.getBoundingClientRect().height : 320;
+                      startResizePointer(w.id, w.colSpan, h, e.clientX, e.clientY, 'y');
+                    }}
+                  />
+                  <div
+                    aria-label={`Resize ${w.label} width and height`}
+                    className="widget-resize-handle-corner"
+                    title="Drag corner to resize width & height"
+                    onPointerDown={(e) => {
+                      e.stopPropagation();
+                      const cardEl = e.currentTarget.parentElement;
+                      const h = cardEl ? cardEl.getBoundingClientRect().height : 320;
+                      startResizePointer(w.id, w.colSpan, h, e.clientX, e.clientY, 'both');
+                    }}
+                  />
+                </>
               )}
             </section>
           );

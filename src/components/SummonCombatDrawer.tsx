@@ -47,6 +47,7 @@ interface SummonDrawerProps {
   onTargetSave: (attackerName: string, targetIds: string[], act: Activity) => void;
   onOpenEncounterBuilder: () => void;
   hideBattlemapButton?: boolean;
+  isPlayerRole?: boolean;
   onAddMonster: (
     name: string,
     ac: number,
@@ -104,6 +105,7 @@ export function SummonCombatDrawer({
   onTargetSave,
   onOpenEncounterBuilder,
   hideBattlemapButton = false,
+  isPlayerRole = false,
   onAddMonster,
 }: SummonDrawerProps) {
   const [showAddCreature, setShowAddCreature] = useState(false);
@@ -208,32 +210,40 @@ export function SummonCombatDrawer({
             )}
           </div>
           <div className="forge-row" style={{ flexWrap: 'wrap' }}>
-            <button type="button" className="btn" onClick={onAddPartyToEncounter} title="Drop all saved PCs into encounter">
-              + Party
-            </button>
-            <button type="button" className="btn" onClick={onRollAllInitiative} title="Roll 1d20 + DEX for all combatants">
-              Roll All Init
-            </button>
-            <button
-              type="button"
-              className={`pill ${playerView ? 'active' : ''}`}
-              aria-pressed={playerView}
-              onClick={onTogglePlayerView}
-              title="Toggle Player View (hides monster HP and ambushers)"
-            >
-              {playerView ? 'Player View' : 'DM View'}
-            </button>
+            {!isPlayerRole && (
+              <>
+                <button type="button" className="btn" onClick={onAddPartyToEncounter} title="Drop all saved PCs into encounter">
+                  + Party
+                </button>
+                <button type="button" className="btn" onClick={onRollAllInitiative} title="Roll 1d20 + DEX for all combatants">
+                  Roll All Init
+                </button>
+                <button
+                  type="button"
+                  className={`pill ${playerView ? 'active' : ''}`}
+                  aria-pressed={playerView}
+                  onClick={onTogglePlayerView}
+                  title="Toggle Player View (hides monster HP and ambushers)"
+                >
+                  {playerView ? 'Player View' : 'DM View'}
+                </button>
+              </>
+            )}
             {!hideBattlemapButton && (
               <button type="button" className="btn" onClick={onOpenBattlemap}>
                 Battlemap
               </button>
             )}
-            <button type="button" className="btn" onClick={onResetEncounter} title="Clear monsters/summons and reset to Round 1">
-              Reset
-            </button>
-            <button type="button" className="btn btn-primary" onClick={onNextTurn}>
-              Next Turn
-            </button>
+            {!isPlayerRole && (
+              <>
+                <button type="button" className="btn" onClick={onResetEncounter} title="Clear monsters/summons and reset to Round 1">
+                  Reset
+                </button>
+                <button type="button" className="btn btn-primary" onClick={onNextTurn}>
+                  Next Turn
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -505,7 +515,7 @@ export function SummonCombatDrawer({
                 {node.hidden && <span className="conc-badge">HIDDEN</span>}
               </span>
               <div className="forge-row" style={{ flexWrap: 'wrap' }}>
-                {node.kind !== 'pc' && (
+                {node.kind !== 'pc' && !isPlayerRole && (
                   <button
                     type="button"
                     className="btn"
@@ -770,6 +780,7 @@ export function SummonCombatDrawer({
 interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
+  isPlayerRole?: boolean;
   searchCompendium: (query: string) => CompendiumEntity[];
   onAddCompendiumItem: (item: CompendiumEntity) => void;
   onInstallContentPack: (packId: string) => Promise<void>;
@@ -781,6 +792,7 @@ interface CommandPaletteProps {
 export function CommandPalette({
   isOpen,
   onClose,
+  isPlayerRole = false,
   searchCompendium,
   onAddCompendiumItem,
   onInstallContentPack,
@@ -901,16 +913,20 @@ export function CommandPalette({
                       [{item.category.toUpperCase()} • {item.source} • {item.ruleset}]
                     </span>
                   </div>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={() => {
-                      onAddCompendiumItem(item);
-                      onClose();
-                    }}
-                  >
-                    {item.category === 'monster' ? '+ Encounter' : '+ Sheet'}
-                  </button>
+                  {item.category === 'monster' && isPlayerRole ? (
+                    <span className="badge" title="Switch to DM role to spawn monsters">DM Only</span>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => {
+                        onAddCompendiumItem(item);
+                        onClose();
+                      }}
+                    >
+                      {item.category === 'monster' ? '+ Encounter' : '+ Sheet'}
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

@@ -12,14 +12,17 @@ export type WidgetId =
   | 'mini_vtt'
   | 'dice_console';
 
-export type WidgetColSpan = 3 | 4 | 6 | 8 | 12;
+export type WidgetColSpan = 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 12;
 export type WidgetHeightPreset = 'auto' | 'compact' | 'tall';
+export type WidgetAccent = 'default' | 'brand' | 'gold';
 
 export interface WidgetLayoutItem {
   id: WidgetId;
   label: string;
   colSpan: WidgetColSpan;
   heightPreset: WidgetHeightPreset;
+  heightPx?: number;
+  accent?: WidgetAccent;
   visible: boolean;
 }
 

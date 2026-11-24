@@ -1,4 +1,4 @@
-import { AbilityKey, ActionEconomy, Ruleset } from './core';
+import { AbilityKey, ActionEconomy, Ruleset, WeaponMastery } from './core';
 
 export type ActivityType = 'attack' | 'save' | 'heal' | 'summon' | 'utility';
 
@@ -90,6 +90,7 @@ export interface CompendiumEntity {
   acFlatBonus?: number;
   quantity?: number;
   weight?: number;
+  weaponMastery?: WeaponMastery;
   monsterMeta?: MonsterStatMeta;
   modifiers?: PassiveModifierRule[];
   activities: Activity[];

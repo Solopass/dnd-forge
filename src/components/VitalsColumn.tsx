@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ResolvedCharacterSheet, WildShapeForm } from '../types/character';
 import { AbilityKey, RecoveryTrigger, SkillKey, STANDARD_CONDITIONS } from '../types/core';
 import { SKILL_ABILITY_MAP } from '../engine/rules-math';
-import { CONDITION_RULES } from '../engine/conditions';
+import { CONDITION_RULES, resolveConditionRollMode } from '../engine/conditions';
 import { WILD_SHAPE_BEAST_FORMS } from '../engine/srd-packs';
 import { UiMode } from '../engine/ui-mode';
 
@@ -546,6 +546,21 @@ export function VitalsColumn({
             ))}
           </div>
         )}
+
+        {(() => {
+          const checkMode = resolveConditionRollMode(sheet.conditions, 'check');
+          const atkMode = resolveConditionRollMode(sheet.conditions, 'attack');
+          const reasons = Array.from(new Set([...atkMode.reasons, ...checkMode.reasons]));
+          if (reasons.length === 0) return null;
+          return (
+            <div className="forge-row-between" style={{ marginTop: 6 }}>
+              <span className="forge-muted" style={{ fontSize: 10 }}>Auto Roll Effect</span>
+              <span className="badge" style={{ color: 'var(--accent-amber)' }}>
+                {reasons[0]}
+              </span>
+            </div>
+          );
+        })()}
       </div>
 
       {layoutVariant !== 'classic' && (

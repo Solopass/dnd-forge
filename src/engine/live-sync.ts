@@ -68,6 +68,24 @@ export type LiveTableMessage =
   | {
       type: 'handout_hide';
       senderId: string;
+    }
+  | {
+      type: 'roll_request';
+      senderId: string;
+      senderName: string;
+      id: string;
+      label: string;
+      kind: 'check' | 'save';
+      abilityOrSkill: string;
+      dc?: number;
+    }
+  | {
+      type: 'token_move';
+      senderId: string;
+      senderName: string;
+      combatantId: string;
+      x: number;
+      y: number;
     };
 
 const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

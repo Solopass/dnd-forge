@@ -650,6 +650,7 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
         ...act,
         parentItemId: item.id,
         parentItemName: item.name,
+        weaponMastery: item.weaponMastery,
         concentration: Boolean(item.concentration),
         ritual: Boolean(item.ritual),
         spellMeta,

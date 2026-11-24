@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { RawCharacterState, ResolvedActivity, ResolvedCharacterSheet } from '../types/character';
-import { ActionEconomy, RollMode } from '../types/core';
+import { ActionEconomy, ActiveBuffState, RollMode } from '../types/core';
 import { UiMode } from '../engine/ui-mode';
+import { resolveConditionRollMode } from '../engine/conditions';
 import { parse5eToolsEntries } from '../engine/tags';
 import { scaleDiceForUpcast } from '../engine/dice';
 import { BackpackIcon, ScrollIcon, SparklesIcon, SwordsIcon } from './Icons';
@@ -19,6 +20,9 @@ interface ActionEconomyBoardProps {
   onAdjustResource?: (poolId: string, delta: number) => void;
   onOpenGearDrawer?: () => void;
   onOpenBuilderDrawer?: () => void;
+  activeBuffs?: ActiveBuffState;
+  onToggleBuff?: (key: keyof ActiveBuffState) => void;
+  onDivineSmite?: (slotLevel: number) => void;
 }
 
 const ECONOMY_SECTIONS: Array<{ key: Exclude<ActionEconomy, 'special'>; label: string }> = [
@@ -76,6 +80,9 @@ export function ActionEconomyBoard({
   onAdjustResource,
   onOpenGearDrawer,
   onOpenBuilderDrawer,
+  activeBuffs,
+  onToggleBuff,
+  onDivineSmite,
 }: ActionEconomyBoardProps) {
   const [beyondTab, setBeyondTab] = useState<'actions' | 'spells' | 'inventory' | 'features'>('actions');
   const [filter, setFilter] = useState<'all' | 'attack' | 'save' | 'heal' | 'summon' | 'concentration'>('all');
@@ -115,6 +122,15 @@ export function ActionEconomyBoard({
           </span>
           {act.concentration && <span className="conc-badge">CONC</span>}
           {act.ritual && <span className="ritual-badge">RITUAL</span>}
+          {act.weaponMastery && (
+            <span
+              className="badge"
+              style={{ marginLeft: 4, borderColor: 'rgba(245, 158, 11, 0.4)', color: 'var(--accent-amber)' }}
+              title={`2024 Weapon Mastery: ${act.weaponMastery}`}
+            >
+              Mastery: {act.weaponMastery}
+            </span>
+          )}
           {act.resourceCost && (
             <span className="cost-badge">
               {formatResourceBadge(act.resourceCost.poolId)}
@@ -290,6 +306,75 @@ export function ActionEconomyBoard({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+
+          <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+            {onToggleBuff && (
+              <div className="pill-row" aria-label="Combat buff toggles">
+                <button
+                  type="button"
+                  className={`pill ${activeBuffs?.bless ? 'active' : ''}`}
+                  title="Add +1d4 to attack rolls"
+                  onClick={() => onToggleBuff('bless')}
+                >
+                  Bless +1d4
+                </button>
+                <button
+                  type="button"
+                  className={`pill ${activeBuffs?.rage ? 'active' : ''}`}
+                  title="Add +2 damage to weapon attacks"
+                  onClick={() => onToggleBuff('rage')}
+                >
+                  Rage +2
+                </button>
+                <button
+                  type="button"
+                  className={`pill ${activeBuffs?.sneakAttack ? 'active' : ''}`}
+                  title="Add Sneak Attack dice (+ceil(Level/2)d6)"
+                  onClick={() => onToggleBuff('sneakAttack')}
+                >
+                  Sneak Atk +{Math.max(1, Math.ceil(sheet.totalLevel / 2))}d6
+                </button>
+                {onDivineSmite && (sheet.resources.find((r) => r.id === 'spell_slot_1')?.current ?? 0) > 0 && (
+                  <button
+                    type="button"
+                    className="pill"
+                    style={{ borderColor: 'rgba(245, 158, 11, 0.45)', color: 'var(--accent-amber)' }}
+                    title="Spend a 1st-level slot to roll 2d8 Radiant Divine Smite"
+                    onClick={() => onDivineSmite(1)}
+                  >
+                    Smite L1 (2d8)
+                  </button>
+                )}
+              </div>
+            )}
+
+            {(() => {
+              const autoCond = resolveConditionRollMode(sheet.conditions, 'attack', undefined, rollMode);
+              if (autoCond.reasons.length === 0) return null;
+              return (
+                <span
+                  className="badge"
+                  style={{
+                    borderColor:
+                      autoCond.mode === 'disadvantage'
+                        ? 'rgba(239, 68, 68, 0.5)'
+                        : autoCond.mode === 'advantage'
+                          ? 'rgba(16, 185, 129, 0.5)'
+                          : 'var(--border-subtle)',
+                    color:
+                      autoCond.mode === 'disadvantage'
+                        ? 'var(--accent-red)'
+                        : autoCond.mode === 'advantage'
+                          ? 'var(--accent-green)'
+                          : 'var(--text-secondary)',
+                  }}
+                  title={`Auto condition roll state: ${autoCond.reasons.join(', ')}`}
+                >
+                  {autoCond.reasons[0]}
+                </span>
+              );
+            })()}
+          </div>
         </div>
       )}
 

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CampaignEntry, CampaignRecord, SharedHandoutPayload, WorldMapPin } from '../types/campaign';
+import { CampaignEntry, CampaignRecord, DowntimeProject, SharedHandoutPayload, WorldMapPin } from '../types/campaign';
 import { ClassLevel, RawCharacterState, ResolvedActivity, ResolvedCharacterSheet, WildShapeForm } from '../types/character';
 import { BattlemapScene, CombatEncounterState, MapPingEvent, MapSketchStroke } from '../types/combat';
 import { computeVisibleCells } from '../engine/vtt-vision';
+import { resolveConditionRollMode } from '../engine/conditions';
 import { resolveTargetAttack, resolveTargetSaves } from '../engine/target-combat';
 import { Activity, CompendiumEntity, CreatureSize, MonsterStatMeta } from '../types/compendium';
-import { AbilityKey, ActionEconomy, RecoveryTrigger, RollMode } from '../types/core';
+import { AbilityKey, ActionEconomy, ActiveBuffState, RecoveryTrigger, RollMode } from '../types/core';
 import {
   applyRestRecovery,
   computeCharacterSheet,
@@ -95,6 +96,19 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   const [scenes, setScenes] = useState<BattlemapScene[]>([]);
   const [activePings, setActivePings] = useState<MapPingEvent[]>([]);
   const [activeSharedHandout, setActiveSharedHandout] = useState<SharedHandoutPayload | null>(null);
+  const [activeBuffs, setActiveBuffs] = useState<ActiveBuffState>({
+    bless: false,
+    rage: false,
+    sneakAttack: false,
+  });
+  const [pendingRollRequest, setPendingRollRequest] = useState<{
+    id: string;
+    senderName: string;
+    label: string;
+    kind: 'check' | 'save';
+    abilityOrSkill: string;
+    dc?: number;
+  } | null>(null);
   const [compendium, setCompendium] = useState<CompendiumEntity[]>(initialCharacter.items);
   const [rollMode, setRollMode] = useState<RollMode>('normal');
   const [pendingConcDc, setPendingConcDc] = useState<number | null>(null);
@@ -1186,10 +1200,12 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
 
       let attackIsCrit = false;
       if (activity.computedAttackBonus !== null) {
+        const condRoll = resolveConditionRollMode(rawChar.conditions, 'attack', undefined, rollMode);
         const sign = activity.computedAttackBonus >= 0 ? '+' : '';
+        const blessTerm = activeBuffs.bless ? '+1d4' : '';
         const atk = evaluateDiceExpression(
-          `1d20${sign}${activity.computedAttackBonus}`,
-          rollMode,
+          `1d20${sign}${activity.computedAttackBonus}${blessTerm}`,
+          condRoll.mode,
           resolvedSheet.critThreshold
         );
         attackIsCrit = atk.isCrit;
@@ -1200,26 +1216,40 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
           : atk.isFumble
           ? ' [FUMBLE]'
           : '';
+        const condTag = condRoll.reasons.length > 0 ? ` [${condRoll.reasons.join(', ')}]` : '';
+        const masteryTag = activity.weaponMastery ? ` [Mastery: ${activity.weaponMastery}]` : '';
+        const blessTag = activeBuffs.bless ? ' [+Bless 1d4]' : '';
         appendLog(
-          `${activity.name}${spentNote} Attack (${atk.mode}): ${atk.total}${tag} [${atk.terms.map((t) => t.kept.join(',')).join('+')}]`,
+          `${activity.name}${spentNote} Attack (${atk.mode}): ${atk.total}${tag}${condTag}${blessTag}${masteryTag} [${atk.terms.map((t) => t.kept.join(',')).join('+')}]`,
           atk.isCrit ? 'crit' : 'roll'
         );
       }
 
       if (activity.computedDamage) {
         const extraLevels = baseSpellLevel > 0 ? Math.max(0, effectiveSlotLevel - baseSpellLevel) : 0;
-        const upcastFormula = scaleDiceForUpcast(
+        let upcastFormula = scaleDiceForUpcast(
           activity.computedDamage,
           activity.upcastDicePerLevel,
           extraLevels
         );
+        const buffNotes: string[] = [];
+        if (activity.type === 'attack' && activeBuffs.rage) {
+          upcastFormula = `${upcastFormula} + 2`;
+          buffNotes.push('Rage +2');
+        }
+        if (activity.type === 'attack' && activeBuffs.sneakAttack) {
+          const sneakDice = Math.max(1, Math.ceil(resolvedSheet.totalLevel / 2));
+          upcastFormula = `${upcastFormula} + ${sneakDice}d6`;
+          buffNotes.push(`Sneak +${sneakDice}d6`);
+        }
         const dmgExpr = attackIsCrit ? doubleDiceForCrit(upcastFormula) : upcastFormula;
         const dmg = evaluateDiceExpression(dmgExpr, 'normal');
         const critTag = attackIsCrit ? ' [CRIT DICE DOUBLED]' : '';
         const upcastTag = extraLevels > 0 && activity.upcastDicePerLevel ? ` [UPCAST +${extraLevels}]` : '';
+        const buffTag = buffNotes.length > 0 ? ` [${buffNotes.join(', ')}]` : '';
         const kindLabel = activity.type === 'heal' ? 'Healing' : 'Damage';
         appendLog(
-          `${activity.name}${activity.computedAttackBonus === null ? spentNote : ''} ${kindLabel}: ${dmg.total} ${activity.damageType ?? ''} (${dmgExpr})${upcastTag}${critTag}`,
+          `${activity.name}${activity.computedAttackBonus === null ? spentNote : ''} ${kindLabel}: ${dmg.total} ${activity.damageType ?? ''} (${dmgExpr})${upcastTag}${buffTag}${critTag}`,
           attackIsCrit ? 'crit' : 'roll'
         );
       } else if (spentNote) {
@@ -1663,6 +1693,19 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
 
   const moveCombatantToken = useCallback(
     (combatantId: string, x: number, y: number) => {
+      if (liveStatus.role === 'player') {
+        const session = liveSessionRef.current;
+        if (session && combatantId === rawChar.id) {
+          session.broadcast({
+            type: 'token_move',
+            senderId: session.senderId,
+            senderName: rawChar.name,
+            combatantId,
+            x,
+            y,
+          });
+        }
+      }
       persistEncounter((prev) => {
         const nextCombatants = prev.combatants.map((c) =>
           c.id === combatantId ? { ...c, x, y } : c
@@ -2023,6 +2066,29 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
 
     if (msg.type === 'handout_hide' && liveStatus.role === 'player') {
       setActiveSharedHandout(null);
+      return;
+    }
+
+    if (msg.type === 'roll_request' && liveStatus.role === 'player') {
+      setPendingRollRequest({
+        id: msg.id,
+        senderName: msg.senderName,
+        label: msg.label,
+        kind: msg.kind,
+        abilityOrSkill: msg.abilityOrSkill,
+        dc: msg.dc,
+      });
+      pushToast(`DM Roll Request: ${msg.label}${msg.dc ? ` (DC ${msg.dc})` : ''}`, 'info');
+      return;
+    }
+
+    if (msg.type === 'token_move' && liveStatus.role === 'host') {
+      persistEncounter((prev) => ({
+        ...prev,
+        combatants: prev.combatants.map((c) =>
+          c.id === msg.combatantId && c.kind === 'pc' ? { ...c, x: msg.x, y: msg.y } : c
+        ),
+      }));
     }
   };
 
@@ -2274,9 +2340,17 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   const advanceCampaignClock = useCallback(
     (deltaMinutes: number) => {
       const { clock: nextClock, expiredTimers } = advanceWorldClock(campaign.clock, deltaMinutes);
+      const daysElapsed = Math.max(0, nextClock.day - campaign.clock.day);
       persistCampaign((prev) => ({
         ...prev,
         clock: nextClock,
+        downtimeProjects:
+          daysElapsed > 0
+            ? (prev.downtimeProjects ?? []).map((p) => ({
+                ...p,
+                daysDone: Math.min(p.daysTotal, p.daysDone + daysElapsed),
+              }))
+            : prev.downtimeProjects,
       }));
       appendLog(
         `World Clock: Day ${nextClock.day} • ${String(nextClock.hour).padStart(2, '0')}:${String(nextClock.minute).padStart(2, '0')}.`,
@@ -3116,6 +3190,137 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     }
   }, []);
 
+  const toggleBuff = useCallback((key: keyof ActiveBuffState) => {
+    setActiveBuffs((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
+  const divineSmite = useCallback(
+    (slotLevel: number) => {
+      const res = resolveResourcePoolForCost(
+        rawChar.resources,
+        rawChar.classes,
+        `spell_slot_${slotLevel}`,
+        1
+      );
+      if ('error' in res) {
+        appendLog(`${res.error} (Divine Smite)`, 'warn');
+        return;
+      }
+      persistCharacter((prev) => ({
+        ...prev,
+        resources: prev.resources.map((r) =>
+          r.id === res.poolId ? { ...r, current: Math.max(0, r.current - 1) } : r
+        ),
+      }));
+      const diceCount = Math.min(5, 1 + slotLevel);
+      const dmg = evaluateDiceExpression(`${diceCount}d8`, 'normal');
+      appendLog(`Divine Smite (L${slotLevel} slot): ${dmg.total} radiant damage (${diceCount}d8)!`, 'crit');
+    },
+    [rawChar.resources, rawChar.classes, persistCharacter, appendLog]
+  );
+
+  const assignLootItemToCharacter = useCallback(
+    async (itemName: string, characterId: string) => {
+      const targetPc = characterList.find((c) => c.id === characterId);
+      if (!targetPc) return;
+      const newItem: CompendiumEntity = {
+        id: `loot-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`,
+        name: itemName,
+        source: 'Party Loot',
+        ruleset: targetPc.ruleset,
+        category: 'gear',
+        quantity: 1,
+        activities: [],
+        entries: ['Assigned from Party Stash.'],
+      };
+      const updatedPc: RawCharacterState = {
+        ...targetPc,
+        items: [newItem, ...targetPc.items],
+      };
+      await saveCharacter(updatedPc);
+      setCharacterList((list) => list.map((c) => (c.id === updatedPc.id ? updatedPc : c)));
+      if (updatedPc.id === rawChar.id) {
+        setRawChar(updatedPc);
+      }
+      persistCampaign((prev) => {
+        const idx = prev.partyLootItems.indexOf(itemName);
+        if (idx < 0) return prev;
+        const nextItems = [...prev.partyLootItems];
+        nextItems.splice(idx, 1);
+        return { ...prev, partyLootItems: nextItems };
+      });
+      appendLog(`Assigned "${itemName}" from Party Stash to ${updatedPc.name}.`, 'info');
+    },
+    [characterList, rawChar.id, persistCampaign, appendLog]
+  );
+
+  const upsertDowntimeProject = useCallback(
+    (project: DowntimeProject) => {
+      persistCampaign((prev) => {
+        const existing = prev.downtimeProjects ?? [];
+        const has = existing.some((p) => p.id === project.id);
+        return {
+          ...prev,
+          downtimeProjects: has
+            ? existing.map((p) => (p.id === project.id ? project : p))
+            : [project, ...existing],
+        };
+      });
+    },
+    [persistCampaign]
+  );
+
+  const advanceDowntimeDays = useCallback(
+    (deltaDays: number) => {
+      const safeDays = Math.max(1, Math.round(deltaDays));
+      persistCampaign((prev) => ({
+        ...prev,
+        downtimeProjects: (prev.downtimeProjects ?? []).map((p) => ({
+          ...p,
+          daysDone: Math.min(p.daysTotal, p.daysDone + safeDays),
+        })),
+      }));
+      appendLog(`Advanced downtime projects by ${safeDays} day(s).`, 'info');
+    },
+    [persistCampaign, appendLog]
+  );
+
+  const deleteDowntimeProject = useCallback(
+    (projectId: string) => {
+      persistCampaign((prev) => ({
+        ...prev,
+        downtimeProjects: (prev.downtimeProjects ?? []).filter((p) => p.id !== projectId),
+      }));
+    },
+    [persistCampaign]
+  );
+
+  const sendRollRequestToPeers = useCallback(
+    (label: string, kind: 'check' | 'save', abilityOrSkill: string, dc?: number) => {
+      const session = liveSessionRef.current;
+      if (!session || session.getState().role !== 'host') {
+        appendLog('Host a Live Table session first to send roll prompts.', 'warn');
+        return;
+      }
+      session.broadcast({
+        type: 'roll_request',
+        senderId: session.senderId,
+        senderName: rawChar.name,
+        id: `req-${Date.now().toString(36)}`,
+        label,
+        kind,
+        abilityOrSkill,
+        dc,
+      });
+      appendLog(`Sent roll prompt to players: ${label}${dc ? ` (DC ${dc})` : ''}.`, 'info');
+    },
+    [rawChar.name, appendLog]
+  );
+
+  const dismissRollRequest = useCallback(() => {
+    setPendingRollRequest(null);
+  }, []);
+
   return {
     rawChar,
     characterList,
@@ -3163,6 +3368,16 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     activeSharedHandout,
     shareHandoutToPlayers,
     hideSharedHandout,
+    activeBuffs,
+    toggleBuff,
+    divineSmite,
+    assignLootItemToCharacter,
+    upsertDowntimeProject,
+    advanceDowntimeDays,
+    deleteDowntimeProject,
+    pendingRollRequest,
+    sendRollRequestToPeers,
+    dismissRollRequest,
     addTimedCombatEffect,
     rollAllInitiative,
     toggleCombatantHidden,

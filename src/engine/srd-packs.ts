@@ -85,6 +85,8 @@ function makeWeapon(
   ruleset: Ruleset = '2014',
   source = 'SRD 5.1'
 ): CompendiumEntity {
+  const masteryMatch = notes.match(/Mastery\s*\((Cleave|Graze|Nick|Push|Sap|Slow|Topple|Vex)\)/i);
+  const weaponMastery = masteryMatch?.[1] as CompendiumEntity['weaponMastery'] | undefined;
   return {
     id,
     name,
@@ -92,6 +94,7 @@ function makeWeapon(
     ruleset,
     category: 'weapon',
     equipped: false,
+    weaponMastery,
     activities: [
       {
         id: `act-${id}`,

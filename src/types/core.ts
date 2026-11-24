@@ -41,6 +41,22 @@ export interface OverridableStat<T> {
 
 export type RollMode = 'normal' | 'advantage' | 'disadvantage';
 
+export type WeaponMastery =
+  | 'Cleave'
+  | 'Graze'
+  | 'Nick'
+  | 'Push'
+  | 'Sap'
+  | 'Slow'
+  | 'Topple'
+  | 'Vex';
+
+export interface ActiveBuffState {
+  bless: boolean;
+  rage: boolean;
+  sneakAttack: boolean;
+}
+
 export const STANDARD_CONDITIONS = [
   'Blinded',
   'Charmed',

@@ -44,6 +44,7 @@ interface BattlemapModalProps {
   onSetTokenPortrait?: (combatantId: string, url: string | undefined) => void;
   onSetTokenVision?: (combatantId: string, feet: number) => void;
   onOpenPopOutPlayer?: () => void;
+  ownedCharacterId?: string;
 }
 
 type MapMode =
@@ -87,6 +88,7 @@ export function BattlemapModal({
   embeddedFull = false,
   encounter,
   playerView,
+  ownedCharacterId,
   onTogglePlayerView,
   onClose,
   onMoveToken,
@@ -565,7 +567,16 @@ export function BattlemapModal({
             <g
               key={node.id}
               opacity={node.hidden ? 0.5 : 1}
-              style={{ cursor: embedded ? 'default' : mode === 'move' ? 'grab' : 'pointer' }}
+              style={{
+                cursor:
+                  embedded || mode !== 'move'
+                    ? embedded
+                      ? 'default'
+                      : 'pointer'
+                    : !playerView || node.id === ownedCharacterId
+                      ? 'grab'
+                      : 'not-allowed',
+              }}
               onPointerDown={(e) => {
                 if (embedded) return;
                 if (mode === 'target') {
@@ -575,6 +586,7 @@ export function BattlemapModal({
                   return;
                 }
                 if (mode === 'move') {
+                  if (playerView && node.id !== ownedCharacterId) return;
                   e.stopPropagation();
                   setSelectedTokenId(node.id);
                   setDragPreview({ id: node.id, x: baseGx, y: baseGy, origX: baseGx, origY: baseGy });

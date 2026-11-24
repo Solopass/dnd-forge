@@ -1,3 +1,6 @@
+import { AbilityKey, RollMode } from '../types/core';
+import { resolveRollMode } from './dice';
+
 export const CONDITION_RULES: Record<string, string> = {
   Blinded: "Can't see; auto-fails sight checks. Attacks against you have Advantage; your attacks have Disadvantage.",
   Charmed: "Can't attack the charmer or target them with harmful effects. Charmer has Advantage on social checks.",
@@ -15,3 +18,43 @@ export const CONDITION_RULES: Record<string, string> = {
   Stunned: "Incapacitated, can't move, speak falteringly; auto-fails STR/DEX saves; attacks against you have Advantage.",
   Unconscious: "Incapacitated, drops held items, falls Prone; auto-fails STR/DEX saves; melee hits within 5 ft are crits.",
 };
+
+export function resolveConditionRollMode(
+  conditions: string[],
+  kind: 'attack' | 'check' | 'save',
+  saveAbility?: AbilityKey,
+  baseMode: RollMode = 'normal'
+): { mode: RollMode; reasons: string[] } {
+  let adv = baseMode === 'advantage' ? 1 : 0;
+  let dis = baseMode === 'disadvantage' ? 1 : 0;
+  const reasons: string[] = [];
+
+  for (const raw of conditions) {
+    const c = raw.toLowerCase();
+    if (kind === 'attack') {
+      if (c === 'invisible') {
+        adv += 1;
+        reasons.push('ADV: Invisible');
+      }
+      if (c === 'blinded' || c === 'frightened' || c === 'poisoned' || c === 'prone' || c === 'restrained') {
+        dis += 1;
+        reasons.push(`DIS: ${raw}`);
+      }
+    } else if (kind === 'check') {
+      if (c === 'frightened' || c === 'poisoned') {
+        dis += 1;
+        reasons.push(`DIS: ${raw}`);
+      }
+    } else if (kind === 'save' && saveAbility === 'dex') {
+      if (c === 'restrained') {
+        dis += 1;
+        reasons.push(`DIS: ${raw}`);
+      }
+    }
+  }
+
+  return {
+    mode: resolveRollMode(adv, dis),
+    reasons,
+  };
+}

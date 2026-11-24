@@ -27,6 +27,7 @@ interface LiveTableModalProps {
   onPushEncounter: () => void;
   onShareCharacterToPeers: () => void;
   onImportCharacter: (char: RawCharacterState) => Promise<void>;
+  onSendRollRequest?: (label: string, kind: 'check' | 'save', abilityOrSkill: string, dc?: number) => void;
   onLog: (msg: string, tone?: 'info' | 'warn') => void;
 }
 
@@ -44,6 +45,7 @@ export function LiveTableModal({
   onPushEncounter,
   onShareCharacterToPeers,
   onImportCharacter,
+  onSendRollRequest,
   onLog,
 }: LiveTableModalProps) {
   const [tab, setTab] = useState<'local' | 'webrtc' | 'share'>('local');
@@ -55,6 +57,9 @@ export function LiveTableModal({
   const [incomingReply, setIncomingReply] = useState('');
   const [shareCodeInput, setShareCodeInput] = useState('');
   const [copiedNotice, setCopiedNotice] = useState('');
+  const [reqKind, setReqKind] = useState<'check' | 'save'>('save');
+  const [reqAbilityOrSkill, setReqAbilityOrSkill] = useState('dex');
+  const [reqDc, setReqDc] = useState('14');
 
   const shareCode = encodeCharacterShareCode(activeCharacter);
 
@@ -125,6 +130,82 @@ export function LiveTableModal({
             </div>
           )}
         </div>
+
+        {liveStatus.role === 'host' && onSendRollRequest && (
+          <div className="card forge-stack">
+            <div className="forge-section-label">DM ROLL PROMPT (LIVE TABLE)</div>
+            <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+              <select
+                aria-label="Roll request kind"
+                className="forge-input"
+                value={reqKind}
+                onChange={(e) => {
+                  const next = e.target.value as 'check' | 'save';
+                  setReqKind(next);
+                  setReqAbilityOrSkill(next === 'save' ? 'dex' : 'Perception');
+                }}
+                style={{ width: 115 }}
+              >
+                <option value="save">Saving Throw</option>
+                <option value="check">Skill / Check</option>
+              </select>
+              <select
+                aria-label="Roll request ability or skill"
+                className="forge-input"
+                value={reqAbilityOrSkill}
+                onChange={(e) => setReqAbilityOrSkill(e.target.value)}
+                style={{ flex: 1, minWidth: 140 }}
+              >
+                {reqKind === 'save' ? (
+                  <>
+                    <option value="str">Strength Save</option>
+                    <option value="dex">Dexterity Save</option>
+                    <option value="con">Constitution Save</option>
+                    <option value="int">Intelligence Save</option>
+                    <option value="wis">Wisdom Save</option>
+                    <option value="cha">Charisma Save</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="Perception">Perception</option>
+                    <option value="Stealth">Stealth</option>
+                    <option value="Investigation">Investigation</option>
+                    <option value="Insight">Insight</option>
+                    <option value="Athletics">Athletics</option>
+                    <option value="Acrobatics">Acrobatics</option>
+                    <option value="Arcana">Arcana</option>
+                    <option value="Persuasion">Persuasion</option>
+                  </>
+                )}
+              </select>
+              <input
+                aria-label="Roll request DC"
+                type="number"
+                min={1}
+                max={35}
+                className="forge-input tabular"
+                value={reqDc}
+                onChange={(e) => setReqDc(e.target.value)}
+                style={{ width: 68 }}
+                placeholder="DC"
+              />
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  const dcNum = Number.parseInt(reqDc, 10);
+                  const label =
+                    reqKind === 'save'
+                      ? `${reqAbilityOrSkill.toUpperCase()} Saving Throw`
+                      : `${reqAbilityOrSkill} Check`;
+                  onSendRollRequest(label, reqKind, reqAbilityOrSkill, Number.isFinite(dcNum) ? dcNum : undefined);
+                }}
+              >
+                Request Roll from Players
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="pill-row">
           <button

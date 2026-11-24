@@ -349,6 +349,9 @@ export function App() {
       onAdjustResource={store.adjustResourcePool}
       onOpenGearDrawer={() => setGearOpen(true)}
       onOpenBuilderDrawer={() => setBuilderOpen(true)}
+      activeBuffs={store.activeBuffs}
+      onToggleBuff={store.toggleBuff}
+      onDivineSmite={store.divineSmite}
     />
   );
 
@@ -428,6 +431,7 @@ export function App() {
       ),
     onSetTokenPortrait: store.setCombatantPortrait,
     onSetTokenVision: store.setCombatantVision,
+    ownedCharacterId: store.liveStatus.role === 'player' ? store.rawChar.id : undefined,
     onOpenPopOutPlayer: () => {
       window.open('?player=1', 'dnd-forge-player-display', 'width=1280,height=800');
     },
@@ -460,6 +464,10 @@ export function App() {
     onSetWorldMapImage: store.setWorldMapImage,
     onUpsertWorldMapPin: store.upsertWorldMapPin,
     onDeleteWorldMapPin: store.deleteWorldMapPin,
+    onAssignLootToCharacter: store.assignLootItemToCharacter,
+    onUpsertDowntime: store.upsertDowntimeProject,
+    onAdvanceDowntime: store.advanceDowntimeDays,
+    onDeleteDowntime: store.deleteDowntimeProject,
     onSpawnImprovEncounter: (enc: { monsters: Array<{ name: string; count: number }> }) => {
       const allMobs = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities).filter(
         (e) => e.category === 'monster'
@@ -740,6 +748,61 @@ export function App() {
         </div>
       )}
 
+      {store.pendingRollRequest && (
+        <div
+          className="subpanel forge-row-between"
+          role="alert"
+          style={{
+            padding: '10px 16px',
+            margin: '8px 16px 0',
+            borderColor: 'rgba(245, 158, 11, 0.55)',
+            background: 'rgba(245, 158, 11, 0.08)',
+            flexWrap: 'wrap',
+            gap: 8,
+          }}
+        >
+          <div className="forge-row" style={{ gap: 8, flexWrap: 'wrap' }}>
+            <span className="badge" style={{ color: 'var(--accent-amber)', borderColor: 'rgba(245, 158, 11, 0.5)' }}>
+              DM ROLL REQUEST
+            </span>
+            <strong>{store.pendingRollRequest.senderName}</strong> requests{' '}
+            <strong>{store.pendingRollRequest.label}</strong>
+            {store.pendingRollRequest.dc !== undefined && (
+              <span className="badge tabular">DC {store.pendingRollRequest.dc}</span>
+            )}
+          </div>
+          <div className="forge-row" style={{ gap: 6 }}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => {
+                const req = store.pendingRollRequest;
+                if (!req) return;
+                let mod = 0;
+                if (req.kind === 'save') {
+                  const ab = store.resolvedSheet.abilities[req.abilityOrSkill as keyof typeof store.resolvedSheet.abilities];
+                  mod = ab?.save.final ?? 0;
+                } else {
+                  const sk = store.resolvedSheet.skills[req.abilityOrSkill as keyof typeof store.resolvedSheet.skills];
+                  mod = sk?.final ?? 0;
+                }
+                const sign = mod >= 0 ? '+' : '';
+                store.rollInlineExpression(
+                  `${req.label}${req.dc ? ` (DC ${req.dc})` : ''}`,
+                  `1d20${sign}${mod}`
+                );
+                store.dismissRollRequest();
+              }}
+            >
+              Roll Now
+            </button>
+            <button type="button" className="btn" onClick={store.dismissRollRequest}>
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
       {uiMode === 'classic' ? (
         <>
           <div className="mobile-tab-bar" role="tablist" aria-label="Workspace panels" ref={mobileTablistRef}>
@@ -916,6 +979,7 @@ export function App() {
           onPushEncounter={store.pushEncounterToPeers}
           onShareCharacterToPeers={store.shareActiveCharacterToPeers}
           onImportCharacter={store.importSingleCharacter}
+          onSendRollRequest={store.sendRollRequestToPeers}
           onLog={store.appendLog}
         />
       </Suspense>

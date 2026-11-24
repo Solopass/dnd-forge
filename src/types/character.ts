@@ -5,6 +5,7 @@ import {
   RecoveryTrigger,
   Ruleset,
   SkillKey,
+  WeaponMastery,
 } from './core';
 import { Activity, CompendiumEntity } from './compendium';
 
@@ -101,6 +102,7 @@ export interface RawCharacterState {
 export interface ResolvedActivity extends Activity {
   parentItemId: string;
   parentItemName: string;
+  weaponMastery?: WeaponMastery;
   concentration: boolean;
   ritual?: boolean;
   spellMeta?: {

@@ -22,6 +22,7 @@ import {
   CampaignCategory,
   CampaignEntry,
   CampaignRecord,
+  DowntimeProject,
   SharedHandoutPayload,
   WorldMapPin,
 } from '../types/campaign';
@@ -61,6 +62,10 @@ interface DmHubModalProps {
   onDeleteWorldMapPin?: (pinId: string) => void;
   onSpawnImprovEncounter?: (enc: GeneratedEncounter) => void;
   onPrintPacket?: () => void;
+  onAssignLootToCharacter?: (itemName: string, characterId: string) => Promise<void>;
+  onUpsertDowntime?: (project: DowntimeProject) => void;
+  onAdvanceDowntime?: (deltaDays: number) => void;
+  onDeleteDowntime?: (projectId: string) => void;
 }
 
 const CATEGORIES: Array<{ key: 'all' | CampaignCategory; label: string }> = [
@@ -105,8 +110,17 @@ export function DmHubModal({
   onDeleteWorldMapPin,
   onSpawnImprovEncounter,
   onPrintPacket,
+  onAssignLootToCharacter,
+  onUpsertDowntime,
+  onAdvanceDowntime,
+  onDeleteDowntime,
 }: DmHubModalProps) {
   const [tab, setTab] = useState<'binder' | 'clock' | 'loot' | 'dmscreen' | 'xp' | 'improv' | 'worldmap' | 'soundboard'>('binder');
+  const [dtOwner, setDtOwner] = useState('');
+  const [dtTitle, setDtTitle] = useState('');
+  const [dtKind, setDtKind] = useState<DowntimeProject['kind']>('craft');
+  const [dtDays, setDtDays] = useState('5');
+  const [lootRecipientId, setLootRecipientId] = useState<string>('');
 
   // Campaign Binder State
   const [newCampName, setNewCampName] = useState('');
@@ -521,7 +535,8 @@ export function DmHubModal({
         )}
 
         {tab === 'clock' && (
-          <div className="forge-grid-2" style={{ alignItems: 'start' }}>
+          <div className="forge-stack">
+            <div className="forge-grid-2" style={{ alignItems: 'start' }}>
             <div className="card forge-stack">
               <div className="forge-section-label">WORLD CLOCK &amp; REST PACING</div>
               <div className="tabular" style={{ fontSize: 22, fontWeight: 700 }}>
@@ -598,6 +613,120 @@ export function DmHubModal({
                     <span className="tabular forge-muted">{t.remainingMinutes} min left</span>
                   </div>
                 ))
+              )}
+            </div>
+          </div>
+
+            <div className="card forge-stack">
+              <div className="forge-row-between" style={{ flexWrap: 'wrap' }}>
+                <div className="forge-section-label">DOWNTIME, CRAFTING &amp; BASTIONS</div>
+                {onAdvanceDowntime && (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => onAdvanceDowntime(1)}
+                  >
+                    +1 Day Progress
+                  </button>
+                )}
+              </div>
+
+              {onUpsertDowntime && (
+                <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+                  <input
+                    aria-label="Downtime owner"
+                    type="text"
+                    className="forge-input"
+                    placeholder="PC or Bastion (e.g. Seraphina)"
+                    value={dtOwner}
+                    onChange={(e) => setDtOwner(e.target.value)}
+                    style={{ width: 170 }}
+                  />
+                  <input
+                    aria-label="Downtime project title"
+                    type="text"
+                    className="forge-input"
+                    placeholder="Project (e.g. Scribe Spell Scroll)"
+                    value={dtTitle}
+                    onChange={(e) => setDtTitle(e.target.value)}
+                    style={{ flex: 1, minWidth: 180 }}
+                  />
+                  <select
+                    aria-label="Downtime project kind"
+                    className="forge-input"
+                    value={dtKind}
+                    onChange={(e) => setDtKind(e.target.value as DowntimeProject['kind'])}
+                    style={{ width: 115 }}
+                  >
+                    <option value="craft">Craft</option>
+                    <option value="scribe">Scribe</option>
+                    <option value="train">Train</option>
+                    <option value="bastion">Bastion</option>
+                  </select>
+                  <input
+                    aria-label="Downtime total days"
+                    type="number"
+                    min={1}
+                    className="forge-input tabular"
+                    value={dtDays}
+                    onChange={(e) => setDtDays(e.target.value)}
+                    style={{ width: 68 }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => {
+                      if (!dtTitle.trim()) return;
+                      onUpsertDowntime({
+                        id: `dt-${Date.now().toString(36)}`,
+                        ownerName: dtOwner.trim() || activeCharacterName,
+                        title: dtTitle.trim(),
+                        kind: dtKind,
+                        daysDone: 0,
+                        daysTotal: Math.max(1, Number.parseInt(dtDays, 10) || 5),
+                      });
+                      setDtTitle('');
+                    }}
+                  >
+                    + Add Project
+                  </button>
+                </div>
+              )}
+
+              {(campaign.downtimeProjects ?? []).length === 0 ? (
+                <div className="forge-muted">
+                  No active downtime or bastion projects. Projects also advance automatically whenever the World Clock crosses midnight.
+                </div>
+              ) : (
+                <div className="forge-stack">
+                  {(campaign.downtimeProjects ?? []).map((proj) => {
+                    const pct = Math.min(100, Math.round((proj.daysDone / Math.max(1, proj.daysTotal)) * 100));
+                    const complete = proj.daysDone >= proj.daysTotal;
+                    return (
+                      <div key={proj.id} className="subpanel forge-row-between" style={{ padding: '8px 10px', flexWrap: 'wrap', gap: 8 }}>
+                        <div>
+                          <div style={{ fontWeight: 600 }}>
+                            {proj.title}{' '}
+                            <span className="badge">{proj.kind.toUpperCase()}</span>{' '}
+                            {complete && (
+                              <span className="badge" style={{ color: 'var(--accent-green)', borderColor: 'rgba(16,185,129,0.5)' }}>
+                                COMPLETE
+                              </span>
+                            )}
+                          </div>
+                          <div className="forge-muted" style={{ fontSize: 11 }}>
+                            Owner: {proj.ownerName} • {proj.daysDone} / {proj.daysTotal} days ({pct}%)
+                          </div>
+                        </div>
+                        {onDeleteDowntime && (
+                          <button type="button" className="btn" onClick={() => onDeleteDowntime(proj.id)}>
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </div>
@@ -695,10 +824,48 @@ export function DmHubModal({
                     Distribute All GP
                   </button>
                 </div>
-                <div className="forge-muted" style={{ fontSize: 12 }}>
-                  Stash Items ({campaign.partyLootItems.length}):{' '}
-                  {campaign.partyLootItems.join(', ') || 'None'}
+                <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+                  <div className="forge-muted" style={{ fontSize: 12 }}>
+                    Stash Items ({campaign.partyLootItems.length})
+                  </div>
+                  {onAssignLootToCharacter && characterList.length > 0 && campaign.partyLootItems.length > 0 && (
+                    <select
+                      aria-label="Recipient character for party stash"
+                      className="forge-input"
+                      style={{ width: 190 }}
+                      value={lootRecipientId || characterList[0]?.id || ''}
+                      onChange={(e) => setLootRecipientId(e.target.value)}
+                    >
+                      {characterList.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          Give to: {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
+                {campaign.partyLootItems.length === 0 ? (
+                  <div className="forge-muted" style={{ fontSize: 12 }}>No items in Party Stash yet.</div>
+                ) : (
+                  <div className="forge-stack" style={{ maxHeight: 170, overflowY: 'auto' }}>
+                    {campaign.partyLootItems.map((itemName, idx) => (
+                      <div key={`${itemName}-${idx}`} className="forge-list-row">
+                        <span style={{ fontSize: 12 }}>{itemName}</span>
+                        {onAssignLootToCharacter && characterList.length > 0 && (
+                          <button
+                            type="button"
+                            className="btn"
+                            onClick={() =>
+                              void onAssignLootToCharacter(itemName, lootRecipientId || characterList[0]!.id)
+                            }
+                          >
+                            Give to PC
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className="forge-muted tabular">
                   Active Buyer: <strong>{activeCharacterName}</strong> ({activeCharacterGp} GP in purse)
                 </div>

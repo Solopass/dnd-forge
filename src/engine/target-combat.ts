@@ -1,6 +1,6 @@
 import { Activity } from '../types/compendium';
 import { CombatantNode } from '../types/combat';
-import { RollMode } from '../types/core';
+import { RollMode, WeaponMastery } from '../types/core';
 import { doubleDiceForCrit, evaluateDiceExpression } from './dice';
 
 export interface TargetAttackOutcome {
@@ -13,6 +13,7 @@ export interface TargetAttackOutcome {
   rawDamage: number;
   appliedDamage: number;
   modifierNote: string;
+  masteryNote: string;
   nextHp: number;
   concentrationDc: number | null;
 }
@@ -62,12 +63,25 @@ function applyDamageToHp(hp: CombatantNode['hp'], damage: number): number {
   return Math.max(0, hp.current - rem);
 }
 
+const MASTERY_HIT_NOTES: Record<WeaponMastery, string> = {
+  Cleave: 'Cleave: Free attack on adjacent enemy',
+  Graze: 'Graze',
+  Nick: 'Nick: Extra Light attack in Attack action',
+  Push: 'Push: Target pushed up to 10 ft',
+  Sap: 'Sap: Target has Disadvantage on next attack',
+  Slow: 'Slow: Target Speed reduced by 10 ft',
+  Topple: 'Topple: CON Save or Prone',
+  Vex: 'Vex: Advantage on your next attack vs target',
+};
+
 export function resolveTargetAttack(
   activity: Activity,
   target: CombatantNode,
   rollMode: RollMode = 'normal',
   customAttackBonus?: number,
-  diceRoller: (expr: string, mode: RollMode) => { total: number; isCrit: boolean; isFumble: boolean } = evaluateDiceExpression
+  diceRoller: (expr: string, mode: RollMode) => { total: number; isCrit: boolean; isFumble: boolean } = evaluateDiceExpression,
+  weaponMastery?: WeaponMastery,
+  attackerAbilityMod = 3
 ): TargetAttackOutcome {
   const bonus =
     customAttackBonus ??
@@ -79,6 +93,7 @@ export function resolveTargetAttack(
   let rawDamage = 0;
   let appliedDamage = 0;
   let modifierNote = '';
+  let masteryNote = '';
 
   if (hit && activity.damageFormula) {
     const dmgExpr = atkRes.isCrit ? doubleDiceForCrit(activity.damageFormula) : activity.damageFormula;
@@ -86,9 +101,18 @@ export function resolveTargetAttack(
     const adjusted = adjustDamageForTargetDefenses(rawDamage, activity.damageType, target);
     appliedDamage = adjusted.appliedDamage;
     modifierNote = adjusted.note;
+    if (weaponMastery && weaponMastery !== 'Graze') {
+      masteryNote = MASTERY_HIT_NOTES[weaponMastery];
+    }
+  } else if (!hit && weaponMastery === 'Graze') {
+    rawDamage = Math.max(1, attackerAbilityMod);
+    const adjusted = adjustDamageForTargetDefenses(rawDamage, activity.damageType, target);
+    appliedDamage = adjusted.appliedDamage;
+    modifierNote = adjusted.note;
+    masteryNote = `Graze: Dealt ${appliedDamage} miss dmg`;
   }
 
-  const nextHp = hit ? applyDamageToHp(target.hp, appliedDamage) : target.hp.current;
+  const nextHp = appliedDamage > 0 ? applyDamageToHp(target.hp, appliedDamage) : target.hp.current;
   const concentrationDc =
     appliedDamage > 0 ? Math.max(10, Math.floor(appliedDamage / 2)) : null;
 
@@ -102,6 +126,7 @@ export function resolveTargetAttack(
     rawDamage,
     appliedDamage,
     modifierNote,
+    masteryNote,
     nextHp,
     concentrationDc,
   };

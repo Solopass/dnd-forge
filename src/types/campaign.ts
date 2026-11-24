@@ -47,6 +47,16 @@ export interface WorldClockState {
   activeTimers: ClockTimer[];
 }
 
+export interface DowntimeProject {
+  id: string;
+  ownerName: string;
+  title: string;
+  kind: 'craft' | 'scribe' | 'train' | 'bastion';
+  daysDone: number;
+  daysTotal: number;
+  notes?: string;
+}
+
 export interface CampaignRecord {
   id: string;
   name: string;
@@ -58,5 +68,6 @@ export interface CampaignRecord {
   entries: CampaignEntry[];
   worldMapImageDataUrl?: string;
   worldMapPins?: WorldMapPin[];
+  downtimeProjects?: DowntimeProject[];
   createdAt: string;
 }

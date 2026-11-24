@@ -47,7 +47,7 @@ export function LevelUpModal({
   const [selectedSpellIds, setSelectedSpellIds] = useState<string[]>([]);
   const [spellFilter, setSpellFilter] = useState('');
   const [showAllClassSpells, setShowAllClassSpells] = useState(false);
-  const [matchCharRulesetOnly, setMatchCharRulesetOnly] = useState(true);
+  const [matchCharRulesetOnly, setMatchCharRulesetOnly] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -60,6 +60,7 @@ export function LevelUpModal({
     setSelectedSpellIds([]);
     setSpellFilter('');
     setShowAllClassSpells(false);
+    setMatchCharRulesetOnly(false);
   }, [isOpen, character.id]);
 
   const classDef = getClassDefinition(selectedClass) ?? CLASS_DEFINITIONS[0]!;

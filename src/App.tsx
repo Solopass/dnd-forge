@@ -523,7 +523,7 @@ export function App() {
       }}
       onOpenCompendium={(cat) => {
         setPaletteInitialCat(cat);
-        setPaletteInitialRuleset(store.rawChar.ruleset === '2024' ? '2024' : '2014');
+        setPaletteInitialRuleset('all');
         setPaletteOpen(true);
       }}
     />
@@ -1261,7 +1261,7 @@ export function App() {
             onAddPartyStashItem={store.addPartyStashItem}
             onOpenCompendium={(cat) => {
               setPaletteInitialCat(cat);
-              setPaletteInitialRuleset(store.rawChar.ruleset === '2024' ? '2024' : '2014');
+              setPaletteInitialRuleset('all');
               setPaletteOpen(true);
             }}
           />

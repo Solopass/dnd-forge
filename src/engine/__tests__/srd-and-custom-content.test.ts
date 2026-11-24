@@ -12,6 +12,7 @@ import {
   convertRawEntityToSidereroll,
 } from '../content-converter';
 import { buildCharacterFromDdbFields } from '../ddb-pdf-importer';
+import { buildCampaignPackTemplate, parseRepoSlug, resolveRepoAssetUrl } from '../campaign-repo-sync';
 import monsterTemplate from '../../custom-content/_templates/monster.json';
 import itemTemplate from '../../custom-content/_templates/item.json';
 import spellTemplate from '../../custom-content/_templates/spell.json';
@@ -213,5 +214,23 @@ describe('Custom Content Templates & JSON Loader', () => {
 
     const armor = summary.character.items.find((i) => i.name === 'Leather Armor');
     expect(armor?.acFormula?.base).toBe(11);
+  });
+
+  it('parses GitHub campaign repo slugs, resolves relative asset URLs, and builds manifest templates', () => {
+    expect(parseRepoSlug('Solopass/campaign-strahd')).toEqual({
+      owner: 'Solopass',
+      repo: 'campaign-strahd',
+    });
+    expect(parseRepoSlug('https://github.com/Solopass/campaign-strahd.git')).toEqual({
+      owner: 'Solopass',
+      repo: 'campaign-strahd',
+    });
+    expect(
+      resolveRepoAssetUrl('./images/strahd.webp', { owner: 'Solopass', repo: 'campaign-strahd', branch: 'main' })
+    ).toBe('https://raw.githubusercontent.com/Solopass/campaign-strahd/main/images/strahd.webp');
+
+    const manifest = JSON.parse(buildCampaignPackTemplate('Curse of Strahd')) as { name: string; entities: unknown[] };
+    expect(manifest.name).toBe('Curse of Strahd');
+    expect(manifest.entities.length).toBeGreaterThan(0);
   });
 });

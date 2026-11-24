@@ -708,6 +708,7 @@ export function App() {
     onUpsertDowntime: store.upsertDowntimeProject,
     onAdvanceDowntime: store.advanceDowntimeDays,
     onDeleteDowntime: store.deleteDowntimeProject,
+    onSyncCampaignRepo: store.syncCampaignExternalRepo,
     onSpawnImprovEncounter: (enc: { monsters: Array<{ name: string; count: number }> }) => {
       const allMobs = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities).filter(
         (e) => e.category === 'monster'
@@ -1595,6 +1596,12 @@ export function App() {
             a.click();
             URL.revokeObjectURL(url);
           }}
+          onPushToCampaignRepo={store.pushCharacterToCampaignRepo}
+          campaignRepoLabel={
+            store.campaign.externalRepo
+              ? `${store.campaign.externalRepo.owner}/${store.campaign.externalRepo.repo}`
+              : undefined
+          }
         />
       </Suspense>
 

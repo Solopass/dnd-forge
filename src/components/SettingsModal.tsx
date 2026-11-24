@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { isSoundEnabled, playTableSound, setSoundEnabled } from '../engine/sound';
 import { applyUiMode, readStoredUiMode, UiMode } from '../engine/ui-mode';
+import { getStoredGithubPat, setStoredGithubPat } from '../engine/campaign-repo-sync';
 import { ModalDialog } from './ModalDialog';
 
 type SchemeChoice = 'system' | 'light' | 'dark';
@@ -58,6 +59,8 @@ export function SettingsModal({
   };
   const [highContrast, setHighContrast] = useState<boolean>(readStoredContrast);
   const [soundOn, setSoundOn] = useState<boolean>(isSoundEnabled);
+  const [githubPat, setGithubPat] = useState<string>(getStoredGithubPat);
+  const [patSavedNotice, setPatSavedNotice] = useState(false);
   const [systemIsDark, setSystemIsDark] = useState<boolean>(() =>
     typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)').matches : true
   );
@@ -285,6 +288,51 @@ export function SettingsModal({
           </div>
           <div className="forge-muted">
             All characters, custom maps, homebrew entries, and encounters are saved offline in your browser IndexedDB.
+          </div>
+        </div>
+
+        <div className="card forge-stack">
+          <div className="card-header">
+            <div className="forge-section-label">GITHUB CAMPAIGN REPO SYNC (OPTIONAL)</div>
+          </div>
+          <div className="forge-muted" style={{ fontSize: 12 }}>
+            Optional fine-grained Personal Access Token (Contents: Read &amp; Write) for syncing private campaign repos or pushing characters directly from GitHub Pages. Stored <strong>only</strong> in this browser&apos;s <code>localStorage</code>.
+          </div>
+          <div className="forge-row" style={{ gap: 6 }}>
+            <input
+              type="password"
+              className="forge-input"
+              style={{ flex: 1 }}
+              placeholder="github_pat_..."
+              value={githubPat}
+              onChange={(e) => {
+                setGithubPat(e.target.value);
+                setPatSavedNotice(false);
+              }}
+            />
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => {
+                setStoredGithubPat(githubPat);
+                setPatSavedNotice(true);
+              }}
+            >
+              {patSavedNotice ? 'Saved ✓' : 'Save Token'}
+            </button>
+            {githubPat && (
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  setGithubPat('');
+                  setStoredGithubPat('');
+                  setPatSavedNotice(false);
+                }}
+              >
+                Clear
+              </button>
+            )}
           </div>
         </div>
       </div>

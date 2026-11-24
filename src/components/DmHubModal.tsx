@@ -18,11 +18,13 @@ import {
   generateRandomTavern,
 } from '../engine/improv';
 import { AmbientPresetId, SfxPresetId, tabletopSoundboard } from '../engine/soundboard';
+import { buildCampaignPackTemplate, parseRepoSlug } from '../engine/campaign-repo-sync';
 import {
   CampaignCategory,
   CampaignEntry,
   CampaignRecord,
   DowntimeProject,
+  ExternalRepoConfig,
   SharedHandoutPayload,
   WorldMapPin,
 } from '../types/campaign';
@@ -66,6 +68,7 @@ interface DmHubModalProps {
   onUpsertDowntime?: (project: DowntimeProject) => void;
   onAdvanceDowntime?: (deltaDays: number) => void;
   onDeleteDowntime?: (projectId: string) => void;
+  onSyncCampaignRepo?: (config?: ExternalRepoConfig) => Promise<void>;
 }
 
 const CATEGORIES: Array<{ key: 'all' | CampaignCategory; label: string }> = [
@@ -114,6 +117,7 @@ export function DmHubModal({
   onUpsertDowntime,
   onAdvanceDowntime,
   onDeleteDowntime,
+  onSyncCampaignRepo,
 }: DmHubModalProps) {
   const [tab, setTab] = useState<'binder' | 'clock' | 'loot' | 'dmscreen' | 'xp' | 'improv' | 'worldmap' | 'soundboard'>('binder');
   const [dtOwner, setDtOwner] = useState('');
@@ -871,6 +875,77 @@ export function DmHubModal({
                 </div>
               </div>
             </div>
+
+            {onSyncCampaignRepo && (
+              <div className="card forge-stack">
+                <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+                  <span className="forge-section-label" style={{ marginBottom: 0 }}>
+                    PER-CAMPAIGN EXTERNAL GITHUB REPO (<code>campaign-pack.json</code>)
+                  </span>
+                  {campaign.externalRepo?.lastSyncedAt && (
+                    <span className="badge tabular">
+                      Synced {new Date(campaign.externalRepo.lastSyncedAt).toLocaleTimeString()}
+                    </span>
+                  )}
+                </div>
+                <div className="forge-muted" style={{ fontSize: 12 }}>
+                  Link a separate GitHub repo (<code>owner/repo</code>) for this campaign&apos;s characters, monsters, items, and handouts. Supports public repos or private repos (with a token in Settings).
+                </div>
+                <form
+                  className="forge-row"
+                  style={{ flexWrap: 'wrap', gap: 6 }}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const fd = new FormData(e.currentTarget);
+                    const slug = parseRepoSlug(String(fd.get('repoSlug') || ''));
+                    const branch = String(fd.get('repoBranch') || 'main').trim() || 'main';
+                    if (!slug) return;
+                    void onSyncCampaignRepo({ owner: slug.owner, repo: slug.repo, branch });
+                  }}
+                >
+                  <input
+                    name="repoSlug"
+                    type="text"
+                    className="forge-input"
+                    style={{ flex: '1 1 200px' }}
+                    defaultValue={
+                      campaign.externalRepo
+                        ? `${campaign.externalRepo.owner}/${campaign.externalRepo.repo}`
+                        : ''
+                    }
+                    placeholder="Solopass/campaign-curse-of-strahd"
+                  />
+                  <input
+                    name="repoBranch"
+                    type="text"
+                    className="forge-input"
+                    style={{ width: 90 }}
+                    defaultValue={campaign.externalRepo?.branch ?? 'main'}
+                    placeholder="main"
+                  />
+                  <button type="submit" className="btn btn-primary">
+                    Sync Campaign Repo
+                  </button>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => {
+                      const blob = new Blob([buildCampaignPackTemplate(campaign.name)], {
+                        type: 'application/json',
+                      });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'campaign-pack.json';
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                  >
+                    Download Manifest Template
+                  </button>
+                </form>
+              </div>
+            )}
 
             <div className="card forge-stack">
               <div className="forge-row-between" style={{ flexWrap: 'wrap' }}>

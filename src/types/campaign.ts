@@ -57,6 +57,13 @@ export interface DowntimeProject {
   notes?: string;
 }
 
+export interface ExternalRepoConfig {
+  owner: string;
+  repo: string;
+  branch?: string;
+  lastSyncedAt?: string;
+}
+
 export interface CampaignRecord {
   id: string;
   name: string;
@@ -70,5 +77,6 @@ export interface CampaignRecord {
   worldMapImageDataUrl?: string;
   worldMapPins?: WorldMapPin[];
   downtimeProjects?: DowntimeProject[];
+  externalRepo?: ExternalRepoConfig;
   createdAt: string;
 }

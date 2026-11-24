@@ -16,6 +16,8 @@ interface CharacterManagerModalProps {
   onImportDdbPdf: (file: File) => Promise<void>;
   onImportCharacterJson: (char: RawCharacterState) => Promise<void>;
   onExportMarkdown?: (char: RawCharacterState) => void;
+  onPushToCampaignRepo?: (char: RawCharacterState) => Promise<void>;
+  campaignRepoLabel?: string;
 }
 
 export const CharacterManagerModal: React.FC<CharacterManagerModalProps> = ({
@@ -31,6 +33,8 @@ export const CharacterManagerModal: React.FC<CharacterManagerModalProps> = ({
   onImportDdbPdf,
   onImportCharacterJson,
   onExportMarkdown,
+  onPushToCampaignRepo,
+  campaignRepoLabel,
 }) => {
   const [query, setQuery] = useState('');
   const [rulesetFilter, setRulesetFilter] = useState<'all' | Ruleset>('all');
@@ -260,6 +264,20 @@ export const CharacterManagerModal: React.FC<CharacterManagerModalProps> = ({
                           onClick={() => onExportMarkdown(c)}
                         >
                           .md
+                        </button>
+                      )}
+                      {onPushToCampaignRepo && (
+                        <button
+                          type="button"
+                          className="btn"
+                          title={
+                            campaignRepoLabel
+                              ? `Push ${c.name} to ${campaignRepoLabel}`
+                              : 'Link a Campaign Repo in DM Hub & add GitHub token in Settings'
+                          }
+                          onClick={() => void onPushToCampaignRepo(c)}
+                        >
+                          Push Repo
                         </button>
                       )}
                       {characters.length > 1 && (

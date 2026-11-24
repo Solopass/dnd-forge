@@ -28,6 +28,12 @@ import { adapt5eToolsPayload } from '../engine/five-tools-adapter';
 import { parseDndBeyondPdfBuffer } from '../engine/ddb-pdf-importer';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
 import { CUSTOM_REPO_CHARACTERS, loadCustomRepoEntities, parseCustomContentJson } from '../engine/custom-content-loader';
+import {
+  fetchCampaignPackFromGitHub,
+  getStoredGithubPat,
+  pushFileToGitHubRepo,
+} from '../engine/campaign-repo-sync';
+import { ExternalRepoConfig } from '../types/campaign';
 import { HouseRulesConfig, readStoredHouseRules, saveHouseRules } from '../engine/ruleset-config';
 import {
   buildCharacterFromPreset,
@@ -3928,6 +3934,92 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     [rawChar.ruleset, persistCampaign, appendLog]
   );
 
+  const syncCampaignExternalRepo = useCallback(
+    async (repoConfig?: ExternalRepoConfig) => {
+      const cfg = repoConfig ?? campaign.externalRepo;
+      if (!cfg?.owner || !cfg?.repo) {
+        appendLog('Set an owner/repo (e.g. Solopass/my-campaign) before syncing.', 'warn');
+        return;
+      }
+      const token = getStoredGithubPat();
+      try {
+        const result = await fetchCampaignPackFromGitHub(cfg, token || undefined);
+        if (result.entities.length > 0) {
+          await upsertCompendiumEntities(result.entities);
+          setCompendium((prev) => {
+            const map = new Map(prev.map((e) => [e.id, e]));
+            for (const e of result.entities) map.set(e.id, e);
+            return Array.from(map.values());
+          });
+        }
+        if (result.characters.length > 0) {
+          for (const ch of result.characters) {
+            await saveCharacter(ch);
+          }
+          setCharacterList((prev) => {
+            const map = new Map(prev.map((c) => [c.id, c]));
+            for (const ch of result.characters) map.set(ch.id, ch);
+            return Array.from(map.values());
+          });
+        }
+        persistCampaign((prev) => {
+          const existingEntryIds = new Set(prev.entries.map((e) => e.id));
+          const newEntries = result.entries.filter((e) => !existingEntryIds.has(e.id));
+          return {
+            ...prev,
+            externalRepo: { ...cfg, lastSyncedAt: result.syncedAt },
+            entries: newEntries.length > 0 ? [...newEntries, ...prev.entries] : prev.entries,
+          };
+        });
+        appendLog(
+          `Synced ${cfg.owner}/${cfg.repo}: ${result.entities.length} entities, ${result.characters.length} characters, ${result.entries.length} binder entries.`,
+          'info'
+        );
+        pushToast(`Synced ${cfg.owner}/${cfg.repo} (${result.entities.length} items, ${result.characters.length} PCs)`, 'info');
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        appendLog(`Campaign repo sync failed: ${msg}`, 'warn');
+        pushToast(`Sync failed: ${msg}`, 'warn');
+      }
+    },
+    [campaign.externalRepo, persistCampaign, appendLog, pushToast]
+  );
+
+  const pushCharacterToCampaignRepo = useCallback(
+    async (character: RawCharacterState) => {
+      const cfg = campaign.externalRepo;
+      if (!cfg?.owner || !cfg?.repo) {
+        appendLog('Link a Campaign Repo in DM Hub first before pushing.', 'warn');
+        pushToast('Link a Campaign Repo in DM Hub first.', 'warn');
+        return;
+      }
+      const token = getStoredGithubPat();
+      if (!token) {
+        appendLog('Add a GitHub Sync Token in Settings first to push from the browser.', 'warn');
+        pushToast('Add a GitHub Sync Token in Settings first.', 'warn');
+        return;
+      }
+      const slug = character.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || character.id;
+      const filePath = `characters/${slug}.json`;
+      try {
+        await pushFileToGitHubRepo(
+          cfg,
+          filePath,
+          `${JSON.stringify(character, null, 2)}\n`,
+          `feat: save character ${character.name} from Sidereroll`,
+          token
+        );
+        appendLog(`Pushed "${character.name}" -> ${cfg.owner}/${cfg.repo}/${filePath}.`, 'info');
+        pushToast(`Pushed ${character.name} to ${cfg.owner}/${cfg.repo}`, 'info');
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        appendLog(`Push failed: ${msg}`, 'warn');
+        pushToast(`Push failed: ${msg}`, 'warn');
+      }
+    },
+    [campaign.externalRepo, appendLog, pushToast]
+  );
+
   const upsertDowntimeProject = useCallback(
     (project: DowntimeProject) => {
       persistCampaign((prev) => {
@@ -4134,6 +4226,8 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     depositItemToPartyStash,
     claimPartyStashItem,
     addPartyStashItem,
+    syncCampaignExternalRepo,
+    pushCharacterToCampaignRepo,
     toggleItemEquipped,
     toggleItemPrepared,
     toggleItemAttuned,

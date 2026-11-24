@@ -43,6 +43,7 @@ export function LevelUpModal({
   const [selectedFeatId, setSelectedFeatId] = useState('');
   const [selectedSpellIds, setSelectedSpellIds] = useState<string[]>([]);
   const [spellFilter, setSpellFilter] = useState('');
+  const [matchCharRulesetOnly, setMatchCharRulesetOnly] = useState(true);
 
   const classDef = getClassDefinition(selectedClass) ?? CLASS_DEFINITIONS[0]!;
   const existingEntry = character.classes.find(
@@ -77,8 +78,14 @@ export function LevelUpModal({
   const ownedIds = useMemo(() => new Set(character.items.map((i) => i.id)), [character.items]);
 
   const featOptions = useMemo(
-    () => allPackEntities.filter((e) => e.category === 'feat' && !ownedIds.has(e.id)),
-    [allPackEntities, ownedIds]
+    () =>
+      allPackEntities.filter(
+        (e) =>
+          e.category === 'feat' &&
+          !ownedIds.has(e.id) &&
+          (!matchCharRulesetOnly || e.ruleset === character.ruleset || e.ruleset === 'homebrew')
+      ),
+    [allPackEntities, ownedIds, matchCharRulesetOnly, character.ruleset]
   );
 
   const maxNewSpellLevel = useMemo(() => {
@@ -99,9 +106,16 @@ export function LevelUpModal({
     if (maxNewSpellLevel <= 0) return [];
     const q = spellFilter.trim().toLowerCase();
     return allPackEntities
-      .filter((e) => e.category === 'spell' && !ownedIds.has(e.id) && (e.spellLevel ?? 0) <= maxNewSpellLevel)
-      .filter((e) => !q || e.name.toLowerCase().includes(q));
-  }, [allPackEntities, ownedIds, maxNewSpellLevel, spellFilter]);
+      .filter(
+        (e) =>
+          e.category === 'spell' &&
+          !ownedIds.has(e.id) &&
+          (e.spellLevel ?? 0) <= maxNewSpellLevel &&
+          (!matchCharRulesetOnly || e.ruleset === character.ruleset || e.ruleset === 'homebrew')
+      )
+      .filter((e) => !q || e.name.toLowerCase().includes(q))
+      .slice(0, 60);
+  }, [allPackEntities, ownedIds, maxNewSpellLevel, spellFilter, matchCharRulesetOnly, character.ruleset]);
 
   const toggleSpell = (id: string) => {
     setSelectedSpellIds((prev) =>
@@ -142,6 +156,17 @@ export function LevelUpModal({
   return (
     <ModalDialog isOpen={isOpen} onClose={onClose} title={`Level-Up Wizard — ${character.name}`}>
       <form onSubmit={handleSubmit} className="forge-stack">
+        <div className="forge-row-between" style={{ fontSize: 11 }}>
+          <span className="badge">Ruleset: {character.ruleset.toUpperCase()}</span>
+          <label className="forge-row" style={{ gap: 6, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={matchCharRulesetOnly}
+              onChange={(e) => setMatchCharRulesetOnly(e.target.checked)}
+            />
+            <span>Filter spells &amp; feats to {character.ruleset}</span>
+          </label>
+        </div>
         <div className="card forge-grid-2">
           <label className="forge-field">
             <span className="forge-label">CLASS TO ADVANCE (OR MULTICLASS)</span>

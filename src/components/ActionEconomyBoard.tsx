@@ -37,6 +37,7 @@ interface ActionEconomyBoardProps {
   onClaimPartyStashItem?: (stashId: string) => void;
   onAddPartyStashItem?: (name: string, category: ItemCategory, quantity: number) => void;
   onInspectItem?: (itemId: string) => void;
+  onOpenCompendium?: (category: ItemCategory) => void;
 }
 
 const ECONOMY_SECTIONS: Array<{ key: Exclude<ActionEconomy, 'special'>; label: string }> = [
@@ -108,6 +109,7 @@ export function ActionEconomyBoard({
   onClaimPartyStashItem,
   onAddPartyStashItem,
   onInspectItem,
+  onOpenCompendium,
 }: ActionEconomyBoardProps) {
   const [beyondTab, setBeyondTab] = useState<'actions' | 'spells' | 'inventory' | 'features'>('actions');
   const [filter, setFilter] = useState<'all' | 'attack' | 'save' | 'heal' | 'summon' | 'concentration'>('all');
@@ -518,6 +520,16 @@ export function ActionEconomyBoard({
                     ? `Prepared ${sheet.spellcasting.preparedCount}/${sheet.spellcasting.maxPrepared}`
                     : `Prepared ${sheet.spellcasting.preparedCount}`}
                 </span>
+                {onOpenCompendium && (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    style={{ fontSize: 11, padding: '2px 8px' }}
+                    onClick={() => onOpenCompendium('spell')}
+                  >
+                    + Add Spell
+                  </button>
+                )}
               </div>
             </div>
             {(spellSlotPools.length > 0 || pactPool) && (
@@ -598,6 +610,7 @@ export function ActionEconomyBoard({
             onAddPartyStashItem={onAddPartyStashItem}
             onOpenGearDrawer={onOpenGearDrawer}
             onInspectItem={onInspectItem}
+            onOpenCompendium={onOpenCompendium}
           />
         </section>
       )}

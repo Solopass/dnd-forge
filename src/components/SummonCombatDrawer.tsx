@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { CombatEncounterState } from '../types/combat';
 import { Activity, CompendiumEntity, CreatureSize, MonsterStatMeta } from '../types/compendium';
 import { ActionEconomy, STANDARD_CONDITIONS } from '../types/core';
@@ -805,6 +805,8 @@ interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
   isPlayerRole?: boolean;
+  initialCategory?: 'all' | CompendiumEntity['category'];
+  initialRuleset?: 'all' | '2014' | '2024';
   searchCompendium: (query: string) => CompendiumEntity[];
   onAddCompendiumItem: (item: CompendiumEntity) => void;
   onInstallContentPack: (packId: string) => Promise<void>;
@@ -817,6 +819,8 @@ export function CommandPalette({
   isOpen,
   onClose,
   isPlayerRole = false,
+  initialCategory = 'all',
+  initialRuleset = 'all',
   searchCompendium,
   onAddCompendiumItem,
   onInstallContentPack,
@@ -825,18 +829,28 @@ export function CommandPalette({
   onImportJsonText,
 }: CommandPaletteProps) {
   const [tab, setTab] = useState<'search' | 'packs' | 'pdf' | 'markdown' | 'json'>('search');
-  const [categoryFilter, setCategoryFilter] = useState<'all' | CompendiumEntity['category']>('all');
-  const [rulesetFilter, setRulesetFilter] = useState<'all' | '2014' | '2024'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | CompendiumEntity['category']>(initialCategory);
+  const [rulesetFilter, setRulesetFilter] = useState<'all' | '2014' | '2024'>(initialRuleset);
+  const [spellLevelFilter, setSpellLevelFilter] = useState<'all' | number>('all');
   const [query, setQuery] = useState('');
   const [pasteText, setPasteText] = useState('');
 
-  const matches = searchCompendium(query)
-    .filter(
-      (item) =>
-        (categoryFilter === 'all' || item.category === categoryFilter) &&
-        (rulesetFilter === 'all' || item.ruleset === rulesetFilter)
-    )
-    .slice(0, 120);
+  useEffect(() => {
+    if (isOpen) {
+      setTab('search');
+      setCategoryFilter(initialCategory);
+      setRulesetFilter(initialRuleset);
+      setSpellLevelFilter('all');
+    }
+  }, [isOpen, initialCategory, initialRuleset]);
+
+  const allMatches = searchCompendium(query).filter(
+    (item) =>
+      (categoryFilter === 'all' || item.category === categoryFilter) &&
+      (rulesetFilter === 'all' || item.ruleset === rulesetFilter) &&
+      (categoryFilter !== 'spell' || spellLevelFilter === 'all' || (item.spellLevel ?? 0) === spellLevelFilter)
+  );
+  const matches = allMatches.slice(0, 80);
 
   return (
     <ModalDialog isOpen={isOpen} onClose={onClose} title="Compendium, SRD Packs & Importers">
@@ -918,7 +932,31 @@ export function CommandPalette({
                   {rs === 'all' ? 'ALL RULES' : rs}
                 </button>
               ))}
+              <span className="badge tabular" style={{ marginLeft: 'auto' }}>
+                {matches.length}/{allMatches.length}
+              </span>
             </div>
+            {categoryFilter === 'spell' && (
+              <div className="pill-row" style={{ marginBottom: 8, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className={`pill ${spellLevelFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => setSpellLevelFilter('all')}
+                >
+                  All Lvls
+                </button>
+                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((lvl) => (
+                  <button
+                    key={lvl}
+                    type="button"
+                    className={`pill tabular ${spellLevelFilter === lvl ? 'active' : ''}`}
+                    onClick={() => setSpellLevelFilter(lvl)}
+                  >
+                    {lvl === 0 ? 'Cantrip' : `L${lvl}`}
+                  </button>
+                ))}
+              </div>
+            )}
             <div style={{ maxHeight: 280, overflowY: 'auto' }}>
               {matches.map((item) => (
                 <div

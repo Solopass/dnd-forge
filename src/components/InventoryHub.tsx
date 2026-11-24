@@ -21,6 +21,7 @@ interface InventoryHubProps {
   onAddPartyStashItem?: (name: string, category: ItemCategory, quantity: number) => void;
   onOpenGearDrawer?: () => void;
   onInspectItem?: (itemId: string) => void;
+  onOpenCompendium?: (category: ItemCategory) => void;
 }
 
 const CONTAINERS = ['All', 'Equipped', 'Carried', 'Backpack', 'Bag of Holding', 'Pouch'] as const;
@@ -44,6 +45,7 @@ export const InventoryHub: React.FC<InventoryHubProps> = ({
   onAddPartyStashItem,
   onOpenGearDrawer,
   onInspectItem,
+  onOpenCompendium,
 }) => {
   const [activeView, setActiveView] = useState<'personal' | 'party'>(
     mode === 'party' ? 'party' : 'personal'
@@ -109,17 +111,29 @@ export const InventoryHub: React.FC<InventoryHubProps> = ({
               <span className="badge">Attuned {attunementCount}/3</span>
               <span className="badge">Purse {totalGpValue.toFixed(1)} gp</span>
             </div>
-            {onSimplifyCurrency && (
-              <button
-                type="button"
-                className="btn"
-                style={{ fontSize: 10, padding: '2px 6px' }}
-                onClick={onSimplifyCurrency}
-                title="Convert CP/SP/EP into optimal PP/GP/SP/CP"
-              >
-                Simplify Coins
-              </button>
-            )}
+            <div className="forge-row" style={{ gap: 6 }}>
+              {onOpenCompendium && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{ fontSize: 10, padding: '2px 8px' }}
+                  onClick={() => onOpenCompendium('gear')}
+                >
+                  + Add Gear
+                </button>
+              )}
+              {onSimplifyCurrency && (
+                <button
+                  type="button"
+                  className="btn"
+                  style={{ fontSize: 10, padding: '2px 6px' }}
+                  onClick={onSimplifyCurrency}
+                  title="Convert CP/SP/EP into optimal PP/GP/SP/CP"
+                >
+                  Simplify Coins
+                </button>
+              )}
+            </div>
           </div>
 
           {onUpdateCurrency && (

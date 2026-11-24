@@ -25,6 +25,7 @@ export function EncounterBuilderModal({
   const [query, setQuery] = useState('');
   const [crFilter, setCrFilter] = useState<'all' | 'low' | 'mid' | 'high' | 'boss'>('all');
   const [sizeFilter, setSizeFilter] = useState<'all' | CreatureSize>('all');
+  const [rulesetFilter, setRulesetFilter] = useState<'all' | '2014' | '2024'>('all');
   const [staged, setStaged] = useState<Array<{ entity: CompendiumEntity; count: number }>>([]);
 
   // Custom Monster Forge fields
@@ -56,6 +57,7 @@ export function EncounterBuilderModal({
     const q = query.trim().toLowerCase();
     return allMonsters.filter((m) => {
       if (q && !m.name.toLowerCase().includes(q)) return false;
+      if (rulesetFilter !== 'all' && m.ruleset !== rulesetFilter) return false;
       if (sizeFilter !== 'all' && (m.monsterMeta?.size ?? 'medium') !== sizeFilter) return false;
       const xp = crToXp(m.monsterMeta?.cr);
       if (crFilter === 'low' && xp > 200) return false;
@@ -64,7 +66,7 @@ export function EncounterBuilderModal({
       if (crFilter === 'boss' && xp <= 8400) return false;
       return true;
     });
-  }, [allMonsters, query, sizeFilter, crFilter]);
+  }, [allMonsters, query, rulesetFilter, sizeFilter, crFilter]);
 
   const stagedCrs = staged.flatMap((s) =>
     Array.from({ length: s.count }, () => s.entity.monsterMeta?.cr ?? '1')
@@ -219,6 +221,16 @@ export function EncounterBuilderModal({
               </select>
               <select
                 className="select"
+                aria-label="Filter by ruleset"
+                value={rulesetFilter}
+                onChange={(e) => setRulesetFilter(e.target.value as typeof rulesetFilter)}
+              >
+                <option value="all">All Rules ({allMonsters.length})</option>
+                <option value="2024">2024 SRD 5.2</option>
+                <option value="2014">2014 SRD 5.1</option>
+              </select>
+              <select
+                className="select"
                 aria-label="Filter by size"
                 value={sizeFilter}
                 onChange={(e) => setSizeFilter(e.target.value as typeof sizeFilter)}
@@ -245,9 +257,22 @@ export function EncounterBuilderModal({
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredMonsters.map((m) => (
+                  {filteredMonsters.slice(0, 80).map((m) => (
                     <tr key={m.id}>
-                      <th scope="row">{m.name}</th>
+                      <th scope="row">
+                        <div className="forge-row" style={{ gap: 6 }}>
+                          {m.imageUrl && (
+                            <img
+                              src={m.imageUrl}
+                              alt=""
+                              loading="lazy"
+                              style={{ width: 22, height: 22, borderRadius: 4, objectFit: 'cover' }}
+                            />
+                          )}
+                          <span>{m.name}</span>
+                          <span className="badge" style={{ fontSize: 9 }}>{m.ruleset}</span>
+                        </div>
+                      </th>
                       <td data-label="CR" className="tabular">{m.monsterMeta?.cr ?? '1'}</td>
                       <td data-label="Size">{m.monsterMeta?.size ?? 'medium'}</td>
                       <td data-label="AC / HP" className="tabular">

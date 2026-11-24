@@ -66,6 +66,9 @@ const ShortRestModal = lazy(() =>
 const ItemInspectorPanel = lazy(() =>
   import('./components/ItemInspectorPanel').then((m) => ({ default: m.ItemInspectorPanel }))
 );
+const CharacterManagerModal = lazy(() =>
+  import('./components/CharacterManagerModal').then((m) => ({ default: m.CharacterManagerModal }))
+);
 import { BUILTIN_CONTENT_PACKS } from './engine/srd-packs';
 import { detectRulesetPreset } from './engine/ruleset-config';
 import {
@@ -282,6 +285,9 @@ export function App() {
   const [activeLayout, setActiveLayout] = useState<WorkspaceLayoutConfig>(() => readStoredLayout());
   const [levelUpOpen, setLevelUpOpen] = useState(false);
   const [shortRestOpen, setShortRestOpen] = useState(false);
+  const [charManagerOpen, setCharManagerOpen] = useState(false);
+  const [paletteInitialCat, setPaletteInitialCat] = useState<'all' | 'weapon' | 'armor' | 'shield' | 'gear' | 'spell' | 'feature' | 'feat' | 'infusion' | 'monster'>('all');
+  const [paletteInitialRuleset, setPaletteInitialRuleset] = useState<'all' | '2014' | '2024'>('all');
   const [liveTableOpen, setLiveTableOpen] = useState(false);
   const [dmHubOpen, setDmHubOpen] = useState(false);
   const [encounterBuilderOpen, setEncounterBuilderOpen] = useState(false);
@@ -510,6 +516,11 @@ export function App() {
         setInspectedItemId(itemId);
         setRightTab('inspector');
         if (uiMode === 'classic') setShowClassicCombat(true);
+      }}
+      onOpenCompendium={(cat) => {
+        setPaletteInitialCat(cat);
+        setPaletteInitialRuleset(store.rawChar.ruleset === '2024' ? '2024' : '2014');
+        setPaletteOpen(true);
       }}
     />
   );
@@ -741,6 +752,14 @@ export function App() {
               </option>
             ))}
           </select>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => setCharManagerOpen(true)}
+            title="Open Character Manager (switch, import, export, duplicate, delete)"
+          >
+            Roster ({store.characterList.length})
+          </button>
           <button
             type="button"
             className="btn btn-brand"
@@ -1458,8 +1477,14 @@ export function App() {
 
       <CommandPalette
         isOpen={paletteOpen}
-        onClose={() => setPaletteOpen(false)}
+        onClose={() => {
+          setPaletteOpen(false);
+          setPaletteInitialCat('all');
+          setPaletteInitialRuleset('all');
+        }}
         isPlayerRole={isPlayerRole}
+        initialCategory={paletteInitialCat}
+        initialRuleset={paletteInitialRuleset}
         searchCompendium={store.searchCompendium}
         onAddCompendiumItem={store.addCompendiumItemToSheet}
         onInstallContentPack={store.installContentPack}
@@ -1488,6 +1513,22 @@ export function App() {
           isOpen={newCharOpen}
           onClose={() => setNewCharOpen(false)}
           onCreate={store.createCharacterFromPreset}
+        />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <CharacterManagerModal
+          isOpen={charManagerOpen}
+          onClose={() => setCharManagerOpen(false)}
+          characters={store.characterList}
+          activeCharacterId={store.rawChar.id}
+          onSelectCharacter={(id) => void store.switchCharacter(id)}
+          onOpenNewCharacter={() => setNewCharOpen(true)}
+          onOpenBuilderForActive={() => setBuilderOpen(true)}
+          onDuplicateCharacter={store.duplicateCharacter}
+          onDeleteCharacter={store.deleteCharacter}
+          onImportDdbPdf={store.importDdbPdfFile}
+          onImportCharacterJson={store.importSingleCharacter}
         />
       </Suspense>
 

@@ -122,6 +122,11 @@ export function SummonCombatDrawer({
   const [effectRoundsInput, setEffectRoundsInput] = useState('10');
   const [mobCond, setMobCond] = useState<string>(STANDARD_CONDITIONS[10]);
   const [hpDeltas, setHpDeltas] = useState<Record<string, string>>({});
+  const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
+
+  const toggleExpanded = (id: string) => {
+    setExpandedIds((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   const srdMonsters = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities).filter(
     (e) => e.category === 'monster' && e.monsterMeta
@@ -500,56 +505,64 @@ export function SummonCombatDrawer({
         )}
       </div>
 
+      {!playerView && selectedTargetIds.length > 0 && (
+        <div
+          className="subpanel forge-row-between"
+          style={{ padding: '6px 10px', gap: 6, flexWrap: 'wrap', borderColor: 'var(--accent-red)' }}
+        >
+          <span style={{ fontSize: 11 }}>
+            <strong>Targets ({selectedTargetIds.length}):</strong>{' '}
+            {encounter.combatants
+              .filter((c) => selectedTargetIds.includes(c.id))
+              .map((c) => c.name)
+              .join(', ')}
+          </span>
+          <button type="button" className="pill" onClick={onClearTargets}>
+            Clear
+          </button>
+        </div>
+      )}
+
       {visibleCombatants.map((node) => {
         const isActive = encounter.combatants[encounter.activeTurnIndex]?.id === node.id;
+        const isDown = node.hp.current <= 0;
+        const isExpanded = expandedIds[node.id] ?? isActive;
         const hpPct = node.hp.max > 0 ? Math.max(0, Math.min(100, (node.hp.current / node.hp.max) * 100)) : 0;
         const hideHp = playerView && node.kind !== 'pc';
         return (
           <div
             key={node.id}
             className={`card ${isActive ? 'combatant-active' : ''}`}
-            style={{ marginLeft: node.ownerId ? 14 : 0, opacity: node.hidden ? 0.68 : 1 }}
+            style={{
+              marginLeft: node.ownerId ? 14 : 0,
+              opacity: isDown ? 0.56 : node.hidden ? 0.72 : 1,
+            }}
           >
             <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 4 }}>
-              <span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                <input
+                  aria-label={`${node.name} initiative`}
+                  type="number"
+                  value={node.initiative}
+                  disabled={playerView && node.kind !== 'pc'}
+                  title="Initiative"
+                  onChange={(e) => {
+                    const val = Number.parseInt(e.target.value, 10);
+                    if (!Number.isNaN(val)) onSetCombatantInitiative(node.id, val);
+                  }}
+                  className="forge-input tabular"
+                  style={{ width: 38, padding: '1px 4px', fontSize: 11, textAlign: 'center' }}
+                />
                 {node.ownerId ? '↳ ' : ''}
                 <strong>{node.name}</strong>
-                {isActive && <span className="turn-badge">ACTIVE TURN</span>}
+                {isActive && <span className="turn-badge">TURN</span>}
+                {isDown && <span className="conc-badge" style={{ borderColor: 'var(--accent-red)', color: 'var(--accent-red)' }}>0 HP</span>}
                 {node.hidden && <span className="conc-badge">HIDDEN</span>}
+                <span className="tabular forge-muted" style={{ fontSize: 11 }}>
+                  AC {hideHp ? '?' : node.ac}
+                </span>
               </span>
-              <div className="forge-row" style={{ flexWrap: 'wrap' }}>
-                {!isPlayerRole && onMoveCombatantOrder && (
-                  <>
-                    <button
-                      type="button"
-                      className="btn"
-                      aria-label={`Move ${node.name} up in initiative`}
-                      title="Move up in turn order"
-                      onClick={() => onMoveCombatantOrder(node.id, -1)}
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      className="btn"
-                      aria-label={`Move ${node.name} down in initiative`}
-                      title="Move down in turn order"
-                      onClick={() => onMoveCombatantOrder(node.id, 1)}
-                    >
-                      ↓
-                    </button>
-                  </>
-                )}
-                {node.kind !== 'pc' && !isPlayerRole && (
-                  <button
-                    type="button"
-                    className="btn"
-                    onClick={() => onInspectCombatant(node.id)}
-                    title="Inspect full statblock & traits"
-                  >
-                    Statblock
-                  </button>
-                )}
+              <div className="forge-row" style={{ flexWrap: 'wrap', gap: 4 }}>
                 {!playerView && (
                   <button
                     type="button"
@@ -560,63 +573,28 @@ export function SummonCombatDrawer({
                     {selectedTargetIds.includes(node.id) ? 'Targeted' : 'Target'}
                   </button>
                 )}
-                {!playerView && node.kind !== 'pc' && (
-                  <>
-                    <button
-                      type="button"
-                      className={`pill ${node.hidden ? 'active' : ''}`}
-                      onClick={() => onToggleCombatantHidden(node.id)}
-                      title="Hide or reveal in Player View & Battlemap"
-                    >
-                      {node.hidden ? 'Reveal' : 'Hide'}
-                    </button>
-                    <select
-                      aria-label={`${node.name} creature size`}
-                      className="forge-input"
-                      value={node.size ?? 'medium'}
-                      onChange={(e) => onSetCombatantSize(node.id, e.target.value as CreatureSize)}
-                      style={{ padding: '1px 4px', fontSize: 11 }}
-                    >
-                      <option value="tiny">T (1x1)</option>
-                      <option value="small">S (1x1)</option>
-                      <option value="medium">M (1x1)</option>
-                      <option value="large">L (2x2)</option>
-                      <option value="huge">H (3x3)</option>
-                      <option value="gargantuan">G (4x4)</option>
-                    </select>
-                  </>
-                )}
-                <span className="forge-muted" style={{ fontSize: 11 }}>Init</span>
-                <input
-                  aria-label={`${node.name} initiative`}
-                  type="number"
-                  value={node.initiative}
-                  disabled={playerView && node.kind !== 'pc'}
-                  onChange={(e) => {
-                    const val = Number.parseInt(e.target.value, 10);
-                    if (!Number.isNaN(val)) onSetCombatantInitiative(node.id, val);
-                  }}
-                  className="forge-input tabular"
-                  style={{ width: 42, padding: '1px 4px', fontSize: 11 }}
-                />
-                <span className="tabular forge-muted">
-                  • AC {hideHp ? '?' : node.ac}
-                </span>
-                {!playerView && node.kind !== 'pc' && (
+                {node.kind !== 'pc' && !isPlayerRole && (
                   <button
                     type="button"
                     className="btn"
-                    title="Remove from encounter"
-                    aria-label={`Remove ${node.name}`}
-                    onClick={() => onRemoveCombatant(node.id)}
+                    onClick={() => onInspectCombatant(node.id)}
+                    title="Inspect full statblock & traits"
                   >
-                    ×
+                    Stats
                   </button>
                 )}
+                <button
+                  type="button"
+                  className={`pill ${isExpanded ? 'active' : ''}`}
+                  onClick={() => toggleExpanded(node.id)}
+                  title={isExpanded ? 'Collapse combatant controls' : 'Expand combatant controls'}
+                >
+                  {isExpanded ? 'Less' : 'More'}
+                </button>
               </div>
             </div>
 
-            <div className="forge-row-between" style={{ marginTop: 6 }}>
+            <div className="forge-row-between" style={{ marginTop: 6, gap: 6, flexWrap: 'wrap' }}>
               {hideHp ? (
                 <span style={{ fontSize: 12 }}>
                   Status: <strong>{getQualitativeHealthLabel(node.hp.current, node.hp.max)}</strong>
@@ -627,7 +605,28 @@ export function SummonCombatDrawer({
                     HP <strong>{node.hp.current}</strong> / {node.hp.max}
                     {node.hp.temp > 0 ? ` (+${node.hp.temp})` : ''}
                   </span>
-                  <div className="forge-row">
+                  <div className="forge-row" style={{ gap: 4 }}>
+                    <div className="econ-pill-row" role="group" aria-label={`${node.name} turn economy`}>
+                      {([
+                        { key: 'action', label: 'A', title: 'Action' },
+                        { key: 'bonus_action', label: 'BA', title: 'Bonus Action' },
+                        { key: 'reaction', label: 'R', title: 'Reaction' },
+                      ] as const).map((item) => {
+                        const used = node.turnEconomyUsed[item.key];
+                        return (
+                          <button
+                            key={item.key}
+                            type="button"
+                            className={`econ-pill ${used ? 'used' : ''}`}
+                            aria-pressed={used}
+                            title={`${item.title}: ${used ? 'Used' : 'Available'} (click to toggle)`}
+                            onClick={() => onToggleCombatantEconomy(node.id, item.key)}
+                          >
+                            {item.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                     <button type="button" className="btn" onClick={() => onAdjustCombatantHp(node.id, -5)}>-5</button>
                     <button type="button" className="btn" onClick={() => onAdjustCombatantHp(node.id, -1)}>-1</button>
                     <button type="button" className="btn" onClick={() => onAdjustCombatantHp(node.id, 5)}>+5</button>
@@ -642,111 +641,6 @@ export function SummonCombatDrawer({
                   className={`hp-bar-fill ${getCombatHpClass(node.hp.current, node.hp.max)}`}
                   style={{ width: `${hpPct}%` }}
                 />
-              </div>
-            )}
-
-            {!playerView && (node.legendaryActions || (node.rechargeStates && node.rechargeStates.length > 0)) && (
-              <div className="forge-row" style={{ marginTop: 6, flexWrap: 'wrap', gap: 6 }}>
-                {node.legendaryActions && (
-                  <div className="forge-row" style={{ fontSize: 11 }}>
-                    <span className="forge-muted tabular">
-                      LA: {node.legendaryActions.current}/{node.legendaryActions.max}
-                    </span>
-                    <button
-                      type="button"
-                      className="btn"
-                      disabled={node.legendaryActions.current <= 0}
-                      onClick={() => onAdjustLegendary(node.id, -1)}
-                    >
-                      -1 LA
-                    </button>
-                    <button
-                      type="button"
-                      className="btn"
-                      disabled={node.legendaryActions.current >= node.legendaryActions.max}
-                      onClick={() => onAdjustLegendary(node.id, 1)}
-                    >
-                      +1
-                    </button>
-                  </div>
-                )}
-                {node.rechargeStates?.map((rec) => (
-                  <button
-                    key={rec.name}
-                    type="button"
-                    className={`pill ${rec.available ? 'active' : ''}`}
-                    onClick={() => onToggleOrRollRecharge(node.id, rec.name)}
-                    title={rec.available ? 'Click to mark spent' : `Click to roll 1d6 Recharge (${rec.minRoll}+)`}
-                  >
-                    {rec.name.replace(/\s*\(Recharge[^)]*\)/i, '')}: {rec.available ? 'Ready' : `Roll ${rec.minRoll}+`}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="forge-row-between" style={{ marginTop: 6 }}>
-              <span className="forge-muted" style={{ fontSize: 11 }}>
-                Turn Economy:
-              </span>
-              <div className="econ-pill-row" role="group" aria-label={`${node.name} turn economy`}>
-                {([
-                  { key: 'action', label: 'A', title: 'Action' },
-                  { key: 'bonus_action', label: 'BA', title: 'Bonus Action' },
-                  { key: 'reaction', label: 'R', title: 'Reaction' },
-                ] as const).map((item) => {
-                  const used = node.turnEconomyUsed[item.key];
-                  return (
-                    <button
-                      key={item.key}
-                      type="button"
-                      className={`econ-pill ${used ? 'used' : ''}`}
-                      aria-pressed={used}
-                      title={`${item.title}: ${used ? 'Used' : 'Available'} (click to toggle)`}
-                      onClick={() => onToggleCombatantEconomy(node.id, item.key)}
-                    >
-                      {item.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {!hideHp && (
-              <div className="forge-row" style={{ marginTop: 6 }}>
-                <input
-                  aria-label={`${node.name} HP delta`}
-                  type="number"
-                  min={1}
-                  placeholder="Amt"
-                  value={hpDeltas[node.id] ?? ''}
-                  onChange={(e) => setHpDeltas((prev) => ({ ...prev, [node.id]: e.target.value }))}
-                  className="forge-input tabular"
-                  style={{ width: 56, padding: '2px 4px', fontSize: 11 }}
-                />
-                <button type="button" className="btn btn-danger" onClick={() => applyCombatantDelta(node.id, -1)}>
-                  Dmg
-                </button>
-                <button type="button" className="btn btn-primary" onClick={() => applyCombatantDelta(node.id, 1)}>
-                  Heal
-                </button>
-                <select
-                  aria-label={`${node.name} condition`}
-                  className="forge-input"
-                  value={mobCond}
-                  onChange={(e) => setMobCond(e.target.value)}
-                  style={{ flex: 1, padding: '2px 4px', fontSize: 11 }}
-                >
-                  {STANDARD_CONDITIONS.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  className="btn"
-                  onClick={() => onToggleCombatantCondition(node.id, mobCond)}
-                >
-                  +Cond
-                </button>
               </div>
             )}
 
@@ -766,33 +660,184 @@ export function SummonCombatDrawer({
               </div>
             )}
 
-            {!hideHp && node.actions && node.actions.length > 0 && (
-              <div className="pill-row" style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid var(--border-subtle)' }}>
-                {node.actions.map((act) => (
-                  <span key={act.id} className="forge-row" style={{ gap: 4 }}>
+            {isExpanded && (
+              <div className="forge-stack" style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid var(--border-subtle)', gap: 6 }}>
+                {!playerView && (
+                  <div className="forge-row" style={{ flexWrap: 'wrap', gap: 4 }}>
+                    {!isPlayerRole && onMoveCombatantOrder && (
+                      <>
+                        <button
+                          type="button"
+                          className="btn"
+                          aria-label={`Move ${node.name} up in initiative`}
+                          title="Move up in turn order"
+                          onClick={() => onMoveCombatantOrder(node.id, -1)}
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          className="btn"
+                          aria-label={`Move ${node.name} down in initiative`}
+                          title="Move down in turn order"
+                          onClick={() => onMoveCombatantOrder(node.id, 1)}
+                        >
+                          ↓
+                        </button>
+                      </>
+                    )}
+                    {node.kind !== 'pc' && (
+                      <>
+                        <button
+                          type="button"
+                          className={`pill ${node.hidden ? 'active' : ''}`}
+                          onClick={() => onToggleCombatantHidden(node.id)}
+                          title="Hide or reveal in Player View & Battlemap"
+                        >
+                          {node.hidden ? 'Reveal' : 'Hide'}
+                        </button>
+                        <select
+                          aria-label={`${node.name} creature size`}
+                          className="forge-input"
+                          value={node.size ?? 'medium'}
+                          onChange={(e) => onSetCombatantSize(node.id, e.target.value as CreatureSize)}
+                          style={{ padding: '1px 4px', fontSize: 11 }}
+                        >
+                          <option value="tiny">T (1x1)</option>
+                          <option value="small">S (1x1)</option>
+                          <option value="medium">M (1x1)</option>
+                          <option value="large">L (2x2)</option>
+                          <option value="huge">H (3x3)</option>
+                          <option value="gargantuan">G (4x4)</option>
+                        </select>
+                        <button
+                          type="button"
+                          className="btn btn-danger"
+                          style={{ marginLeft: 'auto' }}
+                          title="Remove from encounter"
+                          aria-label={`Remove ${node.name}`}
+                          onClick={() => onRemoveCombatant(node.id)}
+                        >
+                          Remove
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {!playerView && (node.legendaryActions || (node.rechargeStates && node.rechargeStates.length > 0)) && (
+                  <div className="forge-row" style={{ flexWrap: 'wrap', gap: 6 }}>
+                    {node.legendaryActions && (
+                      <div className="forge-row" style={{ fontSize: 11 }}>
+                        <span className="forge-muted tabular">
+                          LA: {node.legendaryActions.current}/{node.legendaryActions.max}
+                        </span>
+                        <button
+                          type="button"
+                          className="btn"
+                          disabled={node.legendaryActions.current <= 0}
+                          onClick={() => onAdjustLegendary(node.id, -1)}
+                        >
+                          -1 LA
+                        </button>
+                        <button
+                          type="button"
+                          className="btn"
+                          disabled={node.legendaryActions.current >= node.legendaryActions.max}
+                          onClick={() => onAdjustLegendary(node.id, 1)}
+                        >
+                          +1
+                        </button>
+                      </div>
+                    )}
+                    {node.rechargeStates?.map((rec) => (
+                      <button
+                        key={rec.name}
+                        type="button"
+                        className={`pill ${rec.available ? 'active' : ''}`}
+                        onClick={() => onToggleOrRollRecharge(node.id, rec.name)}
+                        title={rec.available ? 'Click to mark spent' : `Click to roll 1d6 Recharge (${rec.minRoll}+)`}
+                      >
+                        {rec.name.replace(/\s*\(Recharge[^)]*\)/i, '')}: {rec.available ? 'Ready' : `Roll ${rec.minRoll}+`}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {!hideHp && (
+                  <div className="forge-row" style={{ gap: 4 }}>
+                    <input
+                      aria-label={`${node.name} HP delta`}
+                      type="number"
+                      min={1}
+                      placeholder="Amt (Enter=Dmg)"
+                      value={hpDeltas[node.id] ?? ''}
+                      onChange={(e) => setHpDeltas((prev) => ({ ...prev, [node.id]: e.target.value }))}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          applyCombatantDelta(node.id, -1);
+                        }
+                      }}
+                      className="forge-input tabular"
+                      style={{ width: 92, padding: '2px 4px', fontSize: 11 }}
+                    />
+                    <button type="button" className="btn btn-danger" onClick={() => applyCombatantDelta(node.id, -1)}>
+                      Dmg
+                    </button>
+                    <button type="button" className="btn btn-primary" onClick={() => applyCombatantDelta(node.id, 1)}>
+                      Heal
+                    </button>
+                    <select
+                      aria-label={`${node.name} condition`}
+                      className="forge-input"
+                      value={mobCond}
+                      onChange={(e) => setMobCond(e.target.value)}
+                      style={{ flex: 1, padding: '2px 4px', fontSize: 11 }}
+                    >
+                      {STANDARD_CONDITIONS.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
                     <button
                       type="button"
-                      className="btn btn-primary tabular"
-                      onClick={() => onTriggerCombatantActivity(node.name, act)}
+                      className="btn"
+                      onClick={() => onToggleCombatantCondition(node.id, mobCond)}
                     >
-                      {act.name} {act.attackBonusFormula ? `(${act.attackBonusFormula})` : ''}
+                      +Cond
                     </button>
-                    {selectedTargetIds.length > 0 && (act.type === 'attack' || act.type === 'save') && (
-                      <button
-                        type="button"
-                        className="btn btn-danger tabular"
-                        title="Roll against selected target(s) & apply damage"
-                        onClick={() =>
-                          act.type === 'attack'
-                            ? onTargetAttack(node.name, selectedTargetIds, act)
-                            : onTargetSave(node.name, selectedTargetIds, act)
-                        }
-                      >
-                        {act.type === 'attack' ? 'Hit' : 'Save'} ({selectedTargetIds.length})
-                      </button>
-                    )}
-                  </span>
-                ))}
+                  </div>
+                )}
+
+                {!hideHp && node.actions && node.actions.length > 0 && (
+                  <div className="pill-row">
+                    {node.actions.map((act) => (
+                      <span key={act.id} className="forge-row" style={{ gap: 4 }}>
+                        <button
+                          type="button"
+                          className="btn btn-primary tabular"
+                          onClick={() => onTriggerCombatantActivity(node.name, act)}
+                        >
+                          {act.name} {act.attackBonusFormula ? `(${act.attackBonusFormula})` : ''}
+                        </button>
+                        {selectedTargetIds.length > 0 && (act.type === 'attack' || act.type === 'save') && (
+                          <button
+                            type="button"
+                            className="btn btn-danger tabular"
+                            title="Roll against selected target(s) & apply damage"
+                            onClick={() =>
+                              act.type === 'attack'
+                                ? onTargetAttack(node.name, selectedTargetIds, act)
+                                : onTargetSave(node.name, selectedTargetIds, act)
+                            }
+                          >
+                            {act.type === 'attack' ? 'Hit' : 'Save'} ({selectedTargetIds.length})
+                          </button>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

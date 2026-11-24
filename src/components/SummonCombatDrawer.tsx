@@ -808,6 +808,8 @@ interface CommandPaletteProps {
   initialCategory?: 'all' | CompendiumEntity['category'];
   initialRuleset?: 'all' | '2014' | '2024';
   ownedItemNames?: string[];
+  characterClasses?: string[];
+  maxCastableSpellLevel?: number;
   searchCompendium: (query: string) => CompendiumEntity[];
   onAddCompendiumItem: (item: CompendiumEntity) => void;
   onInstallContentPack: (packId: string) => Promise<void>;
@@ -823,6 +825,8 @@ export function CommandPalette({
   initialCategory = 'all',
   initialRuleset = 'all',
   ownedItemNames = [],
+  characterClasses = [],
+  maxCastableSpellLevel = 9,
   searchCompendium,
   onAddCompendiumItem,
   onInstallContentPack,
@@ -835,6 +839,7 @@ export function CommandPalette({
   const [rulesetFilter, setRulesetFilter] = useState<'all' | '2014' | '2024'>(initialRuleset);
   const [spellLevelFilter, setSpellLevelFilter] = useState<'all' | number>('all');
   const [spellTagFilter, setSpellTagFilter] = useState<'all' | 'conc' | 'ritual'>('all');
+  const [classCastableOnly, setClassCastableOnly] = useState(false);
   const [query, setQuery] = useState('');
   const [pasteText, setPasteText] = useState('');
 
@@ -844,19 +849,28 @@ export function CommandPalette({
       setCategoryFilter(initialCategory);
       setRulesetFilter(initialRuleset);
       setSpellLevelFilter('all');
+      setSpellTagFilter('all');
+      setClassCastableOnly(initialCategory === 'spell' && maxCastableSpellLevel > 0);
     }
-  }, [isOpen, initialCategory, initialRuleset]);
+  }, [isOpen, initialCategory, initialRuleset, maxCastableSpellLevel]);
 
+  const charClassSet = new Set(characterClasses.map((c) => c.toLowerCase()));
   const allMatches = searchCompendium(query)
     .filter(
       (item) =>
         (categoryFilter === 'all' || item.category === categoryFilter) &&
         (rulesetFilter === 'all' || item.ruleset === rulesetFilter) &&
         (categoryFilter !== 'spell' || spellLevelFilter === 'all' || (item.spellLevel ?? 0) === spellLevelFilter) &&
-      (categoryFilter !== 'spell' ||
-        spellTagFilter === 'all' ||
-        (spellTagFilter === 'conc' && Boolean(item.concentration)) ||
-        (spellTagFilter === 'ritual' && Boolean(item.ritual)))
+        (categoryFilter !== 'spell' ||
+          !classCastableOnly ||
+          ((item.spellLevel ?? 0) <= maxCastableSpellLevel &&
+            (!item.classes?.length ||
+              charClassSet.size === 0 ||
+              item.classes.some((c) => charClassSet.has(c.toLowerCase()))))) &&
+        (categoryFilter !== 'spell' ||
+          spellTagFilter === 'all' ||
+          (spellTagFilter === 'conc' && Boolean(item.concentration)) ||
+          (spellTagFilter === 'ritual' && Boolean(item.ritual)))
     )
     .sort((a, b) => {
       if (categoryFilter === 'spell') {
@@ -986,6 +1000,16 @@ export function CommandPalette({
                 >
                   RITUAL
                 </button>
+                {characterClasses.length > 0 && (
+                  <button
+                    type="button"
+                    className={`pill ${classCastableOnly ? 'active' : ''}`}
+                    title={`Filter to spells usable by ${characterClasses.join('/')} up to Spell Level ${maxCastableSpellLevel}`}
+                    onClick={() => setClassCastableOnly((v) => !v)}
+                  >
+                    {characterClasses.join('/')} (≤ L{maxCastableSpellLevel})
+                  </button>
+                )}
               </div>
             )}
             <div style={{ maxHeight: 280, overflowY: 'auto' }}>

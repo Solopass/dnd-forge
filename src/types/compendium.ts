@@ -87,6 +87,7 @@ export interface CompendiumEntity {
   components?: string;
   duration?: string;
   spellLevel?: number;
+  classes?: string[];
   acFormula?: AcFormulaRule;
   acFlatBonus?: number;
   quantity?: number;

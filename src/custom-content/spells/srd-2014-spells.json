@@ -25,6 +25,9 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "90 feet",
     "components": "V, S, M (Powdered rhubarb leaf and an adder's stomach.)",
@@ -55,6 +58,10 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S",
@@ -86,6 +93,10 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Cleric",
+      "Paladin"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S, M (A tiny strip of white cloth.)",
@@ -118,6 +129,10 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Ranger",
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "30 feet",
     "components": "V, S, M (A tiny bell and a piece of fine silver wire.)",
@@ -152,6 +167,10 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S",
@@ -184,6 +203,11 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Bard",
+      "Druid",
+      "Ranger"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S, M (A morsel of food.)",
@@ -216,6 +240,11 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Bard",
+      "Druid",
+      "Ranger"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S, M (A morsel of food.)",
@@ -248,6 +277,9 @@
       }
     ],
     "spellLevel": 8,
+    "classes": [
+      "Druid"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S",
@@ -281,6 +313,10 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Cleric",
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "10 feet",
     "components": "V, S, M (A drop of blood, a piece of flesh, and a pinch of bone dust.)",
@@ -324,6 +360,11 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S",
@@ -356,6 +397,9 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Druid"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S",
@@ -395,6 +439,10 @@
       }
     ],
     "spellLevel": 8,
+    "classes": [
+      "Cleric",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (A pinch of powdered iron or iron filings.)",
@@ -430,6 +478,10 @@
       }
     ],
     "spellLevel": 8,
+    "classes": [
+      "Druid",
+      "Wizard"
+    ],
     "castingTime": "1 hour",
     "range": "60 feet",
     "components": "V, S, M (Either a lump of alum soaked in vinegar for the antipathy effect or a drop of honey for the sympathy effect.)",
@@ -462,6 +514,10 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Cleric",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S, M (A bit of bat fur.)",
@@ -500,6 +556,9 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S, M (An eggshell and a snakeskin glove.)",
@@ -531,6 +590,9 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (Gold dust worth at least 25gp, which the spell consumes.)",
@@ -564,6 +626,10 @@
       }
     ],
     "spellLevel": 7,
+    "classes": [
+      "Bard",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S, M (A miniature platinum sword with a grip and pommel of copper and zinc, worth 250 gp.)",
@@ -597,6 +663,9 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (A small square of silk.)",
@@ -632,6 +701,11 @@
       }
     ],
     "spellLevel": 9,
+    "classes": [
+      "Cleric",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 hour",
     "range": "10 feet",
     "components": "V, S, M (For each creature you affect with this spell, you must provide one jacinth worth at least 1,000gp and one ornately carved bar of silver worth at least 100gp, all of which the spell consumes.)",
@@ -668,6 +742,9 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 minute",
     "range": "Self",
     "components": "V, S, M (Specially marked sticks, bones, or similar tokens worth at least 25gp.)",
@@ -699,6 +776,10 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Bard",
+      "Druid"
+    ],
     "castingTime": "8 hours",
     "range": "Touch",
     "components": "V, S, M (An agate worth at least 1,000 gp, which the spell consumes.)",
@@ -732,6 +813,10 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Bard",
+      "Cleric"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S, M (A drop of blood.)",
@@ -767,6 +852,13 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Cleric",
+      "Paladin",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S, M (An item distasteful to the target.)",
@@ -797,6 +889,10 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Druid",
+      "Ranger"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (A handful of oak bark.)",
@@ -827,6 +923,9 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S",
@@ -866,6 +965,11 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S",
@@ -901,6 +1005,9 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "90 feet",
     "components": "V, S, M (A piece of tentacle from a giant octopus or a giant squid)",
@@ -935,6 +1042,9 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 action",
     "range": "90 feet",
     "components": "V, S",
@@ -966,6 +1076,10 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Cleric",
+      "Paladin"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S, M (A sprinkling of holy water.)",
@@ -1002,6 +1116,12 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S",
@@ -1035,6 +1155,12 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V",
@@ -1066,6 +1192,10 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S",
@@ -1096,6 +1226,10 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V",
@@ -1118,7 +1252,7 @@
         "id": "act-srd14-spl-branding-smite",
         "name": "Branding Smite",
         "type": "utility",
-        "actionEconomy": "action",
+        "actionEconomy": "bonus_action",
         "damageFormula": "2d6",
         "resourceCost": {
           "poolId": "spell_slot_2",
@@ -1128,6 +1262,9 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Paladin"
+    ],
     "castingTime": "1 bonus action",
     "range": "Self",
     "components": "V",
@@ -1163,6 +1300,10 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S",
@@ -1197,6 +1338,9 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Druid"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S",
@@ -1230,6 +1374,10 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Bard",
+      "Cleric"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S",
@@ -1265,6 +1413,10 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "150 feet",
     "components": "V, S, M (A bit of fur; a piece of amber, glass, or a crystal rod; and three silver pins.)",
@@ -1298,6 +1450,13 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Bard",
+      "Druid",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S",
@@ -1328,6 +1487,11 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S",
@@ -1362,6 +1526,11 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "150 feet",
     "components": "V, S, M (The powder of a crushed black pearl worth at least 500 gp.)",
@@ -1394,6 +1563,12 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "10 minutes",
     "range": "1 mile",
     "components": "V, S, M (A focus worth at least 100gp, either a jeweled horn for hearing or a glass eye for seeing.)",
@@ -1425,6 +1600,9 @@
       }
     ],
     "spellLevel": 8,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 hour",
     "range": "Touch",
     "components": "V, S, M (A diamond worth at least 1,000 gp and at least 1 cubic inch of flesh of the creature that is to be cloned, which the spell consumes, and a vessel worth at least 2,000 gp that has a sealable lid and is large enough to hold a Medium creature, such as a huge urn, coffin, mud-filled cyst in the ground, or crystal container filled with salt water.)",
@@ -1461,6 +1639,10 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S",
@@ -1494,6 +1676,10 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (A pinch of powder or sand that is colored red, yellow, and blue.)",
@@ -1533,6 +1719,10 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Cleric",
+      "Paladin"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V",
@@ -1565,6 +1755,9 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 minute",
     "range": "Self",
     "components": "V, S, M (Incense and a vial of holy or unholy water.)",
@@ -1602,6 +1795,10 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Druid",
+      "Ranger"
+    ],
     "castingTime": "1 minute",
     "range": "Self",
     "components": "V, S",
@@ -1633,6 +1830,12 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (A pinch of soot and salt.)",
@@ -1666,6 +1869,9 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Bard"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S",
@@ -1701,6 +1907,10 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (A small crystal or glass cone.)",
@@ -1742,6 +1952,12 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Bard",
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "90 feet",
     "components": "V, S, M (Three walnut shells.)",
@@ -1780,6 +1996,10 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Druid",
+      "Ranger"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S",
@@ -1813,6 +2033,9 @@
       }
     ],
     "spellLevel": 7,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 minute",
     "range": "90 feet",
     "components": "V, S",
@@ -1847,6 +2070,10 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Druid",
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "90 feet",
     "components": "V, S, M (Burning incense for air, soft clay for earth, sulfur and phosphorus for fire, or water and sand for water.)",
@@ -1881,6 +2108,10 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Druid",
+      "Warlock"
+    ],
     "castingTime": "1 minute",
     "range": "90 feet",
     "components": "V, S",
@@ -1919,6 +2150,10 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Druid",
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "90 feet",
     "components": "V, S",
@@ -1957,6 +2192,10 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Druid",
+      "Ranger"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S, M (One holly berry per creature summoned.)",
@@ -1991,6 +2230,10 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "Self",
     "components": "V",
@@ -2032,6 +2275,10 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Cleric",
+      "Druid"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S",
@@ -2064,6 +2311,9 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "10 minutes",
     "range": "Self",
     "components": "V, S, M (A statuette of yourself carved from ivory and decorated with gems worth at least 1,500 gp.)",
@@ -2094,6 +2344,10 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Cleric",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (Ruby dust worth 50 gp, which the spell consumes.)",
@@ -2135,6 +2389,11 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Cleric",
+      "Druid",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "300 feet",
     "components": "V, S, M (A drop of water and a pinch of dust.)",
@@ -2193,6 +2452,11 @@
       }
     ],
     "spellLevel": 8,
+    "classes": [
+      "Cleric",
+      "Druid",
+      "Wizard"
+    ],
     "castingTime": "10 minutes",
     "range": "Self",
     "components": "V, S, M (Burning incense and bits of earth and wood mixed in water.)",
@@ -2215,7 +2479,7 @@
         "id": "act-srd14-spl-counterspell",
         "name": "Counterspell",
         "type": "utility",
-        "actionEconomy": "action",
+        "actionEconomy": "reaction",
         "resourceCost": {
           "poolId": "spell_slot_3",
           "amount": 1
@@ -2224,6 +2488,11 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 reaction",
     "range": "60 feet",
     "components": "S",
@@ -2254,6 +2523,11 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Cleric",
+      "Druid",
+      "Paladin"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S",
@@ -2287,6 +2561,11 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Cleric",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "10 feet",
     "components": "V, S, M (One clay pot filled with grave dirt, one clay pot filled with brackish water, and one 150 gp black onyx stone for each corpse.)",
@@ -2320,6 +2599,10 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Cleric",
+      "Druid"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S, M (A drop of water if creating water, or a few grains of sand if destroying it.)",
@@ -2360,6 +2643,10 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "30 feet",
     "components": "V, S, M (A tiny piece of matter of the same type of the item you plan to create.)",
@@ -2392,6 +2679,13 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Druid",
+      "Paladin",
+      "Ranger"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S",
@@ -2419,6 +2713,11 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S, M (A bit of phosphorus or wychwood, or a glowworm.)",
@@ -2451,6 +2750,11 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, M (Bat fur and a drop of pitch or piece of coal.)",
@@ -2481,6 +2785,12 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Druid",
+      "Ranger",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (Either a pinch of dried carrot or an agate.)",
@@ -2513,6 +2823,13 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Cleric",
+      "Druid",
+      "Paladin",
+      "Ranger",
+      "Sorcerer"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S",
@@ -2545,6 +2862,10 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Cleric",
+      "Paladin"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S",
@@ -2582,6 +2903,10 @@
       }
     ],
     "spellLevel": 7,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "150 feet",
     "components": "V, S, M (A tiny ball of bat guano and sulfur.)",
@@ -2613,6 +2938,10 @@
       }
     ],
     "spellLevel": 8,
+    "classes": [
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "S",
@@ -2644,6 +2973,10 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Cleric",
+      "Paladin"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S",
@@ -2675,6 +3008,15 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Druid",
+      "Paladin",
+      "Ranger",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S",
@@ -2706,6 +3048,12 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Cleric",
+      "Druid",
+      "Paladin",
+      "Ranger"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (A yew leaf.)",
@@ -2740,6 +3088,11 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (A copper coin.)",
@@ -2773,6 +3126,12 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "500 feet",
     "components": "V",
@@ -2805,6 +3164,11 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S",
@@ -2842,6 +3206,10 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S, M (A lodestone and a pinch of dust.)",
@@ -2877,6 +3245,10 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Cleric",
+      "Paladin"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (Holy water or powdered silver and iron.)",
@@ -2908,6 +3280,15 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Druid",
+      "Paladin",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S",
@@ -2940,6 +3321,9 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Druid"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (Incense and a sacrificial offering appropriate to your religion, together worth at least 25gp, which the spell consumes.)",
@@ -2961,7 +3345,7 @@
         "id": "act-srd14-spl-divine-favor",
         "name": "Divine Favor",
         "type": "utility",
-        "actionEconomy": "action",
+        "actionEconomy": "bonus_action",
         "damageFormula": "1d4",
         "resourceCost": {
           "poolId": "spell_slot_1",
@@ -2971,6 +3355,9 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Paladin"
+    ],
     "castingTime": "1 bonus action",
     "range": "Self",
     "components": "V, S",
@@ -2997,7 +3384,7 @@
         "id": "act-srd14-spl-divine-word",
         "name": "Divine Word",
         "type": "save",
-        "actionEconomy": "action",
+        "actionEconomy": "bonus_action",
         "saveAbility": "cha",
         "saveDcFormula": "8+@prof+@spell",
         "resourceCost": {
@@ -3008,6 +3395,9 @@
       }
     ],
     "spellLevel": 7,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 bonus action",
     "range": "30 feet",
     "components": "V",
@@ -3043,6 +3433,10 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Druid",
+      "Sorcerer"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S",
@@ -3079,6 +3473,12 @@
       }
     ],
     "spellLevel": 8,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S",
@@ -3115,6 +3515,11 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S",
@@ -3152,6 +3557,11 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Bard",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "Special",
     "components": "V, S, M (A handful of sand, a dab of ink, and a writing quill plucked from a sleeping bird.)",
@@ -3182,6 +3592,9 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Druid"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S",
@@ -3219,6 +3632,11 @@
       }
     ],
     "spellLevel": 8,
+    "classes": [
+      "Cleric",
+      "Druid",
+      "Sorcerer"
+    ],
     "castingTime": "1 action",
     "range": "500 feet",
     "components": "V, S, M (A pinch of dirt, a piece of rock, and a lump of clay.)",
@@ -3247,6 +3665,9 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Warlock"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S",
@@ -3285,6 +3706,12 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Druid",
+      "Sorcerer"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (Fur or a feather from a beast.)",
@@ -3321,6 +3748,10 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S, M (A pinch iron powder.)",
@@ -3355,6 +3786,9 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Druid"
+    ],
     "castingTime": "1 action",
     "range": "90 feet",
     "components": "V, S",
@@ -3387,6 +3821,10 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Bard",
+      "Warlock"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S",
@@ -3422,6 +3860,13 @@
       }
     ],
     "spellLevel": 7,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S",
@@ -3443,7 +3888,7 @@
         "id": "act-srd14-spl-expeditious-retreat",
         "name": "Expeditious Retreat",
         "type": "utility",
-        "actionEconomy": "action",
+        "actionEconomy": "bonus_action",
         "resourceCost": {
           "poolId": "spell_slot_1",
           "amount": 1
@@ -3452,6 +3897,11 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 bonus action",
     "range": "Self",
     "components": "V, S",
@@ -3487,6 +3937,12 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S",
@@ -3519,6 +3975,9 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "10 minutes",
     "range": "120 feet",
     "components": "V, S",
@@ -3552,6 +4011,9 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Druid"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V",
@@ -3586,6 +4048,9 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S, M (A tiny silver whistle, a piece of bone, and a thread)",
@@ -3618,6 +4083,10 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (A small amount of alcohol or distilled spirits.)",
@@ -3651,6 +4120,12 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (A white feather or the heart of a hen.)",
@@ -3672,7 +4147,7 @@
         "id": "act-srd14-spl-feather-fall",
         "name": "Feather Fall",
         "type": "utility",
-        "actionEconomy": "action",
+        "actionEconomy": "reaction",
         "resourceCost": {
           "poolId": "spell_slot_1",
           "amount": 1
@@ -3681,6 +4156,11 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 reaction",
     "range": "60 feet",
     "components": "V, M (A small feather or a piece of down.)",
@@ -3717,6 +4197,12 @@
       }
     ],
     "spellLevel": 8,
+    "classes": [
+      "Bard",
+      "Druid",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "150 feet",
     "components": "V, S, M (A handful of clay, crystal, glass, or mineral spheres.)",
@@ -3753,6 +4239,9 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 hour",
     "range": "10 feet",
     "components": "V, S, M (10gp worth of charcoal, incense, and herbs that must be consumed by fire in a brass brazier.)",
@@ -3787,6 +4276,9 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Paladin"
+    ],
     "castingTime": "10 minutes",
     "range": "30 feet",
     "components": "V, S",
@@ -3818,6 +4310,11 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Cleric",
+      "Druid",
+      "Ranger"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S",
@@ -3849,6 +4346,11 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Druid"
+    ],
     "castingTime": "1 minute",
     "range": "Self",
     "components": "V, S, M (A set of divinatory tools--such as bones, ivory sticks, cards, teeth, or carved runes--worth 100gp and an object from the location you wish to find.)",
@@ -3883,6 +4385,11 @@
       }
     ],
     "spellLevel": 7,
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S",
@@ -3912,6 +4419,10 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S",
@@ -3945,6 +4456,9 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (A little phosphorus or a firefly.)",
@@ -3979,6 +4493,11 @@
       }
     ],
     "spellLevel": 7,
+    "classes": [
+      "Cleric",
+      "Druid",
+      "Sorcerer"
+    ],
     "castingTime": "1 action",
     "range": "150 feet",
     "components": "V, S",
@@ -4014,6 +4533,10 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "150 feet",
     "components": "V, S, M (A tiny ball of bat guano and sulfur.)",
@@ -4038,7 +4561,7 @@
         "id": "act-srd14-spl-flame-blade",
         "name": "Flame Blade",
         "type": "utility",
-        "actionEconomy": "action",
+        "actionEconomy": "bonus_action",
         "damageFormula": "3d6",
         "resourceCost": {
           "poolId": "spell_slot_2",
@@ -4048,6 +4571,9 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Druid"
+    ],
     "castingTime": "1 bonus action",
     "range": "Self",
     "components": "V, S, M (Leaf of sumac.)",
@@ -4082,6 +4608,9 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S, M (Pinch of sulfur.)",
@@ -4116,6 +4645,10 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Druid",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S, M (A bit of tallow, a pinch of brimstone, and a dusting of powdered iron.)",
@@ -4151,6 +4684,10 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S, M (A pinch of lime, water, and earth.)",
@@ -4183,6 +4720,9 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S, M (A drop of mercury.)",
@@ -4214,6 +4754,11 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (A wing feather from any bird.)",
@@ -4245,6 +4790,12 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Druid",
+      "Ranger",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S",
@@ -4279,6 +4830,9 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "10 minutes",
     "range": "Touch",
     "components": "V, S, M (A sprinkling of holy water, rare incense, and powdered ruby worth at least 1,000 gp.)",
@@ -4314,6 +4868,11 @@
       }
     ],
     "spellLevel": 7,
+    "classes": [
+      "Bard",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "100 feet",
     "components": "V, S, M (Ruby dust worth 1,500 gp.)",
@@ -4345,6 +4904,12 @@
       }
     ],
     "spellLevel": 9,
+    "classes": [
+      "Bard",
+      "Druid",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "Touch",
     "components": "V, S, M (A hummingbird feather.)",
@@ -4376,6 +4941,12 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Druid",
+      "Ranger"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (A leather strap, bound around the arm or a similar appendage.)",
@@ -4412,6 +4983,9 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "300 feet",
     "components": "V, S, M (A small crystal sphere.)",
@@ -4444,6 +5018,11 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (A bit of gauze and a wisp of smoke.)",
@@ -4477,6 +5056,11 @@
       }
     ],
     "spellLevel": 9,
+    "classes": [
+      "Cleric",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S, M (A diamond worth at least 5,000gp.)",
@@ -4513,6 +5097,13 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Druid",
+      "Paladin",
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "60 feet",
     "components": "V",
@@ -4544,6 +5135,10 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Cleric",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (A pinch of salt and one copper piece placed on each of the corpse's eyes, which must remain there for the duration.)",
@@ -4577,6 +5172,9 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Druid"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S",
@@ -4607,6 +5205,10 @@
       }
     ],
     "spellLevel": 8,
+    "classes": [
+      "Bard",
+      "Warlock"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V",
@@ -4639,6 +5241,10 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (A glass or crystal bead that shatters when the spell ends.)",
@@ -4677,6 +5283,11 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Wizard"
+    ],
     "castingTime": "1 hour",
     "range": "Touch",
     "components": "V, S, M (Incense and powdered diamond worth at least 200 gp, which the spell consumes.)",
@@ -4708,6 +5319,10 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Druid",
+      "Ranger"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (A sprig of mistletoe.)",
@@ -4741,6 +5356,9 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S, M (A bit of pork rind or butter.)",
@@ -4771,6 +5389,11 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S",
@@ -4805,6 +5428,11 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Druid"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (Diamond dust worth at least 100gp, which the spell consumes.)",
@@ -4838,6 +5466,9 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V",
@@ -4881,6 +5512,10 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Bard",
+      "Wizard"
+    ],
     "castingTime": "10 minutes",
     "range": "Touch",
     "components": "V, S, M (Burning incense, a small measure of brimstone and oil, a knotted string, a small amount of umber hulk blood, and a small silver rod worth at least 10 gp.)",
@@ -4907,6 +5542,10 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Cleric",
+      "Druid"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S",
@@ -4940,6 +5579,9 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S",
@@ -4975,6 +5617,11 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (A legume seed.)",
@@ -5019,6 +5666,9 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "24 hours",
     "range": "Touch",
     "components": "V, S, M (Herbs, oils, and incense worth at least 1,000 gp, which the spell consumes.)",
@@ -5050,6 +5700,12 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Bard",
+      "Druid",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "10 minutes",
     "range": "300 feet",
     "components": "V, S, M (A stone, a twig, and a bit of green plant.)",
@@ -5083,6 +5739,9 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S",
@@ -5114,6 +5773,10 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S, M (A shaving of licorice root.)",
@@ -5145,6 +5808,10 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Cleric",
+      "Druid"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S",
@@ -5167,7 +5834,7 @@
         "id": "act-srd14-spl-healing-word",
         "name": "Healing Word",
         "type": "heal",
-        "actionEconomy": "action",
+        "actionEconomy": "bonus_action",
         "damageFormula": "1d4",
         "resourceCost": {
           "poolId": "spell_slot_1",
@@ -5177,6 +5844,11 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Druid"
+    ],
     "castingTime": "1 bonus action",
     "range": "60 feet",
     "components": "V",
@@ -5212,6 +5884,10 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Bard",
+      "Druid"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S, M (A piece of iron and a flame.)",
@@ -5234,7 +5910,7 @@
         "id": "act-srd14-spl-hellish-rebuke",
         "name": "Hellish Rebuke",
         "type": "save",
-        "actionEconomy": "action",
+        "actionEconomy": "reaction",
         "saveAbility": "dex",
         "saveDcFormula": "8+@prof+@spell",
         "damageFormula": "2d10",
@@ -5246,6 +5922,9 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Warlock"
+    ],
     "castingTime": "1 reaction",
     "range": "60 feet",
     "components": "V, S",
@@ -5278,6 +5957,10 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Cleric",
+      "Druid"
+    ],
     "castingTime": "10 minutes",
     "range": "30 feet",
     "components": "V, S, M (A gem-encrusted bowl worth at least 1,000gp, which the spell consumes.)",
@@ -5308,6 +5991,10 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Bard",
+      "Paladin"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S",
@@ -5341,6 +6028,10 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Bard",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S, M (Tiny tarts and a feather that is waved in the air.)",
@@ -5374,6 +6065,12 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "90 feet",
     "components": "V, S, M (A small piece of iron.)",
@@ -5407,6 +6104,14 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Druid",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S, M (A small, straight piece of iron.)",
@@ -5437,6 +6142,9 @@
       }
     ],
     "spellLevel": 8,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (A tiny reliquary worth at least 1,000gp containing a sacred relic, such as a scrap of cloth from a saint's robe or a piece of parchment from a religious text.)",
@@ -5459,7 +6167,7 @@
         "id": "act-srd14-spl-hunter-s-mark",
         "name": "Hunter's Mark",
         "type": "heal",
-        "actionEconomy": "action",
+        "actionEconomy": "bonus_action",
         "damageFormula": "1d6",
         "resourceCost": {
           "poolId": "spell_slot_1",
@@ -5469,6 +6177,9 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Ranger"
+    ],
     "castingTime": "1 bonus action",
     "range": "90 feet",
     "components": "V",
@@ -5502,6 +6213,12 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "S, M (A glowing stick of incense or a crystal vial filled with phosphorescent material.)",
@@ -5537,6 +6254,11 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "300 feet",
     "components": "V, S, M (A pinch of dust and a few drops of water.)",
@@ -5568,6 +6290,10 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Bard",
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "Touch",
     "components": "V, S, M (A pearl worth at least 100gp and an owl feather.)",
@@ -5601,6 +6327,11 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Bard",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "Touch",
     "components": "S, M (A lead-based ink worth at least 10gp, which this spell consumes.)",
@@ -5647,6 +6378,10 @@
       }
     ],
     "spellLevel": 9,
+    "classes": [
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "30 feet",
     "components": "V, S, M (A vellum depiction or a carved statuette in the likeness of the target, and a special component that varies according to the version of the spell you choose, worth at least 500gp per Hit Die of the target.)",
@@ -5682,6 +6417,10 @@
       }
     ],
     "spellLevel": 8,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "150 feet",
     "components": "V, S",
@@ -5715,6 +6454,9 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S",
@@ -5750,6 +6492,11 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Cleric",
+      "Druid",
+      "Sorcerer"
+    ],
     "castingTime": "1 action",
     "range": "300 feet",
     "components": "V, S, M (A few grains of sugar, some kernels of grain, and a smear of fat.)",
@@ -5783,6 +6530,9 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "Touch",
     "components": "V, S, M (A sapphire worth 1,000 gp.)",
@@ -5814,6 +6564,12 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (An eyelash encased in gum arabic.)",
@@ -5845,6 +6601,10 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Bard",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V",
@@ -5875,6 +6635,12 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Druid",
+      "Ranger",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (A grasshopper's hind leg.)",
@@ -5908,6 +6674,11 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V",
@@ -5939,6 +6710,11 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Wizard"
+    ],
     "castingTime": "10 minutes",
     "range": "Self",
     "components": "V, S, M (Incense worth at least 250 gp, which the spell consumes, and four ivory strips worth at least 50 gp each.)",
@@ -5969,6 +6745,13 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Druid",
+      "Paladin",
+      "Ranger"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S",
@@ -6001,6 +6784,10 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S, M (Either a small leather loop or a piece of golden wire bent into a cup shape with a long shank on one end.)",
@@ -6030,6 +6817,12 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, M (A firefly or phosphorescent moss.)",
@@ -6065,6 +6858,10 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (A bit of fur and a rod of amber, crystal, or glass.)",
@@ -6095,6 +6892,11 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Bard",
+      "Druid",
+      "Ranger"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (A bit of fur from a bloodhound.)",
@@ -6127,6 +6929,14 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Druid",
+      "Paladin",
+      "Ranger",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (A bit of fur from a bloodhound.)",
@@ -6159,6 +6969,14 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Druid",
+      "Paladin",
+      "Ranger",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (A forked twig.)",
@@ -6190,6 +7008,12 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Bard",
+      "Druid",
+      "Ranger",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (A pinch of dirt.)",
@@ -6220,6 +7044,10 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (A piece of cured leather.)",
@@ -6248,6 +7076,12 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S",
@@ -6286,6 +7120,12 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Cleric",
+      "Paladin",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "10 feet",
     "components": "V, S, M (Holy water or powdered silver and iron worth at least 100 gp, which the spell consumes.)",
@@ -6324,6 +7164,9 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "Self",
     "components": "V, S, M (A gem, crystal, reliquary, or some other ornamental container worth at least 500 gp.)",
@@ -6356,6 +7199,10 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S",
@@ -6389,6 +7236,10 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Bard",
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "30 feet",
     "components": "V, S, M (A honeycomb and jade dust of at least 10 inches, the spell consumes.)",
@@ -6411,7 +7262,7 @@
         "id": "act-srd14-spl-magic-weapon",
         "name": "Magic Weapon",
         "type": "utility",
-        "actionEconomy": "action",
+        "actionEconomy": "bonus_action",
         "resourceCost": {
           "poolId": "spell_slot_2",
           "amount": 1
@@ -6420,6 +7271,10 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Paladin",
+      "Wizard"
+    ],
     "castingTime": "1 bonus action",
     "range": "Touch",
     "components": "V, S",
@@ -6452,6 +7307,10 @@
       }
     ],
     "spellLevel": 7,
+    "classes": [
+      "Bard",
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "300 feet",
     "components": "V, S, M (A miniature portal carved from ivory, a small piece of polished marble, and a tiny silver spoon, each item worth at least 5 gp.)",
@@ -6485,6 +7344,12 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S, M (A bit of fleece.)",
@@ -6517,6 +7382,11 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Druid"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S",
@@ -6547,6 +7417,9 @@
       }
     ],
     "spellLevel": 9,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S",
@@ -6569,7 +7442,7 @@
         "id": "act-srd14-spl-mass-healing-word",
         "name": "Mass Healing Word",
         "type": "heal",
-        "actionEconomy": "action",
+        "actionEconomy": "bonus_action",
         "damageFormula": "1d4",
         "resourceCost": {
           "poolId": "spell_slot_3",
@@ -6579,6 +7452,9 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 bonus action",
     "range": "60 feet",
     "components": "V",
@@ -6615,6 +7491,12 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, M (A snake's tongue and either a bit of honeycomb or a drop of sweet oil.)",
@@ -6647,6 +7529,9 @@
       }
     ],
     "spellLevel": 8,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S",
@@ -6680,6 +7565,9 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S",
@@ -6707,6 +7595,13 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Cleric",
+      "Bard",
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "Touch",
     "components": "V, S, M (Two lodestones.)",
@@ -6734,6 +7629,11 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S, M (A short piece of copper wire.)",
@@ -6768,6 +7668,10 @@
       }
     ],
     "spellLevel": 9,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "1 mile",
     "components": "V, S",
@@ -6798,6 +7702,10 @@
       }
     ],
     "spellLevel": 8,
+    "classes": [
+      "Bard",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S",
@@ -6827,6 +7735,12 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "S, M (A bit of fleece.)",
@@ -6860,6 +7774,11 @@
       }
     ],
     "spellLevel": 7,
+    "classes": [
+      "Bard",
+      "Druid",
+      "Wizard"
+    ],
     "castingTime": "10 minutes",
     "range": "Sight",
     "components": "V, S",
@@ -6894,6 +7813,11 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S",
@@ -6926,6 +7850,10 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Bard",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "S",
@@ -6947,7 +7875,7 @@
         "id": "act-srd14-spl-misty-step",
         "name": "Misty Step",
         "type": "utility",
-        "actionEconomy": "action",
+        "actionEconomy": "bonus_action",
         "resourceCost": {
           "poolId": "spell_slot_2",
           "amount": 1
@@ -6956,6 +7884,11 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 bonus action",
     "range": "Self",
     "components": "V",
@@ -6993,6 +7926,10 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Bard",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S",
@@ -7030,6 +7967,9 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Druid"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S, M (Several seeds of any moonseed plant and a piece of opalescent feldspar.)",
@@ -7064,6 +8004,11 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S, M (An iron blade and a small bag containing a mixture of soils--clay, loam, and sand.)",
@@ -7094,6 +8039,11 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Bard",
+      "Ranger",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (A pinch of diamond dust worth 25 gp sprinkled over the target, which the spell consumes.)",
@@ -7124,6 +8074,10 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Druid",
+      "Ranger"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (Ashes from a burned leaf of mistletoe and a sprig of spruce.)",
@@ -7155,6 +8109,9 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S, M (A pinch of sesame seeds.)",
@@ -7189,6 +8146,9 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S",
@@ -7220,6 +8180,9 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "30 feet",
     "components": "V, S",
@@ -7255,6 +8218,9 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "10 minutes",
     "range": "60 feet",
     "components": "V, S",
@@ -7289,6 +8255,12 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Druid",
+      "Wizard"
+    ],
     "castingTime": "1 hour",
     "range": "60 feet",
     "components": "V, S, M (A jewel worth at least 1,000 gp, which the spell consumes.)",
@@ -7324,6 +8296,13 @@
       }
     ],
     "spellLevel": 7,
+    "classes": [
+      "Cleric",
+      "Druid",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (A forked, metal rod worth at least 250 gp, attuned to a particular plane of existence.)",
@@ -7357,6 +8336,11 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Bard",
+      "Druid",
+      "Ranger"
+    ],
     "castingTime": "1 action",
     "range": "150 feet",
     "components": "V, S",
@@ -7387,6 +8371,12 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard",
+      "Druid"
+    ],
     "castingTime": "1 action",
     "range": "10 feet",
     "components": "V, S",
@@ -7423,6 +8413,12 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Bard",
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S, M (A caterpillar cocoon.)",
@@ -7453,6 +8449,12 @@
       }
     ],
     "spellLevel": 9,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V",
@@ -7484,6 +8486,12 @@
       }
     ],
     "spellLevel": 8,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V",
@@ -7516,6 +8524,9 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "10 minutes",
     "range": "30 feet",
     "components": "V",
@@ -7549,6 +8560,12 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "10 feet",
     "components": "V, S",
@@ -7590,6 +8607,10 @@
       }
     ],
     "spellLevel": 7,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S",
@@ -7632,6 +8653,9 @@
       }
     ],
     "spellLevel": 9,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S",
@@ -7671,6 +8695,9 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "10 minutes",
     "range": "120 feet",
     "components": "V, S, M (A thin sheet of lead, a piece of opaque glass, a wad of cotton or cloth, and powdered chrysolite.)",
@@ -7701,6 +8728,9 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Druid"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S",
@@ -7734,6 +8764,10 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Bard",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S, M (A bit of fleece and jade dust worth at least 25 gp.)",
@@ -7767,6 +8801,10 @@
       }
     ],
     "spellLevel": 7,
+    "classes": [
+      "Bard",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "500 miles",
     "components": "V, S, M (A small replica of you made from materials worth at least 5 gp.)",
@@ -7797,6 +8835,13 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Cleric",
+      "Druid",
+      "Ranger",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S",
@@ -7828,6 +8873,12 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Cleric",
+      "Paladin",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (Holy water or powdered silver and iron, which the spell consumes.)",
@@ -7859,6 +8910,12 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Cleric",
+      "Druid",
+      "Paladin",
+      "Ranger"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S",
@@ -7889,6 +8946,11 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Cleric",
+      "Druid",
+      "Paladin"
+    ],
     "castingTime": "1 action",
     "range": "10 feet",
     "components": "V, S",
@@ -7922,6 +8984,11 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Paladin"
+    ],
     "castingTime": "1 hour",
     "range": "Touch",
     "components": "V, S, M (A diamond worth at least 500gp, which the spell consumes.)",
@@ -7956,6 +9023,10 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S",
@@ -7985,6 +9056,10 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S",
@@ -8017,6 +9092,11 @@
       }
     ],
     "spellLevel": 7,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Druid"
+    ],
     "castingTime": "1 minute",
     "range": "Touch",
     "components": "V, S, M (A prayer wheel and holy water.)",
@@ -8065,6 +9145,9 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Druid"
+    ],
     "castingTime": "1 hour",
     "range": "Touch",
     "components": "V, S, M (Rare oils and unguents worth at least 1,000 gp, which the spell consumes.)",
@@ -8095,6 +9178,12 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Cleric",
+      "Paladin",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S",
@@ -8130,6 +9219,9 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S, M (A hemispherical piece of clear crystal and a matching hemispherical piece of gum arabic.)",
@@ -8156,6 +9248,10 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Cleric",
+      "Druid"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (A miniature cloak.)",
@@ -8190,6 +9286,10 @@
       }
     ],
     "spellLevel": 7,
+    "classes": [
+      "Bard",
+      "Cleric"
+    ],
     "castingTime": "1 hour",
     "range": "Touch",
     "components": "V, S, M (A diamond worth at least 1,000gp, which the spell consumes.)",
@@ -8224,6 +9324,11 @@
       }
     ],
     "spellLevel": 7,
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "100 feet",
     "components": "V, S, M (A lodestone and iron filings.)",
@@ -8254,6 +9359,10 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Cleric",
+      "Paladin"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (Diamonds worth 300gp, which the spell consumes.)",
@@ -8287,6 +9396,9 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (Powdered corn extract and a twisted loop of parchment.)",
@@ -8317,6 +9429,9 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S",
@@ -8339,7 +9454,7 @@
         "id": "act-srd14-spl-sanctuary",
         "name": "Sanctuary",
         "type": "utility",
-        "actionEconomy": "action",
+        "actionEconomy": "bonus_action",
         "resourceCost": {
           "poolId": "spell_slot_1",
           "amount": 1
@@ -8348,6 +9463,9 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 bonus action",
     "range": "30 feet",
     "components": "V, S, M (A small silver mirror.)",
@@ -8381,6 +9499,10 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S",
@@ -8426,6 +9548,13 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Druid",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "10 minutes",
     "range": "Self",
     "components": "V, S, M (A focus worth at least 1,000 gp, such as a crystal ball, a silver mirror, or a font filled with holy water.)",
@@ -8458,6 +9587,9 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (An exquisite chest, 3 feet by 2 feet by 2 feet, constructed from rare materials worth at least 5,000 gp, and a Tiny replica made from the same materials worth at least 50 gp.)",
@@ -8488,6 +9620,11 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (A dash of talc and a small amount of silver powder.)",
@@ -8521,6 +9658,11 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S",
@@ -8552,6 +9694,11 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Unlimited",
     "components": "V, S, M (A short piece of fine copper wire.)",
@@ -8584,6 +9731,9 @@
       }
     ],
     "spellLevel": 7,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (A powder composed of diamond, emerald, ruby, and sapphire dust worth at least 5,000 gp, which the spell consumes.)",
@@ -8619,6 +9769,10 @@
       }
     ],
     "spellLevel": 9,
+    "classes": [
+      "Druid",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (A jade circlet worth at least 1,500 gp, which you must place on your head before you cast the spell.)",
@@ -8654,6 +9808,12 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S, M (A burst of mica.)",
@@ -8675,7 +9835,7 @@
         "id": "act-srd14-spl-shield",
         "name": "Shield",
         "type": "utility",
-        "actionEconomy": "action",
+        "actionEconomy": "reaction",
         "resourceCost": {
           "poolId": "spell_slot_1",
           "amount": 1
@@ -8684,6 +9844,10 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 reaction",
     "range": "Self",
     "components": "V, S",
@@ -8705,7 +9869,7 @@
         "id": "act-srd14-spl-shield-of-faith",
         "name": "Shield of Faith",
         "type": "utility",
-        "actionEconomy": "action",
+        "actionEconomy": "bonus_action",
         "resourceCost": {
           "poolId": "spell_slot_1",
           "amount": 1
@@ -8714,6 +9878,10 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Cleric",
+      "Paladin"
+    ],
     "castingTime": "1 bonus action",
     "range": "60 feet",
     "components": "V, S, M (A small parchment with a bit of holy text written on it.)",
@@ -8735,11 +9903,14 @@
         "id": "act-srd14-spl-shillelagh",
         "name": "Shillelagh",
         "type": "utility",
-        "actionEconomy": "action",
+        "actionEconomy": "bonus_action",
         "description": "The wood of a club or a quarterstaff you are holding is imbued with nature's power. For the duration, you can use your spellcasting ability instead of Strength for the attack and damage rolls of melee attacks using that weapon, and the weapon's damage die becomes a d8. The weapon also becomes magical, if it isn't already. The spell ends if you cast it again or if you let go of the weapon."
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Druid"
+    ],
     "castingTime": "1 bonus action",
     "range": "Touch",
     "components": "V, S, M (Mistletoe, a shamrock leaf, and a club or quarterstaff.)",
@@ -8769,6 +9940,10 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S",
@@ -8800,6 +9975,11 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Ranger"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S",
@@ -8832,6 +10012,11 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S, M (A bit of fleece.)",
@@ -8865,6 +10050,9 @@
       }
     ],
     "spellLevel": 7,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "12 hours",
     "range": "Touch",
     "components": "V, S, M (Snow or ice in quantities sufficient to made a life-size copy of the duplicated creature; some hair, fingernail clippings, or other piece of that creature's body placed inside the snow or ice; and powdered ruby worth 1,500 gp, sprinkled over the duplicate and consumed by the spell.)",
@@ -8899,6 +10087,11 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "90 feet",
     "components": "V, S, M (A pinch of fine sand, rose petals, or a cricket.)",
@@ -8931,6 +10124,11 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "150 feet",
     "components": "V, S, M (A pinch of dust and a few drops of water.)",
@@ -8966,6 +10164,10 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S, M (A drop of molasses.)",
@@ -8992,6 +10194,9 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S",
@@ -9022,6 +10227,11 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Bard",
+      "Druid",
+      "Ranger"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S",
@@ -9053,6 +10263,10 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Bard",
+      "Cleric"
+    ],
     "castingTime": "1 action",
     "range": "10 feet",
     "components": "V, S, M (Burning incense.)",
@@ -9087,6 +10301,11 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Bard",
+      "Druid",
+      "Ranger"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S",
@@ -9117,6 +10336,11 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (A drop of bitumen and a spider.)",
@@ -9149,6 +10373,10 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Druid",
+      "Ranger"
+    ],
     "castingTime": "1 action",
     "range": "150 feet",
     "components": "V, S, M (Seven sharp thorns or seven small twigs, each sharpened to a point.)",
@@ -9182,6 +10410,9 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (A holy symbol.)",
@@ -9206,7 +10437,7 @@
         "id": "act-srd14-spl-spiritual-weapon",
         "name": "Spiritual Weapon",
         "type": "attack",
-        "actionEconomy": "action",
+        "actionEconomy": "bonus_action",
         "attackBonusFormula": "@prof+@spell",
         "damageFormula": "1d8",
         "resourceCost": {
@@ -9217,6 +10448,9 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 bonus action",
     "range": "60 feet",
     "components": "V, S",
@@ -9251,6 +10485,11 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "90 feet",
     "components": "V, S, M (A rotten egg or several skunk cabbage leaves.)",
@@ -9281,6 +10520,11 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Cleric",
+      "Druid",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (Soft clay, to be crudely worked into the desired shape for the stone object.)",
@@ -9311,6 +10555,12 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Druid",
+      "Ranger",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (Diamond dust worth 100 gp, which the spell consumes.)",
@@ -9349,6 +10599,9 @@
       }
     ],
     "spellLevel": 9,
+    "classes": [
+      "Druid"
+    ],
     "castingTime": "1 action",
     "range": "Sight",
     "components": "V, S",
@@ -9384,6 +10637,12 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, M (A snake's tongue and either a bit of honeycomb or a drop of sweet oil.)",
@@ -9419,6 +10678,11 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S, M (A magnifying glass.)",
@@ -9454,6 +10718,11 @@
       }
     ],
     "spellLevel": 8,
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "150 feet",
     "components": "V, S, M (Fire and a piece of sunstone.)",
@@ -9496,6 +10765,11 @@
       }
     ],
     "spellLevel": 7,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "Touch",
     "components": "V, S, M (Mercury, phosphorus, and powdered diamond and opal with a total value of at least 1,000 gp, which the spell consumes.)",
@@ -9531,6 +10805,10 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S",
@@ -9562,6 +10840,9 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S, M (Pieces of eggshell from two different kinds of creatures)",
@@ -9614,6 +10895,11 @@
       }
     ],
     "spellLevel": 7,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "10 feet",
     "components": "V",
@@ -9646,6 +10932,11 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "10 feet",
     "components": "V, M (Rare chalks and inks infused with precious gems with 50 gp, which the spell consumes.)",
@@ -9679,6 +10970,9 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V",
@@ -9714,6 +11008,12 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Bard",
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S",
@@ -9746,6 +11046,10 @@
       }
     ],
     "spellLevel": 9,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V",
@@ -9778,6 +11082,10 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Bard",
+      "Wizard"
+    ],
     "castingTime": "1 minute",
     "range": "Self",
     "components": "V, S, M (A small crystal bead.)",
@@ -9808,6 +11116,13 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, M (A small clay model of a ziggurat.)",
@@ -9838,6 +11153,9 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Druid"
+    ],
     "castingTime": "1 action",
     "range": "10 feet",
     "components": "V, S",
@@ -9869,6 +11187,10 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Druid",
+      "Ranger"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S",
@@ -9907,6 +11229,11 @@
       }
     ],
     "spellLevel": 9,
+    "classes": [
+      "Bard",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S, M (A drop of mercury, a dollop of gum arabic, and a wisp of smoke.)",
@@ -9939,6 +11266,10 @@
       }
     ],
     "spellLevel": 9,
+    "classes": [
+      "Cleric",
+      "Druid"
+    ],
     "castingTime": "1 hour",
     "range": "Touch",
     "components": "V, S, M (A sprinkle of holy water and diamonds worth at least 25,000gp, which the spell consumes.)",
@@ -9969,6 +11300,13 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (An ointment for the eyes that costs 25gp; is made from mushroom powder, saffron, and fat; and is consumed by the spell.)",
@@ -9995,6 +11333,12 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Bard",
+      "Sorcerer",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "S",
@@ -10027,6 +11371,11 @@
       }
     ],
     "spellLevel": 1,
+    "classes": [
+      "Bard",
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S, M (A piece of string and a bit of wood.)",
@@ -10060,6 +11409,10 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Warlock",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V, S",
@@ -10090,6 +11443,9 @@
       }
     ],
     "spellLevel": 0,
+    "classes": [
+      "Bard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V",
@@ -10127,6 +11483,11 @@
       }
     ],
     "spellLevel": 4,
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S, M (A small piece of phosphorus.)",
@@ -10158,6 +11519,9 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S, M (A pinch of powder made by crushing a clear gemstone.)",
@@ -10194,6 +11558,9 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S, M (A small piece of quartz.)",
@@ -10229,6 +11596,11 @@
       }
     ],
     "spellLevel": 5,
+    "classes": [
+      "Druid",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S, M (A small block of granite.)",
@@ -10265,6 +11637,9 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Druid"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S, M (A handful of thorns.)",
@@ -10297,6 +11672,9 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 action",
     "range": "Touch",
     "components": "V, S, M (A pair of platinum rings worth at least 50gp each, which you and the target must wear for the duration.)",
@@ -10327,6 +11705,12 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Druid",
+      "Ranger",
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S, M (A short piece of reed or straw.)",
@@ -10358,6 +11742,12 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Cleric",
+      "Druid",
+      "Ranger",
+      "Sorcerer"
+    ],
     "castingTime": "1 action",
     "range": "30 feet",
     "components": "V, S, M (A piece of cork.)",
@@ -10393,6 +11783,10 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S, M (A bit of spiderweb.)",
@@ -10426,6 +11820,9 @@
       }
     ],
     "spellLevel": 9,
+    "classes": [
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S",
@@ -10457,6 +11854,9 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Druid"
+    ],
     "castingTime": "1 minute",
     "range": "30 feet",
     "components": "V, S, M (Fire and holy water.)",
@@ -10492,6 +11892,10 @@
       }
     ],
     "spellLevel": 3,
+    "classes": [
+      "Druid",
+      "Ranger"
+    ],
     "castingTime": "1 action",
     "range": "120 feet",
     "components": "V, S, M (A tiny fan and a feather of exotic origin.)",
@@ -10532,6 +11936,10 @@
       }
     ],
     "spellLevel": 9,
+    "classes": [
+      "Sorcerer",
+      "Wizard"
+    ],
     "castingTime": "1 action",
     "range": "Self",
     "components": "V",
@@ -10563,6 +11971,9 @@
       }
     ],
     "spellLevel": 6,
+    "classes": [
+      "Cleric"
+    ],
     "castingTime": "1 action",
     "range": "5 feet",
     "components": "V",
@@ -10594,6 +12005,11 @@
       }
     ],
     "spellLevel": 2,
+    "classes": [
+      "Bard",
+      "Cleric",
+      "Paladin"
+    ],
     "castingTime": "1 action",
     "range": "60 feet",
     "components": "V, S",

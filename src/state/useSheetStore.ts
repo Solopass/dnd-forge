@@ -112,7 +112,16 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     dc?: number;
   } | null>(null);
   const [claimedTokenId, setClaimedTokenId] = useState<string | null>(null);
-  const [compendium, setCompendium] = useState<CompendiumEntity[]>(initialCharacter.items);
+  const [compendium, setCompendium] = useState<CompendiumEntity[]>(() => {
+    const map = new Map<string, CompendiumEntity>();
+    for (const p of BUILTIN_CONTENT_PACKS) {
+      for (const e of p.entities) map.set(e.id, e);
+    }
+    for (const e of initialCharacter.items) {
+      if (!map.has(e.id)) map.set(e.id, e);
+    }
+    return Array.from(map.values());
+  });
   const [rollMode, setRollMode] = useState<RollMode>('normal');
   const [pendingConcDc, setPendingConcDc] = useState<number | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);

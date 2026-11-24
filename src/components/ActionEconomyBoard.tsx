@@ -902,9 +902,7 @@ export function ActionEconomyBoard({
           key === 'free'
             ? [...sheet.actionsByEconomy.free, ...sheet.actionsByEconomy.special]
             : sheet.actionsByEconomy[key];
-        const items = pool.filter(
-          (act) => matchesFilter(act) && (layoutVariant === 'unified' || !isSpellActivity(act))
-        );
+        const items = pool.filter((act) => matchesFilter(act));
         return (
           <section key={key} className="card">
             <div className="card-header">

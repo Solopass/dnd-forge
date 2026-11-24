@@ -1501,6 +1501,25 @@ export function App() {
         initialCategory={paletteInitialCat}
         initialRuleset={paletteInitialRuleset}
         ownedItemNames={store.rawChar.items.map((i) => i.name)}
+        characterClasses={store.rawChar.classes.map((c) => c.className)}
+        maxCastableSpellLevel={Math.max(
+          0,
+          ...store.resolvedSheet.resources
+            .filter((r) => r.max > 0 && /^spell_slot_(\d+)$/.test(r.id))
+            .map((r) => Number.parseInt(r.id.replace('spell_slot_', ''), 10)),
+          ...(store.resolvedSheet.resources.some((r) => r.max > 0 && (r.id === 'pact_magic' || r.id === 'auto_class_pact_magic'))
+            ? [
+                Math.min(
+                  5,
+                  Math.ceil(
+                    store.rawChar.classes
+                      .filter((c) => c.casterProgression === 'pact')
+                      .reduce((s, c) => s + c.level, 0) / 2
+                  )
+                ),
+              ]
+            : [])
+        )}
         searchCompendium={store.searchCompendium}
         onAddCompendiumItem={store.addCompendiumItemToSheet}
         onInstallContentPack={store.installContentPack}

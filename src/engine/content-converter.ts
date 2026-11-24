@@ -337,6 +337,16 @@ export function convertRawEntityToSidereroll(
             ? raw.level
             : 0;
     entity.spellLevel = lvl;
+    const rawClasses = Array.isArray(raw.classes)
+      ? raw.classes
+          .map((c) => (typeof c === 'string' ? c : (c as Record<string, unknown>)?.name))
+          .filter((v): v is string => typeof v === 'string' && v.trim().length > 0)
+      : typeof raw.dnd_class === 'string'
+        ? raw.dnd_class.split(',').map((s) => s.trim()).filter(Boolean)
+        : [];
+    if (rawClasses.length > 0) {
+      entity.classes = rawClasses;
+    }
     entity.castingTime = extractTimeString(raw.castingTime ?? raw.casting_time ?? raw.time);
     entity.range = extractRangeString(raw.range);
     entity.components = extractComponentsString(raw.components, raw.material);

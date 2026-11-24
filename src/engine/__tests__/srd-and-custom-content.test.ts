@@ -133,5 +133,49 @@ describe('Custom Content Templates & JSON Loader', () => {
     expect(fromCsv).toHaveLength(2);
     expect(fromCsv[0]?.name).toBe('Silver Dagger');
     expect(fromCsv[1]?.entries[0]).toBe('60 feet of silk rope.');
+
+    const srdApiMonster = convertRawEntityToSidereroll(
+      {
+        name: 'Adult Black Dragon',
+        size: 'Huge',
+        armor_class: [{ type: 'natural', value: 19 }],
+        hit_points: 195,
+        dexterity: 14,
+        challenge_rating: 14,
+        damage_immunities: ['Acid'],
+        senses: { darkvision: '120 ft.', blindsight: '60 ft.' },
+        speed: { walk: '40 ft.', fly: '80 ft.' },
+        actions: [{ name: 'Bite', desc: 'Melee Weapon Attack.', attack_bonus: 11, damage: [{ damage_dice: '2d10+6', damage_type: { name: 'Piercing' } }] }],
+      },
+      'monster',
+      '2014',
+      '5e-SRD-API'
+    );
+    expect(srdApiMonster?.monsterMeta?.ac).toBe(19);
+    expect(srdApiMonster?.monsterMeta?.hp).toBe(195);
+    expect(srdApiMonster?.monsterMeta?.dexModifier).toBe(2);
+    expect(srdApiMonster?.monsterMeta?.cr).toBe('14');
+    expect(srdApiMonster?.activities[0]?.attackBonusFormula).toBe('11');
+    expect(srdApiMonster?.activities[0]?.damageFormula).toBe('2d10+6');
+
+    const open5eSpell = convertRawEntityToSidereroll(
+      {
+        name: 'Guiding Bolt',
+        level_int: 1,
+        casting_time: '1 action',
+        range: '120 feet',
+        components: 'V, S',
+        duration: '1 round',
+        requires_concentration: false,
+        desc: 'A flash of light streaks toward a creature. On a hit, the target takes 4d6 radiant damage.',
+        higher_level: 'The damage increases by 1d6 for each slot level above 1st.',
+        document__title: '5e Core Rules',
+      },
+      'spell',
+      '2014'
+    );
+    expect(open5eSpell?.spellLevel).toBe(1);
+    expect(open5eSpell?.source).toBe('5e Core Rules');
+    expect(open5eSpell?.entries[1]).toContain('At Higher Levels:');
   });
 });

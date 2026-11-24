@@ -56,8 +56,21 @@ function extractDurationString(rawDuration: unknown): { duration?: string; conce
   return { concentration: false };
 }
 
-function extractComponentsString(rawComp: unknown): string | undefined {
-  if (typeof rawComp === 'string') return rawComp;
+function extractComponentsString(rawComp: unknown, rawMaterial?: unknown): string | undefined {
+  if (typeof rawComp === 'string') {
+    if (typeof rawMaterial === 'string' && rawMaterial.trim() && !rawComp.includes('(')) {
+      return `${rawComp} (${rawMaterial.trim()})`;
+    }
+    return rawComp;
+  }
+  if (Array.isArray(rawComp)) {
+    const parts = rawComp.map((c) => String(c).trim()).filter(Boolean);
+    if (typeof rawMaterial === 'string' && rawMaterial.trim()) {
+      const mIdx = parts.findIndex((p) => p.toUpperCase() === 'M');
+      if (mIdx >= 0) parts[mIdx] = `M (${rawMaterial.trim()})`;
+    }
+    return parts.length > 0 ? parts.join(', ') : undefined;
+  }
   if (rawComp && typeof rawComp === 'object') {
     const c = rawComp as Record<string, unknown>;
     const parts: string[] = [];
@@ -67,6 +80,25 @@ function extractComponentsString(rawComp: unknown): string | undefined {
       const mText = typeof c.m === 'string' ? c.m : (c.m as Record<string, unknown>).text;
       parts.push(mText ? `M (${mText})` : 'M');
     }
+    return parts.length > 0 ? parts.join(', ') : undefined;
+  }
+  return undefined;
+}
+
+function asCommaOrArray(val: unknown): string[] {
+  if (Array.isArray(val)) return val.map((v) => String(v).trim()).filter(Boolean);
+  if (typeof val === 'string' && val.trim()) {
+    return val.split(',').map((s) => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+function formatObjectMap(val: unknown): string | undefined {
+  if (typeof val === 'string') return val.trim() || undefined;
+  if (val && typeof val === 'object' && !Array.isArray(val)) {
+    const parts = Object.entries(val as Record<string, unknown>)
+      .filter(([, v]) => v !== undefined && v !== null && String(v).trim() !== '')
+      .map(([k, v]) => `${k.replace(/_/g, ' ')} ${typeof v === 'number' ? `${v} ft.` : String(v)}`);
     return parts.length > 0 ? parts.join(', ') : undefined;
   }
   return undefined;
@@ -88,15 +120,31 @@ function inferActivitiesFromRaw(
     const level =
       typeof raw.spellLevel === 'number'
         ? raw.spellLevel
-        : typeof raw.level === 'number'
-          ? raw.level
-          : 0;
-    const saves = asStringArray(raw.savingThrow);
-    const dmgMatch = joined.match(/\{@damage\s+([^}|]+)/i) ?? joined.match(/(\d+d\d+(?:\s*[+-]\s*\d+)?)/);
-    const dmgTypes = asStringArray(raw.damageInflict);
+        : typeof raw.level_int === 'number'
+          ? raw.level_int
+          : typeof raw.level === 'number'
+            ? raw.level
+            : 0;
+    const srdDc = (raw.dc as Record<string, unknown> | undefined)?.dc_type as Record<string, unknown> | undefined;
+    const saves = asStringArray(raw.savingThrow ?? srdDc?.index ?? srdDc?.name);
+    const srdDamage = raw.damage as Record<string, unknown> | undefined;
+    const slotDmgMap = (srdDamage?.damage_at_slot_level ?? srdDamage?.damage_at_character_level) as
+      | Record<string, string>
+      | undefined;
+    const firstSlotDmg = slotDmgMap ? Object.values(slotDmgMap)[0] : undefined;
+    const dmgMatch =
+      firstSlotDmg
+        ? [firstSlotDmg, firstSlotDmg]
+        : joined.match(/\{@damage\s+([^}|]+)/i) ?? joined.match(/(\d+d\d+(?:\s*[+-]\s*\d+)?)/);
+    const srdDmgType = (srdDamage?.damage_type as Record<string, unknown> | undefined)?.name;
+    const dmgTypes = asStringArray(raw.damageInflict ?? srdDmgType);
     const saveAb = (saves[0]?.slice(0, 3).toLowerCase() ?? '') as AbilityKey;
-    const isAttack = Array.isArray(raw.spellAttack) && raw.spellAttack.length > 0;
-    const isHeal = dmgTypes.length === 0 && /regain|heal|hit points/i.test(joined) && Boolean(dmgMatch);
+    const isAttack =
+      (Array.isArray(raw.spellAttack) && raw.spellAttack.length > 0) ||
+      typeof raw.attack_type === 'string';
+    const isHeal =
+      Boolean(raw.heal_at_slot_level) ||
+      (dmgTypes.length === 0 && /regain|heal|hit points/i.test(joined) && Boolean(dmgMatch));
 
     return [
       {
@@ -108,7 +156,7 @@ function inferActivitiesFromRaw(
         saveAbility: saveAb || undefined,
         saveDcFormula: saveAb ? '8+@prof+@spell' : undefined,
         damageFormula: dmgMatch?.[1]?.replace(/\s+/g, '') ?? undefined,
-        damageType: dmgTypes[0],
+        damageType: dmgTypes[0]?.toLowerCase(),
         resourceCost: level > 0 ? { poolId: `spell_slot_${level}`, amount: 1 } : undefined,
         description: entries[0],
       },
@@ -116,10 +164,23 @@ function inferActivitiesFromRaw(
   }
 
   if (category === 'weapon') {
-    const dmg = typeof raw.dmg1 === 'string' ? raw.dmg1 : '1d8';
-    const isFinesse = Array.isArray(raw.property) && raw.property.includes('F');
-    const isRanged = raw.type === 'R';
+    const srdDmg = raw.damage as Record<string, unknown> | undefined;
+    const dmg =
+      typeof raw.dmg1 === 'string'
+        ? raw.dmg1
+        : typeof srdDmg?.damage_dice === 'string'
+          ? srdDmg.damage_dice
+          : typeof raw.damage_dice === 'string'
+            ? raw.damage_dice
+            : '1d8';
+    const srdProps = Array.isArray(raw.properties)
+      ? raw.properties.map((p) => String((p as Record<string, unknown>)?.index ?? p).toLowerCase())
+      : [];
+    const isFinesse =
+      (Array.isArray(raw.property) && raw.property.includes('F')) || srdProps.includes('finesse');
+    const isRanged = raw.type === 'R' || /ranged/i.test(String(raw.weapon_range ?? raw.category_range ?? ''));
     const ab: AbilityKey = isRanged ? 'dex' : isFinesse ? 'dex' : 'str';
+    const srdDmgType = (srdDmg?.damage_type as Record<string, unknown> | undefined)?.name;
     return [
       {
         id: `act-${id}`,
@@ -129,10 +190,48 @@ function inferActivitiesFromRaw(
         attackAbility: ab,
         attackBonusFormula: '@mod+@prof',
         damageFormula: `${dmg}+@mod`,
-        damageType: typeof raw.dmgType === 'string' ? raw.dmgType : 'slashing',
+        damageType:
+          typeof raw.dmgType === 'string'
+            ? raw.dmgType
+            : typeof srdDmgType === 'string'
+              ? srdDmgType.toLowerCase()
+              : 'slashing',
         description: entries[0],
       },
     ];
+  }
+
+  if (category === 'monster' && Array.isArray(raw.actions)) {
+    return (raw.actions as Array<Record<string, unknown>>)
+      .filter((a) => typeof a?.name === 'string')
+      .map((a, idx) => {
+        const aName = String(a.name).trim();
+        const aDesc = typeof a.desc === 'string' ? a.desc : '';
+        const atkBonus = typeof a.attack_bonus === 'number' ? a.attack_bonus : undefined;
+        const srdActionDmg = Array.isArray(a.damage) ? (a.damage[0] as Record<string, unknown> | undefined) : undefined;
+        const dmgFormula =
+          typeof srdActionDmg?.damage_dice === 'string'
+            ? srdActionDmg.damage_dice
+            : typeof a.damage_dice === 'string'
+              ? a.damage_dice
+              : undefined;
+        const dmgType = (srdActionDmg?.damage_type as Record<string, unknown> | undefined)?.name;
+        const dcObj = a.dc as Record<string, unknown> | undefined;
+        const dcType = (dcObj?.dc_type as Record<string, unknown> | undefined)?.index;
+        const dcVal = typeof dcObj?.dc_value === 'number' ? dcObj.dc_value : undefined;
+        return {
+          id: `act-${id}-${idx}`,
+          name: aName,
+          type: atkBonus !== undefined ? 'attack' : dcVal !== undefined ? 'save' : 'utility',
+          actionEconomy: 'action',
+          attackBonusFormula: atkBonus !== undefined ? String(atkBonus) : undefined,
+          saveAbility: typeof dcType === 'string' ? (dcType.slice(0, 3).toLowerCase() as AbilityKey) : undefined,
+          saveDcFormula: dcVal !== undefined ? String(dcVal) : undefined,
+          damageFormula: dmgFormula,
+          damageType: typeof dmgType === 'string' ? dmgType.toLowerCase() : undefined,
+          description: aDesc || undefined,
+        };
+      });
   }
 
   return [];
@@ -147,7 +246,16 @@ export function convertRawEntityToSidereroll(
   const name = typeof raw.name === 'string' ? raw.name.trim() : '';
   if (!name) return null;
 
-  const category = (typeof raw.category === 'string' ? raw.category : defaultCategory) as ItemCategory;
+  const rawEquipCat = String(
+    (raw.equipment_category as Record<string, unknown> | undefined)?.index ?? ''
+  ).toLowerCase();
+  const inferredCat =
+    rawEquipCat === 'weapon'
+      ? 'weapon'
+      : rawEquipCat === 'armor'
+        ? 'armor'
+        : defaultCategory;
+  const category = (typeof raw.category === 'string' ? raw.category : inferredCat) as ItemCategory;
   const prefix =
     category === 'spell'
       ? 'spl'
@@ -167,16 +275,29 @@ export function convertRawEntityToSidereroll(
       ? raw.id.trim()
       : `custom-${prefix}-${slugify(name)}`;
 
-  const entries = normalizeEntries(raw.entries, raw.description);
+  const baseEntries = normalizeEntries(raw.entries ?? raw.desc, raw.description);
+  const higherEntries = normalizeEntries(raw.higher_level);
+  const entries = [
+    ...baseEntries,
+    ...higherEntries.map((h) => (h.startsWith('At Higher Levels') ? h : `At Higher Levels: ${h}`)),
+  ];
   const { duration, concentration } = extractDurationString(raw.duration);
   const rawImg = [raw.imageUrl, raw.image, raw.img, raw.portraitUrl, raw.tokenUrl].find(
     (v): v is string => typeof v === 'string' && v.trim().length > 0
   );
 
+  const resolvedSource =
+    sourceOverride ??
+    (typeof raw.source === 'string' && raw.source.trim()
+      ? raw.source
+      : typeof raw.document__title === 'string' && raw.document__title.trim()
+        ? raw.document__title
+        : 'Custom Repo');
+
   const entity: CompendiumEntity = {
     id,
     name,
-    source: sourceOverride ?? (typeof raw.source === 'string' && raw.source.trim() ? raw.source : 'Custom Repo'),
+    source: resolvedSource,
     ruleset: raw.ruleset === '2024' ? '2024' : ruleset,
     category,
     imageUrl: rawImg?.trim(),
@@ -184,15 +305,38 @@ export function convertRawEntityToSidereroll(
     activities: inferActivitiesFromRaw(raw, id, name, category, entries),
   };
 
+  if (typeof raw.weight === 'number') {
+    entity.weight = raw.weight;
+  }
+
+  if (category === 'armor' && raw.armor_class && typeof raw.armor_class === 'object') {
+    const acObj = raw.armor_class as Record<string, unknown>;
+    if (typeof acObj.base === 'number') {
+      entity.acFormula = {
+        base: acObj.base,
+        dexCap: acObj.dex_bonus ? (typeof acObj.max_bonus === 'number' ? acObj.max_bonus : null) : 0,
+      };
+    }
+  }
+
   if (category === 'spell') {
-    const lvl = typeof raw.spellLevel === 'number' ? raw.spellLevel : typeof raw.level === 'number' ? raw.level : 0;
+    const lvl =
+      typeof raw.spellLevel === 'number'
+        ? raw.spellLevel
+        : typeof raw.level_int === 'number'
+          ? raw.level_int
+          : typeof raw.level === 'number'
+            ? raw.level
+            : 0;
     entity.spellLevel = lvl;
-    entity.castingTime = extractTimeString(raw.castingTime ?? raw.time);
+    entity.castingTime = extractTimeString(raw.castingTime ?? raw.casting_time ?? raw.time);
     entity.range = extractRangeString(raw.range);
-    entity.components = extractComponentsString(raw.components);
+    entity.components = extractComponentsString(raw.components, raw.material);
     entity.duration = duration;
-    entity.concentration = Boolean(raw.concentration ?? concentration);
-    entity.ritual = Boolean(raw.ritual ?? (raw.meta as Record<string, unknown> | undefined)?.ritual);
+    entity.concentration = Boolean(raw.concentration ?? raw.requires_concentration ?? concentration);
+    entity.ritual = Boolean(
+      raw.ritual ?? raw.requires_ritual ?? (raw.meta as Record<string, unknown> | undefined)?.ritual
+    );
   }
 
   if (category === 'monster') {
@@ -200,10 +344,18 @@ export function convertRawEntityToSidereroll(
     if (existingMeta) {
       entity.monsterMeta = raw.monsterMeta as CompendiumEntity['monsterMeta'];
     } else {
-      const acRaw = Array.isArray(raw.ac) ? (raw.ac[0] as Record<string, unknown>)?.ac ?? raw.ac[0] : raw.ac;
-      const hpRaw = (raw.hp as Record<string, unknown> | undefined)?.average ?? raw.hp;
-      const dexScore = typeof raw.dex === 'number' ? raw.dex : 10;
-      const sizeRaw = Array.isArray(raw.size) ? String(raw.size[0]).toLowerCase() : String(raw.size ?? 'medium').toLowerCase();
+      const acSource = raw.ac ?? raw.armor_class;
+      const acRaw = Array.isArray(acSource)
+        ? ((acSource[0] as Record<string, unknown>)?.value ??
+          (acSource[0] as Record<string, unknown>)?.ac ??
+          acSource[0])
+        : acSource;
+      const hpRaw = (raw.hp as Record<string, unknown> | undefined)?.average ?? raw.hp ?? raw.hit_points;
+      const dexScore =
+        typeof raw.dex === 'number' ? raw.dex : typeof raw.dexterity === 'number' ? raw.dexterity : 10;
+      const sizeRaw = Array.isArray(raw.size)
+        ? String(raw.size[0]).toLowerCase()
+        : String(raw.size ?? 'medium').toLowerCase();
       const sizeMap: Record<string, CreatureSize> = {
         t: 'tiny',
         s: 'small',
@@ -212,16 +364,36 @@ export function convertRawEntityToSidereroll(
         h: 'huge',
         g: 'gargantuan',
       };
+      const crSource = raw.cr ?? raw.challenge_rating;
+      const crStr =
+        typeof crSource === 'number'
+          ? String(crSource)
+          : typeof crSource === 'string'
+            ? crSource
+            : typeof (crSource as Record<string, unknown> | undefined)?.cr === 'string'
+              ? String((crSource as Record<string, unknown>).cr)
+              : '1';
+      const traitsList = Array.isArray(raw.special_abilities)
+        ? (raw.special_abilities as Array<Record<string, unknown>>)
+            .filter((t) => typeof t?.name === 'string')
+            .map((t) => `${t.name}: ${String(t.desc ?? '').trim()}`)
+        : undefined;
+
       entity.monsterMeta = {
         ac: typeof acRaw === 'number' ? acRaw : 12,
         hp: typeof hpRaw === 'number' ? hpRaw : 22,
         dexModifier: Math.floor((dexScore - 10) / 2),
-        cr: typeof raw.cr === 'string' ? raw.cr : typeof (raw.cr as Record<string, unknown>)?.cr === 'string' ? String((raw.cr as Record<string, unknown>).cr) : '1',
-        size: (sizeMap[sizeRaw] ?? (['tiny', 'small', 'medium', 'large', 'huge', 'gargantuan'].includes(sizeRaw) ? sizeRaw : 'medium')) as CreatureSize,
-        resistances: asStringArray(raw.resist),
-        immunities: asStringArray(raw.immune),
-        vulnerabilities: asStringArray(raw.vulnerable),
-        senses: asStringArray(raw.senses).join(', ') || undefined,
+        cr: crStr,
+        size: (sizeMap[sizeRaw] ??
+          (['tiny', 'small', 'medium', 'large', 'huge', 'gargantuan'].includes(sizeRaw)
+            ? sizeRaw
+            : 'medium')) as CreatureSize,
+        speeds: formatObjectMap(raw.speed),
+        resistances: asCommaOrArray(raw.resist ?? raw.damage_resistances),
+        immunities: asCommaOrArray(raw.immune ?? raw.damage_immunities),
+        vulnerabilities: asCommaOrArray(raw.vulnerable ?? raw.damage_vulnerabilities),
+        senses: formatObjectMap(raw.senses),
+        traits: traitsList && traitsList.length > 0 ? traitsList : undefined,
       };
     }
   }

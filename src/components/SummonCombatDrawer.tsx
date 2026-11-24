@@ -49,6 +49,7 @@ interface SummonDrawerProps {
   onTargetSave: (attackerName: string, targetIds: string[], act: Activity) => void;
   onOpenEncounterBuilder: () => void;
   onStartEncounterAlert?: () => void;
+  compendiumMonsters?: CompendiumEntity[];
   hideBattlemapButton?: boolean;
   isPlayerRole?: boolean;
   onAddMonster: (
@@ -109,6 +110,7 @@ export function SummonCombatDrawer({
   onTargetSave,
   onOpenEncounterBuilder,
   onStartEncounterAlert,
+  compendiumMonsters,
   hideBattlemapButton = false,
   isPlayerRole = false,
   onAddMonster,
@@ -119,6 +121,7 @@ export function SummonCombatDrawer({
   const [mobAc, setMobAc] = useState('14');
   const [mobHp, setMobHp] = useState('32');
   const [mobCr, setMobCr] = useState('1');
+  const [mobSearch, setMobSearch] = useState('');
   const [srdMobId, setSrdMobId] = useState('');
   const [effectNameInput, setEffectNameInput] = useState('');
   const [effectRoundsInput, setEffectRoundsInput] = useState('10');
@@ -130,9 +133,20 @@ export function SummonCombatDrawer({
     setExpandedIds((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const srdMonsters = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities).filter(
-    (e) => e.category === 'monster' && e.monsterMeta
-  );
+  const srdMonsters =
+    compendiumMonsters && compendiumMonsters.length > 0
+      ? compendiumMonsters
+      : BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities).filter(
+          (e) => e.category === 'monster' && e.monsterMeta
+        );
+  const filteredSrdMonsters = srdMonsters
+    .filter((m) => {
+      const q = mobSearch.trim().toLowerCase();
+      if (!q) return true;
+      return `${m.name} ${m.monsterMeta?.cr ?? ''} ${m.ruleset}`.toLowerCase().includes(q);
+    })
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .slice(0, 80);
   const visibleCombatants = playerView
     ? encounter.combatants.filter((c) => !c.hidden || c.kind === 'pc')
     : encounter.combatants;
@@ -306,6 +320,15 @@ export function SummonCombatDrawer({
           )}
           {showAddCreature && (
             <>
+              <input
+                aria-label="Search compendium monsters"
+                type="text"
+                className="forge-input"
+                placeholder={`Search ${srdMonsters.length} monsters (name, CR, 2024)...`}
+                value={mobSearch}
+                onChange={(e) => setMobSearch(e.target.value)}
+                style={{ width: '100%', padding: '4px 8px' }}
+              />
               <div className="forge-row">
             <select
               aria-label="Quick add SRD monster"
@@ -314,10 +337,12 @@ export function SummonCombatDrawer({
               onChange={(e) => setSrdMobId(e.target.value)}
               style={{ flex: 1, padding: '3px 6px' }}
             >
-              <option value="">Pick SRD Monster (Goblin, Dragon, Lich...)</option>
-              {srdMonsters.map((m) => (
+              <option value="">
+                Pick Monster ({filteredSrdMonsters.length} shown of {srdMonsters.length})...
+              </option>
+              {filteredSrdMonsters.map((m) => (
                 <option key={m.id} value={m.id}>
-                  {m.name} (CR {m.monsterMeta?.cr ?? '?'} • HP {m.monsterMeta?.hp})
+                  {m.name} [{m.ruleset}] (CR {m.monsterMeta?.cr ?? '?'} • HP {m.monsterMeta?.hp})
                 </option>
               ))}
             </select>

@@ -11,6 +11,7 @@ import {
   TreasureTier,
 } from '../engine/dm-tools';
 import { evaluateEncounterDifficulty } from '../engine/encounter-math';
+import { computeCharacterSheet } from '../engine/rules-math';
 import {
   GeneratedEncounter,
   generateRandomEncounter,
@@ -70,6 +71,7 @@ interface DmHubModalProps {
   onDeleteDowntime?: (projectId: string) => void;
   onSyncCampaignRepo?: (config?: ExternalRepoConfig) => Promise<void>;
   onPushCampaignRepo?: (config?: ExternalRepoConfig) => Promise<void>;
+  onPromptPartyRoll?: (label: string, kind: 'check' | 'save', abilityOrSkill: string, dc?: number) => void;
 }
 
 const CATEGORIES: Array<{ key: 'all' | CampaignCategory; label: string }> = [
@@ -120,8 +122,10 @@ export function DmHubModal({
   onDeleteDowntime,
   onSyncCampaignRepo,
   onPushCampaignRepo,
+  onPromptPartyRoll,
 }: DmHubModalProps) {
-  const [tab, setTab] = useState<'binder' | 'clock' | 'loot' | 'dmscreen' | 'xp' | 'improv' | 'worldmap' | 'soundboard'>('binder');
+  const [tab, setTab] = useState<'party' | 'binder' | 'clock' | 'loot' | 'dmscreen' | 'xp' | 'improv' | 'worldmap' | 'soundboard'>('party');
+  const [promptDc, setPromptDc] = useState('12');
   const [dtOwner, setDtOwner] = useState('');
   const [dtTitle, setDtTitle] = useState('');
   const [dtKind, setDtKind] = useState<DowntimeProject['kind']>('craft');
@@ -226,6 +230,7 @@ export function DmHubModal({
   });
 
   const dmTabs = [
+    ['party', 'Party & Sync'],
     ['binder', 'Campaign Binder'],
     ['clock', 'World Clock'],
     ['loot', 'Loot & Shops'],
@@ -328,6 +333,220 @@ export function DmHubModal({
           ))}
         </div>
       )}
+
+        {tab === 'party' && (
+          <div className="forge-stack">
+            <div className="card forge-stack">
+              <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+                <span className="forge-section-label" style={{ marginBottom: 0 }}>
+                  PARTY CHEAT SHEET ({characterList.length} PCs)
+                </span>
+                <span className="forge-muted" style={{ fontSize: 11 }}>
+                  Passive Perception, Insight, AC, HP &amp; Spell Save DC at a glance
+                </span>
+              </div>
+              {characterList.length === 0 ? (
+                <div className="forge-muted" style={{ fontSize: 12 }}>No player characters saved yet.</div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', color: 'var(--text-secondary)' }}>
+                        <th style={{ padding: '4px 6px' }}>Character</th>
+                        <th style={{ padding: '4px 6px' }}>AC</th>
+                        <th style={{ padding: '4px 6px' }}>HP</th>
+                        <th style={{ padding: '4px 6px' }}>Pass. Perc</th>
+                        <th style={{ padding: '4px 6px' }}>Pass. Insight</th>
+                        <th style={{ padding: '4px 6px' }}>Spell DC</th>
+                      </tr>
+                    </thead>
+                    <tbody className="tabular">
+                      {characterList.map((pc) => {
+                        const resolved = computeCharacterSheet(pc);
+                        return (
+                          <tr key={pc.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                            <td style={{ padding: '5px 6px' }}>
+                              <strong>{pc.name}</strong>{' '}
+                              <span className="forge-muted" style={{ fontSize: 11 }}>
+                                ({pc.classes.map((c) => `${c.className} ${c.level}`).join('/')})
+                              </span>
+                            </td>
+                            <td style={{ padding: '5px 6px' }}>{resolved.ac.final}</td>
+                            <td style={{ padding: '5px 6px' }}>{resolved.hp.current}/{resolved.hp.max}</td>
+                            <td style={{ padding: '5px 6px' }}>{resolved.passivePerception}</td>
+                            <td style={{ padding: '5px 6px' }}>{resolved.passiveInsight}</td>
+                            <td style={{ padding: '5px 6px' }}>
+                              {resolved.spellcasting.primaryAbility ? resolved.spellcasting.saveDc.final : '—'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {onPromptPartyRoll && (
+              <div className="card forge-stack">
+                <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+                  <span className="forge-section-label" style={{ marginBottom: 0 }}>
+                    ONE-CLICK LIVE TABLE ROLL PROMPTS
+                  </span>
+                  <label className="forge-row" style={{ gap: 6, fontSize: 11 }}>
+                    <span className="forge-muted">DC:</span>
+                    <input
+                      type="number"
+                      className="forge-input tabular"
+                      style={{ width: 58, padding: '2px 6px' }}
+                      value={promptDc}
+                      onChange={(e) => setPromptDc(e.target.value)}
+                    />
+                  </label>
+                </div>
+                <div className="pill-row">
+                  {(
+                    [
+                      { label: 'Perception Check', kind: 'check', key: 'perception' },
+                      { label: 'Stealth Check', kind: 'check', key: 'stealth' },
+                      { label: 'Insight Check', kind: 'check', key: 'insight' },
+                      { label: 'Investigation Check', kind: 'check', key: 'investigation' },
+                      { label: 'CON Save', kind: 'save', key: 'con' },
+                      { label: 'DEX Save', kind: 'save', key: 'dex' },
+                      { label: 'WIS Save', kind: 'save', key: 'wis' },
+                    ] as const
+                  ).map((p) => {
+                    const dcNum = Number.parseInt(promptDc, 10);
+                    return (
+                      <button
+                        key={p.label}
+                        type="button"
+                        className="btn"
+                        onClick={() =>
+                          onPromptPartyRoll(
+                            p.label,
+                            p.kind,
+                            p.key,
+                            !Number.isNaN(dcNum) && dcNum > 0 ? dcNum : undefined
+                          )
+                        }
+                      >
+                        Prompt: {p.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {onSyncCampaignRepo && (
+              <div className="card forge-stack">
+                <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+                  <span className="forge-section-label" style={{ marginBottom: 0 }}>
+                    EXTERNAL GITHUB REPO (<code>campaign-pack.json</code>)
+                  </span>
+                  {campaign.externalRepo?.lastSyncedAt && (
+                    <span className="badge tabular">
+                      Synced {new Date(campaign.externalRepo.lastSyncedAt).toLocaleTimeString()}
+                    </span>
+                  )}
+                </div>
+                <div className="forge-muted" style={{ fontSize: 12 }}>
+                  Link a GitHub repo (<code>owner/repo</code>) for this campaign&apos;s binder entries, custom DLC, and characters. Use Pack Path to keep multiple campaigns in one shared repo.
+                </div>
+                <form
+                  key={`${campaign.id}-${campaign.externalRepo?.lastSyncedAt ?? 'unsynced'}`}
+                  className="forge-row"
+                  style={{ flexWrap: 'wrap', gap: 6 }}
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const fd = new FormData(e.currentTarget);
+                    const slug = parseRepoSlug(String(fd.get('repoSlug') || ''));
+                    const branch = String(fd.get('repoBranch') || 'main').trim() || 'main';
+                    const packPath = String(fd.get('repoPath') || 'campaign-pack.json').trim() || 'campaign-pack.json';
+                    if (!slug) return;
+                    void onSyncCampaignRepo({ owner: slug.owner, repo: slug.repo, branch, packPath });
+                  }}
+                >
+                  <input
+                    name="repoSlug"
+                    type="text"
+                    className="forge-input"
+                    style={{ flex: '1 1 180px' }}
+                    defaultValue={
+                      campaign.externalRepo
+                        ? `${campaign.externalRepo.owner}/${campaign.externalRepo.repo}`
+                        : ''
+                    }
+                    placeholder="Solopass/dnd-campaign-vault"
+                  />
+                  <input
+                    name="repoBranch"
+                    type="text"
+                    className="forge-input"
+                    style={{ width: 80 }}
+                    defaultValue={campaign.externalRepo?.branch ?? 'main'}
+                    placeholder="main"
+                  />
+                  <input
+                    name="repoPath"
+                    type="text"
+                    className="forge-input"
+                    style={{ flex: '1 1 170px' }}
+                    defaultValue={campaign.externalRepo?.packPath ?? 'campaign-pack.json'}
+                    placeholder="campaign-pack.json"
+                    title="Manifest path inside the repo (e.g. campaign-pack.json or campaigns/strahd/campaign-pack.json)"
+                  />
+                  <button type="submit" className="btn btn-primary">
+                    Sync Repo
+                  </button>
+                  {onPushCampaignRepo && (
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={(e) => {
+                        const form = e.currentTarget.closest('form');
+                        if (!form) {
+                          void onPushCampaignRepo();
+                          return;
+                        }
+                        const fd = new FormData(form);
+                        const slug = parseRepoSlug(String(fd.get('repoSlug') || ''));
+                        const branch = String(fd.get('repoBranch') || 'main').trim() || 'main';
+                        const packPath = String(fd.get('repoPath') || 'campaign-pack.json').trim() || 'campaign-pack.json';
+                        if (!slug) {
+                          void onPushCampaignRepo();
+                          return;
+                        }
+                        void onPushCampaignRepo({ owner: slug.owner, repo: slug.repo, branch, packPath });
+                      }}
+                      title="Commit this campaign's binder entries and custom DLC back to GitHub (requires PAT in Settings)"
+                    >
+                      Push Pack
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() => {
+                      const blob = new Blob([buildCampaignPackTemplate(campaign.name)], {
+                        type: 'application/json',
+                      });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'campaign-pack.json';
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                  >
+                    Template
+                  </button>
+                </form>
+              </div>
+            )}
+          </div>
+        )}
 
         {tab === 'binder' && (
           <div className="forge-grid-2" style={{ alignItems: 'start' }}>
@@ -877,113 +1096,6 @@ export function DmHubModal({
                 </div>
               </div>
             </div>
-
-            {onSyncCampaignRepo && (
-              <div className="card forge-stack">
-                <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
-                  <span className="forge-section-label" style={{ marginBottom: 0 }}>
-                    PER-CAMPAIGN EXTERNAL GITHUB REPO (<code>campaign-pack.json</code>)
-                  </span>
-                  {campaign.externalRepo?.lastSyncedAt && (
-                    <span className="badge tabular">
-                      Synced {new Date(campaign.externalRepo.lastSyncedAt).toLocaleTimeString()}
-                    </span>
-                  )}
-                </div>
-                <div className="forge-muted" style={{ fontSize: 12 }}>
-                  Link a GitHub repo (<code>owner/repo</code>) for this campaign&apos;s binder entries, custom DLC, and characters. Use Pack Path to keep multiple campaigns in one shared repo.
-                </div>
-                <form
-                  key={`${campaign.id}-${campaign.externalRepo?.lastSyncedAt ?? 'unsynced'}`}
-                  className="forge-row"
-                  style={{ flexWrap: 'wrap', gap: 6 }}
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const fd = new FormData(e.currentTarget);
-                    const slug = parseRepoSlug(String(fd.get('repoSlug') || ''));
-                    const branch = String(fd.get('repoBranch') || 'main').trim() || 'main';
-                    const packPath = String(fd.get('repoPath') || 'campaign-pack.json').trim() || 'campaign-pack.json';
-                    if (!slug) return;
-                    void onSyncCampaignRepo({ owner: slug.owner, repo: slug.repo, branch, packPath });
-                  }}
-                >
-                  <input
-                    name="repoSlug"
-                    type="text"
-                    className="forge-input"
-                    style={{ flex: '1 1 180px' }}
-                    defaultValue={
-                      campaign.externalRepo
-                        ? `${campaign.externalRepo.owner}/${campaign.externalRepo.repo}`
-                        : ''
-                    }
-                    placeholder="Solopass/dnd-campaign-vault"
-                  />
-                  <input
-                    name="repoBranch"
-                    type="text"
-                    className="forge-input"
-                    style={{ width: 80 }}
-                    defaultValue={campaign.externalRepo?.branch ?? 'main'}
-                    placeholder="main"
-                  />
-                  <input
-                    name="repoPath"
-                    type="text"
-                    className="forge-input"
-                    style={{ flex: '1 1 170px' }}
-                    defaultValue={campaign.externalRepo?.packPath ?? 'campaign-pack.json'}
-                    placeholder="campaign-pack.json"
-                    title="Manifest path inside the repo (e.g. campaign-pack.json or campaigns/strahd/campaign-pack.json)"
-                  />
-                  <button type="submit" className="btn btn-primary">
-                    Sync Repo
-                  </button>
-                  {onPushCampaignRepo && (
-                    <button
-                      type="button"
-                      className="btn"
-                      onClick={(e) => {
-                        const form = e.currentTarget.closest('form');
-                        if (!form) {
-                          void onPushCampaignRepo();
-                          return;
-                        }
-                        const fd = new FormData(form);
-                        const slug = parseRepoSlug(String(fd.get('repoSlug') || ''));
-                        const branch = String(fd.get('repoBranch') || 'main').trim() || 'main';
-                        const packPath = String(fd.get('repoPath') || 'campaign-pack.json').trim() || 'campaign-pack.json';
-                        if (!slug) {
-                          void onPushCampaignRepo();
-                          return;
-                        }
-                        void onPushCampaignRepo({ owner: slug.owner, repo: slug.repo, branch, packPath });
-                      }}
-                      title="Commit this campaign's binder entries and custom DLC back to GitHub (requires PAT in Settings)"
-                    >
-                      Push Pack
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    className="btn"
-                    onClick={() => {
-                      const blob = new Blob([buildCampaignPackTemplate(campaign.name)], {
-                        type: 'application/json',
-                      });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = 'campaign-pack.json';
-                      a.click();
-                      URL.revokeObjectURL(url);
-                    }}
-                  >
-                    Template
-                  </button>
-                </form>
-              </div>
-            )}
 
             <div className="card forge-stack">
               <div className="forge-row-between" style={{ flexWrap: 'wrap' }}>

@@ -21,6 +21,7 @@ interface SettingsModalProps {
   activeThemeName?: string;
   onOpenThemeStudio?: () => void;
   onExportBackup: () => Promise<void>;
+  onImportBackup?: (file: File) => Promise<void>;
   onExportActiveCharacter: () => void;
 }
 
@@ -52,6 +53,7 @@ export function SettingsModal({
   activeThemeName,
   onOpenThemeStudio,
   onExportBackup,
+  onImportBackup,
   onExportActiveCharacter,
 }: SettingsModalProps) {
   const [scheme, setScheme] = useState<SchemeChoice>(readStoredScheme);
@@ -292,6 +294,21 @@ export function SettingsModal({
             >
               Export Full Backup (.json)
             </button>
+            {onImportBackup && (
+              <label className="btn" style={{ cursor: 'pointer' }}>
+                Restore Backup (.json)
+                <input
+                  type="file"
+                  accept=".json,application/json"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) void onImportBackup(file);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+            )}
           </div>
           <div className="forge-muted">
             All characters, custom maps, homebrew entries, and encounters are saved offline in your browser IndexedDB.

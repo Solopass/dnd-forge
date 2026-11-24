@@ -573,6 +573,7 @@ export function App() {
       onTargetSave={store.targetSaveCombatants}
       onOpenEncounterBuilder={() => setEncounterBuilderOpen(true)}
       onStartEncounterAlert={store.startEncounterAlert}
+      compendiumMonsters={store.compendium.filter((e) => e.category === 'monster' && Boolean(e.monsterMeta))}
       hideBattlemapButton={uiMode === 'unified' && unifiedView === 'vtt'}
       onAddMonster={store.addMonsterToEncounter}
     />
@@ -583,7 +584,11 @@ export function App() {
       ? store.rawChar.items.find((it) => it.id === inspectedItemId) ?? null
       : null;
 
-  const rightSlotNode = (
+  const isInDmStudio = !modularMode && uiMode === 'unified' && unifiedView === 'dm' && !isPlayerRole;
+
+  const rightSlotNode = isInDmStudio ? (
+    combatDrawerNode
+  ) : (
     <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0 }}>
       <div
         className="subpanel forge-row"
@@ -712,6 +717,7 @@ export function App() {
     onDeleteDowntime: store.deleteDowntimeProject,
     onSyncCampaignRepo: store.syncCampaignExternalRepo,
     onPushCampaignRepo: store.pushCampaignToRepo,
+    onPromptPartyRoll: store.sendRollRequestToPeers,
     onSpawnImprovEncounter: (enc: { monsters: Array<{ name: string; count: number }> }) => {
       const allMobs = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities).filter(
         (e) => e.category === 'monster'
@@ -769,36 +775,42 @@ export function App() {
               {APP_VERSION}
             </span>
           </span>
-          <select
-            aria-label="Active character"
-            value={store.rawChar.id}
-            onChange={(e) => void store.switchCharacter(e.target.value)}
-            style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', borderRadius: 4, padding: '4px 8px', fontSize: 12 }}
-          >
-            {store.characterList.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} (Lvl {c.classes.reduce((s, x) => s + x.level, 0)})
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            className="btn"
-            onClick={() => setCharManagerOpen(true)}
-            title="Open Character Manager (switch, import, export, duplicate, delete)"
-          >
-            Roster ({store.characterList.length})
-          </button>
-          <button
-            type="button"
-            className="btn btn-brand"
-            onClick={() => setNewCharOpen(true)}
-          >
-            + New
-          </button>
-          <button type="button" className="btn btn-primary" onClick={() => setLevelUpOpen(true)}>
-            Level Up
-          </button>
+          {isInDmStudio ? (
+            <span className="badge">DM Studio • {store.campaign.name}</span>
+          ) : (
+            <>
+              <select
+                aria-label="Active character"
+                value={store.rawChar.id}
+                onChange={(e) => void store.switchCharacter(e.target.value)}
+                style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', borderRadius: 4, padding: '4px 8px', fontSize: 12 }}
+              >
+                {store.characterList.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} (Lvl {c.classes.reduce((s, x) => s + x.level, 0)})
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setCharManagerOpen(true)}
+                title="Open Character Manager (switch, import, export, duplicate, delete)"
+              >
+                Roster ({store.characterList.length})
+              </button>
+              <button
+                type="button"
+                className="btn btn-brand"
+                onClick={() => setNewCharOpen(true)}
+              >
+                + New
+              </button>
+              <button type="button" className="btn btn-primary" onClick={() => setLevelUpOpen(true)}>
+                Level Up
+              </button>
+            </>
+          )}
         </div>
 
         <div className="topbar-center">
@@ -1426,28 +1438,32 @@ export function App() {
               <span className="forge-row" style={{ gap: 6 }}><MapIcon size={14} /> Tactical VTT</span>
               <span className="badge">{isCombatActive ? `Live R${store.encounter.round}` : `Rnd ${store.encounter.round}`}</span>
             </button>
-            <div className="subpanel forge-stack" style={{ padding: '8px', gap: 6, marginTop: 4 }}>
-              <div className="forge-row-between tabular" style={{ fontSize: 11 }}>
-                <strong>HP {store.resolvedSheet.hp.current}/{store.resolvedSheet.hp.max}</strong>
-                <span>AC {store.resolvedSheet.ac.final}</span>
-              </div>
-              <div className="forge-row" style={{ gap: 4 }}>
-                <button type="button" className="btn" style={{ flex: 1, fontSize: 11 }} onClick={() => setShortRestOpen(true)}>
-                  Short Rest
+            {!isInDmStudio && (
+              <>
+                <div className="subpanel forge-stack" style={{ padding: '8px', gap: 6, marginTop: 4 }}>
+                  <div className="forge-row-between tabular" style={{ fontSize: 11 }}>
+                    <strong>HP {store.resolvedSheet.hp.current}/{store.resolvedSheet.hp.max}</strong>
+                    <span>AC {store.resolvedSheet.ac.final}</span>
+                  </div>
+                  <div className="forge-row" style={{ gap: 4 }}>
+                    <button type="button" className="btn" style={{ flex: 1, fontSize: 11 }} onClick={() => setShortRestOpen(true)}>
+                      Short Rest
+                    </button>
+                    <button type="button" className="btn" style={{ flex: 1, fontSize: 11 }} onClick={() => store.takeRest('long_rest')}>
+                      Long Rest
+                    </button>
+                  </div>
+                </div>
+                <hr style={{ width: '100%', border: 0, borderTop: '1px solid var(--border-subtle)', margin: '4px 0' }} />
+                <button type="button" className="unified-rail-btn" onClick={() => setBuilderOpen(true)}>
+                  <span>Build &amp; Stats</span>
                 </button>
-                <button type="button" className="btn" style={{ flex: 1, fontSize: 11 }} onClick={() => store.takeRest('long_rest')}>
-                  Long Rest
+                <button type="button" className="unified-rail-btn" onClick={() => setGearOpen(true)}>
+                  <span className="forge-row" style={{ gap: 6 }}><BackpackIcon size={14} /> Gear &amp; Spells</span>
+                  <span className="badge">{store.resolvedSheet.attunementCount}/3</span>
                 </button>
-              </div>
-            </div>
-            <hr style={{ width: '100%', border: 0, borderTop: '1px solid var(--border-subtle)', margin: '4px 0' }} />
-            <button type="button" className="unified-rail-btn" onClick={() => setBuilderOpen(true)}>
-              <span>Build &amp; Stats</span>
-            </button>
-            <button type="button" className="unified-rail-btn" onClick={() => setGearOpen(true)}>
-              <span className="forge-row" style={{ gap: 6 }}><BackpackIcon size={14} /> Gear &amp; Spells</span>
-              <span className="badge">{store.resolvedSheet.attunementCount}/3</span>
-            </button>
+              </>
+            )}
             {!isPlayerRole && (
               <button type="button" className="unified-rail-btn" onClick={() => setEncounterBuilderOpen(true)}>
                 <span>Encounter Forge</span>
@@ -1807,6 +1823,9 @@ export function App() {
           activeThemeName={activeTheme.name}
           onOpenThemeStudio={() => setThemeStudioOpen(true)}
           onExportBackup={handleExport}
+          onImportBackup={async (file) => {
+            await store.importJsonFilePayload(await file.text());
+          }}
           onExportActiveCharacter={handleExportActiveCharacter}
         />
 

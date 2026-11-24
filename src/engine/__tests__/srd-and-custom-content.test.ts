@@ -85,5 +85,11 @@ describe('Custom Content Templates & JSON Loader', () => {
     const segs = parse5eToolsEntries('Save {@dc 15} or {@scaledamage 8d6|3-9|1d6}');
     expect(segs.some((s) => s.kind === 'save' && s.display === 'DC 15')).toBe(true);
     expect(segs.some((s) => s.kind === 'roll' && s.display === '+1d6/lvl')).toBe(true);
+
+    const withImg = normalizeCustomEntity(
+      { name: 'Moonblade', image: './images/items/moonblade.webp' },
+      'weapon'
+    );
+    expect(withImg?.imageUrl).toBe('./images/items/moonblade.webp');
   });
 });

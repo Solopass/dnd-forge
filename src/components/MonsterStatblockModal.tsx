@@ -27,12 +27,28 @@ export function MonsterStatblockModal({
   return (
     <ModalDialog isOpen={Boolean(combatant)} onClose={onClose} title={`Statblock — ${combatant.name}`}>
       <div className="forge-stack">
-        <div className="card forge-row-between" style={{ flexWrap: 'wrap' }}>
-          <div>
-            <strong>{combatant.name}</strong>
-            <div className="forge-muted" style={{ fontSize: 12 }}>
-              {(combatant.size ?? meta?.size ?? 'medium').toUpperCase()} • CR {combatant.cr ?? meta?.cr ?? '—'}
-              {meta?.speeds ? ` • Speed ${meta.speeds}` : ''}
+        <div className="card forge-row-between" style={{ flexWrap: 'wrap', gap: 10 }}>
+          <div className="forge-row" style={{ gap: 10 }}>
+            {combatant.portraitUrl && (
+              <img
+                src={combatant.portraitUrl}
+                alt={combatant.name}
+                loading="lazy"
+                style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: 'var(--radius-sm)',
+                  objectFit: 'cover',
+                  border: '1px solid var(--border-subtle)',
+                }}
+              />
+            )}
+            <div>
+              <strong>{combatant.name}</strong>
+              <div className="forge-muted" style={{ fontSize: 12 }}>
+                {(combatant.size ?? meta?.size ?? 'medium').toUpperCase()} • CR {combatant.cr ?? meta?.cr ?? '—'}
+                {meta?.speeds ? ` • Speed ${meta.speeds}` : ''}
+              </div>
             </div>
           </div>
           <div className="pill-row tabular">

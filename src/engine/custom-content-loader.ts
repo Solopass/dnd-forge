@@ -123,11 +123,17 @@ export function normalizeCustomEntity(
       ? raw.id.trim()
       : `custom-${category}-${slugify(name)}`;
 
+  const rawImg =
+    [raw.imageUrl, raw.image, raw.img, raw.portraitUrl, raw.tokenUrl].find(
+      (v): v is string => typeof v === 'string' && v.trim().length > 0
+    );
+
   return {
     ...(raw as unknown as CompendiumEntity),
     id,
     name,
     category,
+    imageUrl: rawImg ? rawImg.trim() : undefined,
     source: typeof raw.source === 'string' && raw.source.trim() ? raw.source.trim() : 'Custom Repo',
     ruleset: raw.ruleset === '2024' ? '2024' : '2014',
     activities: Array.isArray(raw.activities) ? (raw.activities as CompendiumEntity['activities']) : [],

@@ -74,6 +74,7 @@ export function EquipmentSpellDrawer({
   const [hbSpellLevel, setHbSpellLevel] = useState('1');
   const [hbConc, setHbConc] = useState(false);
   const [hbDesc, setHbDesc] = useState('');
+  const [hbImageUrl, setHbImageUrl] = useState('');
 
   const coins = currency ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
   const totalGpValue =
@@ -111,6 +112,7 @@ export function EquipmentSpellDrawer({
       source: 'Homebrew',
       ruleset: 'homebrew',
       category: hbCategory,
+      imageUrl: hbImageUrl.trim() || undefined,
       equipped: true,
       prepared: true,
       concentration: hbConc,
@@ -127,6 +129,7 @@ export function EquipmentSpellDrawer({
     await onCreateHomebrew(entity, true);
     setHbName('');
     setHbDesc('');
+    setHbImageUrl('');
     setTab('gear');
   };
 
@@ -585,6 +588,17 @@ export function EquipmentSpellDrawer({
               onChange={(e) => setHbConc(e.target.checked)}
             />
             <span>Requires Concentration</span>
+          </label>
+
+          <label className="forge-field">
+            <span className="forge-label">IMAGE URL OR PATH (OPTIONAL)</span>
+            <input
+              type="text"
+              className="forge-input"
+              value={hbImageUrl}
+              onChange={(e) => setHbImageUrl(e.target.value)}
+              placeholder="./images/items/my-item.png or https://..."
+            />
           </label>
 
           <label className="forge-field">

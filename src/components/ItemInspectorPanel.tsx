@@ -131,6 +131,32 @@ export const ItemInspectorPanel: React.FC<ItemInspectorPanelProps> = ({
         )}
       </div>
 
+      {item.imageUrl && (
+        <div
+          className="subpanel"
+          style={{
+            padding: 6,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            background: 'var(--bg-base)',
+          }}
+        >
+          <img
+            src={item.imageUrl}
+            alt={item.name}
+            loading="lazy"
+            style={{
+              maxWidth: '100%',
+              maxHeight: 180,
+              borderRadius: 'var(--radius-sm)',
+              objectFit: 'contain',
+              display: 'block',
+            }}
+          />
+        </div>
+      )}
+
       {/* Quick State Controls */}
       {isPhysical && (
         <div className="subpanel forge-row" style={{ padding: '6px 8px', flexWrap: 'wrap', gap: 6 }}>

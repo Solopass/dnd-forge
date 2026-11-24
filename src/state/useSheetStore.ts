@@ -1037,7 +1037,8 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
       actions?: Activity[],
       cr?: string,
       extraMeta?: MonsterStatMeta,
-      notes?: string
+      notes?: string,
+      portraitUrl?: string
     ) => {
       const initRoll = evaluateDiceExpression(`1d20${dexMod >= 0 ? `+${dexMod}` : dexMod}`, 'normal');
       persistEncounter((prev) => {
@@ -1052,6 +1053,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
               kind: 'monster',
               cr,
               size: extraMeta?.size ?? 'medium',
+              portraitUrl,
               x: 12 + (mobCount % 6),
               y: 2 + Math.floor(mobCount / 6) * 2,
               tokenColor: '#f85149',
@@ -1090,7 +1092,8 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
           entity.activities,
           entity.monsterMeta.cr,
           entity.monsterMeta,
-          entity.entries.join(' ')
+          entity.entries.join(' '),
+          entity.imageUrl
         );
         return;
       }
@@ -1611,7 +1614,8 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
           result.data.activities,
           result.data.monsterMeta.cr,
           result.data.monsterMeta,
-          result.data.entries.join(' ')
+          result.data.entries.join(' '),
+          result.data.imageUrl
         );
       } else {
         persistCharacter((prev) => ({

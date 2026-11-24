@@ -74,6 +74,7 @@ export interface CompendiumEntity {
   source: string;
   ruleset: Ruleset;
   category: ItemCategory;
+  imageUrl?: string;
   equipped?: boolean;
   prepared?: boolean;
   alwaysPrepared?: boolean;

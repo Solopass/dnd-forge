@@ -1596,7 +1596,8 @@ export function App() {
                 m.activities,
                 m.monsterMeta.cr,
                 m.monsterMeta,
-                m.entries.join(' ')
+                m.entries.join(' '),
+                m.imageUrl
               );
             }
           }}

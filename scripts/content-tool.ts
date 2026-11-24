@@ -141,7 +141,7 @@ export function validateCustomContentDir(repoRoot: string): ValidationReport {
   return report;
 }
 
-async function extractPdfTextAndFields(pdfPath: string): Promise<{
+export async function extractPdfTextAndFields(pdfPath: string): Promise<{
   fields: Record<string, string>;
   pagesText: string;
 }> {

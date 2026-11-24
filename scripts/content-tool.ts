@@ -202,6 +202,52 @@ function getOutputFolder(category: ItemCategory | 'character'): string {
   return 'items';
 }
 
+function verifyConvertedOutput(
+  converted: CompendiumEntity[],
+  repoRoot: string,
+  outPath: string
+): void {
+  const relOut = path.relative(repoRoot, outPath);
+  if (converted.length === 0) {
+    console.warn(`[WARN] ${relOut}: 0 entities were extracted. Try --dump-text to inspect raw text.`);
+    return;
+  }
+
+  const knownIds = new Set<string>(
+    BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities.map((e) => e.id))
+  );
+  const localIds = new Set<string>();
+  let errorCount = 0;
+
+  for (const entity of converted) {
+    if (knownIds.has(entity.id) || localIds.has(entity.id)) {
+      console.error(`[ERR]  ${relOut}: Duplicate id "${entity.id}" (${entity.name}).`);
+      errorCount += 1;
+    }
+    localIds.add(entity.id);
+
+    if (entity.category === 'monster' && !entity.monsterMeta) {
+      console.error(`[ERR]  ${relOut}: Monster "${entity.name}" is missing monsterMeta.`);
+      errorCount += 1;
+    }
+    if ((entity.category === 'spell' || entity.category === 'weapon') && entity.activities.length === 0) {
+      console.warn(`[WARN] ${relOut}: ${entity.category} "${entity.name}" has no rollable activities[].`);
+    }
+  }
+
+  const fullReport = validateCustomContentDir(repoRoot);
+  for (const e of fullReport.errors) {
+    console.error(`[ERR]  ${e.file}: ${e.message}`);
+    errorCount += 1;
+  }
+
+  if (errorCount > 0) {
+    console.error(`Verification failed with ${errorCount} error(s).`);
+    process.exit(1);
+  }
+  console.log(`Verified ${converted.length} converted entities in ${relOut} (0 errors).`);
+}
+
 async function runCli() {
   const args = process.argv.slice(2);
   const cmd = args[0] ?? 'validate';
@@ -291,6 +337,7 @@ async function runCli() {
       console.log(
         `Extracted ${converted.length} ${category} entities from PDF -> ${path.relative(repoRoot, outPath)}`
       );
+      verifyConvertedOutput(converted, repoRoot, outPath);
       return;
     }
 
@@ -343,6 +390,7 @@ async function runCli() {
     fs.mkdirSync(path.dirname(outPath), { recursive: true });
     fs.writeFileSync(outPath, `${JSON.stringify(converted, null, 2)}\n`, 'utf8');
     console.log(`Converted ${converted.length} ${category} entities -> ${path.relative(repoRoot, outPath)}`);
+    verifyConvertedOutput(converted, repoRoot, outPath);
     return;
   }
 

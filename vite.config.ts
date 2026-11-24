@@ -10,6 +10,7 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom', 'dexie'],
           compendium: ['./src/engine/srd-packs.ts'],
+          dmHub: ['./src/engine/dm-tools.ts'],
         },
       },
     },

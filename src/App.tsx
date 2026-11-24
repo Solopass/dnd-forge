@@ -16,6 +16,8 @@ import { BattlemapModal } from './components/BattlemapModal';
 import { SettingsModal } from './components/SettingsModal';
 import { LevelUpModal } from './components/LevelUpModal';
 import { LiveTableModal } from './components/LiveTableModal';
+import { DmHubModal } from './components/DmHubModal';
+import { MonsterStatblockModal } from './components/MonsterStatblockModal';
 import { ToastStack } from './components/ToastStack';
 import { evaluateDiceExpression } from './engine/dice';
 import { exportFullBundle } from './storage/db';
@@ -175,7 +177,12 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [levelUpOpen, setLevelUpOpen] = useState(false);
   const [liveTableOpen, setLiveTableOpen] = useState(false);
+  const [dmHubOpen, setDmHubOpen] = useState(false);
+  const [playerView, setPlayerView] = useState(false);
+  const [inspectedCombatantId, setInspectedCombatantId] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<'vitals' | 'actions' | 'combat'>('vitals');
+  const inspectedCombatant =
+    inspectedCombatantId ? (store.encounter.combatants.find((c) => c.id === inspectedCombatantId) ?? null) : null;
   const [consoleSize, setConsoleSize] = useState<'normal' | 'expanded' | 'collapsed'>('normal');
   const mobileTablistRef = useRef<HTMLDivElement | null>(null);
 
@@ -296,6 +303,9 @@ export function App() {
           <button type="button" className="btn" onClick={() => setPaletteOpen(true)}>
             Packs / PDF / Import (Ctrl+K)
           </button>
+          <button type="button" className="btn" onClick={() => setDmHubOpen(true)}>
+            DM Hub
+          </button>
           <button type="button" className="btn" onClick={() => setBattlemapOpen(true)}>
             Battlemap
           </button>
@@ -401,6 +411,15 @@ export function App() {
           onToggleCombatantCondition={store.toggleCombatantCondition}
           onToggleCombatantEconomy={store.toggleCombatantEconomy}
           onRemoveCombatant={store.removeCombatant}
+          playerView={playerView}
+          onTogglePlayerView={() => setPlayerView((v) => !v)}
+          onRollAllInitiative={store.rollAllInitiative}
+          onInspectCombatant={setInspectedCombatantId}
+          onToggleCombatantHidden={store.toggleCombatantHidden}
+          onSetCombatantSize={store.setCombatantSize}
+          onAdjustLegendary={store.adjustLegendaryActions}
+          onToggleOrRollRecharge={store.toggleOrRollRecharge}
+          onAddTimedEffect={store.addTimedCombatEffect}
           onTriggerCombatantActivity={store.triggerCombatantActivity}
           onDropConcentration={store.dropConcentration}
           onRollConcentrationSave={store.rollConcentrationSave}
@@ -495,12 +514,54 @@ export function App() {
       <BattlemapModal
         isOpen={battlemapOpen}
         encounter={store.encounter}
+        playerView={playerView}
+        onTogglePlayerView={() => setPlayerView((v) => !v)}
         onClose={() => setBattlemapOpen(false)}
         onMoveToken={store.moveCombatantToken}
         onSetMapImage={store.setEncounterMapImage}
         onAddTemplate={store.addMapTemplate}
         onClearTemplates={store.clearMapTemplates}
+        onToggleFogCells={store.toggleFogCells}
+        onFillAllFog={store.fillAllFog}
+        onClearAllFog={store.clearAllFog}
+        onSetTerrainCell={store.setTerrainCell}
+        onClearTerrain={store.clearTerrain}
+        onUpdateMapSettings={store.updateEncounterMapSettings}
         onNextTurn={store.stepCombatTurn}
+      />
+
+      <DmHubModal
+        isOpen={dmHubOpen}
+        onClose={() => setDmHubOpen(false)}
+        campaign={store.campaign}
+        campaignList={store.campaignList}
+        characterList={store.characterList}
+        activeCharacterName={store.rawChar.name}
+        activeCharacterGp={store.rawChar.currency?.gp ?? 0}
+        encounter={store.encounter}
+        onSwitchCampaign={store.switchCampaign}
+        onCreateCampaign={store.createCampaign}
+        onDeleteCampaign={store.deleteCampaign}
+        onUpsertEntry={store.upsertCampaignEntry}
+        onDeleteEntry={store.deleteCampaignEntry}
+        onAdvanceClock={store.advanceCampaignClock}
+        onAddTimer={store.addClockTimer}
+        onSetWeather={store.setCampaignWeather}
+        onAddPartyLoot={store.addPartyLoot}
+        onDistributeGold={store.distributeGoldToParty}
+        onBuyShopItem={store.buyShopItemForActiveCharacter}
+        onAwardXp={store.awardPartyXp}
+        onMilestoneLevelUp={store.triggerPartyMilestoneLevelUp}
+        onRollExpression={store.rollInlineExpression}
+      />
+
+      <MonsterStatblockModal
+        combatant={inspectedCombatant}
+        playerView={playerView}
+        onClose={() => setInspectedCombatantId(null)}
+        onTriggerActivity={store.triggerCombatantActivity}
+        onAdjustLegendary={store.adjustLegendaryActions}
+        onToggleOrRollRecharge={store.toggleOrRollRecharge}
       />
 
       <SettingsModal
@@ -520,7 +581,9 @@ export function App() {
           battlemapOpen ||
           settingsOpen ||
           levelUpOpen ||
-          liveTableOpen
+          liveTableOpen ||
+          dmHubOpen ||
+          Boolean(inspectedCombatantId)
         }
         onDismiss={store.dismissToast}
       />

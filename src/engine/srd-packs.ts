@@ -20,6 +20,7 @@ function makeSpell(
     saveAbility?: AbilityKey;
     damageFormula?: string;
     damageType?: string;
+    upcastDicePerLevel?: string;
     heal?: boolean;
     acFormula?: AcFormulaRule;
     description: string;
@@ -55,6 +56,7 @@ function makeSpell(
         saveDcFormula: opts.saveAbility ? '8 + @prof + @spell' : undefined,
         damageFormula: opts.damageFormula,
         damageType: opts.damageType,
+        upcastDicePerLevel: opts.upcastDicePerLevel,
         description: opts.description,
       },
     ],
@@ -128,25 +130,33 @@ function makeFeature(
     damageFormula?: string;
     damageType?: string;
     heal?: boolean;
+    saveAbility?: AbilityKey;
+    saveDcFormula?: string;
     resourceCost?: { poolId: string; amount: number };
     modifiers?: PassiveModifierRule[];
+    acFormula?: AcFormulaRule;
+    ruleset?: Ruleset;
+    source?: string;
   }
 ): CompendiumEntity {
   return {
     id,
     name,
-    source: 'SRD 5.1',
-    ruleset: '2014',
+    source: opts?.source ?? 'SRD 5.1',
+    ruleset: opts?.ruleset ?? '2014',
     category: 'feat',
     equipped: true,
+    acFormula: opts?.acFormula,
     modifiers: opts?.modifiers,
     activities: [
       {
         id: `act-${id}`,
         name,
-        type: opts?.heal ? 'heal' : 'utility',
+        type: opts?.heal ? 'heal' : opts?.saveAbility ? 'save' : 'utility',
         actionEconomy,
         resourceCost: opts?.resourceCost,
+        saveAbility: opts?.saveAbility,
+        saveDcFormula: opts?.saveDcFormula,
         damageFormula: opts?.damageFormula,
         damageType: opts?.damageType,
         description,
@@ -191,6 +201,57 @@ function makeMonster(
       damageFormula: atk.damageFormula,
       damageType: atk.damageType,
     })),
+    entries: [notes],
+  };
+}
+
+function makeGear(
+  id: string,
+  name: string,
+  notes: string,
+  opts?: {
+    requiresAttunement?: boolean;
+    modifiers?: PassiveModifierRule[];
+    acFlatBonus?: number;
+    category?: 'gear' | 'armor' | 'shield' | 'weapon';
+    acFormula?: AcFormulaRule;
+    activity?: {
+      type: 'attack' | 'heal' | 'utility' | 'save';
+      actionEconomy: ActionEconomy;
+      attackBonusFormula?: string;
+      attackAbility?: AbilityKey;
+      damageFormula?: string;
+      damageType?: string;
+    };
+  }
+): CompendiumEntity {
+  return {
+    id,
+    name,
+    source: 'SRD 5.1',
+    ruleset: '2014',
+    category: opts?.category ?? 'gear',
+    equipped: false,
+    requiresAttunement: opts?.requiresAttunement,
+    attuned: false,
+    acFormula: opts?.acFormula,
+    acFlatBonus: opts?.acFlatBonus,
+    modifiers: opts?.modifiers,
+    activities: opts?.activity
+      ? [
+          {
+            id: `act-${id}`,
+            name,
+            type: opts.activity.type,
+            actionEconomy: opts.activity.actionEconomy,
+            attackBonusFormula: opts.activity.attackBonusFormula,
+            attackAbility: opts.activity.attackAbility,
+            damageFormula: opts.activity.damageFormula,
+            damageType: opts.activity.damageType,
+            description: notes,
+          },
+        ]
+      : [],
     entries: [notes],
   };
 }
@@ -242,7 +303,8 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
       makeSpell('srd-spell-magic-missile', 'Magic Missile', 1, 'action', {
         damageFormula: '3d4 + 3',
         damageType: 'force',
-        description: 'Three darts of magical force automatically hit for {@damage 3d4+3} force damage.',
+        upcastDicePerLevel: '1d4 + 1',
+        description: 'Three darts of magical force automatically hit for {@damage 3d4+3} force damage (+1 dart per level).',
       }),
       makeSpell('srd-spell-shield', 'Shield', 1, 'reaction', {
         description: 'Reaction when hit by an attack: +5 bonus to AC until the start of your next turn.',
@@ -251,13 +313,15 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
         heal: true,
         damageFormula: '1d4 + @spell',
         damageType: 'healing',
-        description: 'Range 60 ft. Restores {@dice 1d4+@spell} hit points.',
+        upcastDicePerLevel: '1d4',
+        description: 'Range 60 ft. Restores {@dice 1d4+@spell} hit points (+1d4 per slot level above 1st).',
       }),
       makeSpell('srd-spell-cure-wounds', 'Cure Wounds', 1, 'action', {
         heal: true,
         damageFormula: '1d8 + @spell',
         damageType: 'healing',
-        description: 'Touch. Restores {@dice 1d8+@spell} hit points.',
+        upcastDicePerLevel: '1d8',
+        description: 'Touch. Restores {@dice 1d8+@spell} hit points (+1d8 per slot level above 1st).',
       }),
       makeSpell('srd-spell-bless', 'Bless', 1, 'action', {
         concentration: true,
@@ -276,19 +340,22 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
         attack: true,
         damageFormula: '4d6',
         damageType: 'radiant',
-        description: '120 ft. {@damage 4d6} radiant damage; next attack against target has advantage.',
+        upcastDicePerLevel: '1d6',
+        description: '120 ft. {@damage 4d6} radiant damage (+1d6/level); next attack against target has advantage.',
       }),
       makeSpell('srd-spell-burning-hands', 'Burning Hands', 1, 'action', {
         saveAbility: 'dex',
         damageFormula: '3d6',
         damageType: 'fire',
-        description: '15-ft cone. {@save dex} or take {@damage 3d6} fire damage (half on success).',
+        upcastDicePerLevel: '1d6',
+        description: '15-ft cone. {@save dex} or take {@damage 3d6} fire damage (+1d6/level; half on success).',
       }),
       makeSpell('srd-spell-thunderwave', 'Thunderwave', 1, 'action', {
         saveAbility: 'con',
         damageFormula: '2d8',
         damageType: 'thunder',
-        description: '15-ft cube. {@save con} or take {@damage 2d8} thunder damage and pushed 10 ft.',
+        upcastDicePerLevel: '1d8',
+        description: '15-ft cube. {@save con} or take {@damage 2d8} thunder damage (+1d8/level) and pushed 10 ft.',
       }),
       makeSpell('srd-spell-hex', 'Hex', 1, 'bonus_action', {
         concentration: true,
@@ -320,7 +387,8 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
         attack: true,
         damageFormula: '2d6',
         damageType: 'fire',
-        description: '120 ft. Three rays of fire; each hit deals {@damage 2d6} fire damage.',
+        upcastDicePerLevel: '2d6',
+        description: '120 ft. Three rays of fire; each hit deals {@damage 2d6} fire damage (+1 ray per slot level).',
       }),
       makeSpell('srd-spell-mirror-image', 'Mirror Image', 2, 'action', {
         description: 'Three illusory duplicates appear in your space for 1 minute.',
@@ -337,7 +405,8 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
         saveAbility: 'dex',
         damageFormula: '8d6',
         damageType: 'fire',
-        description: '20-ft radius sphere. {@save dex} or take {@damage 8d6} fire damage (half on success).',
+        upcastDicePerLevel: '1d6',
+        description: '20-ft radius sphere. {@save dex} or take {@damage 8d6} fire damage (+1d6/level; half on success).',
       }),
       makeSpell('srd-spell-counterspell', 'Counterspell', 3, 'reaction', {
         description: '60 ft. Interrupt a creature casting a spell of 3rd level or lower (ability check for higher).',
@@ -354,7 +423,8 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
         saveAbility: 'wis',
         damageFormula: '3d8',
         damageType: 'radiant',
-        description: '15-ft emanation. {@save wis} or take {@damage 3d8} radiant/necrotic damage and half speed.',
+        upcastDicePerLevel: '1d8',
+        description: '15-ft emanation. {@save wis} or take {@damage 3d8} radiant/necrotic damage (+1d8/level) and half speed.',
       }),
       makeSpell('srd-spell-dispel-magic', 'Dispel Magic', 3, 'action', {
         description: '120 ft. End spells of 3rd level or lower on a creature, object, or magical effect.',
@@ -363,7 +433,8 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
         saveAbility: 'dex',
         damageFormula: '8d6',
         damageType: 'lightning',
-        description: '100-ft line. {@save dex} or take {@damage 8d6} lightning damage (half on success).',
+        upcastDicePerLevel: '1d6',
+        description: '100-ft line. {@save dex} or take {@damage 8d6} lightning damage (+1d6/level; half on success).',
       }),
       makeSpell('srd-spell-fly', 'Fly', 3, 'action', {
         concentration: true,
@@ -394,7 +465,8 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
         saveAbility: 'con',
         damageFormula: '8d8',
         damageType: 'cold',
-        description: '60-ft cone. {@save con} or take {@damage 8d8} cold damage (half on success).',
+        upcastDicePerLevel: '1d8',
+        description: '60-ft cone. {@save con} or take {@damage 8d8} cold damage (+1d8/level; half on success).',
       }),
       makeSpell('srd-spell-hold-monster', 'Hold Monster', 5, 'action', {
         concentration: true,
@@ -489,6 +561,49 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
         modifiers: [{ target: 'initiative', value: 5 }],
       }),
       makeFeature('srd-feat-lucky', 'Lucky (Feat)', 'free', '3 Luck points per long rest to roll an extra d20 on attack, check, or save.'),
+      makeFeature('srd-sub-improved-critical', 'Improved Critical (Champion)', 'free', 'Your weapon attacks score a critical hit on a roll of 19 or 20 (18–20 at level 15).', {
+        modifiers: [{ target: 'crit.threshold', value: 19 }],
+      }),
+      makeFeature('srd-sub-combat-maneuvers', 'Combat Superiority (Battle Master)', 'free', 'Spend 1 Superiority Die ({@dice 1d8}) to perform a maneuver (Trip, Precision, Riposte, Menacing Attack) and add the die to damage.', {
+        damageFormula: '1d8',
+        damageType: 'weapon',
+        resourceCost: { poolId: 'auto_class_superiority_dice', amount: 1 },
+      }),
+      makeFeature('srd-sub-disciple-of-life', 'Preserve Life (Life Domain)', 'action', 'Channel Divinity: Restore up to 5 x Cleric level ({@lvl} x 5) HP divided among creatures within 30 ft (max half max HP). Disciple of Life also adds +2 + spell level to healing spells.', {
+        heal: true,
+        damageFormula: '5',
+        damageType: 'healing',
+        resourceCost: { poolId: 'auto_class_channel_divinity', amount: 1 },
+      }),
+      makeFeature('srd-sub-radiance-of-dawn', 'Radiance of the Dawn (Light Domain)', 'action', 'Channel Divinity: Dispel darkness within 30 ft; hostile creatures make {@save con} or take {@damage 2d10+@lvl} radiant damage (half on success).', {
+        saveAbility: 'con',
+        saveDcFormula: '8 + @prof + @wis',
+        damageFormula: '2d10 + @lvl',
+        damageType: 'radiant',
+        resourceCost: { poolId: 'auto_class_channel_divinity', amount: 1 },
+      }),
+      makeFeature('srd-sub-sacred-weapon', 'Sacred Weapon (Devotion)', 'action', 'Channel Divinity: For 1 minute, add your CHA modifier to attack rolls with one weapon (minimum +1) and emit bright light.', {
+        resourceCost: { poolId: 'auto_class_channel_divinity', amount: 1 },
+      }),
+      makeFeature('srd-sub-vow-of-enmity', 'Vow of Enmity (Vengeance)', 'bonus_action', 'Channel Divinity: Gain Advantage on attack rolls against one creature within 10 ft for 1 minute.', {
+        resourceCost: { poolId: 'auto_class_channel_divinity', amount: 1 },
+      }),
+      makeFeature('srd-sub-dread-ambusher', 'Dread Ambusher (Gloom Stalker)', 'free', 'Add WIS modifier to Initiative (+10 ft walking speed on turn 1). Make one extra weapon attack on turn 1 dealing an additional {@damage 1d8} weapon damage on hit.', {
+        damageFormula: '1d8',
+        damageType: 'piercing',
+      }),
+      makeFeature('srd-sub-draconic-resilience', 'Draconic Resilience', 'free', 'HP maximum increases by +1 per Sorcerer level; when wearing no armor, your AC equals 13 + DEX modifier.', {
+        acFormula: { base: 13, dexCap: null, requiresUnarmored: true },
+      }),
+      makeFeature('srd-sub-dark-ones-blessing', "Dark One's Blessing (Fiend)", 'free', 'When you reduce a hostile creature to 0 HP, gain Temp HP equal to your CHA modifier + Warlock level.'),
+      makeFeature('srd-sub-hexblades-curse', "Hexblade's Curse", 'bonus_action', '1/short rest: Curse a creature within 30 ft for 1 minute: +proficiency bonus to damage rolls, crit on 19–20, and regain HP on kill.'),
+      makeFeature('srd-sub-sculpt-spells', 'Sculpt Spells (Evocation)', 'free', 'Protect up to 1 + spell level chosen creatures from your Evocation spells; they automatically succeed on saves and take 0 damage.'),
+      makeFeature('srd-sub-arcane-ward', 'Arcane Ward (Abjuration)', 'free', 'Create a protective magical ward with HP equal to 2 x Wizard level + INT modifier that absorbs damage before you do.'),
+      makeFeature('srd-sub-cutting-words', 'Cutting Words (Lore Bard)', 'reaction', 'Expend 1 Bardic Inspiration within 60 ft to subtract your Bardic die from an enemy attack roll, ability check, or damage roll.', {
+        resourceCost: { poolId: 'auto_class_bardic_insp', amount: 1 },
+      }),
+      makeFeature('srd-sub-totem-spirit', 'Totem Spirit: Bear', 'free', 'While raging, you have Resistance to all damage except psychic damage.'),
+      makeFeature('srd-sub-shadow-step', 'Shadow Step (Way of Shadow)', 'bonus_action', 'In dim light/darkness, teleport up to 60 ft to another shadow and gain Advantage on your first melee attack before the end of the turn.'),
     ],
   },
   {
@@ -580,6 +695,46 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
         { name: 'Claw', type: 'attack', bonusOrDc: '+11', damageFormula: '2d6+6', damageType: 'slashing' },
         { name: 'Acid Breath (Recharge 5-6)', type: 'save', bonusOrDc: '18', saveAbility: 'dex', damageFormula: '12d8', damageType: 'acid' },
       ], 'Legendary Resistance (3/day). Multiattack + Legendary Actions.'),
+      makeMonster('srd-mob-bandit', 'Bandit', 12, 11, 1, '1/8', [
+        { name: 'Scimitar', type: 'attack', bonusOrDc: '+3', damageFormula: '1d6+1', damageType: 'slashing' },
+        { name: 'Light Crossbow', type: 'attack', bonusOrDc: '+3', damageFormula: '1d8+1', damageType: 'piercing' },
+      ], 'Medium humanoid outlaw.'),
+      makeMonster('srd-mob-cultist', 'Cultist', 12, 9, 1, '1/8', [
+        { name: 'Scimitar', type: 'attack', bonusOrDc: '+3', damageFormula: '1d6+1', damageType: 'slashing' },
+      ], 'Dark Devotion: Advantage on saving throws against being Charmed or Frightened.'),
+      makeMonster('srd-mob-ghoul', 'Ghoul', 12, 22, 2, '1', [
+        { name: 'Bite', type: 'attack', bonusOrDc: '+2', damageFormula: '2d6+2', damageType: 'piercing' },
+        { name: 'Claws', type: 'attack', bonusOrDc: '+4', damageFormula: '2d4+2', damageType: 'slashing' },
+      ], 'Claws target must succeed DC 10 CON save or be Paralyzed for 1 minute (non-elf).'),
+      makeMonster('srd-mob-bandit-captain', 'Bandit Captain', 15, 65, 3, '2', [
+        { name: 'Scimitar', type: 'attack', bonusOrDc: '+5', damageFormula: '1d6+3', damageType: 'slashing' },
+        { name: 'Dagger', type: 'attack', bonusOrDc: '+5', damageFormula: '1d4+3', damageType: 'piercing' },
+      ], 'Multiattack (2 Scimitar, 1 Dagger). Parry (+2 AC reaction).'),
+      makeMonster('srd-mob-gargoyle', 'Gargoyle', 15, 52, 0, '2', [
+        { name: 'Bite', type: 'attack', bonusOrDc: '+4', damageFormula: '1d6+2', damageType: 'piercing' },
+        { name: 'Claws', type: 'attack', bonusOrDc: '+4', damageFormula: '1d6+2', damageType: 'slashing' },
+      ], 'Damage Resistance to nonmagical B/P/S (not adamantine). Fly 60 ft.'),
+      makeMonster('srd-mob-basilisk', 'Basilisk', 15, 52, -1, '3', [
+        { name: 'Bite', type: 'attack', bonusOrDc: '+5', damageFormula: '2d6+3+2d6', damageType: 'piercing + poison' },
+      ], 'Petrifying Gaze: DC 12 CON save vs Restrained -> Petrified.'),
+      makeMonster('srd-mob-wight', 'Wight', 14, 45, 2, '3', [
+        { name: 'Longsword', type: 'attack', bonusOrDc: '+4', damageFormula: '1d8+2', damageType: 'slashing' },
+        { name: 'Life Drain', type: 'attack', bonusOrDc: '+4', damageFormula: '1d6+2', damageType: 'necrotic' },
+      ], 'Multiattack (2 Longsword or Longbow, or Life Drain). Resistance to necrotic and nonmagical B/P/S (not silvered).'),
+      makeMonster('srd-mob-hill-giant', 'Hill Giant', 13, 105, -1, '5', [
+        { name: 'Greatclub', type: 'attack', bonusOrDc: '+8', damageFormula: '3d8+5', damageType: 'bludgeoning' },
+        { name: 'Rock', type: 'attack', bonusOrDc: '+8', damageFormula: '3d10+5', damageType: 'bludgeoning' },
+      ], 'Multiattack: The giant makes two greatclub attacks.'),
+      makeMonster('srd-mob-mage', 'Mage', 12, 40, 2, '6', [
+        { name: 'Fire Bolt', type: 'attack', bonusOrDc: '+6', damageFormula: '2d10', damageType: 'fire' },
+        { name: 'Fireball (3rd)', type: 'save', bonusOrDc: '14', saveAbility: 'dex', damageFormula: '8d6', damageType: 'fire' },
+        { name: 'Cone of Cold (5th)', type: 'save', bonusOrDc: '14', saveAbility: 'con', damageFormula: '8d8', damageType: 'cold' },
+      ], '9th-level spellcaster (Spell Save DC 14, +6 to hit; Shield, Misty Step, Counterspell, Fly).'),
+      makeMonster('srd-mob-lich', 'Lich', 17, 135, 3, '21', [
+        { name: 'Paralyzing Touch', type: 'attack', bonusOrDc: '+12', damageFormula: '3d6', damageType: 'cold' },
+        { name: 'Disintegrate (6th)', type: 'save', bonusOrDc: '20', saveAbility: 'dex', damageFormula: '10d6+40', damageType: 'force' },
+        { name: 'Disrupt Life (Legendary)', type: 'save', bonusOrDc: '18', saveAbility: 'con', damageFormula: '6d6', damageType: 'necrotic' },
+      ], 'Legendary Resistance (3/day). Turn Immunity; immune to poison and nonmagical B/P/S. 18th-level Wizard (DC 20).'),
     ],
   },
   {
@@ -598,7 +753,8 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
         saveAbility: 'dex',
         damageFormula: '10d6 + 40',
         damageType: 'force',
-        description: '60 ft. {@save dex} or take {@damage 10d6+40} force damage; turns target to dust at 0 HP.',
+        upcastDicePerLevel: '3d6',
+        description: '60 ft. {@save dex} or take {@damage 10d6+40} force damage (+3d6/level); turns target to dust at 0 HP.',
       }),
       makeSpell('srd-spell-heal', 'Heal', 6, 'action', {
         heal: true,
@@ -672,6 +828,154 @@ export const BUILTIN_CONTENT_PACKS: ContentPack[] = [
       }),
       makeSpell('srd-spell-foresight', 'Foresight', 9, 'action', {
         description: '8 hours. Target cannot be surprised and has advantage on attacks, checks, and saves.',
+      }),
+    ],
+  },
+  {
+    id: 'pack-srd-magic-items',
+    name: 'SRD 5.1 Magic Items & Potions',
+    ruleset: '2014',
+    description: 'Essential SRD magic items, healing potions, +1/+2 weapons and armor, Protection items, Flame Tongue, Bracers of Defense, Pearl of Power, and Wand of Magic Missiles.',
+    entities: [
+      makeGear('srd-item-potion-healing', 'Potion of Healing', 'Consume as a bonus action (2024) or action (2014) to regain {@dice 2d4+2} hit points.', {
+        activity: { type: 'heal', actionEconomy: 'bonus_action', damageFormula: '2d4 + 2', damageType: 'healing' },
+      }),
+      makeGear('srd-item-potion-greater-healing', 'Potion of Greater Healing', 'Consume to regain {@dice 4d4+4} hit points.', {
+        activity: { type: 'heal', actionEconomy: 'bonus_action', damageFormula: '4d4 + 4', damageType: 'healing' },
+      }),
+      makeGear('srd-item-plus1-longsword', '+1 Longsword', 'Magic weapon (+1 attack and damage rolls). Versatile (1d10).', {
+        category: 'weapon',
+        activity: {
+          type: 'attack',
+          actionEconomy: 'action',
+          attackAbility: 'str',
+          attackBonusFormula: '@str + @prof + 1',
+          damageFormula: '1d8 + @str + 1',
+          damageType: 'slashing',
+        },
+      }),
+      makeGear('srd-item-plus1-rapier', '+1 Rapier', 'Magic weapon (+1 attack and damage rolls). Finesse.', {
+        category: 'weapon',
+        activity: {
+          type: 'attack',
+          actionEconomy: 'action',
+          attackAbility: 'dex',
+          attackBonusFormula: '@dex + @prof + 1',
+          damageFormula: '1d8 + @dex + 1',
+          damageType: 'piercing',
+        },
+      }),
+      makeGear('srd-item-plus1-longbow', '+1 Longbow', 'Ammunition (150/600), Heavy, Two-Handed. +1 magic bonus to attack and damage.', {
+        category: 'weapon',
+        activity: {
+          type: 'attack',
+          actionEconomy: 'action',
+          attackAbility: 'dex',
+          attackBonusFormula: '@dex + @prof + 1',
+          damageFormula: '1d8 + @dex + 1',
+          damageType: 'piercing',
+        },
+      }),
+      makeGear('srd-item-flame-tongue', 'Flame Tongue Greatsword', 'Heavy, Two-Handed. While ablaze, deals an extra {@damage 2d6} fire damage on hit.', {
+        category: 'weapon',
+        requiresAttunement: true,
+        activity: {
+          type: 'attack',
+          actionEconomy: 'action',
+          attackAbility: 'str',
+          attackBonusFormula: '@str + @prof',
+          damageFormula: '2d6 + @str + 2d6',
+          damageType: 'slashing + fire',
+        },
+      }),
+      makeGear('srd-item-plus1-plate', '+1 Plate Armor', 'Magic Heavy Armor: AC 19 (18 + 1; STR 15, Stealth disadvantage).', {
+        category: 'armor',
+        acFormula: { base: 19, dexCap: 0 },
+      }),
+      makeGear('srd-item-plus1-shield', '+1 Shield (+3 AC)', 'Magic Shield granting +3 total AC bonus while wielded.', {
+        category: 'shield',
+        acFlatBonus: 3,
+      }),
+      makeGear('srd-item-ring-of-protection', 'Ring of Protection', '+1 bonus to AC and all saving throws while worn and attuned.', {
+        requiresAttunement: true,
+        modifiers: [
+          { target: 'ac.bonus', value: 1 },
+          { target: 'save.all', value: 1 },
+        ],
+      }),
+      makeGear('srd-item-cloak-of-protection', 'Cloak of Protection', '+1 bonus to AC and all saving throws while worn and attuned.', {
+        requiresAttunement: true,
+        modifiers: [
+          { target: 'ac.bonus', value: 1 },
+          { target: 'save.all', value: 1 },
+        ],
+      }),
+      makeGear('srd-item-bracers-of-defense', 'Bracers of Defense', '+2 bonus to AC if you are wearing no armor and using no shield.', {
+        requiresAttunement: true,
+        modifiers: [{ target: 'ac.bonus', value: 2, condition: 'unarmored_no_shield' }],
+      }),
+      makeGear('srd-item-bag-of-holding', 'Bag of Holding', 'Interior holds up to 500 lb / 64 cubic ft while weighing 15 lb.'),
+      makeGear('srd-item-boots-of-elvenkind', 'Boots of Elvenkind', 'Your steps make no sound; Advantage on Stealth checks reliant on moving silently.'),
+      makeGear('srd-item-pearl-of-power', 'Pearl of Power', '1/day as an action: Regain one expended spell slot of up to 3rd level.', {
+        requiresAttunement: true,
+        activity: { type: 'utility', actionEconomy: 'action' },
+      }),
+      makeGear('srd-item-wand-magic-missiles', 'Wand of Magic Missiles', '7 charges. Expend 1+ charges to cast Magic Missile ({@damage 3d4+3} force damage).', {
+        activity: { type: 'utility', actionEconomy: 'action', damageFormula: '3d4 + 3', damageType: 'force' },
+      }),
+    ],
+  },
+  {
+    id: 'pack-srd-styles-origins',
+    name: 'Fighting Styles & 2024 Origin Feats',
+    ruleset: '2024',
+    description: 'Mechanical Fighting Styles (Defense, Archery, Dueling, Great Weapon Fighting, Protection) and 2024 PHB Origin Feats (Magic Initiate, Musician, Savage Attacker, Skilled, Healer).',
+    entities: [
+      makeFeature('srd-style-defense', 'Fighting Style: Defense', 'free', 'While wearing armor, you gain a +1 bonus to Armor Class.', {
+        modifiers: [{ target: 'ac.bonus', value: 1, condition: 'wearing_armor' }],
+        ruleset: '2024',
+        source: 'PHB / SRD',
+      }),
+      makeFeature('srd-style-archery', 'Fighting Style: Archery', 'free', 'You gain a +2 bonus to attack rolls you make with Ranged weapons.', {
+        modifiers: [{ target: 'attack.ranged', value: 2 }],
+        ruleset: '2024',
+        source: 'PHB / SRD',
+      }),
+      makeFeature('srd-style-dueling', 'Fighting Style: Dueling', 'free', 'When wielding a melee weapon in one hand and no other weapons, gain +2 bonus to damage rolls with that weapon.', {
+        modifiers: [{ target: 'damage.melee', value: 2 }],
+        ruleset: '2024',
+        source: 'PHB / SRD',
+      }),
+      makeFeature('srd-style-gwf', 'Fighting Style: Great Weapon Fighting', 'free', 'Reroll 1s and 2s on damage dice (2014) or treat 1s and 2s as 3s (2024) for two-handed melee weapons.', {
+        ruleset: '2024',
+        source: 'PHB / SRD',
+      }),
+      makeFeature('srd-style-protection', 'Fighting Style: Protection', 'reaction', 'Impose Disadvantage on an attack roll targeting an ally within 5 ft when wielding a shield.', {
+        ruleset: '2024',
+        source: 'PHB / SRD',
+      }),
+      makeFeature('srd24-origin-magic-initiate', 'Magic Initiate (2024 Origin)', 'free', 'Learn two cantrips and one 1st-level spell from Cleric, Druid, or Wizard spell list (castable 1/long rest without a slot).', {
+        ruleset: '2024',
+        source: 'SRD 5.2',
+      }),
+      makeFeature('srd24-origin-musician', 'Musician (2024 Origin)', 'free', 'Gain proficiency with 3 musical instruments; after a Short or Long Rest, grant Heroic Inspiration to PB allies.', {
+        ruleset: '2024',
+        source: 'SRD 5.2',
+      }),
+      makeFeature('srd24-origin-savage-attacker', 'Savage Attacker (2024 Origin)', 'free', '1/turn when you hit with a weapon attack, roll the weapon damage dice twice and use either result.', {
+        ruleset: '2024',
+        source: 'SRD 5.2',
+      }),
+      makeFeature('srd24-origin-skilled', 'Skilled (2024 Origin)', 'free', 'Gain proficiency in any combination of three skills or tools.', {
+        ruleset: '2024',
+        source: 'SRD 5.2',
+      }),
+      makeFeature('srd24-origin-healer', 'Healer (2024 Origin)', 'action', 'Battle Medic: Use a Healer’s Kit as a Utilize action so a creature expends one Hit Die and regains rolled HP + your Proficiency Bonus.', {
+        heal: true,
+        damageFormula: '1d6 + @prof',
+        damageType: 'healing',
+        ruleset: '2024',
+        source: 'SRD 5.2',
       }),
     ],
   },

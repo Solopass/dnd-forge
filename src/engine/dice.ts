@@ -37,9 +37,70 @@ export function doubleDiceForCrit(expression: string): string {
   });
 }
 
+export function scaleDiceForUpcast(
+  baseFormula: string,
+  perLevelDice: string | undefined,
+  extraLevels: number
+): string {
+  if (!perLevelDice || extraLevels <= 0) return baseFormula;
+
+  const extraDiceBySides = new Map<number, number>();
+  let extraFlat = 0;
+
+  const cleanedExtra = perLevelDice.replace(/\s+/g, '');
+  DICE_TERM_REGEX.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = DICE_TERM_REGEX.exec(cleanedExtra)) !== null) {
+    if (match[0] === '') break;
+    const countRaw = match[1];
+    const sidesRaw = match[2];
+    const flatRaw = match[5];
+    if (sidesRaw !== undefined) {
+      const sign = countRaw?.startsWith('-') ? -1 : 1;
+      const absCount = countRaw?.replace(/^[+-]/, '') ?? '';
+      const count = absCount === '' ? 1 : Number.parseInt(absCount, 10);
+      const sides = Number.parseInt(sidesRaw, 10);
+      extraDiceBySides.set(sides, (extraDiceBySides.get(sides) ?? 0) + sign * count * extraLevels);
+    } else if (flatRaw !== undefined) {
+      extraFlat += Number.parseInt(flatRaw, 10) * extraLevels;
+    }
+  }
+
+  let updated = baseFormula.replace(/(\d*)d(\d+)/gi, (full, countStr: string, sidesStr: string) => {
+    const sides = Number.parseInt(sidesStr, 10);
+    const bonus = extraDiceBySides.get(sides);
+    if (!bonus) return full;
+    extraDiceBySides.delete(sides);
+    const baseCount = countStr === '' ? 1 : Number.parseInt(countStr, 10);
+    return `${Math.max(1, baseCount + bonus)}d${sides}`;
+  });
+
+  for (const [sides, count] of extraDiceBySides.entries()) {
+    if (count > 0) {
+      updated += ` + ${count}d${sides}`;
+    }
+  }
+
+  if (extraFlat !== 0) {
+    if (/([+-])\s*(\d+)\s*$/.test(updated)) {
+      updated = updated.replace(/([+-])\s*(\d+)\s*$/, (_m, signChar: string, numStr: string) => {
+        const baseFlat = (signChar === '-' ? -1 : 1) * Number.parseInt(numStr, 10);
+        const totalFlat = baseFlat + extraFlat;
+        if (totalFlat === 0) return '';
+        return totalFlat > 0 ? `+ ${totalFlat}` : `- ${Math.abs(totalFlat)}`;
+      });
+    } else {
+      updated += extraFlat > 0 ? ` + ${extraFlat}` : ` - ${Math.abs(extraFlat)}`;
+    }
+  }
+
+  return updated.trim();
+}
+
 export function evaluateDiceExpression(
   rawExpression: string,
-  mode: RollMode = 'normal'
+  mode: RollMode = 'normal',
+  critThreshold = 20
 ): DiceRollResult {
   const cleaned = rawExpression.replace(/\s+/g, '');
   const terms: DieTermResult[] = [];
@@ -70,7 +131,7 @@ export function evaluateDiceExpression(
         const r2 = rollDie(20);
         const keptVal = mode === 'advantage' ? Math.max(r1, r2) : Math.min(r1, r2);
         const droppedVal = mode === 'advantage' ? Math.min(r1, r2) : Math.max(r1, r2);
-        if (keptVal === 20) isCrit = true;
+        if (keptVal >= critThreshold) isCrit = true;
         if (keptVal === 1) isFumble = true;
         terms.push({
           expression: `1d20(${mode})`,
@@ -98,7 +159,7 @@ export function evaluateDiceExpression(
         dropped = rolls.filter((_, idx) => !keptSet.has(idx));
       }
 
-      if (count === 1 && sides === 20 && kept[0] === 20) isCrit = true;
+      if (count === 1 && sides === 20 && (kept[0] ?? 0) >= critThreshold) isCrit = true;
       if (count === 1 && sides === 20 && kept[0] === 1) isFumble = true;
 
       const subtotal = sign * kept.reduce((acc, n) => acc + n, 0);

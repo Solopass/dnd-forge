@@ -5,6 +5,7 @@ export interface SpeciesPreset {
   speed: number;
   abilityBonuses: Partial<Record<AbilityKey, number>>;
   traits: string[];
+  resistances?: string[];
 }
 
 export interface BackgroundPreset {
@@ -31,6 +32,7 @@ export const SPECIES_PRESETS: SpeciesPreset[] = [
     speed: 25,
     abilityBonuses: { con: 2, str: 2 },
     traits: ['Darkvision 60 ft', 'Dwarven Resilience (Poison)'],
+    resistances: ['poison'],
   },
   {
     name: 'Halfling',
@@ -43,6 +45,7 @@ export const SPECIES_PRESETS: SpeciesPreset[] = [
     speed: 30,
     abilityBonuses: { str: 2, cha: 1 },
     traits: ['Draconic Ancestry', 'Breath Weapon', 'Damage Resistance'],
+    resistances: ['fire'],
   },
   {
     name: 'Gnome',
@@ -67,6 +70,7 @@ export const SPECIES_PRESETS: SpeciesPreset[] = [
     speed: 30,
     abilityBonuses: { cha: 2, int: 1 },
     traits: ['Darkvision 60 ft', 'Hellish Resistance (Fire)', 'Infernal Legacy'],
+    resistances: ['fire'],
   },
 ];
 

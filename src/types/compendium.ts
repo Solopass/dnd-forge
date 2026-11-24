@@ -19,6 +19,7 @@ export interface Activity {
   saveDcFormula?: string;
   damageFormula?: string;
   damageType?: string;
+  upcastDicePerLevel?: string;
   summonTemplateId?: string;
   description?: string;
 }

@@ -7,6 +7,7 @@ import {
 } from '../types/core';
 import {
   AcFormulaRule,
+  Activity,
   CompendiumEntity,
 } from '../types/compendium';
 import {
@@ -84,7 +85,9 @@ export function createBlankCharacter(id: string, name: string): RawCharacterStat
     hp: { current: 12, max: 12, temp: 0 },
     deathSaves: { successes: 0, failures: 0 },
     exhaustion: 0,
+    inspiration: false,
     conditions: [],
+    defenses: { resistances: [], immunities: [], vulnerabilities: [] },
     resources: [{ id: 'second_wind', name: 'Second Wind', current: 1, max: 1, recovery: 'short_rest' }],
     items: [],
     overrides: {},
@@ -347,9 +350,25 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
   const activeItems = raw.items.filter(isEntityActive);
   const attunementCount = raw.items.filter((i) => i.requiresAttunement && i.attuned).length;
   const wearingArmor = activeItems.some((item) => item.category === 'armor');
+  const wearingShield = activeItems.some((item) => item.category === 'shield');
 
   let bestFormulaAc = 10 + abilityModifiers.dex;
   let bestFormulaSource = 'Unarmored (10 + DEX)';
+
+  if (
+    !wearingArmor &&
+    raw.classes.some(
+      (c) =>
+        c.className.toLowerCase() === 'sorcerer' &&
+        (c.subclassName ?? '').toLowerCase().includes('draconic')
+    )
+  ) {
+    const draconicAc = 13 + abilityModifiers.dex;
+    if (draconicAc > bestFormulaAc) {
+      bestFormulaAc = draconicAc;
+      bestFormulaSource = 'Draconic Resilience (13 + DEX)';
+    }
+  }
 
   for (const item of activeItems) {
     if (!item.acFormula) continue;
@@ -365,6 +384,46 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
   const saveAllModifiers: StatModifier[] = [];
   const speedModifiers: StatModifier[] = [];
   const initiativeModifiers: StatModifier[] = [];
+  let attackAllBonus = 0;
+  let attackRangedBonus = 0;
+  let damageMeleeBonus = 0;
+  let spellAttackItemBonus = 0;
+  let critThreshold = 20;
+
+  if (
+    raw.classes.some(
+      (c) =>
+        c.className.toLowerCase() === 'fighter' &&
+        c.level >= 3 &&
+        (c.subclassName ?? '').toLowerCase().includes('champion')
+    )
+  ) {
+    const hasSuperiorCrit = raw.classes.some(
+      (c) =>
+        c.className.toLowerCase() === 'fighter' &&
+        c.level >= 15 &&
+        (c.subclassName ?? '').toLowerCase().includes('champion')
+    );
+    critThreshold = Math.min(critThreshold, hasSuperiorCrit ? 18 : 19);
+  }
+
+  if (
+    raw.classes.some(
+      (c) =>
+        c.className.toLowerCase() === 'ranger' &&
+        c.level >= 3 &&
+        (c.subclassName ?? '').toLowerCase().includes('gloom')
+    )
+  ) {
+    const wisInitBonus = Math.max(0, abilityModifiers.wis);
+    if (wisInitBonus > 0) {
+      initiativeModifiers.push({
+        id: 'subclass-gloom-stalker-init',
+        source: 'Dread Ambusher',
+        value: wisInitBonus,
+      });
+    }
+  }
 
   for (const item of activeItems) {
     if (item.acFlatBonus && item.acFlatBonus !== 0) {
@@ -375,6 +434,9 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
       });
     }
     for (const mod of item.modifiers ?? []) {
+      if (mod.condition === 'wearing_armor' && !wearingArmor) continue;
+      if (mod.condition === 'unarmored_no_shield' && (wearingArmor || wearingShield)) continue;
+
       if (mod.target === 'ac.bonus') {
         acFlatModifiers.push({ id: `mod-${item.id}-ac`, source: item.name, value: mod.value });
       } else if (mod.target === 'save.all') {
@@ -383,6 +445,16 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
         speedModifiers.push({ id: `mod-${item.id}-speed`, source: item.name, value: mod.value });
       } else if (mod.target === 'initiative') {
         initiativeModifiers.push({ id: `mod-${item.id}-init`, source: item.name, value: mod.value });
+      } else if (mod.target === 'attack.all') {
+        attackAllBonus += mod.value;
+      } else if (mod.target === 'attack.ranged') {
+        attackRangedBonus += mod.value;
+      } else if (mod.target === 'damage.melee') {
+        damageMeleeBonus += mod.value;
+      } else if (mod.target === 'spell.attack') {
+        spellAttackItemBonus += mod.value;
+      } else if (mod.target === 'crit.threshold') {
+        critThreshold = Math.min(critThreshold, mod.value);
       }
     }
   }
@@ -465,8 +537,43 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
     special: [],
   };
 
+  const isRangedWeaponItem = (item: CompendiumEntity, act: Activity): boolean => {
+    const text = `${item.name} ${act.description ?? ''} ${item.entries.join(' ')}`.toLowerCase();
+    return (
+      text.includes('ammunition') ||
+      text.includes('ranged weapon attack') ||
+      ['shortbow', 'longbow', 'light crossbow', 'heavy crossbow', 'hand crossbow', 'sling', 'blowgun', 'dart'].some(
+        (kw) => item.name.toLowerCase().includes(kw)
+      )
+    );
+  };
+
+  const isTwoHandedWeapon = (item: CompendiumEntity, act: Activity): boolean => {
+    const text = `${act.description ?? ''} ${item.entries.join(' ')}`.toLowerCase();
+    return text.includes('two-handed');
+  };
+
+  const appendFlatBonus = (formula: string, bonus: number): string => {
+    if (bonus === 0) return formula;
+    if (/([+-])\s*(\d+)\s*$/.test(formula)) {
+      return formula
+        .replace(/([+-])\s*(\d+)\s*$/, (_m, signChar: string, numStr: string) => {
+          const current = (signChar === '-' ? -1 : 1) * Number.parseInt(numStr, 10);
+          const next = current + bonus;
+          if (next === 0) return '';
+          return next > 0 ? `+ ${next}` : `- ${Math.abs(next)}`;
+        })
+        .trim();
+    }
+    return `${formula} ${bonus > 0 ? `+ ${bonus}` : `- ${Math.abs(bonus)}`}`;
+  };
+
   for (const item of activeItems) {
     for (const act of item.activities) {
+      const isWeaponAttack = item.category === 'weapon' && act.type === 'attack';
+      const isRanged = isRangedWeaponItem(item, act);
+      const isMeleeOneHanded = isWeaponAttack && !isRanged && !isTwoHandedWeapon(item, act);
+
       const baseAttack = act.attackBonusFormula
         ? evaluateSimpleMath(
             resolveFormulaVariables(
@@ -479,8 +586,13 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
             )
           )
         : null;
+      const weaponAttackBonus = isWeaponAttack
+        ? attackAllBonus + (isRanged ? attackRangedBonus : 0)
+        : item.category === 'spell' && act.type === 'attack'
+        ? spellAttackItemBonus
+        : 0;
       const resolvedAttack =
-        baseAttack !== null ? baseAttack + exhaustion2024Penalty : null;
+        baseAttack !== null ? baseAttack + weaponAttackBonus + exhaustion2024Penalty : null;
 
       const baseDc = act.saveDcFormula
         ? evaluateSimpleMath(
@@ -497,7 +609,7 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
       const resolvedDc =
         baseDc !== null ? baseDc + exhaustion2024Penalty : null;
 
-      const resolvedDamage = act.damageFormula
+      const rawResolvedDamage = act.damageFormula
         ? resolveFormulaVariables(
             act.damageFormula,
             abilityModifiers,
@@ -507,6 +619,10 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
             effectiveLevel
           )
         : null;
+      const resolvedDamage =
+        rawResolvedDamage && isMeleeOneHanded && damageMeleeBonus !== 0
+          ? appendFlatBonus(rawResolvedDamage, damageMeleeBonus)
+          : rawResolvedDamage;
 
       const resolvedDescription = act.description
         ? resolveFormulaVariables(
@@ -536,6 +652,42 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
     exhaustion2024Penalty !== 0
       ? [{ id: 'exhaustion-2024', source: `Exhaustion (${raw.exhaustion})`, value: exhaustion2024Penalty }]
       : [];
+  const spellAttackMods: StatModifier[] = [...spellExhaustionMods];
+  if (spellAttackItemBonus !== 0) {
+    spellAttackMods.push({ id: 'spell-attack-item', source: 'Items & Features', value: spellAttackItemBonus });
+  }
+
+  const CONDITION_RULE_NOTES: Record<string, string> = {
+    Blinded: 'Blinded: Attack rolls have Disadvantage; attacks against you have Advantage.',
+    Charmed: 'Charmed: Cannot attack or target the charmer with harmful effects.',
+    Deafened: 'Deafened: Cannot hear; auto-fails hearing-based checks.',
+    Frightened: 'Frightened: Disadvantage on checks & attacks while source is in sight.',
+    Grappled: 'Grappled: Speed becomes 0.',
+    Incapacitated: 'Incapacitated: Cannot take Actions or Reactions; breaks Concentration.',
+    Invisible: 'Invisible: Attack rolls have Advantage; attacks against you have Disadvantage.',
+    Paralyzed: 'Paralyzed: Incapacitated; auto-fail STR & DEX saves; hits within 5 ft are Crits.',
+    Petrified: 'Petrified: Incapacitated; resistance to all damage; immune to poison/disease.',
+    Poisoned: 'Poisoned: Disadvantage on attack rolls and ability checks.',
+    Prone: 'Prone: Disadvantage on attacks; melee attacks within 5 ft vs you have Advantage.',
+    Restrained: 'Restrained: Speed 0; Disadv. on attacks & DEX saves; attacks vs you have Advantage.',
+    Stunned: 'Stunned: Incapacitated; auto-fail STR & DEX saves; breaks Concentration.',
+    Unconscious: 'Unconscious: Incapacitated & Prone; auto-fail STR/DEX saves; hits within 5 ft are Crits.',
+  };
+
+  const conditionWarnings = raw.conditions
+    .map((cond) => CONDITION_RULE_NOTES[cond] ?? `${cond}: Active condition.`)
+    .slice();
+  if (raw.exhaustion > 0) {
+    if (raw.ruleset === '2024') {
+      conditionWarnings.push(
+        `Exhaustion ${raw.exhaustion}: ${-2 * raw.exhaustion} to d20 Tests & Save DCs; -${5 * raw.exhaustion} ft Speed.`
+      );
+    } else {
+      conditionWarnings.push(
+        `Exhaustion ${raw.exhaustion}: Disadvantage on ability checks${raw.exhaustion >= 2 ? '; Speed halved' : ''}${raw.exhaustion >= 3 ? '; Disadv. on attacks/saves' : ''}.`
+      );
+    }
+  }
 
   return {
     id: raw.id,
@@ -562,14 +714,22 @@ export function computeCharacterSheet(raw: RawCharacterState): ResolvedCharacter
       ),
       attackBonus: buildOverridable(
         profStat.final + castingMod,
-        spellExhaustionMods,
+        spellAttackMods,
         raw.overrides.spellAttackBonus
       ),
     },
     hp: raw.hp,
     deathSaves: raw.deathSaves,
     exhaustion: raw.exhaustion,
+    inspiration: Boolean(raw.inspiration),
+    critThreshold,
     conditions: raw.conditions,
+    defenses: {
+      resistances: [...(raw.defenses?.resistances ?? [])],
+      immunities: [...(raw.defenses?.immunities ?? [])],
+      vulnerabilities: [...(raw.defenses?.vulnerabilities ?? [])],
+    },
+    conditionWarnings,
     resources: raw.resources,
     actionsByEconomy,
   };

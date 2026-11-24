@@ -59,7 +59,13 @@ export interface RawCharacterState {
     failures: number;
   };
   exhaustion: number;
+  inspiration?: boolean;
   conditions: string[];
+  defenses?: {
+    resistances: string[];
+    immunities: string[];
+    vulnerabilities: string[];
+  };
   resources: ResourcePool[];
   items: CompendiumEntity[];
   overrides: CharacterOverrides;
@@ -118,7 +124,15 @@ export interface ResolvedCharacterSheet {
   hp: RawCharacterState['hp'];
   deathSaves: RawCharacterState['deathSaves'];
   exhaustion: number;
+  inspiration: boolean;
+  critThreshold: number;
   conditions: string[];
+  defenses: {
+    resistances: string[];
+    immunities: string[];
+    vulnerabilities: string[];
+  };
+  conditionWarnings: string[];
   resources: ResourcePool[];
   actionsByEconomy: Record<ActionEconomy, ResolvedActivity[]>;
 }

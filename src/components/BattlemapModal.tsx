@@ -118,7 +118,7 @@ export function BattlemapModal({
   const [selectedSceneId, setSelectedSceneId] = useState('');
   const [sketchColor, setSketchColor] = useState<string>(SKETCH_COLORS[0]);
   const [activeStroke, setActiveStroke] = useState<MapSketchStroke | null>(null);
-  const [dragPreview, setDragPreview] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [dragPreview, setDragPreview] = useState<{ id: string; x: number; y: number; origX: number; origY: number } | null>(null);
   const [measureStart, setMeasureStart] = useState<{ x: number; y: number } | null>(null);
   const [measureEnd, setMeasureEnd] = useState<{ x: number; y: number } | null>(null);
   const [isPainting, setIsPainting] = useState(false);
@@ -143,6 +143,10 @@ export function BattlemapModal({
 
   const visibleCells = useMemo(() => {
     if (!dynamicVision) return null;
+    const hasViewer = encounter.combatants.some(
+      (c) => (c.kind === 'pc' || c.kind === 'summon') && !c.hidden && c.hp.current > 0
+    );
+    if (!hasViewer) return null;
     return computeVisibleCells(encounter.combatants, cols, rows, gridFeet, terrainCells);
   }, [dynamicVision, encounter.combatants, cols, rows, gridFeet, terrainCells]);
 
@@ -223,7 +227,7 @@ export function BattlemapModal({
       const node = encounter.combatants.find((c) => c.id === dragPreview.id);
       const span = sizeToGridCells(node?.size);
       setDragPreview({
-        id: dragPreview.id,
+        ...dragPreview,
         x: Math.max(0, Math.min(cols - span, gx)),
         y: Math.max(0, Math.min(rows - span, gy)),
       });
@@ -243,7 +247,9 @@ export function BattlemapModal({
   const handleSvgPointerUp = () => {
     if (embedded) return;
     if (dragPreview) {
-      onMoveToken(dragPreview.id, dragPreview.x, dragPreview.y);
+      if (dragPreview.x !== dragPreview.origX || dragPreview.y !== dragPreview.origY) {
+        onMoveToken(dragPreview.id, dragPreview.x, dragPreview.y);
+      }
       setDragPreview(null);
     }
     if (activeStroke) {
@@ -496,7 +502,7 @@ export function BattlemapModal({
                 if (mode === 'move') {
                   e.stopPropagation();
                   setSelectedTokenId(node.id);
-                  setDragPreview({ id: node.id, x: baseGx, y: baseGy });
+                  setDragPreview({ id: node.id, x: baseGx, y: baseGy, origX: baseGx, origY: baseGy });
                 }
               }}
             >

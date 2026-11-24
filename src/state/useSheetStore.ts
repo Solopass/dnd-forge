@@ -1512,11 +1512,12 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         const parsed: unknown = JSON.parse(rawText);
         if (typeof parsed === 'object' && parsed !== null && (parsed as { app?: string }).app === 'dnd-forge') {
           const summary = await importBackupBundle(parsed, 'merge');
-          const [refreshedChars, refreshedCompendium, refreshedEncounters, refreshedCampaigns] = await Promise.all([
+          const [refreshedChars, refreshedCompendium, refreshedEncounters, refreshedCampaigns, refreshedScenes] = await Promise.all([
             db.characters.toArray(),
             db.compendium.toArray(),
             db.encounters.toArray(),
             db.campaigns.toArray(),
+            db.scenes.toArray(),
           ]);
           if (refreshedChars.length > 0) {
             setCharacterList(refreshedChars);
@@ -1531,6 +1532,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
             setCampaignList(refreshedCampaigns);
             setCampaign(refreshedCampaigns[0]!);
           }
+          setScenes(refreshedScenes);
           appendLog(
             `Merged backup bundle: ${summary.importedCharacters} character(s), ${summary.importedEntities} compendium item(s), ${summary.importedEncounters} encounter(s).`,
             'info'
@@ -2000,6 +2002,9 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         timestamp: msg.timestamp,
       };
       setActivePings((prev) => [...prev.filter((p) => Date.now() - p.timestamp < 3200), ping]);
+      setTimeout(() => {
+        setActivePings((prev) => prev.filter((p) => p.id !== ping.id));
+      }, 3300);
       return;
     }
 
@@ -2887,6 +2892,9 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         timestamp: Date.now(),
       };
       setActivePings((prev) => [...prev.filter((p) => Date.now() - p.timestamp < 3200), ping]);
+      setTimeout(() => {
+        setActivePings((prev) => prev.filter((p) => p.id !== ping.id));
+      }, 3300);
       const session = liveSessionRef.current;
       if (session && session.getState().role !== 'idle') {
         session.broadcast({
@@ -2937,11 +2945,21 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
           );
           if (o.targetId === rawChar.id) {
             adjustHp(-o.appliedDamage);
+          } else if (
+            o.concentrationDc &&
+            encounter.activeEffects.some(
+              (eff) => eff.sourceCombatantId === o.targetId && eff.isConcentration
+            )
+          ) {
+            appendLog(
+              `Concentration Check: ${o.targetName} (DC ${o.concentrationDc} CON save).`,
+              'warn'
+            );
           }
         }
       }
     },
-    [encounter.combatants, rollMode, persistEncounter, appendLog, rawChar.id, adjustHp]
+    [encounter.combatants, encounter.activeEffects, rollMode, persistEncounter, appendLog, rawChar.id, adjustHp]
   );
 
   const targetSaveCombatants = useCallback(
@@ -2972,10 +2990,20 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
         );
         if (o.targetId === rawChar.id) {
           adjustHp(-o.appliedDamage);
+        } else if (
+          o.concentrationDc &&
+          encounter.activeEffects.some(
+            (eff) => eff.sourceCombatantId === o.targetId && eff.isConcentration
+          )
+        ) {
+          appendLog(
+            `Concentration Check: ${o.targetName} (DC ${o.concentrationDc} CON save).`,
+            'warn'
+          );
         }
       }
     },
-    [encounter.combatants, persistEncounter, appendLog, rawChar.id, adjustHp]
+    [encounter.combatants, encounter.activeEffects, persistEncounter, appendLog, rawChar.id, adjustHp]
   );
 
   const setWorldMapImage = useCallback(

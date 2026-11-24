@@ -8,6 +8,7 @@ interface EncounterBuilderModalProps {
   isOpen: boolean;
   onClose: () => void;
   partyLevels: number[];
+  compendiumMonsters?: CompendiumEntity[];
   onSpawnMonsters: (monsters: CompendiumEntity[]) => void;
   onCreateCustomMonster: (entity: CompendiumEntity) => void;
 }
@@ -16,6 +17,7 @@ export function EncounterBuilderModal({
   isOpen,
   onClose,
   partyLevels,
+  compendiumMonsters = [],
   onSpawnMonsters,
   onCreateCustomMonster,
 }: EncounterBuilderModalProps) {
@@ -39,10 +41,16 @@ export function EncounterBuilderModal({
   const [mDmgType, setMDmgType] = useState('slashing');
   const [mTraits, setMTraits] = useState('Pack Tactics or Magic Resistance.');
 
-  const allMonsters = useMemo(
-    () => BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities).filter((e) => e.category === 'monster'),
-    []
-  );
+  const allMonsters = useMemo(() => {
+    const map = new Map<string, CompendiumEntity>();
+    for (const m of BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities)) {
+      if (m.category === 'monster') map.set(m.id, m);
+    }
+    for (const m of compendiumMonsters) {
+      if (m.category === 'monster') map.set(m.id, m);
+    }
+    return Array.from(map.values());
+  }, [compendiumMonsters]);
 
   const filteredMonsters = useMemo(() => {
     const q = query.trim().toLowerCase();

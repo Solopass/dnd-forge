@@ -486,6 +486,7 @@ export function DmHubModal({
                       setEntryTitle('');
                       setEntrySummary('');
                       setEntryBody('');
+                      setEntryImage(undefined);
                     }}
                   >
                     Cancel Edit

@@ -617,8 +617,10 @@ export function App() {
         }}
         onPrintPacket={() => {
           document.body.classList.add('print-session-mode');
+          const cleanup = () => document.body.classList.remove('print-session-mode');
+          window.addEventListener('afterprint', cleanup, { once: true });
           window.print();
-          setTimeout(() => document.body.classList.remove('print-session-mode'), 300);
+          setTimeout(cleanup, 1500);
         }}
       />
 
@@ -626,6 +628,7 @@ export function App() {
         isOpen={encounterBuilderOpen}
         onClose={() => setEncounterBuilderOpen(false)}
         partyLevels={store.characterList.map((c) => c.classes.reduce((s, cl) => s + cl.level, 0))}
+        compendiumMonsters={store.compendium.filter((e) => e.category === 'monster')}
         onSpawnMonsters={(monsters) => {
           for (const m of monsters) {
             if (!m.monsterMeta) continue;

@@ -11,7 +11,7 @@ interface CharacterManagerModalProps {
   onSelectCharacter: (id: string) => void;
   onOpenNewCharacter: () => void;
   onOpenBuilderForActive: () => void;
-  onDuplicateCharacter: () => Promise<void>;
+  onDuplicateCharacter: (targetId?: string) => Promise<void>;
   onDeleteCharacter: (id: string) => Promise<void>;
   onImportDdbPdf: (file: File) => Promise<void>;
   onImportCharacterJson: (char: RawCharacterState) => Promise<void>;
@@ -241,8 +241,7 @@ export const CharacterManagerModal: React.FC<CharacterManagerModalProps> = ({
                         type="button"
                         className="btn"
                         onClick={async () => {
-                          if (!isActive) onSelectCharacter(c.id);
-                          await onDuplicateCharacter();
+                          await onDuplicateCharacter(c.id);
                         }}
                       >
                         Duplicate

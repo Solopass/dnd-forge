@@ -426,19 +426,20 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     [appendLog]
   );
 
-  const duplicateCharacter = useCallback(async () => {
+  const duplicateCharacter = useCallback(async (targetId?: string) => {
+    const sourceChar = (targetId ? characterList.find((c) => c.id === targetId) : null) ?? rawChar;
     const id = `char-${Date.now().toString(36)}`;
     const copy: RawCharacterState = {
-      ...structuredClone(rawChar),
+      ...structuredClone(sourceChar),
       id,
-      name: `${rawChar.name} (Copy)`,
+      name: `${sourceChar.name} (Copy)`,
     };
     await saveCharacter(copy);
     setCharacterList((prev) => [...prev, copy]);
     setRawChar(copy);
     setPendingConcDc(null);
     appendLog(`Duplicated character as "${copy.name}".`, 'info');
-  }, [rawChar, appendLog]);
+  }, [characterList, rawChar, appendLog]);
 
   const deleteCharacter = useCallback(
     async (characterId: string) => {

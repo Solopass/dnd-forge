@@ -390,6 +390,26 @@ export function ActionEconomyBoard({
           />
 
           <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+            {layoutVariant === 'unified' && onOpenCompendium && (
+              <div className="forge-row" style={{ gap: 6 }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{ fontSize: 11, padding: '2px 8px' }}
+                  onClick={() => onOpenCompendium('spell')}
+                >
+                  + Add Spell
+                </button>
+                <button
+                  type="button"
+                  className="btn"
+                  style={{ fontSize: 11, padding: '2px 8px' }}
+                  onClick={() => onOpenCompendium('gear')}
+                >
+                  + Add Gear
+                </button>
+              </div>
+            )}
             {onToggleBuff && (
               <div className="pill-row" aria-label="Combat buff toggles">
                 <button

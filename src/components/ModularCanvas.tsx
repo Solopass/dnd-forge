@@ -79,6 +79,7 @@ interface ModularCanvasProps {
   onDepositToPartyStash?: (itemId: string) => void;
   onClaimPartyStashItem?: (stashId: string) => void;
   onAddPartyStashItem?: (name: string, category: ItemCategory, quantity: number) => void;
+  onOpenCompendium?: (category: ItemCategory) => void;
 }
 
 const ALL_COL_SPANS: WidgetColSpan[] = [3, 4, 5, 6, 7, 8, 9, 10, 12];
@@ -129,6 +130,7 @@ export function ModularCanvas({
   onDepositToPartyStash,
   onClaimPartyStashItem,
   onAddPartyStashItem,
+  onOpenCompendium,
 }: ModularCanvasProps) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -606,9 +608,21 @@ export function ModularCanvas({
         const spellActs = allActivities.filter(isSpell);
         return (
           <div className="forge-stack">
-            <div className="pill-row tabular">
-              <span className="badge">Save DC {sheet.spellcasting.saveDc.final}</span>
-              <span className="badge">Atk +{sheet.spellcasting.attackBonus.final}</span>
+            <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+              <div className="pill-row tabular">
+                <span className="badge">Save DC {sheet.spellcasting.saveDc.final}</span>
+                <span className="badge">Atk +{sheet.spellcasting.attackBonus.final}</span>
+              </div>
+              {onOpenCompendium && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{ fontSize: 10, padding: '2px 8px' }}
+                  onClick={() => onOpenCompendium('spell')}
+                >
+                  + Add Spell
+                </button>
+              )}
             </div>
             {slotPools.length > 0 && (
               <div className="forge-row" style={{ flexWrap: 'wrap', gap: 8 }}>

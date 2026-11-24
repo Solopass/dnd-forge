@@ -1236,6 +1236,11 @@ export function App() {
             onDepositToPartyStash={store.depositItemToPartyStash}
             onClaimPartyStashItem={store.claimPartyStashItem}
             onAddPartyStashItem={store.addPartyStashItem}
+            onOpenCompendium={(cat) => {
+              setPaletteInitialCat(cat);
+              setPaletteInitialRuleset(store.rawChar.ruleset === '2024' ? '2024' : '2014');
+              setPaletteOpen(true);
+            }}
           />
         </Suspense>
       ) : uiMode === 'classic' ? (

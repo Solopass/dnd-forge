@@ -531,13 +531,17 @@
 }
 
 .btn-primary {
-  background: rgba(88, 166, 255, 0.2);
+  background: rgba(88, 166, 255, 0.26);
   border-color: var(--accent-blue);
   font-weight: 600;
 }
 
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.14);
+}
+
 :root[data-ui-mode='classic'] .btn-primary {
-  background: rgba(228, 7, 18, 0.16);
+  background: rgba(255, 77, 94, 0.28);
   border-color: var(--accent-brand);
 }
 

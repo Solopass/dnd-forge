@@ -147,7 +147,7 @@
   --bg-hover-dark: #2e3847;
   --border-subtle-light: #d6d0c4;
   --border-subtle-dark: #2f3946;
-  --accent-brand: light-dark(#c8102e, #e40712);
+  --accent-brand: light-dark(#ef4444, #ff4d5e);
   --accent-gold: light-dark(#9a7228, #c5a059);
   --border-accent: var(--accent-gold);
   --bg-card-header: light-dark(rgba(197, 160, 89, 0.1), rgba(197, 160, 89, 0.08));

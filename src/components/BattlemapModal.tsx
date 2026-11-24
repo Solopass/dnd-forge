@@ -46,7 +46,7 @@ export function BattlemapModal({
   onNextTurn,
 }: BattlemapModalProps) {
   const [mode, setMode] = useState<MapMode>('move');
-  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragPreview, setDragPreview] = useState<{ id: string; x: number; y: number } | null>(null);
   const [measureStart, setMeasureStart] = useState<{ x: number; y: number } | null>(null);
   const [measureEnd, setMeasureEnd] = useState<{ x: number; y: number } | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -77,15 +77,18 @@ export function BattlemapModal({
 
   const handleSvgPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
     const { gx, gy } = toGridCoords(e.clientX, e.clientY);
-    if (draggingId) {
-      onMoveToken(draggingId, gx, gy);
+    if (dragPreview) {
+      setDragPreview({ id: dragPreview.id, x: gx, y: gy });
     } else if (mode === 'measure' && measureStart) {
       setMeasureEnd({ x: gx, y: gy });
     }
   };
 
   const handleSvgPointerUp = () => {
-    setDraggingId(null);
+    if (dragPreview) {
+      onMoveToken(dragPreview.id, dragPreview.x, dragPreview.y);
+      setDragPreview(null);
+    }
     if (mode === 'measure') {
       setMeasureStart(null);
       setMeasureEnd(null);
@@ -304,8 +307,10 @@ export function BattlemapModal({
 
           {/* Combatant Tokens */}
           {encounter.combatants.map((node, idx) => {
-            const gx = node.x ?? (node.kind === 'pc' ? 2 : 12 + (idx % 5));
-            const gy = node.y ?? 2 + (idx % 6);
+            const baseGx = node.x ?? (node.kind === 'pc' ? 2 : 12 + (idx % 5));
+            const baseGy = node.y ?? 2 + (idx % 6);
+            const gx = dragPreview?.id === node.id ? dragPreview.x : baseGx;
+            const gy = dragPreview?.id === node.id ? dragPreview.y : baseGy;
             const cx = gx * CELL_PX + CELL_PX / 2;
             const cy = gy * CELL_PX + CELL_PX / 2;
             const isActive = idx === encounter.activeTurnIndex;
@@ -319,7 +324,7 @@ export function BattlemapModal({
                 onPointerDown={(e) => {
                   if (mode !== 'move') return;
                   e.stopPropagation();
-                  setDraggingId(node.id);
+                  setDragPreview({ id: node.id, x: baseGx, y: baseGy });
                 }}
               >
                 <title>

@@ -655,8 +655,16 @@ export function computeCharacterSheet(
 
       const isHealingPotion =
         item.name.toLowerCase().includes('potion of') && item.name.toLowerCase().includes('healing');
+      const inferredSpellEconomy: ActionEconomy =
+        item.category === 'spell' && act.actionEconomy === 'action' && item.castingTime
+          ? item.castingTime.toLowerCase().includes('bonus')
+            ? 'bonus_action'
+            : item.castingTime.toLowerCase().includes('reaction')
+              ? 'reaction'
+              : 'action'
+          : act.actionEconomy;
       const targetEconomy: ActionEconomy =
-        isHealingPotion && effectivePotionAction ? effectivePotionAction : act.actionEconomy;
+        isHealingPotion && effectivePotionAction ? effectivePotionAction : inferredSpellEconomy;
 
       actionsByEconomy[targetEconomy].push({
         ...act,

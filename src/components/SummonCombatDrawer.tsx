@@ -807,6 +807,7 @@ interface CommandPaletteProps {
   isPlayerRole?: boolean;
   initialCategory?: 'all' | CompendiumEntity['category'];
   initialRuleset?: 'all' | '2014' | '2024';
+  ownedItemNames?: string[];
   searchCompendium: (query: string) => CompendiumEntity[];
   onAddCompendiumItem: (item: CompendiumEntity) => void;
   onInstallContentPack: (packId: string) => Promise<void>;
@@ -821,6 +822,7 @@ export function CommandPalette({
   isPlayerRole = false,
   initialCategory = 'all',
   initialRuleset = 'all',
+  ownedItemNames = [],
   searchCompendium,
   onAddCompendiumItem,
   onInstallContentPack,
@@ -844,13 +846,22 @@ export function CommandPalette({
     }
   }, [isOpen, initialCategory, initialRuleset]);
 
-  const allMatches = searchCompendium(query).filter(
-    (item) =>
-      (categoryFilter === 'all' || item.category === categoryFilter) &&
-      (rulesetFilter === 'all' || item.ruleset === rulesetFilter) &&
-      (categoryFilter !== 'spell' || spellLevelFilter === 'all' || (item.spellLevel ?? 0) === spellLevelFilter)
-  );
+  const allMatches = searchCompendium(query)
+    .filter(
+      (item) =>
+        (categoryFilter === 'all' || item.category === categoryFilter) &&
+        (rulesetFilter === 'all' || item.ruleset === rulesetFilter) &&
+        (categoryFilter !== 'spell' || spellLevelFilter === 'all' || (item.spellLevel ?? 0) === spellLevelFilter)
+    )
+    .sort((a, b) => {
+      if (categoryFilter === 'spell') {
+        const lvlDiff = (a.spellLevel ?? 0) - (b.spellLevel ?? 0);
+        if (lvlDiff !== 0) return lvlDiff;
+      }
+      return a.name.localeCompare(b.name);
+    });
   const matches = allMatches.slice(0, 80);
+  const ownedSet = new Set(ownedItemNames.map((n) => n.toLowerCase()));
 
   return (
     <ModalDialog isOpen={isOpen} onClose={onClose} title="Compendium, SRD Packs & Importers">
@@ -969,24 +980,42 @@ export function CommandPalette({
                     borderBottom: '1px solid var(--border-subtle)',
                   }}
                 >
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     <strong>{item.name}</strong>{' '}
                     <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                      [{item.category.toUpperCase()} • {item.source} • {item.ruleset}]
+                      [
+                      {item.category === 'spell'
+                        ? `${(item.spellLevel ?? 0) === 0 ? 'Cantrip' : `Lvl ${item.spellLevel}`}`
+                        : item.category.toUpperCase()}
+                      {' • '}
+                      {item.source} • {item.ruleset}]
                     </span>
+                    {item.category === 'spell' && (
+                      <div style={{ fontSize: 10, color: 'var(--text-secondary)' }}>
+                        {[item.castingTime, item.range, item.concentration ? 'CONC' : '', item.ritual ? 'RITUAL' : '']
+                          .filter(Boolean)
+                          .join(' • ')}
+                      </div>
+                    )}
                   </div>
                   {item.category === 'monster' && isPlayerRole ? (
                     <span className="badge" title="Switch to DM role to spawn monsters">DM Only</span>
                   ) : (
                     <button
                       type="button"
-                      className="btn btn-primary"
+                      className={`btn ${ownedSet.has(item.name.toLowerCase()) ? '' : 'btn-primary'}`}
                       onClick={() => {
                         onAddCompendiumItem(item);
-                        onClose();
+                        if (categoryFilter !== 'spell') {
+                          onClose();
+                        }
                       }}
                     >
-                      {item.category === 'monster' ? '+ Encounter' : '+ Sheet'}
+                      {item.category === 'monster'
+                        ? '+ Encounter'
+                        : ownedSet.has(item.name.toLowerCase())
+                          ? 'On Sheet ✓ (+1)'
+                          : '+ Sheet'}
                     </button>
                   )}
                 </div>

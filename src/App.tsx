@@ -493,6 +493,7 @@ export function App() {
       }
       onRollInlineExpression={store.rollInlineExpression}
       onToggleEquipped={store.toggleItemEquipped}
+      onTogglePrepared={store.toggleItemPrepared}
       onToggleAttuned={store.toggleItemAttuned}
       onAdjustResource={store.adjustResourcePool}
       onOpenGearDrawer={() => setGearOpen(true)}
@@ -1491,6 +1492,7 @@ export function App() {
         isPlayerRole={isPlayerRole}
         initialCategory={paletteInitialCat}
         initialRuleset={paletteInitialRuleset}
+        ownedItemNames={store.rawChar.items.map((i) => i.name)}
         searchCompendium={store.searchCompendium}
         onAddCompendiumItem={store.addCompendiumItemToSheet}
         onInstallContentPack={store.installContentPack}

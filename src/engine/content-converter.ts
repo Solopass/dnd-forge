@@ -146,12 +146,19 @@ function inferActivitiesFromRaw(
       Boolean(raw.heal_at_slot_level) ||
       (dmgTypes.length === 0 && /regain|heal|hit points/i.test(joined) && Boolean(dmgMatch));
 
+    const ctLower = (extractTimeString(raw.castingTime ?? raw.casting_time ?? raw.time) ?? '').toLowerCase();
+    const spellEconomy = ctLower.includes('bonus')
+      ? 'bonus_action'
+      : ctLower.includes('reaction')
+        ? 'reaction'
+        : 'action';
+
     return [
       {
         id: `act-${id}`,
         name,
         type: isHeal ? 'heal' : saveAb ? 'save' : isAttack ? 'attack' : 'utility',
-        actionEconomy: 'action',
+        actionEconomy: spellEconomy,
         attackBonusFormula: isAttack ? '@prof+@spell' : undefined,
         saveAbility: saveAb || undefined,
         saveDcFormula: saveAb ? '8+@prof+@spell' : undefined,

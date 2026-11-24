@@ -19,6 +19,7 @@ interface ActionEconomyBoardProps {
   onTriggerActivity: (activity: ResolvedActivity, slotLevelOverride?: number, asRitual?: boolean) => void;
   onRollInlineExpression: (label: string, expression: string) => void;
   onToggleEquipped?: (itemId: string) => void;
+  onTogglePrepared?: (itemId: string) => void;
   onToggleAttuned?: (itemId: string) => void;
   onAdjustResource?: (poolId: string, delta: number) => void;
   onOpenGearDrawer?: () => void;
@@ -91,6 +92,7 @@ export function ActionEconomyBoard({
   onTriggerActivity,
   onRollInlineExpression,
   onToggleEquipped,
+  onTogglePrepared,
   onToggleAttuned,
   onAdjustResource,
   onOpenGearDrawer,
@@ -606,6 +608,68 @@ export function ActionEconomyBoard({
                 : sheet.actionsByEconomy[s.key]
               ).filter((act) => isSpellActivity(act) && matchesFilter(act))
             ).map(renderActivityRow)}
+            {(() => {
+              const allSpells = (rawChar?.items ?? [])
+                .filter((i) => i.category === 'spell')
+                .sort((a, b) => (a.spellLevel ?? 0) - (b.spellLevel ?? 0) || a.name.localeCompare(b.name));
+              if (allSpells.length === 0) {
+                return (
+                  <div className="forge-muted" style={{ fontSize: 12 }}>
+                    No spells on your sheet yet. Click <strong>+ Add Spell</strong> above to browse 650+ spells.
+                  </div>
+                );
+              }
+              return (
+                <div className="forge-stack" style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-subtle)', gap: 4 }}>
+                  <div className="forge-section-label">SPELLBOOK &amp; PREPARATION ({allSpells.length})</div>
+                  {allSpells.map((sp) => (
+                    <div key={sp.id} className="forge-list-row" style={{ padding: '4px 6px' }}>
+                      <div className="forge-row" style={{ gap: 6, flexWrap: 'wrap' }}>
+                        <span className="badge tabular" style={{ fontSize: 10 }}>
+                          {(sp.spellLevel ?? 0) === 0 ? 'Cantrip' : `L${sp.spellLevel}`}
+                        </span>
+                        {onInspectItem ? (
+                          <button
+                            type="button"
+                            onClick={() => onInspectItem(sp.id)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              padding: 0,
+                              color: 'inherit',
+                              font: 'inherit',
+                              cursor: 'pointer',
+                              textDecoration: 'underline',
+                              textDecorationColor: 'var(--border-subtle)',
+                              textUnderlineOffset: 2,
+                            }}
+                          >
+                            <strong>{sp.name}</strong>
+                          </button>
+                        ) : (
+                          <strong>{sp.name}</strong>
+                        )}
+                        {sp.concentration && <span className="conc-badge">CONC</span>}
+                        {sp.ritual && <span className="ritual-badge">RITUAL</span>}
+                      </div>
+                      {(sp.spellLevel ?? 0) > 0 && !sp.alwaysPrepared && onTogglePrepared ? (
+                        <button
+                          type="button"
+                          className={`pill ${sp.prepared ? 'active' : ''}`}
+                          onClick={() => onTogglePrepared(sp.id)}
+                        >
+                          {sp.prepared ? 'Prepared ★' : 'Prepare'}
+                        </button>
+                      ) : (
+                        <span className="badge" style={{ fontSize: 10 }}>
+                          {sp.alwaysPrepared ? 'Always Prep' : 'Ready'}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </section>
         );
       })()}

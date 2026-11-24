@@ -3,6 +3,7 @@ import { CombatEncounterState } from '../types/combat';
 import { Activity, CompendiumEntity, CreatureSize, MonsterStatMeta } from '../types/compendium';
 import { ActionEconomy, STANDARD_CONDITIONS } from '../types/core';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
+import { extractSrdSpellcasterClasses } from '../engine/classes';
 import { CONDITION_RULES } from '../engine/conditions';
 import { getQualitativeHealthLabel } from '../engine/dm-tools';
 import { evaluateEncounterDifficulty } from '../engine/encounter-math';
@@ -841,6 +842,7 @@ export function CommandPalette({
   const [spellLevelFilter, setSpellLevelFilter] = useState<'all' | number>('all');
   const [spellTagFilter, setSpellTagFilter] = useState<'all' | 'conc' | 'ritual'>('all');
   const [classCastableOnly, setClassCastableOnly] = useState(false);
+  const [showAllMatches, setShowAllMatches] = useState(false);
   const [query, setQuery] = useState('');
   const [pasteText, setPasteText] = useState('');
 
@@ -851,11 +853,12 @@ export function CommandPalette({
       setRulesetFilter(initialRuleset);
       setSpellLevelFilter('all');
       setSpellTagFilter('all');
+      setShowAllMatches(false);
       setClassCastableOnly(initialCategory === 'spell' && maxCastableSpellLevel > 0);
     }
   }, [isOpen, initialCategory, initialRuleset, maxCastableSpellLevel]);
 
-  const charClassSet = new Set(characterClasses.map((c) => c.toLowerCase()));
+  const charClassSet = extractSrdSpellcasterClasses(characterClasses);
   const allMatches = searchCompendium(query)
     .filter(
       (item) =>
@@ -883,7 +886,8 @@ export function CommandPalette({
       }
       return a.name.localeCompare(b.name);
     });
-  const matches = allMatches.slice(0, 80);
+  const matches =
+    categoryFilter === 'spell' || showAllMatches ? allMatches : allMatches.slice(0, 120);
   const ownedSet = new Set(ownedItemNames.map((n) => n.toLowerCase()));
 
   return (
@@ -977,6 +981,15 @@ export function CommandPalette({
               <span className="badge tabular" style={{ marginLeft: 'auto' }}>
                 {matches.length}/{allMatches.length}
               </span>
+              {allMatches.length > matches.length && (
+                <button
+                  type="button"
+                  className="pill"
+                  onClick={() => setShowAllMatches(true)}
+                >
+                  Show all {allMatches.length}
+                </button>
+              )}
             </div>
             {categoryFilter === 'spell' && (
               <div className="pill-row" style={{ marginBottom: 8, flexWrap: 'wrap' }}>

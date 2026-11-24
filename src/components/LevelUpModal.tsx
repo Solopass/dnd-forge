@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { CLASS_DEFINITIONS, getClassDefinition, getSubclassPresets } from '../engine/classes';
+import { CLASS_DEFINITIONS, extractSrdSpellcasterClasses, getClassDefinition, getSubclassPresets } from '../engine/classes';
 import { evaluateDiceExpression } from '../engine/dice';
 import { computeAbilityModifier, computeEffectiveCasterLevel } from '../engine/rules-math';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
@@ -130,7 +130,7 @@ export function LevelUpModal({
   const learnableSpells = useMemo(() => {
     if (maxNewSpellLevel <= 0) return [];
     const q = spellFilter.trim().toLowerCase();
-    const clsLower = selectedClass.toLowerCase();
+    const classSet = extractSrdSpellcasterClasses([selectedClass, effectiveSub]);
     return allPackEntities
       .filter(
         (e) =>
@@ -139,13 +139,13 @@ export function LevelUpModal({
           (e.spellLevel ?? 0) <= maxNewSpellLevel &&
           (!matchCharRulesetOnly || e.ruleset === character.ruleset || e.ruleset === 'homebrew') &&
           (showAllClassSpells ||
+            classSet.size === 0 ||
             !e.classes?.length ||
-            e.classes.some((c) => c.toLowerCase() === clsLower))
+            e.classes.some((c) => classSet.has(c.toLowerCase())))
       )
       .filter((e) => !q || e.name.toLowerCase().includes(q))
-      .sort((a, b) => (a.spellLevel ?? 0) - (b.spellLevel ?? 0) || a.name.localeCompare(b.name))
-      .slice(0, 60);
-  }, [allPackEntities, ownedIds, maxNewSpellLevel, spellFilter, matchCharRulesetOnly, character.ruleset, showAllClassSpells, selectedClass]);
+      .sort((a, b) => (a.spellLevel ?? 0) - (b.spellLevel ?? 0) || a.name.localeCompare(b.name));
+  }, [allPackEntities, ownedIds, maxNewSpellLevel, spellFilter, matchCharRulesetOnly, character.ruleset, showAllClassSpells, selectedClass, effectiveSub]);
 
   const matchingClassFeatures = useMemo(() => {
     const clsLower = selectedClass.toLowerCase();
@@ -486,8 +486,8 @@ export function LevelUpModal({
                 <span>All classes</span>
               </label>
             </div>
-            <div style={{ maxHeight: 160, overflowY: 'auto' }} className="pill-row">
-              {learnableSpells.slice(0, 40).map((sp) => {
+            <div style={{ maxHeight: 180, overflowY: 'auto' }} className="pill-row">
+              {learnableSpells.map((sp) => {
                 const chosen = selectedSpellIds.includes(sp.id);
                 return (
                   <button

@@ -27,6 +27,36 @@ export interface ClassDefinition {
 
 export const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8] as const;
 
+const SRD_SPELL_LIST_CLASSES = [
+  'bard',
+  'cleric',
+  'druid',
+  'paladin',
+  'ranger',
+  'sorcerer',
+  'warlock',
+  'wizard',
+] as const;
+
+/**
+ * Extracts normalized SRD spell-list class names (e.g. "Wizard (Evocation)" -> "wizard",
+ * "Eldritch Knight" / "Arcane Trickster" -> "wizard"). Returns an empty set for classes without
+ * an SRD spell list (like Artificer) so callers can fall back to showing all level-eligible spells.
+ */
+export function extractSrdSpellcasterClasses(classNames: string[]): Set<string> {
+  const out = new Set<string>();
+  for (const raw of classNames) {
+    const lower = raw.toLowerCase();
+    for (const srdCls of SRD_SPELL_LIST_CLASSES) {
+      if (lower.includes(srdCls)) out.add(srdCls);
+    }
+    if (lower.includes('eldritch knight') || lower.includes('arcane trickster')) {
+      out.add('wizard');
+    }
+  }
+  return out;
+}
+
 export const CLASS_DEFINITIONS: ClassDefinition[] = [
   {
     className: 'Artificer',

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { extractSrdSpellcasterClasses } from '../classes';
 import { BUILTIN_CONTENT_PACKS } from '../srd-packs';
 import {
   normalizeCustomCharacter,
@@ -288,5 +289,11 @@ describe('Custom Content Templates & JSON Loader', () => {
     expect(exported.characters).toEqual(['characters/hero.json']);
     expect(exported.entities).toHaveLength(2);
     expect(exported.entries[0]?.title).toBe('Ireena Kolyana');
+  });
+
+  it('normalizes spellcasting class names including subclasses and non-SRD classes', () => {
+    expect(Array.from(extractSrdSpellcasterClasses(['Wizard (Evocation)']))).toEqual(['wizard']);
+    expect(Array.from(extractSrdSpellcasterClasses(['Eldritch Knight']))).toEqual(['wizard']);
+    expect(Array.from(extractSrdSpellcasterClasses(['Artificer']))).toEqual([]);
   });
 });

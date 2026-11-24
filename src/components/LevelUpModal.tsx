@@ -11,6 +11,7 @@ import { ModalDialog } from './ModalDialog';
 interface LevelUpModalProps {
   isOpen: boolean;
   character: RawCharacterState;
+  compendiumEntities?: import('../types/compendium').CompendiumEntity[];
   onClose: () => void;
   onApplyLevelUp: (input: LevelUpPlanInput) => void;
 }
@@ -28,6 +29,7 @@ function isAsiLevel(className: string, newLevel: number): boolean {
 export function LevelUpModal({
   isOpen,
   character,
+  compendiumEntities = [],
   onClose,
   onApplyLevelUp,
 }: LevelUpModalProps) {
@@ -71,10 +73,11 @@ export function LevelUpModal({
   const needsSubclassPrompt = !existingEntry?.subclassName && subclasses.length > 0 && newClassLevel >= 2;
   const showAsi = isAsiLevel(selectedClass, newClassLevel);
 
-  const allPackEntities = useMemo(
-    () => BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities),
-    []
-  );
+  const allPackEntities = useMemo(() => {
+    const map = new Map(BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities).map((e) => [e.id, e]));
+    for (const e of compendiumEntities) map.set(e.id, e);
+    return Array.from(map.values());
+  }, [compendiumEntities]);
   const ownedIds = useMemo(() => new Set(character.items.map((i) => i.id)), [character.items]);
 
   const featOptions = useMemo(

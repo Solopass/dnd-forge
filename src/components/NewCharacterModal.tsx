@@ -16,12 +16,13 @@ import { ModalDialog } from './ModalDialog';
 interface NewCharacterModalProps {
   isOpen: boolean;
   onClose: () => void;
+  compendiumEntities?: CompendiumEntity[];
   onCreate: (input: Omit<NewCharacterPresetInput, 'id'>) => Promise<void>;
 }
 
 const ABILITY_ORDER: AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 
-export function NewCharacterModal({ isOpen, onClose, onCreate }: NewCharacterModalProps) {
+export function NewCharacterModal({ isOpen, onClose, compendiumEntities = [], onCreate }: NewCharacterModalProps) {
   const [step, setStep] = useState<'origin' | 'abilities' | 'gear'>('origin');
   const [name, setName] = useState('');
   const [className, setClassName] = useState('Barbarian');
@@ -69,8 +70,11 @@ export function NewCharacterModal({ isOpen, onClose, onCreate }: NewCharacterMod
     for (const p of BUILTIN_CONTENT_PACKS) {
       for (const e of p.entities) map.set(e.id, e);
     }
+    for (const e of compendiumEntities) {
+      map.set(e.id, e);
+    }
     return Array.from(map.values());
-  }, []);
+  }, [compendiumEntities]);
 
   const filteredCompOptions = useMemo(() => {
     const q = compSearch.trim().toLowerCase();

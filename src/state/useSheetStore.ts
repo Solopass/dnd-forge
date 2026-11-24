@@ -27,7 +27,7 @@ import { parseHomebrewMarkdownBlock } from '../engine/statblock-parser';
 import { adapt5eToolsPayload } from '../engine/five-tools-adapter';
 import { parseDndBeyondPdfBuffer } from '../engine/ddb-pdf-importer';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
-import { CUSTOM_REPO_CHARACTERS, parseCustomContentJson } from '../engine/custom-content-loader';
+import { CUSTOM_REPO_CHARACTERS, loadCustomRepoEntities, parseCustomContentJson } from '../engine/custom-content-loader';
 import { HouseRulesConfig, readStoredHouseRules, saveHouseRules } from '../engine/ruleset-config';
 import {
   buildCharacterFromPreset,
@@ -262,10 +262,14 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
           setScenes(savedScenes);
         }
         const basePackEntities = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities);
-        await upsertCompendiumEntities(basePackEntities);
+        const customRepoEntities = await loadCustomRepoEntities();
+        const combinedEntities = [...basePackEntities, ...customRepoEntities];
+        await upsertCompendiumEntities(combinedEntities);
         const refreshed = await db.compendium.toArray();
         if (active && refreshed.length > 0) {
           setCompendium(refreshed);
+        } else if (active && customRepoEntities.length > 0) {
+          setCompendium(combinedEntities);
         }
       } catch (err) {
         appendLog(`Storage hydration warning: ${String(err)}`, 'warn');
@@ -422,7 +426,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   const createCharacterFromPreset = useCallback(
     async (input: Omit<NewCharacterPresetInput, 'id'>) => {
       const id = `char-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`;
-      const fresh = buildCharacterFromPreset({ ...input, id });
+      const fresh = buildCharacterFromPreset({ ...input, id }, compendium);
       await saveCharacter(fresh);
       setCharacterList((prev) => [...prev, fresh]);
       setRawChar(fresh);
@@ -2184,7 +2188,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   const applyLevelUpPlan = useCallback(
     (input: LevelUpPlanInput) => {
       const allPackEntities = new Map<string, CompendiumEntity>(
-        BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities).map((e) => [e.id, e])
+        [...BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities), ...compendium].map((e) => [e.id, e])
       );
 
       persistCharacter((prev) => {

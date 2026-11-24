@@ -1547,6 +1547,7 @@ export function App() {
         <NewCharacterModal
           isOpen={newCharOpen}
           onClose={() => setNewCharOpen(false)}
+          compendiumEntities={store.compendium}
           onCreate={store.createCharacterFromPreset}
         />
       </Suspense>
@@ -1601,6 +1602,7 @@ export function App() {
         <LevelUpModal
           isOpen={levelUpOpen}
           character={store.rawChar}
+          compendiumEntities={store.compendium}
           onClose={() => setLevelUpOpen(false)}
           onApplyLevelUp={store.applyLevelUpPlan}
         />

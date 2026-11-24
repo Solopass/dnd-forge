@@ -27,6 +27,9 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Validate custom content
+        run: bun run content:validate
+
       - name: Run unit tests
         run: bun run test
 

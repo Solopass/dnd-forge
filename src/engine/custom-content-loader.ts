@@ -18,17 +18,17 @@ export { normalizeEntries };
  * purely as reference templates for AI formatting.
  */
 const hasGlob = typeof import.meta.glob === 'function';
-const monsterModules = hasGlob
-  ? import.meta.glob<Record<string, unknown>>('../custom-content/monsters/*.json', { eager: true, import: 'default' })
+const monsterLoaders = hasGlob
+  ? import.meta.glob<Record<string, unknown>>('../custom-content/monsters/*.json', { import: 'default' })
   : {};
-const itemModules = hasGlob
-  ? import.meta.glob<Record<string, unknown>>('../custom-content/items/*.json', { eager: true, import: 'default' })
+const itemLoaders = hasGlob
+  ? import.meta.glob<Record<string, unknown>>('../custom-content/items/*.json', { import: 'default' })
   : {};
-const spellModules = hasGlob
-  ? import.meta.glob<Record<string, unknown>>('../custom-content/spells/*.json', { eager: true, import: 'default' })
+const spellLoaders = hasGlob
+  ? import.meta.glob<Record<string, unknown>>('../custom-content/spells/*.json', { import: 'default' })
   : {};
-const featureModules = hasGlob
-  ? import.meta.glob<Record<string, unknown>>('../custom-content/features/*.json', { eager: true, import: 'default' })
+const featureLoaders = hasGlob
+  ? import.meta.glob<Record<string, unknown>>('../custom-content/features/*.json', { import: 'default' })
   : {};
 const characterModules = hasGlob
   ? import.meta.glob<Record<string, unknown>>('../custom-content/characters/*.json', { eager: true, import: 'default' })
@@ -125,12 +125,26 @@ export function normalizeCustomCharacter(raw: Record<string, unknown>): RawChara
   };
 }
 
-export const CUSTOM_REPO_ENTITIES: CompendiumEntity[] = [
-  ...collectEntities(monsterModules, 'monster'),
-  ...collectEntities(itemModules, 'gear'),
-  ...collectEntities(spellModules, 'spell'),
-  ...collectEntities(featureModules, 'feature'),
-];
+export async function loadCustomRepoEntities(): Promise<CompendiumEntity[]> {
+  const groups: Array<[Record<string, () => Promise<Record<string, unknown>>>, CompendiumEntity['category']]> = [
+    [monsterLoaders, 'monster'],
+    [itemLoaders, 'gear'],
+    [spellLoaders, 'spell'],
+    [featureLoaders, 'feature'],
+  ];
+  const out: CompendiumEntity[] = [];
+  for (const [loaders, fallbackCat] of groups) {
+    const loadedModules = await Promise.all(Object.values(loaders).map((fn) => fn()));
+    const map: Record<string, Record<string, unknown>> = {};
+    loadedModules.forEach((m, idx) => {
+      map[String(idx)] = m;
+    });
+    out.push(...collectEntities(map, fallbackCat));
+  }
+  return out;
+}
+
+export const CUSTOM_REPO_ENTITIES: CompendiumEntity[] = [];
 
 export const CUSTOM_REPO_CONTENT_PACK: ContentPack = {
   id: 'pack-custom-repo',

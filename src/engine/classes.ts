@@ -455,7 +455,10 @@ const SPECIES_LANGUAGES: Record<string, string[]> = {
   Tiefling: ['Common', 'Infernal'],
 };
 
-export function buildCharacterFromPreset(input: NewCharacterPresetInput): RawCharacterState {
+export function buildCharacterFromPreset(
+  input: NewCharacterPresetInput,
+  extraPool: CompendiumEntity[] = []
+): RawCharacterState {
   const classDef = getClassDefinition(input.className) ?? CLASS_DEFINITIONS[6]!; // Fighter fallback
   const species = SPECIES_PRESETS.find((s) => s.name === input.speciesName) ?? SPECIES_PRESETS[0]!;
   const background = BACKGROUND_PRESETS.find((b) => b.name === input.backgroundName) ?? BACKGROUND_PRESETS[7]!;
@@ -521,7 +524,7 @@ export function buildCharacterFromPreset(input: NewCharacterPresetInput): RawCha
   char.hp = { current: maxHp, max: maxHp, temp: 0 };
 
   const allPackEntities = new Map<string, CompendiumEntity>(
-    BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities).map((e) => [e.id, e])
+    [...BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities), ...extraPool].map((e) => [e.id, e])
   );
   const items: CompendiumEntity[] = [];
   for (const entityId of classDef.startingEntityIds) {

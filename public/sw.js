@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dnd-forge-offline-v1';
+const CACHE_NAME = 'dnd-forge-offline-v2';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

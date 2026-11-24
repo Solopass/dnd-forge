@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { ResolvedCharacterSheet, WildShapeForm } from '../types/character';
 import { AbilityKey, RecoveryTrigger, SkillKey, STANDARD_CONDITIONS } from '../types/core';
 import { SKILL_ABILITY_MAP } from '../engine/rules-math';
 import { CONDITION_RULES, resolveConditionRollMode } from '../engine/conditions';
 import { WILD_SHAPE_BEAST_FORMS } from '../engine/srd-packs';
 import { UiMode } from '../engine/ui-mode';
-import { SkillWheel } from './SkillWheel';
+
+const SkillWheel = lazy(() =>
+  import('./SkillWheel').then((m) => ({ default: m.SkillWheel }))
+);
 
 interface VitalsColumnProps {
   sheet: ResolvedCharacterSheet;
@@ -874,11 +877,13 @@ export function VitalsColumn({
           </div>
         </div>
         {skillsExpanded && isUnified && skillView === 'wheel' && (
-          <SkillWheel
-            sheet={sheet}
-            exhaustionCheckPenalty={exhaustionCheckPenalty}
-            onRollCheck={onRollCheck}
-          />
+          <Suspense fallback={null}>
+            <SkillWheel
+              sheet={sheet}
+              exhaustionCheckPenalty={exhaustionCheckPenalty}
+              onRollCheck={onRollCheck}
+            />
+          </Suspense>
         )}
         {skillsExpanded && (!isUnified || skillView === 'list') && (
           <>

@@ -246,7 +246,7 @@ export function LiveTableModal({
                   className="forge-input tabular"
                   value={roomInput}
                   onChange={(e) => setRoomInput(e.target.value.toUpperCase())}
-                  placeholder="FORGE-A7K2"
+                  placeholder="SIDE-A7K2"
                 />
               </label>
               <button

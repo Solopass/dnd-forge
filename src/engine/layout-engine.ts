@@ -8,6 +8,7 @@ import {
 } from '../types/layout';
 
 export const ACTIVE_LAYOUT_STORAGE_KEY = 'dnd-forge-active-layout';
+export const SAVED_LAYOUTS_STORAGE_KEY = 'dnd-forge-saved-layouts';
 
 export const WIDGET_LABELS: Record<WidgetId, string> = {
   vitals: 'HP, AC, Init & Speed',
@@ -270,4 +271,39 @@ export function saveStoredLayout(layout: WorkspaceLayoutConfig): void {
   } catch {
     // Ignore storage errors
   }
+}
+
+export function readStoredSavedLayouts(): WorkspaceLayoutConfig[] {
+  try {
+    const raw = localStorage.getItem(SAVED_LAYOUTS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.map((item) => normalizeLayoutConfig(item as Partial<WorkspaceLayoutConfig>))
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveCustomLayoutPreset(
+  layout: WorkspaceLayoutConfig,
+  name: string
+): WorkspaceLayoutConfig[] {
+  const cleanName = name.trim() || 'Custom Layout';
+  const slug = cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'custom';
+  const entry: WorkspaceLayoutConfig = {
+    ...structuredClone(layout),
+    id: `layout-user-${slug}-${Date.now().toString(36)}`,
+    name: cleanName,
+    builtIn: false,
+  };
+  const existing = readStoredSavedLayouts().filter((p) => p.name !== cleanName);
+  const next = [entry, ...existing].slice(0, 12);
+  try {
+    localStorage.setItem(SAVED_LAYOUTS_STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // Ignore storage errors
+  }
+  return next;
 }

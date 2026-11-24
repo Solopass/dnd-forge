@@ -42,7 +42,7 @@ export function PlayerDisplayApp() {
     <main
       style={{
         minHeight: '100vh',
-        background: 'var(--bg-canvas)',
+        background: 'var(--bg-base)',
         color: 'var(--text-primary)',
         padding: 16,
         display: 'grid',
@@ -56,7 +56,7 @@ export function PlayerDisplayApp() {
           <span className="badge tabular">Round {encounter.round}</span>
           <span className="badge">{synced ? 'Live Synced' : 'Awaiting DM Tab'}</span>
         </div>
-        <span className="muted-label">Player Display (No DM Spoilers)</span>
+        <span className="muted-label">Sidereroll • Player Display (No DM Spoilers)</span>
       </header>
 
       <div className="player-display-grid">

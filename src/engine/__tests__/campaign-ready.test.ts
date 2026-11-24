@@ -113,9 +113,9 @@ describe('Buckets 3, 4 & 5: Point Buy, Wild Shape, Prepared Spells, Rituals, Pac
     expect(() => decodeCharacterShareCode('DFC1:not_valid_base64!')).toThrow();
   });
 
-  it('generates valid FORGE-XXXX room codes and serializable sync messages', () => {
+  it('generates valid SIDE-XXXX room codes and serializable sync messages', () => {
     const code = generateRoomCode();
-    expect(code).toMatch(/^FORGE-[A-Z0-9]{4}$/);
+    expect(code).toMatch(/^SIDE-[A-Z0-9]{4}$/);
     const msg: LiveTableMessage = {
       type: 'roll',
       senderId: 'peer-1',

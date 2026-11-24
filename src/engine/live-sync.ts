@@ -108,7 +108,7 @@ export function generateRoomCode(): string {
   for (let i = 0; i < 4; i++) {
     suffix += ROOM_ALPHABET[Math.floor(Math.random() * ROOM_ALPHABET.length)] ?? 'X';
   }
-  return `FORGE-${suffix}`;
+  return `SIDE-${suffix}`;
 }
 
 function toBase64Url(input: string): string {

@@ -1,9 +1,11 @@
-import { ReactNode, useRef, useState } from 'react';
+import { lazy, ReactNode, Suspense, useRef, useState } from 'react';
 import {
   BUILTIN_LAYOUT_PRESETS,
   moveWidgetById,
+  readStoredSavedLayouts,
   reorderWidget,
   resizeWidget,
+  saveCustomLayoutPreset,
   setWidgetAccent,
   toggleWidgetVisibility,
 } from '../engine/layout-engine';
@@ -23,6 +25,10 @@ const ABILITIES: AbilityKey[] = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 import { resolveConditionRollMode } from '../engine/conditions';
 import { parse5eToolsEntries } from '../engine/tags';
 import { scaleDiceForUpcast } from '../engine/dice';
+
+const SkillWheel = lazy(() =>
+  import('./SkillWheel').then((m) => ({ default: m.SkillWheel }))
+);
 
 interface ModularCanvasProps {
   layout: WorkspaceLayoutConfig;
@@ -89,6 +95,7 @@ export function ModularCanvas({
   onToggleAttuned,
   onOpenBuilderDrawer,
   onOpenGearDrawer,
+  encounter,
   combatDrawerNode,
   miniVttNode,
   consoleLines,
@@ -98,6 +105,10 @@ export function ModularCanvas({
   const [resizingInfo, setResizingInfo] = useState<{ id: WidgetId; text: string } | null>(null);
   const [hpInput, setHpInput] = useState('5');
   const [condSelect, setCondSelect] = useState('Poisoned');
+  const [skillView, setSkillView] = useState<'wheel' | 'list'>('wheel');
+  const [smiteLevel, setSmiteLevel] = useState(1);
+  const [savedPresets, setSavedPresets] = useState<WorkspaceLayoutConfig[]>(() => readStoredSavedLayouts());
+  const [presetNameInput, setPresetNameInput] = useState('');
   const [pinnedIds, setPinnedIds] = useState<string[]>(() => {
     try {
       const raw = localStorage.getItem('dnd-forge-pinned-actions');
@@ -284,38 +295,48 @@ export function ModularCanvas({
 
       case 'abilities':
         return (
-          <div className="ability-grid">
+          <div className="ability-matrix" role="table" aria-label="Abilities and saving throws">
+            <div className="ability-matrix-head" role="row">
+              <span role="columnheader">ABILITY</span>
+              <span role="columnheader">SCR</span>
+              <span role="columnheader">CHECK</span>
+              <span role="columnheader">SAVE</span>
+            </div>
             {ABILITIES.map((ab) => {
               const stat = sheet.abilities[ab];
               const modSign = stat.modifier >= 0 ? '+' : '';
               const saveSign = stat.save.final >= 0 ? '+' : '';
+              const isSaveProf = stat.save.modifiers.some((m) => m.id.startsWith('save-prof-'));
+              const full = ab.toUpperCase();
               return (
-                <div key={ab} className="ability-tile">
-                  <div className="ability-tile-head">
-                    <strong>{ab}</strong>
-                    <span className="badge tabular">{stat.score.final}</span>
-                  </div>
-                  <div className="forge-row" style={{ gap: 4 }}>
-                    <button
-                      type="button"
-                      className="btn tabular"
-                      style={{ flex: 1 }}
-                      onClick={() => onRollAbilityCheck(ab)}
-                    >
-                      {modSign}
-                      {stat.modifier}
-                    </button>
-                    <button
-                      type="button"
-                      className="btn tabular"
-                      style={{ flex: 1 }}
-                      title="Saving Throw"
-                      onClick={() => onRollSavingThrow(ab)}
-                    >
-                      Sv {saveSign}
-                      {stat.save.final}
-                    </button>
-                  </div>
+                <div key={ab} className="ability-matrix-row" role="row">
+                  <strong role="rowheader" style={{ fontSize: 12 }}>
+                    {full}
+                  </strong>
+                  <span role="cell" className="badge tabular" style={{ justifySelf: 'center', padding: '1px 6px' }}>
+                    {stat.score.final}
+                  </span>
+                  <button
+                    type="button"
+                    role="cell"
+                    className="btn tabular"
+                    onClick={() => onRollAbilityCheck(ab)}
+                    aria-label={`Roll ${full} check, ${modSign}${stat.modifier}`}
+                  >
+                    {modSign}
+                    {stat.modifier}
+                  </button>
+                  <button
+                    type="button"
+                    role="cell"
+                    className={`btn tabular ${isSaveProf ? 'btn-primary' : ''}`}
+                    onClick={() => onRollSavingThrow(ab)}
+                    aria-label={`Roll ${full} saving throw, ${saveSign}${stat.save.final}`}
+                  >
+                    {isSaveProf ? '★ ' : ''}
+                    {saveSign}
+                    {stat.save.final}
+                  </button>
                 </div>
               );
             })}
@@ -325,30 +346,57 @@ export function ModularCanvas({
       case 'skills':
         return (
           <div className="forge-stack">
-            <div className="pill-row tabular">
-              <span className="badge">PP {sheet.passivePerception}</span>
-              <span className="badge">PI {sheet.passiveInvestigation}</span>
-              <span className="badge">PIn {sheet.passiveInsight}</span>
+            <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 4 }}>
+              <div className="pill-row tabular">
+                <span className="badge">PP {sheet.passivePerception}</span>
+                <span className="badge">PI {sheet.passiveInvestigation}</span>
+                <span className="badge">PIn {sheet.passiveInsight}</span>
+              </div>
+              <div className="pill-row">
+                <button
+                  type="button"
+                  className={`pill ${skillView === 'wheel' ? 'active' : ''}`}
+                  onClick={() => setSkillView('wheel')}
+                >
+                  Wheel
+                </button>
+                <button
+                  type="button"
+                  className={`pill ${skillView === 'list' ? 'active' : ''}`}
+                  onClick={() => setSkillView('list')}
+                >
+                  List
+                </button>
+              </div>
             </div>
-            <div className="forge-stack" style={{ maxHeight: 240, overflowY: 'auto' }}>
-              {(Object.keys(SKILL_ABILITY_MAP) as SkillKey[]).map((sk) => {
-                const val = sheet.skills[sk].final;
-                return (
-                  <div key={sk} className="forge-list-row">
-                    <span style={{ fontSize: 12 }}>
-                      {sk} <span className="forge-muted">({SKILL_ABILITY_MAP[sk].toUpperCase()})</span>
-                    </span>
-                    <button
-                      type="button"
-                      className="btn tabular"
-                      onClick={() => onRollSkillCheck(sk)}
-                    >
-                      {val >= 0 ? `+${val}` : val}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
+            {skillView === 'wheel' ? (
+              <Suspense fallback={null}>
+                <SkillWheel
+                  sheet={sheet}
+                  onRollCheck={(label, mod) => onRollInlineExpression(label, `1d20${mod >= 0 ? '+' : ''}${mod}`)}
+                />
+              </Suspense>
+            ) : (
+              <div className="forge-stack" style={{ maxHeight: 240, overflowY: 'auto' }}>
+                {(Object.keys(SKILL_ABILITY_MAP) as SkillKey[]).map((sk) => {
+                  const val = sheet.skills[sk].final;
+                  return (
+                    <div key={sk} className="forge-list-row">
+                      <span style={{ fontSize: 12 }}>
+                        {sk} <span className="forge-muted">({SKILL_ABILITY_MAP[sk].toUpperCase()})</span>
+                      </span>
+                      <button
+                        type="button"
+                        className="btn tabular"
+                        onClick={() => onRollSkillCheck(sk)}
+                      >
+                        {val >= 0 ? `+${val}` : val}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         );
 
@@ -454,11 +502,36 @@ export function ModularCanvas({
                   Flank {flankingRule === 'advantage' ? '(ADV)' : '(+2)'}
                 </button>
               )}
-              {(sheet.resources.find((r) => r.id === 'spell_slot_1')?.current ?? 0) > 0 && (
-                <button type="button" className="pill" onClick={() => onDivineSmite(1)}>
-                  Smite L1
-                </button>
-              )}
+              {(() => {
+                const available = [1, 2, 3, 4, 5].filter(
+                  (lvl) => (sheet.resources.find((r) => r.id === `spell_slot_${lvl}`)?.current ?? 0) > 0
+                );
+                if (available.length === 0) return null;
+                const chosen = available.includes(smiteLevel) ? smiteLevel : available[0]!;
+                const diceCount = Math.min(6, chosen + 1);
+                return (
+                  <div className="forge-row" style={{ gap: 4 }}>
+                    {available.length > 1 && (
+                      <select
+                        aria-label="Divine Smite slot level"
+                        className="forge-input tabular"
+                        style={{ padding: '1px 4px', fontSize: 10, width: 46 }}
+                        value={chosen}
+                        onChange={(e) => setSmiteLevel(Number.parseInt(e.target.value, 10))}
+                      >
+                        {available.map((lvl) => (
+                          <option key={lvl} value={lvl}>
+                            L{lvl}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    <button type="button" className="pill" onClick={() => onDivineSmite(chosen)}>
+                      Smite L{chosen} ({diceCount}d8)
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
             <div className="forge-stack">
               {nonSpellActions.length === 0 ? (
@@ -621,6 +694,19 @@ export function ModularCanvas({
 
   return (
     <div className="modular-shell">
+      {(encounter.combatants.length > 1 || encounter.round > 1) &&
+        !layout.widgets.find((w) => w.id === 'mini_vtt')?.visible && (
+          <div className="subpanel forge-row-between" style={{ padding: '6px 10px' }}>
+            <span className="badge">Combat Active (Round {encounter.round})</span>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => onChangeLayout(toggleWidgetVisibility(layout, 'mini_vtt'))}
+            >
+              Show Battlemap Block
+            </button>
+          </div>
+        )}
       {isEditing && (
         <div className="modular-edit-bar" role="region" aria-label="Layout editor toolbar">
           <div className="forge-row" style={{ flexWrap: 'wrap', gap: 8 }}>
@@ -630,7 +716,9 @@ export function ModularCanvas({
               className="forge-input"
               value={layout.id}
               onChange={(e) => {
-                const preset = BUILTIN_LAYOUT_PRESETS.find((p) => p.id === e.target.value);
+                const preset = [...BUILTIN_LAYOUT_PRESETS, ...savedPresets].find(
+                  (p) => p.id === e.target.value
+                );
                 if (preset) onChangeLayout(structuredClone(preset));
               }}
             >
@@ -639,10 +727,37 @@ export function ModularCanvas({
                   Preset: {p.name}
                 </option>
               ))}
-              {!BUILTIN_LAYOUT_PRESETS.some((p) => p.id === layout.id) && (
+              {savedPresets.map((p) => (
+                <option key={p.id} value={p.id}>
+                  Saved: {p.name}
+                </option>
+              ))}
+              {![...BUILTIN_LAYOUT_PRESETS, ...savedPresets].some((p) => p.id === layout.id) && (
                 <option value={layout.id}>{layout.name}</option>
               )}
             </select>
+            <input
+              aria-label="Save custom layout preset name"
+              type="text"
+              className="forge-input"
+              style={{ width: 140 }}
+              placeholder="Save preset as..."
+              value={presetNameInput}
+              onChange={(e) => setPresetNameInput(e.target.value)}
+            />
+            <button
+              type="button"
+              className="btn"
+              onClick={() => {
+                if (!presetNameInput.trim()) return;
+                const updated = saveCustomLayoutPreset(layout, presetNameInput);
+                setSavedPresets(updated);
+                if (updated[0]) onChangeLayout(structuredClone(updated[0]));
+                setPresetNameInput('');
+              }}
+            >
+              Save Preset
+            </button>
             <button type="button" className="btn" onClick={onOpenThemeStudio}>
               Theme &amp; Share...
             </button>

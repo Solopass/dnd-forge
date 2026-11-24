@@ -5,9 +5,12 @@ import { useSheetStore } from './state/useSheetStore';
 import { VitalsColumn } from './components/VitalsColumn';
 import { ActionEconomyBoard } from './components/ActionEconomyBoard';
 import { SummonCombatDrawer, CommandPalette, StatusConsole } from './components/SummonCombatDrawer';
-import { NewCharacterModal } from './components/NewCharacterModal';
 import { ModalDialog } from './components/ModalDialog';
 import { ToastStack } from './components/ToastStack';
+
+const NewCharacterModal = lazy(() =>
+  import('./components/NewCharacterModal').then((m) => ({ default: m.NewCharacterModal }))
+);
 
 const BattlemapModal = lazy(() =>
   import('./components/BattlemapModal').then((m) => ({ default: m.BattlemapModal }))
@@ -1315,11 +1318,13 @@ export function App() {
         />
       </Suspense>
 
-      <NewCharacterModal
-        isOpen={newCharOpen}
-        onClose={() => setNewCharOpen(false)}
-        onCreate={store.createCharacterFromPreset}
-      />
+      <Suspense fallback={null}>
+        <NewCharacterModal
+          isOpen={newCharOpen}
+          onClose={() => setNewCharOpen(false)}
+          onCreate={store.createCharacterFromPreset}
+        />
+      </Suspense>
 
       <Suspense fallback={null}>
         <LevelUpModal

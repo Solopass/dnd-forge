@@ -3,6 +3,7 @@ import { resolveConditionRollMode } from '../conditions';
 import { resolveTargetAttack } from '../target-combat';
 import { BUILTIN_CONTENT_PACKS } from '../srd-packs';
 import { parse5eToolsEntries } from '../tags';
+import { generateRoomCode } from '../live-sync';
 import { CombatantNode } from '../../types/combat';
 import { Activity } from '../../types/compendium';
 
@@ -107,5 +108,10 @@ describe('2024 Weapon Mastery & Target Combat', () => {
       { kind: 'ref', category: 'ability', name: 'str', display: 'STR mod' },
       { kind: 'text', value: ' slashing damage.' },
     ]);
+  });
+
+  it('generates Sidereroll SIDE- room codes', () => {
+    const code = generateRoomCode();
+    expect(code).toMatch(/^SIDE-[A-Z0-9]{4}$/);
   });
 });

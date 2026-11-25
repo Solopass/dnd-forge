@@ -2,6 +2,7 @@ import { CampaignEntry, CampaignRecord, ExternalRepoConfig } from '../types/camp
 import { RawCharacterState } from '../types/character';
 import { CompendiumEntity, ItemCategory } from '../types/compendium';
 import { normalizeCustomCharacter, normalizeCustomEntity } from './custom-content-loader';
+import { parseFree5eMarkdownAuto } from './free5e-parser';
 
 const PAT_STORAGE_KEY = 'sidereroll-github-pat';
 
@@ -68,11 +69,11 @@ export function resolveRepoAssetUrl(rawUrl: string | undefined, config: External
   return `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${branch}/${trimmed.slice(2)}`;
 }
 
-async function fetchRepoJson(
+async function fetchRepoText(
   config: ExternalRepoConfig,
   filePath: string,
   token?: string
-): Promise<unknown> {
+): Promise<string> {
   const cleanPath = filePath.replace(/^\.?\//, '');
   const branch = config.branch?.trim() || 'main';
 
@@ -87,7 +88,7 @@ async function fetchRepoJson(
     if (!res.ok) {
       throw new Error(`GitHub API ${res.status} for ${cleanPath}`);
     }
-    return res.json();
+    return res.text();
   }
 
   const rawUrl = `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${branch}/${cleanPath}`;
@@ -95,7 +96,79 @@ async function fetchRepoJson(
   if (!res.ok) {
     throw new Error(`HTTP ${res.status} fetching ${cleanPath}`);
   }
-  return res.json();
+  return res.text();
+}
+
+async function fetchRepoJson(
+  config: ExternalRepoConfig,
+  filePath: string,
+  token?: string
+): Promise<unknown> {
+  const text = await fetchRepoText(config, filePath, token);
+  return JSON.parse(text) as unknown;
+}
+
+async function fetchFree5eTreeFromGitHub(
+  config: ExternalRepoConfig,
+  token?: string
+): Promise<SyncedCampaignPackResult | null> {
+  const branch = config.branch?.trim() || 'main';
+  const treeUrl = `https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/git/trees/${encodeURIComponent(branch)}?recursive=1`;
+  const headers: Record<string, string> = { Accept: 'application/vnd.github+json' };
+  if (token?.trim()) headers.Authorization = `Bearer ${token.trim()}`;
+
+  const treeRes = await fetch(treeUrl, { headers });
+  if (!treeRes.ok) return null;
+  const treeData = (await treeRes.json()) as {
+    tree?: Array<{ path?: string; type?: string }>;
+  };
+  const files = (treeData.tree ?? [])
+    .filter((n) => n.type === 'blob' && typeof n.path === 'string' && n.path.endsWith('.md'))
+    .map((n) => n.path as string);
+
+  const targets: Array<{ path: string; category: ItemCategory }> = [];
+  for (const p of files) {
+    if (
+      p.startsWith('en-US/Characters_Codex/06_Spellcasting/Spell_Descriptions/') &&
+      !p.endsWith('/Spell_Descriptions.md')
+    ) {
+      targets.push({ path: p, category: 'spell' });
+    } else if (p.startsWith('en-US/Characters_Codex/03_Creating_a_Character/Feats/Feats/')) {
+      targets.push({ path: p, category: 'feat' });
+    } else if (p.startsWith('en-US/Monstrous_Manuscript/02_Monsters_A-Z/Monsters/')) {
+      targets.push({ path: p, category: 'monster' });
+    }
+  }
+
+  if (targets.length === 0) return null;
+
+  const sourceLabel = `Free5e (${config.owner}/${config.repo})`;
+  const entities: CompendiumEntity[] = [];
+  const BATCH = 24;
+  for (let i = 0; i < targets.length; i += BATCH) {
+    const slice = targets.slice(i, i + BATCH);
+    const results = await Promise.all(
+      slice.map(async (t) => {
+        try {
+          const md = await fetchRepoText(config, t.path, token);
+          return parseFree5eMarkdownAuto(md, t.category, sourceLabel);
+        } catch {
+          return null;
+        }
+      })
+    );
+    for (const ent of results) {
+      if (ent) entities.push(ent);
+    }
+  }
+
+  return {
+    manifestName: 'Free5e (CC-BY-4.0)',
+    entities,
+    characters: [],
+    entries: [],
+    syncedAt: new Date().toISOString(),
+  };
 }
 
 export async function fetchCampaignPackFromGitHub(
@@ -103,7 +176,14 @@ export async function fetchCampaignPackFromGitHub(
   token?: string
 ): Promise<SyncedCampaignPackResult> {
   const packPath = config.packPath?.trim() || 'campaign-pack.json';
-  const rawManifest = (await fetchRepoJson(config, packPath, token)) as CampaignPackManifest;
+  let rawManifest: CampaignPackManifest;
+  try {
+    rawManifest = (await fetchRepoJson(config, packPath, token)) as CampaignPackManifest;
+  } catch (err) {
+    const treeFallback = await fetchFree5eTreeFromGitHub(config, token);
+    if (treeFallback) return treeFallback;
+    throw err;
+  }
   const entities: CompendiumEntity[] = [];
   const characters: RawCharacterState[] = [];
   const sourceLabel =
@@ -140,6 +220,15 @@ export async function fetchCampaignPackFromGitHub(
           : specPath.includes('feat')
             ? 'feat'
             : 'gear');
+    if (specPath.toLowerCase().endsWith('.md')) {
+      const mdText = await fetchRepoText(config, specPath, token);
+      const parsed = parseFree5eMarkdownAuto(mdText, fallbackCat, sourceLabel);
+      if (parsed) {
+        if (parsed.imageUrl) parsed.imageUrl = resolveRepoAssetUrl(parsed.imageUrl, config);
+        entities.push(parsed);
+      }
+      continue;
+    }
     const payload = await fetchRepoJson(config, specPath, token);
     const arr = Array.isArray(payload) ? payload : [payload];
     for (const item of arr) {

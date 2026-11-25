@@ -24,6 +24,7 @@ import {
   spawnLinkedSummon,
 } from '../engine/combat-machine';
 import { parseHomebrewMarkdownBlock } from '../engine/statblock-parser';
+import { parseFree5eMarkdownAuto } from '../engine/free5e-parser';
 import { adapt5eToolsPayload } from '../engine/five-tools-adapter';
 import { parseDndBeyondPdfBuffer } from '../engine/ddb-pdf-importer';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
@@ -1697,6 +1698,20 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
 
   const importMarkdownHomebrew = useCallback(
     async (rawMarkdown: string) => {
+      const free5e = /\[_metadata_:spell_name\]:-/i.test(rawMarkdown)
+        ? parseFree5eMarkdownAuto(rawMarkdown, 'spell')
+        : null;
+      if (free5e) {
+        await upsertCompendiumEntities([free5e]);
+        setCompendium((prev) => [free5e, ...prev]);
+        persistCharacter((prev) => ({
+          ...prev,
+          items: [free5e, ...prev.items],
+        }));
+        appendLog(`Imported Free5e "${free5e.name}" (${free5e.category}) from Markdown.`, 'info');
+        return;
+      }
+
       const result = parseHomebrewMarkdownBlock(rawMarkdown);
       await upsertCompendiumEntities([result.data]);
       setCompendium((prev) => [result.data, ...prev]);

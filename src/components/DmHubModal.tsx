@@ -534,6 +534,20 @@ export function DmHubModal({
                   <button type="submit" className="btn btn-primary">
                     Sync Repo
                   </button>
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={() =>
+                      void onSyncCampaignRepo({
+                        owner: 'Solopass',
+                        repo: 'free5e',
+                        branch: 'main',
+                      })
+                    }
+                    title="Pull native Free5e Markdown spells & feats directly from Solopass/free5e"
+                  >
+                    Sync Solopass/free5e
+                  </button>
                   {onPushCampaignRepo && (
                     <button
                       type="button"

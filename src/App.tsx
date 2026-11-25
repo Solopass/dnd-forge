@@ -1750,6 +1750,13 @@ export function App() {
         searchCompendium={store.searchCompendium}
         onAddCompendiumItem={store.addCompendiumItemToSheet}
         onInstallContentPack={store.installContentPack}
+        onSyncFree5ePack={() =>
+          store.syncCampaignExternalRepo({
+            owner: 'Solopass',
+            repo: 'free5e',
+            branch: 'main',
+          })
+        }
         onImportDdbPdf={store.importDdbPdfFile}
         onImportHomebrew={store.importMarkdownHomebrew}
         onImportJsonText={store.importJsonFilePayload}

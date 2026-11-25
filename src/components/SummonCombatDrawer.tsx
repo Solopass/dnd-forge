@@ -909,6 +909,7 @@ interface CommandPaletteProps {
   searchCompendium: (query: string) => CompendiumEntity[];
   onAddCompendiumItem: (item: CompendiumEntity) => void;
   onInstallContentPack: (packId: string) => Promise<void>;
+  onSyncFree5ePack?: () => Promise<void>;
   onImportDdbPdf: (file: File) => Promise<void>;
   onImportHomebrew: (rawMarkdown: string) => Promise<void>;
   onImportJsonText: (rawJson: string) => Promise<void>;
@@ -926,6 +927,7 @@ export function CommandPalette({
   searchCompendium,
   onAddCompendiumItem,
   onInstallContentPack,
+  onSyncFree5ePack,
   onImportDdbPdf,
   onImportHomebrew,
   onImportJsonText,
@@ -1190,20 +1192,35 @@ export function CommandPalette({
 
         {tab === 'packs' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div className="forge-row-between" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+            <div className="forge-row-between" style={{ fontSize: 12, color: 'var(--text-secondary)', flexWrap: 'wrap', gap: 6 }}>
               <span>All built-in SRD 5.1 / 2024 SRD 5.2 &amp; Repo content packs are automatically pre-installed.</span>
-              <button
-                type="button"
-                className="btn"
-                onClick={async () => {
-                  for (const p of BUILTIN_CONTENT_PACKS) {
-                    await onInstallContentPack(p.id);
-                  }
-                  setTab('search');
-                }}
-              >
-                Re-sync All
-              </button>
+              <div className="forge-row" style={{ gap: 6 }}>
+                {onSyncFree5ePack && (
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={async () => {
+                      await onSyncFree5ePack();
+                      setTab('search');
+                    }}
+                    title="Pull native Markdown spells & feats directly from github.com/Solopass/free5e (CC-BY-4.0)"
+                  >
+                    Sync Free5e (Solopass/free5e)
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={async () => {
+                    for (const p of BUILTIN_CONTENT_PACKS) {
+                      await onInstallContentPack(p.id);
+                    }
+                    setTab('search');
+                  }}
+                >
+                  Re-sync All
+                </button>
+              </div>
             </div>
             {BUILTIN_CONTENT_PACKS.map((pack) => (
               <div

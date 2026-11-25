@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { extractSrdSpellcasterClasses } from '../classes';
+import { parseFree5eFeatMarkdown, parseFree5eMarkdownAuto, parseFree5eSpellMarkdown } from '../free5e-parser';
 import { BUILTIN_CONTENT_PACKS } from '../srd-packs';
 import {
   normalizeCustomCharacter,
@@ -295,5 +296,42 @@ describe('Custom Content Templates & JSON Loader', () => {
     expect(Array.from(extractSrdSpellcasterClasses(['Wizard (Evocation)']))).toEqual(['wizard']);
     expect(Array.from(extractSrdSpellcasterClasses(['Eldritch Knight']))).toEqual(['wizard']);
     expect(Array.from(extractSrdSpellcasterClasses(['Artificer']))).toEqual([]);
+  });
+
+  it('parses native Free5e Markdown spells and feats without modifying source files', () => {
+    const acidSplashMd = `#### Acid Splash
+[_metadata_:spell_name]:- "Acid Splash"
+[_metadata_:spell_level]:- "0"
+[_metadata_:ritual]:- "false"
+[_metadata_:casting_time_amount]:- "1"
+[_metadata_:casting_time_unit]:- "action"
+[_metadata_:range]:- "60 feet"
+[_metadata_:duration]:- "Instantaneous"
+[_metadata_:concentration]:- "false"
+[_metadata_:saving_throw]:- "Dexterity"
+[_metadata_:damage_formula]:- "1d6"
+[_metadata_:damage_type]:- "acid"
+
+A stinking bubble of acid deals 1d6 acid damage.`;
+
+    const spell = parseFree5eSpellMarkdown(acidSplashMd);
+    expect(spell?.name).toBe('Acid Splash');
+    expect(spell?.category).toBe('spell');
+    expect(spell?.spellLevel).toBe(0);
+    expect(spell?.castingTime).toBe('1 action');
+    expect(spell?.activities[0]?.saveAbility).toBe('dex');
+    expect(spell?.activities[0]?.damageFormula).toBe('1d6');
+
+    const featMd = `### Athletic
+
+- Your Strength or Dexterity score increases by 1, to a maximum of 20.
+- Standing up from being prone uses only 5 feet of your movement.`;
+    const feat = parseFree5eFeatMarkdown(featMd);
+    expect(feat?.name).toBe('Athletic');
+    expect(feat?.category).toBe('feat');
+    expect(feat?.entries[0]).toContain('Strength or Dexterity');
+
+    const autoSpell = parseFree5eMarkdownAuto(acidSplashMd, 'gear');
+    expect(autoSpell?.id).toBe('free5e-spl-acid-splash');
   });
 });

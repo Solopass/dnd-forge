@@ -5,6 +5,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { App } from '../../../App';
 import { db } from '../../../storage/db';
 import { APP_VERSION } from '../../../version';
+import { SEED_ENCOUNTER } from '../../../state/seed';
+import { ACTIVE_LAYOUT_STORAGE_KEY, BUILTIN_LAYOUT_PRESETS } from '../../../engine/layout-engine';
 
 // Render snapshots of every layout/role combination App can reach.
 // These guard the App.tsx split: moving code must not change the rendered DOM.
@@ -168,5 +170,28 @@ describe('App layouts render', () => {
     await waitFor(() => expect(container.querySelector('.center-battlemap-slot .battlemap-scroll')).not.toBeNull());
     await settle(container);
     expect(normalize(container.innerHTML)).toMatchSnapshot();
+  });
+});
+
+describe('Player view hides DM detail', () => {
+  it('Player x Modular Grid mini battlemap hides monster HP bars', async () => {
+    const preset = structuredClone(BUILTIN_LAYOUT_PRESETS[0]!);
+    for (const w of preset.widgets) if (w.id === 'mini_vtt') w.visible = true;
+    localStorage.setItem(ACTIVE_LAYOUT_STORAGE_KEY, JSON.stringify(preset));
+    const pc = SEED_ENCOUNTER.combatants[0]!;
+    await db.encounters.put({
+      ...SEED_ENCOUNTER,
+      combatants: [pc, { ...pc, id: 'mon-goblin-01', name: 'Goblin', kind: 'monster', hp: { current: 7, max: 7, temp: 0 }, ac: 15 }],
+    });
+    const { container } = await renderApp({ role: 'player', uiMode: 'classic', modular: true }, async () => {
+      await screen.findByText('Edit Blocks');
+      await waitFor(() => expect(document.querySelector('.battlemap-scroll')).not.toBeNull());
+    });
+    // the embedded map is just the SVG grid (no toolbar), so the HP bars are the visible DM detail
+    // Only PC tokens get an HP bar in Player View; the encounter has a PC and a monster.
+    const tokens = container.querySelectorAll('.battlemap-scroll svg g[opacity]');
+    const hpBars = container.querySelectorAll('.battlemap-scroll svg rect[height="4"][fill="#0d1117"]');
+    expect(tokens.length).toBeGreaterThan(1);
+    expect(hpBars.length).toBeLessThan(tokens.length);
   });
 });

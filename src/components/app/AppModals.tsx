@@ -59,7 +59,7 @@ export function AppModals({ store, ui, panels }: AppLayoutProps) {
     setDmHubOpen,
     encounterBuilderOpen,
     setEncounterBuilderOpen,
-    playerView,
+    effectivePlayerView,
     inspectedCombatantId,
     setInspectedCombatantId,
     uiMode,
@@ -364,7 +364,7 @@ export function AppModals({ store, ui, panels }: AppLayoutProps) {
       <Suspense fallback={null}>
         <MonsterStatblockModal
           combatant={inspectedCombatant}
-          playerView={playerView}
+          playerView={effectivePlayerView}
           onClose={() => setInspectedCombatantId(null)}
           onTriggerActivity={store.triggerCombatantActivity}
           onAdjustLegendary={store.adjustLegendaryActions}

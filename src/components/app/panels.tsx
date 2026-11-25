@@ -25,7 +25,6 @@ export function buildAppPanels(store: SheetStore, ui: AppUi) {
     setEncounterBuilderOpen,
     selectedTargetIds,
     setSelectedTargetIds,
-    playerView,
     setPlayerView,
     setInspectedCombatantId,
     rightTab,
@@ -232,7 +231,7 @@ export function buildAppPanels(store: SheetStore, ui: AppUi) {
 
   const sharedBattlemapProps = {
     encounter: store.encounter,
-    playerView,
+    playerView: effectivePlayerView,
     onTogglePlayerView: () => setPlayerView((v) => !v),
     onMoveToken: store.moveCombatantToken,
     onSetMapImage: store.setEncounterMapImage,

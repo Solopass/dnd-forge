@@ -1,29 +1,32 @@
 .app-shell {
-  display: grid;
-  grid-template-rows: auto 1fr 108px;
+  display: flex;
+  flex-direction: column;
   height: 100dvh;
   width: 100%;
   overflow: hidden;
 }
 
-.app-shell.console-collapsed {
-  grid-template-rows: auto 1fr auto;
+.app-shell > * {
+  flex-shrink: 0;
 }
 
-.app-shell.console-expanded {
-  grid-template-rows: auto 1fr 240px;
+.app-shell > .workspace-grid,
+.app-shell > .unified-shell,
+.app-shell > .modular-shell {
+  flex: 1 1 0;
+  min-height: 0;
 }
 
-:root[data-ui-mode='classic'] .app-shell {
-  grid-template-rows: auto auto auto 1fr 108px;
+.app-shell > .status-console-shell {
+  height: 108px;
 }
 
-:root[data-ui-mode='classic'] .app-shell.console-collapsed {
-  grid-template-rows: auto auto auto 1fr auto;
+.app-shell.console-collapsed > .status-console-shell {
+  height: auto;
 }
 
-:root[data-ui-mode='classic'] .app-shell.console-expanded {
-  grid-template-rows: auto auto auto 1fr 240px;
+.app-shell.console-expanded > .status-console-shell {
+  height: 240px;
 }
 
 .topbar {

@@ -4,15 +4,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { App } from '../../../App';
 import { db } from '../../../storage/db';
+import { APP_VERSION } from '../../../version';
 
 // Render snapshots of every layout/role combination App can reach.
 // These guard the App.tsx split: moving code must not change the rendered DOM.
+
+// Startup hydration + lazy chunks + settle() can take well over Vitest's default 5 s on a
+// cold or busy machine; give each test room so a slow run fails as a mismatch, not a timeout.
+vi.setConfig({ testTimeout: 30_000 });
 
 const FIXED_NOW = new Date('2026-01-15T12:00:00Z');
 
 function normalize(html: string): string {
   // console-log timestamps like "[5:44:25 PM]" depend on the machine's locale/zone
-  const noTimes = html.replace(/\[\d{1,2}:\d{2}:\d{2}(?:\s?[AP]M)?\]/g, '[TIME]');
+  const noTimes = html
+    .replace(/\[\d{1,2}:\d{2}:\d{2}(?:\s?[AP]M)?\]/g, '[TIME]')
+    // the topbar shows APP_VERSION, which `bun run version:bump` changes before every push;
+    // without this every bump would fail all snapshots (and tempt a blind `vitest -u`)
+    .replace(new RegExp(`>${APP_VERSION.replace('.', '\\.')}<`, 'g'), '>[VERSION]<');
   // React useId() values ("_r_1o_") come from a counter shared by every render in the
   // process, so renumber them by order of first appearance (keeps which elements share an id)
   const seen = new Map<string, string>();
@@ -33,6 +42,7 @@ async function settle(container: HTMLElement) {
     stable = now === last ? stable + 1 : 0;
     last = now;
   }
+  if (stable < 6) throw new Error('settle(): the DOM never stopped changing within 15 s');
 }
 
 type Setup = { role: 'dm' | 'player'; uiMode?: 'classic' | 'unified'; modular?: boolean };

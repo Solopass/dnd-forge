@@ -1,448 +1,86 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CampaignEntry, CampaignRecord, DowntimeProject, SharedHandoutPayload, WorldMapPin } from '../types/campaign';
-import { ClassLevel, RawCharacterState, ResolvedActivity, ResolvedCharacterSheet, WildShapeForm } from '../types/character';
+import { useCallback, useEffect } from 'react';
+import { CampaignEntry, DowntimeProject, SharedHandoutPayload, WorldMapPin } from '../types/campaign';
+import { ClassLevel, RawCharacterState, ResolvedActivity, WildShapeForm } from '../types/character';
 import { BattlemapScene, CombatEncounterState, MapPingEvent, MapSketchStroke } from '../types/combat';
 import { computeVisibleCells } from '../engine/vtt-vision';
 import { resolveConditionRollMode } from '../engine/conditions';
 import { resolveTargetAttack, resolveTargetSaves } from '../engine/target-combat';
 import { Activity, CompendiumEntity, CreatureSize, MonsterStatMeta } from '../types/compendium';
 import { AbilityKey, ActionEconomy, ActiveBuffState, RecoveryTrigger, RollMode, WeaponMastery } from '../types/core';
-import {
-  applyRestRecovery,
-  computeCharacterSheet,
-  createBlankCharacter,
-  resolveResourcePoolForCost,
-  syncSpellSlotPools,
-} from '../engine/rules-math';
+import { applyRestRecovery, computeCharacterSheet, createBlankCharacter, resolveResourcePoolForCost, syncSpellSlotPools } from '../engine/rules-math';
 import { doubleDiceForCrit, evaluateDiceExpression, scaleDiceForUpcast } from '../engine/dice';
-import {
-  advanceTurn,
-  applyEffectWithConcentrationCheck,
-  dropConcentrationForCombatant,
-  rollAllInitiativeOrder,
-  sortInitiativeOrder,
-  spawnLinkedSummon,
-} from '../engine/combat-machine';
+import { advanceTurn, applyEffectWithConcentrationCheck, dropConcentrationForCombatant, rollAllInitiativeOrder, sortInitiativeOrder, spawnLinkedSummon } from '../engine/combat-machine';
 import { parseHomebrewMarkdownBlock } from '../engine/statblock-parser';
 import { parseFree5eMarkdownAuto } from '../engine/free5e-parser';
 import { adapt5eToolsPayload } from '../engine/five-tools-adapter';
 import { parseDndBeyondPdfBuffer } from '../engine/ddb-pdf-importer';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
-import { CUSTOM_REPO_CHARACTERS, loadCustomRepoEntities, parseCustomContentJson } from '../engine/custom-content-loader';
-import {
-  buildCampaignPackExport,
-  fetchCampaignPackFromGitHub,
-  getStoredGithubPat,
-  pushFileToGitHubRepo,
-  tryFetchExistingManifest,
-} from '../engine/campaign-repo-sync';
+import { parseCustomContentJson } from '../engine/custom-content-loader';
+import { buildCampaignPackExport, fetchCampaignPackFromGitHub, getStoredGithubPat, pushFileToGitHubRepo, tryFetchExistingManifest } from '../engine/campaign-repo-sync';
 import { ExternalRepoConfig } from '../types/campaign';
-import { HouseRulesConfig, readStoredHouseRules, saveHouseRules } from '../engine/ruleset-config';
-import {
-  buildCharacterFromPreset,
-  buildSubclassGrantEntities,
-  computeFixedMaxHp,
-  NewCharacterPresetInput,
-  syncClassResourcePools,
-} from '../engine/classes';
-import {
-  advanceWorldClock,
-  createDefaultCampaign,
-  getXpForNextLevel,
-  ShopItem,
-} from '../engine/dm-tools';
-import {
-  decodeCharacterShareCode,
-  LivePeerInfo,
-  LiveTableMessage,
-  LiveTableRole,
-  LiveTableSession,
-} from '../engine/live-sync';
+import { buildCharacterFromPreset, buildSubclassGrantEntities, computeFixedMaxHp, NewCharacterPresetInput, syncClassResourcePools } from '../engine/classes';
+import { advanceWorldClock, createDefaultCampaign, getXpForNextLevel, ShopItem } from '../engine/dm-tools';
+import { decodeCharacterShareCode, LiveTableMessage, LiveTableSession } from '../engine/live-sync';
 import { playTableSound } from '../engine/sound';
 import { getCustomInitiativeSoundUrl, tabletopSoundboard } from '../engine/soundboard';
-import {
-  buildSearchTokens,
-  db,
-  deleteSceneRecord,
-  importBackupBundle,
-  normalizeSearchQuery,
-  saveCampaign,
-  saveCharacter,
-  saveEncounter,
-  saveScene,
-  upsertCompendiumEntities,
-} from '../storage/db';
+import { buildSearchTokens, db, deleteSceneRecord, importBackupBundle, normalizeSearchQuery, saveCampaign, saveCharacter, saveEncounter, saveScene, upsertCompendiumEntities } from '../storage/db';
+import type { LevelUpPlanInput } from './store/types';
+import { useStoreCore } from './store/core';
 
-export interface ConsoleLine {
-  id: string;
-  timestamp: string;
-  text: string;
-  tone: 'info' | 'roll' | 'warn' | 'crit';
-}
-
-export interface ToastMessage {
-  id: string;
-  text: string;
-  tone: 'info' | 'roll' | 'crit' | 'warn';
-}
-
-export interface LevelUpPlanInput {
-  className: string;
-  hitDie: 6 | 8 | 10 | 12;
-  casterProgression: ClassLevel['casterProgression'];
-  hpGain: number;
-  subclassName?: string;
-  applySubclassGrants?: boolean;
-  abilityIncreases?: Partial<Record<AbilityKey, number>>;
-  bonusEntityIds?: string[];
-}
+export type { ConsoleLine, ToastMessage, LevelUpPlanInput } from './store/types';
 
 export function useSheetStore(initialCharacter: RawCharacterState, initialEncounter: CombatEncounterState) {
-  const defaultCampaign = useMemo(() => createDefaultCampaign(), []);
-  const [rawChar, setRawChar] = useState<RawCharacterState>(initialCharacter);
-  const [characterList, setCharacterList] = useState<RawCharacterState[]>([initialCharacter]);
-  const [encounter, setEncounter] = useState<CombatEncounterState>(initialEncounter);
-  const [encounterList, setEncounterList] = useState<CombatEncounterState[]>([initialEncounter]);
-  const [campaign, setCampaign] = useState<CampaignRecord>(defaultCampaign);
-  const [campaignList, setCampaignList] = useState<CampaignRecord[]>([defaultCampaign]);
-  const [scenes, setScenes] = useState<BattlemapScene[]>([]);
-  const [activePings, setActivePings] = useState<MapPingEvent[]>([]);
-  const [activeSharedHandout, setActiveSharedHandout] = useState<SharedHandoutPayload | null>(null);
-  const [activeBuffs, setActiveBuffs] = useState<ActiveBuffState>({
-    bless: false,
-    rage: false,
-    sneakAttack: false,
-  });
-  const [pendingRollRequest, setPendingRollRequest] = useState<{
-    id: string;
-    senderName: string;
-    label: string;
-    kind: 'check' | 'save';
-    abilityOrSkill: string;
-    dc?: number;
-  } | null>(null);
-  const [claimedTokenId, setClaimedTokenId] = useState<string | null>(null);
-  const [compendium, setCompendium] = useState<CompendiumEntity[]>(() => {
-    const map = new Map<string, CompendiumEntity>();
-    for (const p of BUILTIN_CONTENT_PACKS) {
-      for (const e of p.entities) map.set(e.id, e);
-    }
-    for (const e of initialCharacter.items) {
-      if (!map.has(e.id)) map.set(e.id, e);
-    }
-    return Array.from(map.values());
-  });
-  const [rollMode, setRollMode] = useState<RollMode>('normal');
-  const [free5eSyncing, setFree5eSyncing] = useState(false);
-  const [pendingConcDc, setPendingConcDc] = useState<number | null>(null);
-  const [initiativeAlert, setInitiativeAlert] = useState<{
-    senderName: string;
-    encounterName: string;
-    timestamp: number;
-  } | null>(null);
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const [liveStatus, setLiveStatus] = useState<{
-    role: LiveTableRole;
-    roomCode: string;
-    peers: LivePeerInfo[];
-  }>({ role: 'idle', roomCode: '', peers: [] });
-  const [historyCounts, setHistoryCounts] = useState({ past: 0, future: 0 });
-  const [consoleLines, setConsoleLines] = useState<ConsoleLine[]>([
-    {
-      id: 'init-1',
-      timestamp: new Date().toLocaleTimeString(),
-      text: 'Sidereroll v0.7 ready. Press Ctrl+K for Compendium Packs, D&D Beyond PDF Import, or JSON/Markdown ingestion.',
-      tone: 'info',
-    },
-  ]);
-
-  const rawCharRef = useRef(rawChar);
-  rawCharRef.current = rawChar;
-  const encounterRef = useRef(encounter);
-  encounterRef.current = encounter;
-  const pastRef = useRef<Array<{ rawChar: RawCharacterState; encounter: CombatEncounterState }>>([]);
-  const futureRef = useRef<Array<{ rawChar: RawCharacterState; encounter: CombatEncounterState }>>([]);
-  const lastSnapshotTsRef = useRef(0);
-  const isApplyingHistoryRef = useRef(false);
-  const isApplyingRemoteRef = useRef(false);
-  const lastBroadcastDigestRef = useRef('');
-  const liveSessionRef = useRef<LiveTableSession | null>(null);
-
-  const dismissToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
-
-  const pushToast = useCallback((text: string, tone: ToastMessage['tone'] = 'info') => {
-    const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    setToasts((prev) => [{ id, text, tone }, ...prev.slice(0, 2)]);
-  }, []);
-
-  const appendLog = useCallback(
-    (text: string, tone: ConsoleLine['tone'] = 'info') => {
-      setConsoleLines((prev) => [
-        {
-          id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          timestamp: new Date().toLocaleTimeString(),
-          text,
-          tone,
-        },
-        ...prev.slice(0, 89),
-      ]);
-
-      if (!text.startsWith('[LIVE')) {
-        if (tone === 'roll' || tone === 'crit') {
-          const snd = text.includes('[FUMBLE]') ? 'fumble' : tone === 'crit' ? 'crit' : 'roll';
-          playTableSound(snd);
-          pushToast(text, tone);
-        }
-        const session = liveSessionRef.current;
-        if (session && session.getState().role !== 'idle' && (tone === 'roll' || tone === 'crit')) {
-          session.broadcast({
-            type: 'roll',
-            senderId: session.senderId,
-            senderName: rawCharRef.current.name,
-            text,
-            tone,
-            timestamp: Date.now(),
-          });
-        }
-      }
-    },
-    [pushToast]
-  );
-
-  const recordUndoSnapshot = useCallback(() => {
-    if (isApplyingHistoryRef.current || isApplyingRemoteRef.current) return;
-    const now = Date.now();
-    if (now - lastSnapshotTsRef.current < 180 && pastRef.current.length > 0) {
-      return;
-    }
-    lastSnapshotTsRef.current = now;
-    pastRef.current = [
-      ...pastRef.current.slice(-24),
-      {
-        rawChar: structuredClone(rawCharRef.current),
-        encounter: structuredClone(encounterRef.current),
-      },
-    ];
-    futureRef.current = [];
-    setHistoryCounts({ past: pastRef.current.length, future: 0 });
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const [allSaved, savedEncounters, savedCampaigns, savedScenes] = await Promise.all([
-          db.characters.toArray(),
-          db.encounters.toArray(),
-          db.campaigns.toArray(),
-          db.scenes.toArray(),
-        ]);
-        if (active && allSaved.length > 0) {
-          const existingIds = new Set(allSaved.map((c) => c.id));
-          const missingRepoChars = CUSTOM_REPO_CHARACTERS.filter((c) => !existingIds.has(c.id));
-          for (const rc of missingRepoChars) {
-            await saveCharacter(rc);
-          }
-          const combined = [...allSaved, ...missingRepoChars];
-          setCharacterList(combined);
-          setRawChar(combined[0]!);
-        } else {
-          await saveCharacter(initialCharacter);
-          await upsertCompendiumEntities(initialCharacter.items);
-          for (const rc of CUSTOM_REPO_CHARACTERS) {
-            await saveCharacter(rc);
-          }
-          if (active && CUSTOM_REPO_CHARACTERS.length > 0) {
-            setCharacterList([initialCharacter, ...CUSTOM_REPO_CHARACTERS]);
-          }
-        }
-        if (active && savedEncounters.length > 0) {
-          setEncounterList(savedEncounters);
-          const primary =
-            savedEncounters.find((e) => e.id === initialEncounter.id) ?? savedEncounters[0]!;
-          setEncounter(primary);
-        } else {
-          await saveEncounter(initialEncounter);
-          if (active) setEncounterList([initialEncounter]);
-        }
-        if (active && savedCampaigns.length > 0) {
-          setCampaignList(savedCampaigns);
-          setCampaign(savedCampaigns[0]!);
-        } else {
-          await saveCampaign(defaultCampaign);
-          if (active) setCampaignList([defaultCampaign]);
-        }
-        if (active && savedScenes.length > 0) {
-          setScenes(savedScenes);
-        }
-        const basePackEntities = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities);
-        const customRepoEntities = await loadCustomRepoEntities();
-        const combinedEntities = [...basePackEntities, ...customRepoEntities];
-        await upsertCompendiumEntities(combinedEntities);
-        const refreshed = await db.compendium.toArray();
-        if (active && refreshed.length > 0) {
-          setCompendium(refreshed);
-        } else if (active && customRepoEntities.length > 0) {
-          setCompendium(combinedEntities);
-        }
-
-        const hasFree5e = refreshed.some((e) => e.id.startsWith('free5e-'));
-        const alreadyAutoSynced =
-          typeof localStorage !== 'undefined' &&
-          localStorage.getItem('sidereroll-free5e-autosynced') === '1';
-        if (active && !hasFree5e && !alreadyAutoSynced) {
-          setFree5eSyncing(true);
-          void fetchCampaignPackFromGitHub({ owner: 'Solopass', repo: 'free5e', branch: 'main' })
-            .then(async (res) => {
-              if (!active || res.entities.length === 0) return;
-              await upsertCompendiumEntities(res.entities);
-              setCompendium((prev) => {
-                const map = new Map(prev.map((e) => [e.id, e]));
-                for (const e of res.entities) map.set(e.id, e);
-                return Array.from(map.values());
-              });
-              try {
-                localStorage.setItem('sidereroll-free5e-autosynced', '1');
-              } catch {
-                // ignore
-              }
-              appendLog(`Auto-synced ${res.entities.length} Free5e items from Solopass/free5e.`, 'info');
-            })
-            .catch(() => {
-              // manual sync button remains available in Packs / DM Hub
-            })
-            .finally(() => {
-              if (active) setFree5eSyncing(false);
-            });
-        }
-      } catch (err) {
-        appendLog(`Storage hydration warning: ${String(err)}`, 'warn');
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [initialCharacter, initialEncounter, defaultCampaign, appendLog]);
-
-  const [houseRules, setHouseRules] = useState<HouseRulesConfig>(() => readStoredHouseRules());
-  const updateHouseRules = useCallback((next: HouseRulesConfig) => {
-    setHouseRules(next);
-    saveHouseRules(next);
-  }, []);
-
-  const resolvedSheet: ResolvedCharacterSheet = useMemo(
-    () => computeCharacterSheet(rawChar, houseRules),
-    [rawChar, houseRules]
-  );
-
-  const persistCharacter = useCallback(
-    (updater: (prev: RawCharacterState) => RawCharacterState) => {
-      recordUndoSnapshot();
-      setRawChar((prev) => {
-        const drafted = updater(prev);
-        const totalAbilities = {
-          str: drafted.baseAbilities.str + drafted.bonusAbilities.str,
-          dex: drafted.baseAbilities.dex + drafted.bonusAbilities.dex,
-          con: drafted.baseAbilities.con + drafted.bonusAbilities.con,
-          int: drafted.baseAbilities.int + drafted.bonusAbilities.int,
-          wis: drafted.baseAbilities.wis + drafted.bonusAbilities.wis,
-          cha: drafted.baseAbilities.cha + drafted.bonusAbilities.cha,
-        };
-        const withClassPools = syncClassResourcePools(drafted.classes, drafted.resources, totalAbilities);
-        const syncedResources = syncSpellSlotPools(drafted.classes, withClassPools);
-        const next = { ...drafted, resources: syncedResources };
-        void saveCharacter(next);
-        setCharacterList((list) =>
-          list.some((c) => c.id === next.id)
-            ? list.map((c) => (c.id === next.id ? next : c))
-            : [...list, next]
-        );
-        return next;
-      });
-    },
-    [recordUndoSnapshot]
-  );
-
-  const persistEncounter = useCallback(
-    (updater: (prev: CombatEncounterState) => CombatEncounterState) => {
-      recordUndoSnapshot();
-      setEncounter((prev) => {
-        const next = updater(prev);
-        void saveEncounter(next);
-        setEncounterList((list) =>
-          list.some((e) => e.id === next.id)
-            ? list.map((e) => (e.id === next.id ? next : e))
-            : [...list, next]
-        );
-        return next;
-      });
-    },
-    [recordUndoSnapshot]
-  );
-
-  const undo = useCallback(() => {
-    const prevSnapshot = pastRef.current[pastRef.current.length - 1];
-    if (!prevSnapshot) return;
-    isApplyingHistoryRef.current = true;
-    try {
-      pastRef.current = pastRef.current.slice(0, -1);
-      futureRef.current = [
-        ...futureRef.current.slice(-24),
-        {
-          rawChar: structuredClone(rawCharRef.current),
-          encounter: structuredClone(encounterRef.current),
-        },
-      ];
-      setRawChar(prevSnapshot.rawChar);
-      setEncounter(prevSnapshot.encounter);
-      void saveCharacter(prevSnapshot.rawChar);
-      void saveEncounter(prevSnapshot.encounter);
-      setCharacterList((list) =>
-        list.map((c) => (c.id === prevSnapshot.rawChar.id ? prevSnapshot.rawChar : c))
-      );
-      setEncounterList((list) =>
-        list.map((e) => (e.id === prevSnapshot.encounter.id ? prevSnapshot.encounter : e))
-      );
-      setHistoryCounts({ past: pastRef.current.length, future: futureRef.current.length });
-      appendLog('Undid last change.', 'info');
-      pushToast('Undid last change.', 'info');
-    } finally {
-      isApplyingHistoryRef.current = false;
-    }
-  }, [appendLog, pushToast]);
-
-  const redo = useCallback(() => {
-    const nextSnapshot = futureRef.current[futureRef.current.length - 1];
-    if (!nextSnapshot) return;
-    isApplyingHistoryRef.current = true;
-    try {
-      futureRef.current = futureRef.current.slice(0, -1);
-      pastRef.current = [
-        ...pastRef.current.slice(-24),
-        {
-          rawChar: structuredClone(rawCharRef.current),
-          encounter: structuredClone(encounterRef.current),
-        },
-      ];
-      setRawChar(nextSnapshot.rawChar);
-      setEncounter(nextSnapshot.encounter);
-      void saveCharacter(nextSnapshot.rawChar);
-      void saveEncounter(nextSnapshot.encounter);
-      setCharacterList((list) =>
-        list.map((c) => (c.id === nextSnapshot.rawChar.id ? nextSnapshot.rawChar : c))
-      );
-      setEncounterList((list) =>
-        list.map((e) => (e.id === nextSnapshot.encounter.id ? nextSnapshot.encounter : e))
-      );
-      setHistoryCounts({ past: pastRef.current.length, future: futureRef.current.length });
-      appendLog('Redid change.', 'info');
-      pushToast('Redid change.', 'info');
-    } finally {
-      isApplyingHistoryRef.current = false;
-    }
-  }, [appendLog, pushToast]);
+  const core = useStoreCore(initialCharacter, initialEncounter);
+  const {
+    characterList,
+    setRawChar,
+    setPendingConcDc,
+    appendLog,
+    setCharacterList,
+    compendium,
+    rawChar,
+    persistCharacter,
+    encounter,
+    pushToast,
+    persistEncounter,
+    resolvedSheet,
+    rollMode,
+    setCompendium,
+    houseRules,
+    activeBuffs,
+    liveStatus,
+    liveSessionRef,
+    pendingConcDc,
+    setEncounterList,
+    setEncounter,
+    setCampaignList,
+    setCampaign,
+    setScenes,
+    encounterList,
+    claimedTokenId,
+    onRemoteMessageRef,
+    isApplyingRemoteRef,
+    setClaimedTokenId,
+    setActivePings,
+    setActiveSharedHandout,
+    setPendingRollRequest,
+    setInitiativeAlert,
+    persistCampaign,
+    setLiveStatus,
+    rawCharRef,
+    encounterRef,
+    lastBroadcastDigestRef,
+    campaignList,
+    campaign,
+    playerDisplayChannelRef,
+    sharedHandoutRef,
+    activePingsRef,
+    activeSharedHandout,
+    activePings,
+    scenes,
+    setActiveBuffs,
+    setFree5eSyncing,
+  } = core;
 
   const switchCharacter = useCallback(
     async (characterId: string) => {
@@ -707,10 +345,6 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     },
     [persistCharacter, appendLog]
   );
-
-  const clearConsoleLog = useCallback(() => {
-    setConsoleLines([]);
-  }, []);
 
   const updateDeathSaves = useCallback(
     (kind: 'successes' | 'failures', count: number) => {
@@ -2335,7 +1969,6 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     [rawChar.name, persistCharacter, appendLog, pushToast]
   );
 
-  const onRemoteMessageRef = useRef<(msg: LiveTableMessage) => void>(() => {});
   onRemoteMessageRef.current = (msg: LiveTableMessage) => {
     if (msg.type === 'roll') {
       appendLog(`[LIVE • ${msg.senderName}] ${msg.text}`, msg.tone);
@@ -2715,19 +2348,6 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
       }
     }
   }, [liveStatus.role, encounter, rawChar, resolvedSheet.ac.final]);
-
-  const persistCampaign = useCallback((updater: (prev: CampaignRecord) => CampaignRecord) => {
-    setCampaign((prev) => {
-      const next = updater(prev);
-      void saveCampaign(next);
-      setCampaignList((list) =>
-        list.some((c) => c.id === next.id)
-          ? list.map((c) => (c.id === next.id ? next : c))
-          : [...list, next]
-      );
-      return next;
-    });
-  }, []);
 
   const switchCampaign = useCallback(
     async (campaignId: string) => {
@@ -3316,12 +2936,6 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
       },
     }));
   }, [persistEncounter]);
-
-  const playerDisplayChannelRef = useRef<BroadcastChannel | null>(null);
-  const sharedHandoutRef = useRef<SharedHandoutPayload | null>(null);
-  sharedHandoutRef.current = activeSharedHandout;
-  const activePingsRef = useRef<MapPingEvent[]>([]);
-  activePingsRef.current = activePings;
 
   useEffect(() => {
     if (typeof BroadcastChannel === 'undefined') return;
@@ -4258,18 +3872,18 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   }, []);
 
   return {
-    rawChar,
-    characterList,
+    rawChar: core.rawChar,
+    characterList: core.characterList,
     switchCharacter,
     createNewCharacter,
     createCharacterFromPreset,
     duplicateCharacter,
     deleteCharacter,
     spendHitDie,
-    persistCharacter,
-    resolvedSheet,
-    encounter,
-    encounterList,
+    persistCharacter: core.persistCharacter,
+    resolvedSheet: core.resolvedSheet,
+    encounter: core.encounter,
+    encounterList: core.encounterList,
     switchEncounter,
     createEncounter,
     duplicateEncounter,
@@ -4285,7 +3899,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     clearAllFog,
     setTerrainCell,
     clearTerrain,
-    scenes,
+    scenes: core.scenes,
     saveCurrentMapAsScene,
     loadSceneToEncounter,
     deleteScene,
@@ -4294,26 +3908,26 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     setCombatantVision,
     addMapSketchStroke,
     clearMapSketches,
-    activePings,
+    activePings: core.activePings,
     broadcastMapPing,
     targetAttackCombatants,
     targetSaveCombatants,
     setWorldMapImage,
     upsertWorldMapPin,
     deleteWorldMapPin,
-    activeSharedHandout,
+    activeSharedHandout: core.activeSharedHandout,
     shareHandoutToPlayers,
     hideSharedHandout,
-    activeBuffs,
+    activeBuffs: core.activeBuffs,
     toggleBuff,
     divineSmite,
-    houseRules,
-    updateHouseRules,
+    houseRules: core.houseRules,
+    updateHouseRules: core.updateHouseRules,
     assignLootItemToCharacter,
     upsertDowntimeProject,
     advanceDowntimeDays,
     deleteDowntimeProject,
-    pendingRollRequest,
+    pendingRollRequest: core.pendingRollRequest,
     sendRollRequestToPeers,
     dismissRollRequest,
     addTimedCombatEffect,
@@ -4322,8 +3936,8 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     setCombatantSize,
     adjustLegendaryActions,
     toggleOrRollRecharge,
-    campaign,
-    campaignList,
+    campaign: core.campaign,
+    campaignList: core.campaignList,
     switchCampaign,
     createCampaign,
     deleteCampaign,
@@ -4341,26 +3955,26 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     updateItemQuantity,
     updateCharacterNotes,
     createHomebrewEntity,
-    compendium,
-    rollMode,
-    setRollMode,
-    pendingConcDc,
-    initiativeAlert,
+    compendium: core.compendium,
+    rollMode: core.rollMode,
+    setRollMode: core.setRollMode,
+    pendingConcDc: core.pendingConcDc,
+    initiativeAlert: core.initiativeAlert,
     startEncounterAlert,
     dismissInitiativeAlert,
-    toasts,
-    dismissToast,
-    pushToast,
-    canUndo: historyCounts.past > 0,
-    canRedo: historyCounts.future > 0,
-    undo,
-    redo,
+    toasts: core.toasts,
+    dismissToast: core.dismissToast,
+    pushToast: core.pushToast,
+    canUndo: core.historyCounts.past > 0,
+    canRedo: core.historyCounts.future > 0,
+    undo: core.undo,
+    redo: core.redo,
     enterWildShape,
     revertWildShape,
     applyLevelUpPlan,
     importSingleCharacter,
-    liveStatus,
-    claimedTokenId,
+    liveStatus: core.liveStatus,
+    claimedTokenId: core.claimedTokenId,
     claimCombatantToken,
     moveCombatantOrder,
     hostLocalTable,
@@ -4371,9 +3985,9 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     disconnectLiveTable,
     pushEncounterToPeers,
     shareActiveCharacterToPeers,
-    consoleLines,
-    appendLog,
-    clearConsoleLog,
+    consoleLines: core.consoleLines,
+    appendLog: core.appendLog,
+    clearConsoleLog: core.clearConsoleLog,
     setStatOverride,
     adjustHp,
     setTempHp,
@@ -4401,7 +4015,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     addPartyStashItem,
     syncCampaignExternalRepo,
     syncFree5ePack,
-    free5eSyncing,
+    free5eSyncing: core.free5eSyncing,
     pushCharacterToCampaignRepo,
     pushCampaignToRepo,
     toggleItemEquipped,

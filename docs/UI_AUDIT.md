@@ -23,6 +23,11 @@ Each item says how it was checked. Fix order for phase 5: broken first, then mis
 - [ ] **N4 confusing — the condition picker on the sheet shows "Blinded" by default.** It reads as if the character is blinded; it should say "Add condition…".
 - [ ] **N5 minor — the DM Studio side-nav icons have no accessible names** (screen readers and the accessibility tree see unnamed buttons, though the text is visible).
 
+- [ ] **N6 broken — a DM can't change layout at all.** The DM role always renders `DmLayout` and ignores `uiMode`, `modularMode` and `unifiedView`, so Settings' UI-mode switch and the "Edit Blocks" button do nothing visible for a DM (found during the App.tsx split, 2026-11-25). Related to N2.
+- [ ] **N7 minor — dead "DM Studio • campaign" badge** in `TopBar.tsx`: it needs `isInDmStudio`, which can't be true in the player branch it sits in.
+- [ ] **N8 broken — the Modular Grid mini-battlemap shows DM detail in Player view.** Its `BattlemapModal` isn't passed `playerView={effectivePlayerView}` like the other embedded maps; `sharedBattlemapProps`, the statblock modal and the toast suppression also read the raw `playerView`.
+- [ ] **N9 cleanup — `onTriggerActivity` is wired three times and `onRollCheck` twice** across the layouts; move each into `components/app/panels.tsx` once.
+
 ## DM tools
 
 All ten DM Studio tabs render without errors (Party & Sync, Campaign Binder, World Clock, Loot & Shops, DM Screen, Party XP & Milestones, Improv, World Map, Soundboard, Tactical Battlemap). Checked working: NPC and tavern generators, +1 Hr clock, treasure roller, Give to PC, Distribute All GP, XP award, DM Screen dice, soundboard play/stop.
@@ -52,7 +57,7 @@ Checked working: action filters (ALL/ATTACK/SAVE/HEAL/SUMMON/CONC), adding a spe
 
 ## Code structure (drives phases 2–4)
 
-- `src/App.tsx` is 1,989 lines mixing 3 layouts × DM/Player × views.
+- ~~`src/App.tsx` is 1,989 lines mixing 3 layouts × DM/Player × views.~~ Split 2026-11-25: App.tsx is 43 lines; see `src/components/app/`.
 - 748 inline `style={{…}}` objects across `App.tsx` and components; buttons and spacing differ panel to panel.
 - Silent `catch { /* ignore */ }` blocks in 15 places; the ones around user actions (C5, `SettingsModal`, `ModularCanvas`) should report to the status console.
 

@@ -91,7 +91,7 @@ import { exportFullBundle } from './storage/db';
 import { RawCharacterState } from './types/character';
 import { CombatEncounterState } from './types/combat';
 
-const SEED_CHARACTER: RawCharacterState = {
+export const SEED_CHARACTER: RawCharacterState = {
   id: 'char-armorer-01',
   name: 'Armorer Artificer',
   ruleset: '2014',
@@ -239,7 +239,7 @@ const SEED_CHARACTER: RawCharacterState = {
   overrides: {},
 };
 
-const SEED_ENCOUNTER: CombatEncounterState = {
+export const SEED_ENCOUNTER: CombatEncounterState = {
   id: 'enc-01',
   name: 'Active Combat',
   round: 1,

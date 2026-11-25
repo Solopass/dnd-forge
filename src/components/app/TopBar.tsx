@@ -1,5 +1,6 @@
 import { APP_VERSION } from '../../version';
-import { RedoIcon, SettingsIcon, UndoIcon } from '../Icons';
+import { RedoIcon, UndoIcon } from '../Icons';
+import { MoreMenu, type MoreMenuItem } from './MoreMenu';
 import { detectRulesetPreset } from '../../engine/ruleset-config';
 import type { AppSectionProps } from './types';
 
@@ -17,7 +18,6 @@ export function TopBar({ store, ui }: AppSectionProps) {
     setLevelUpOpen,
     setCharManagerOpen,
     setLiveTableOpen,
-    setDmHubOpen,
     setEncounterBuilderOpen,
     uiMode,
     setUiMode,
@@ -28,6 +28,31 @@ export function TopBar({ store, ui }: AppSectionProps) {
     setTableRolePersisted,
     setModularEnabled,
   } = ui;
+  const rulesetPreset = detectRulesetPreset(store.houseRules);
+  const moreItems: MoreMenuItem[] = [
+    {
+      key: 'themes',
+      label: 'Themes',
+      title: 'Open Theme Studio, Custom Theme Editor & Setup Sharing',
+      onSelect: () => setThemeStudioOpen(true),
+    },
+    {
+      key: 'rules',
+      label: `Rules: ${rulesetPreset === '2014' ? '2014' : rulesetPreset === '2024' ? '2024' : 'Custom'}`,
+      title: 'View 2014 vs 2024 rule differences & customize house rules',
+      onSelect: () => setRulesetOpen(true),
+    },
+    // In DM role the DM Studio tabs already cover the battlemap and the DM hub.
+    ...(isPlayerRole
+      ? [{ key: 'battlemap', label: 'Battlemap', onSelect: () => setBattlemapOpen(true) }]
+      : []),
+    {
+      key: 'shortcuts',
+      label: 'Keyboard Shortcuts & Tips (?)',
+      onSelect: () => setShortcutsOpen(true),
+    },
+    { key: 'settings', label: 'Settings', title: 'Settings & Theme', onSelect: () => setSettingsOpen(true) },
+  ];
   return (
     <header className="topbar">
       <div className="topbar-brand">
@@ -120,6 +145,27 @@ export function TopBar({ store, ui }: AppSectionProps) {
       </div>
 
       <div className="topbar-center">
+        <div className="mode-switcher" role="group" aria-label="Table role">
+          <button
+            type="button"
+            className={`mode-switcher-btn ${!isPlayerRole ? 'active' : ''}`}
+            aria-pressed={!isPlayerRole}
+            disabled={store.liveStatus.role === 'player'}
+            onClick={() => setTableRolePersisted('dm')}
+            title="DM View: full encounter, monster, and campaign controls"
+          >
+            DM
+          </button>
+          <button
+            type="button"
+            className={`mode-switcher-btn ${isPlayerRole ? 'active' : ''}`}
+            aria-pressed={isPlayerRole}
+            onClick={() => setTableRolePersisted('player')}
+            title="Player View: sheet, dice, and your own token only (hides monster tools)"
+          >
+            Player
+          </button>
+        </div>
         {!isPlayerRole ? (
           <div className="mode-switcher" role="group" aria-label="DM Workspace View">
             <button
@@ -178,27 +224,6 @@ export function TopBar({ store, ui }: AppSectionProps) {
       </div>
 
       <div className="topbar-actions">
-        <div className="mode-switcher" role="group" aria-label="Table role">
-          <button
-            type="button"
-            className={`mode-switcher-btn ${!isPlayerRole ? 'active' : ''}`}
-            aria-pressed={!isPlayerRole}
-            disabled={store.liveStatus.role === 'player'}
-            onClick={() => setTableRolePersisted('dm')}
-            title="DM View: full encounter, monster, and campaign controls"
-          >
-            DM
-          </button>
-          <button
-            type="button"
-            className={`mode-switcher-btn ${isPlayerRole ? 'active' : ''}`}
-            aria-pressed={isPlayerRole}
-            onClick={() => setTableRolePersisted('player')}
-            title="Player View: sheet, dice, and your own token only (hides monster tools)"
-          >
-            Player
-          </button>
-        </div>
         {modularMode && (
           <button
             type="button"
@@ -209,39 +234,9 @@ export function TopBar({ store, ui }: AppSectionProps) {
             {isEditingLayout ? 'Done Editing' : 'Edit Blocks'}
           </button>
         )}
-        <button
-          type="button"
-          className="btn"
-          onClick={() => setThemeStudioOpen(true)}
-          title="Open Theme Studio, Custom Theme Editor & Setup Sharing"
-        >
-          Themes
-        </button>
-        <button
-          type="button"
-          className="btn"
-          onClick={() => setRulesetOpen(true)}
-          title="View 2014 vs 2024 rule differences & customize house rules"
-        >
-          Rules:{' '}
-          {(() => {
-            const p = detectRulesetPreset(store.houseRules);
-            return p === '2014' ? '2014' : p === '2024' ? '2024' : 'Custom';
-          })()}
-        </button>
         <button type="button" className="btn" onClick={() => setPaletteOpen(true)} title="Compendium, Packs & PDF Import (Ctrl+K)">
           Packs (Ctrl+K)
         </button>
-        {!isPlayerRole && (modularMode || uiMode === 'classic') && (
-          <>
-            <button type="button" className="btn" onClick={() => setDmHubOpen(true)}>
-              DM Hub
-            </button>
-            <button type="button" className="btn" onClick={() => setBattlemapOpen(true)}>
-              Battlemap
-            </button>
-          </>
-        )}
         <button
           type="button"
           className={`btn ${store.liveStatus.role !== 'idle' ? 'btn-primary' : ''}`}
@@ -269,12 +264,7 @@ export function TopBar({ store, ui }: AppSectionProps) {
         >
           <RedoIcon />
         </button>
-        <button type="button" className="btn" onClick={() => setShortcutsOpen(true)} title="Keyboard Shortcuts & Tips">
-          ?
-        </button>
-        <button type="button" className="btn" onClick={() => setSettingsOpen(true)} title="Settings & Theme">
-          <SettingsIcon />
-        </button>
+        <MoreMenu items={moreItems} />
       </div>
     </header>
   );

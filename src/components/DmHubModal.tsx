@@ -263,22 +263,25 @@ export function DmHubModal({
     ['soundboard', 'Soundboard'],
   ] as const;
 
-  const topCampaignBar = (
+  // The app header already has the campaign picker, so the embedded DM Studio bar omits it.
+  const renderCampaignBar = (showPicker: boolean) => (
     <div className="card forge-row-between" style={{ flexWrap: 'wrap', gap: 8 }}>
       <div className="forge-row" style={{ flexWrap: 'wrap' }}>
-        <select
-          aria-label="Active campaign"
-          className="forge-input"
-          value={campaign.id}
-          onChange={(e) => void onSwitchCampaign(e.target.value)}
-          style={{ fontWeight: 700 }}
-        >
-          {campaignList.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name} ({c.entries.length} notes)
-            </option>
-          ))}
-        </select>
+        {showPicker && (
+          <select
+            aria-label="Active campaign"
+            className="forge-input"
+            value={campaign.id}
+            onChange={(e) => void onSwitchCampaign(e.target.value)}
+            style={{ fontWeight: 700 }}
+          >
+            {campaignList.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name} ({c.entries.length} notes)
+              </option>
+            ))}
+          </select>
+        )}
         <input
           aria-label="New campaign name"
           type="text"
@@ -340,7 +343,7 @@ export function DmHubModal({
 
   const hubContent = (
     <div className="forge-stack">
-      {!embedded && topCampaignBar}
+      {!embedded && renderCampaignBar(true)}
       {!embedded && (
         <div className="pill-row">
           {dmTabs.map(([k, label]) => (
@@ -1776,14 +1779,14 @@ export function DmHubModal({
     if (activeTabProp) {
       return (
         <div className="forge-stack">
-          {topCampaignBar}
+          {tab === 'binder' && renderCampaignBar(false)}
           {hubContent}
         </div>
       );
     }
     return (
       <div className="forge-stack">
-        {topCampaignBar}
+        {tab === 'binder' && renderCampaignBar(false)}
         <div className="dm-studio-shell">
           <nav className="card dm-studio-nav" aria-label="DM Studio sections">
             {dmTabs.map(([k, label]) => (

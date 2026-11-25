@@ -226,4 +226,46 @@ describe('Player view hides DM detail', () => {
     expect(current.getAttribute('aria-current')).toBe('page');
     expect(within(nav).getByRole('button', { name: 'Campaign Binder' }).hasAttribute('aria-current')).toBe(false);
   });
+
+  it('DM header: one campaign picker, no duplicate buttons, More menu holds Settings', async () => {
+    await renderApp({ role: 'dm' }, async () => {
+      await screen.findByLabelText('DM Studio navigation');
+    });
+    const header = screen.getByRole('banner');
+    expect(within(header).getAllByLabelText('Active campaign')).toHaveLength(1);
+    expect(screen.getAllByLabelText('Active campaign')).toHaveLength(1);
+    expect(within(header).queryByRole('button', { name: 'DM Hub' })).toBeNull();
+    expect(within(header).queryByRole('button', { name: 'Battlemap' })).toBeNull();
+    const names = within(header).getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent ?? '');
+    expect(names.filter((n, i) => names.indexOf(n) !== i)).toEqual([]);
+    // the campaign bar lives only on the Campaign Binder tab, and has no picker of its own
+    expect(screen.queryByRole('button', { name: 'Export .md' })).toBeNull();
+    fireEvent.click(within(screen.getByLabelText('DM Studio navigation')).getByRole('button', { name: 'Campaign Binder' }));
+    await screen.findByRole('button', { name: 'Export .md' });
+    expect(screen.getAllByLabelText('Active campaign')).toHaveLength(1);
+
+    const more = within(header).getByRole('button', { name: /More/ });
+    expect(more.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(more);
+    expect(more.getAttribute('aria-expanded')).toBe('true');
+    expect(within(header).getByRole('button', { name: 'Settings' })).toBeTruthy();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(more.getAttribute('aria-expanded')).toBe('false');
+    expect(within(header).queryByRole('button', { name: 'Settings' })).toBeNull();
+    // outside click closes it too
+    fireEvent.click(more);
+    fireEvent.mouseDown(document.body);
+    expect(more.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('Player header keeps Battlemap inside the More menu', async () => {
+    await renderApp({ role: 'player', uiMode: 'classic' }, async () => {
+      await screen.findByText('Combat Rail ON');
+    });
+    const header = screen.getByRole('banner');
+    expect(within(header).queryByRole('button', { name: 'Battlemap' })).toBeNull();
+    fireEvent.click(within(header).getByRole('button', { name: /More/ }));
+    expect(within(header).getByRole('button', { name: 'Battlemap' })).toBeTruthy();
+    expect(within(header).getByRole('button', { name: 'Themes' })).toBeTruthy();
+  });
 });

@@ -83,6 +83,43 @@
   flex-wrap: wrap;
 }
 
+.topbar-more {
+  position: relative;
+}
+
+.topbar-menu {
+  position: absolute;
+  inset-block-start: calc(100% + 4px);
+  inset-inline-end: 0;
+  z-index: var(--z-drawer);
+  min-inline-size: 220px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.topbar-menu-item {
+  display: block;
+  inline-size: 100%;
+  padding: 6px 10px;
+  text-align: start;
+  font-size: 12px;
+  color: var(--text-primary);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.topbar-menu-item:hover,
+.topbar-menu-item:focus-visible {
+  background: var(--bg-hover);
+}
+
 .mode-switcher {
   display: inline-flex;
   align-items: center;
@@ -263,6 +300,20 @@
 
 .workspace-grid.classic-no-combat {
   grid-template-columns: minmax(300px, 350px) minmax(420px, 1fr);
+}
+
+/* Desktop: keep the header on one row (the 1080px query below stacks it). */
+@media (min-width: 1081px) {
+  .topbar-brand,
+  .topbar-center,
+  .topbar-actions {
+    flex-wrap: nowrap;
+  }
+
+  .topbar-brand > *,
+  .topbar-actions > * {
+    flex-shrink: 0;
+  }
 }
 
 @media (max-width: 1080px) {

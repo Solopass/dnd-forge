@@ -1,20 +1,20 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { CampaignEntry, DowntimeProject, SharedHandoutPayload, WorldMapPin } from '../types/campaign';
 import { RawCharacterState } from '../types/character';
-import { BattlemapScene, CombatEncounterState, MapPingEvent, MapSketchStroke } from '../types/combat';
-import { computeVisibleCells } from '../engine/vtt-vision';
+import { CombatEncounterState } from '../types/combat';
 import { CompendiumEntity } from '../types/compendium';
 import { syncSpellSlotPools } from '../engine/rules-math';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
 import { computeFixedMaxHp, syncClassResourcePools } from '../engine/classes';
 import { advanceWorldClock, createDefaultCampaign, getXpForNextLevel, ShopItem } from '../engine/dm-tools';
-import { db, deleteSceneRecord, saveCampaign, saveCharacter, saveScene } from '../storage/db';
+import { db, saveCampaign, saveCharacter } from '../storage/db';
 import { useStoreCore } from './store/core';
 import { useCharacterActions } from './store/character';
 import { useActivitiesActions } from './store/activities';
 import { useCombatActions } from './store/combat';
 import { useContentImportActions } from './store/content-import';
 import { useLiveTableActions } from './store/live-table';
+import { useBattlemapActions } from './store/battlemap';
 
 export type { ConsoleLine, ToastMessage, LevelUpPlanInput } from './store/types';
 
@@ -25,142 +25,24 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   const combat = useCombatActions(core, { adjustHp: character.adjustHp, toggleCondition: character.toggleCondition });
   const contentImport = useContentImportActions(core, { addMonsterToEncounter: combat.addMonsterToEncounter });
   const liveTable = useLiveTableActions(core, { importSingleCharacter: contentImport.importSingleCharacter, targetAttackCombatants: combat.targetAttackCombatants, targetSaveCombatants: combat.targetSaveCombatants });
+  const battlemap = useBattlemapActions(core);
   const {
-    liveStatus,
-    liveSessionRef,
-    claimedTokenId,
-    rawChar,
-    persistEncounter,
-    appendLog,
     campaignList,
     setCampaign,
+    appendLog,
     setCampaignList,
     campaign,
     persistCampaign,
     pushToast,
     characterList,
     setCharacterList,
+    rawChar,
     setRawChar,
     persistCharacter,
-    playerDisplayChannelRef,
-    encounterRef,
-    sharedHandoutRef,
-    activePingsRef,
-    encounter,
-    activeSharedHandout,
-    activePings,
-    setScenes,
-    scenes,
-    setActivePings,
     setActiveSharedHandout,
+    liveSessionRef,
+    liveStatus,
   } = core;
-
-  const moveCombatantToken = useCallback(
-    (combatantId: string, x: number, y: number) => {
-      if (liveStatus.role === 'player') {
-        const session = liveSessionRef.current;
-        const ownedId = claimedTokenId ?? rawChar.id;
-        if (session && combatantId === ownedId) {
-          session.broadcast({
-            type: 'token_move',
-            senderId: session.senderId,
-            senderName: rawChar.name,
-            combatantId,
-            x,
-            y,
-          });
-        }
-      }
-      persistEncounter((prev) => {
-        const nextCombatants = prev.combatants.map((c) =>
-          c.id === combatantId ? { ...c, x, y } : c
-        );
-        if (prev.map?.dynamicVision && prev.map?.autoRevealFog && prev.map.fogCells?.length) {
-          const visible = computeVisibleCells(
-            nextCombatants,
-            prev.map.cols,
-            prev.map.rows,
-            prev.map.gridFeet,
-            prev.map.terrainCells ?? []
-          );
-          const nextFog = prev.map.fogCells.filter((cell) => !visible.has(cell));
-          return {
-            ...prev,
-            combatants: nextCombatants,
-            map: { ...prev.map, fogCells: nextFog },
-          };
-        }
-        return {
-          ...prev,
-          combatants: nextCombatants,
-        };
-      });
-    },
-    [persistEncounter]
-  );
-
-  const setEncounterMapImage = useCallback(
-    (imageDataUrl: string | undefined) => {
-      persistEncounter((prev) => ({
-        ...prev,
-        map: {
-          cols: 20,
-          rows: 12,
-          gridFeet: 5,
-          templates: [],
-          ...(prev.map ?? {}),
-          imageDataUrl,
-        },
-      }));
-      appendLog(imageDataUrl ? 'Loaded custom battlemap image.' : 'Cleared custom battlemap image.', 'info');
-    },
-    [persistEncounter, appendLog]
-  );
-
-  const addMapTemplate = useCallback(
-    (kind: 'sphere' | 'cone' | 'line' | 'cube', x: number, y: number, radiusFeet: number) => {
-      const colorMap = {
-        sphere: 'rgba(248, 81, 73, 0.28)',
-        cone: 'rgba(210, 153, 34, 0.28)',
-        line: 'rgba(88, 166, 255, 0.30)',
-        cube: 'rgba(188, 140, 255, 0.28)',
-      } as const;
-      persistEncounter((prev) => ({
-        ...prev,
-        map: {
-          cols: 20,
-          rows: 12,
-          gridFeet: 5,
-          ...(prev.map ?? {}),
-          templates: [
-            ...(prev.map?.templates ?? []),
-            {
-              id: `tpl-${Date.now().toString(36)}`,
-              kind,
-              x,
-              y,
-              radiusFeet,
-              color: colorMap[kind],
-            },
-          ],
-        },
-      }));
-    },
-    [persistEncounter]
-  );
-
-  const clearMapTemplates = useCallback(() => {
-    persistEncounter((prev) => ({
-      ...prev,
-      map: {
-        cols: 20,
-        rows: 12,
-        gridFeet: 5,
-        ...(prev.map ?? {}),
-        templates: [],
-      },
-    }));
-  }, [persistEncounter]);
 
   const switchCampaign = useCallback(
     async (campaignId: string) => {
@@ -450,316 +332,6 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     appendLog(`Milestone Level-Up granted across ${nextList.length} party character(s)!`, 'crit');
     pushToast('Party Milestone Level-Up applied!', 'crit');
   }, [characterList, rawChar.id, appendLog, pushToast]);
-
-  const updateEncounterMapSettings = useCallback(
-    (patch: Partial<NonNullable<CombatEncounterState['map']>>) => {
-      persistEncounter((prev) => {
-        const nextMap = {
-          cols: 20,
-          rows: 12,
-          gridFeet: 5,
-          templates: [],
-          ...(prev.map ?? {}),
-          ...patch,
-        };
-        if (nextMap.dynamicVision && nextMap.autoRevealFog && nextMap.fogCells?.length) {
-          const visible = computeVisibleCells(
-            prev.combatants,
-            nextMap.cols,
-            nextMap.rows,
-            nextMap.gridFeet,
-            nextMap.terrainCells ?? []
-          );
-          nextMap.fogCells = nextMap.fogCells.filter((cell) => !visible.has(cell));
-        }
-        return {
-          ...prev,
-          map: nextMap,
-        };
-      });
-    },
-    [persistEncounter]
-  );
-
-  const toggleFogCells = useCallback(
-    (cellKeys: string[], mode: 'paint' | 'reveal') => {
-      if (cellKeys.length === 0) return;
-      persistEncounter((prev) => {
-        const currentFog = new Set(prev.map?.fogCells ?? []);
-        for (const key of cellKeys) {
-          if (mode === 'paint') currentFog.add(key);
-          else currentFog.delete(key);
-        }
-        return {
-          ...prev,
-          map: {
-            cols: 20,
-            rows: 12,
-            gridFeet: 5,
-            templates: [],
-            ...(prev.map ?? {}),
-            fogCells: Array.from(currentFog),
-          },
-        };
-      });
-    },
-    [persistEncounter]
-  );
-
-  const fillAllFog = useCallback(() => {
-    persistEncounter((prev) => {
-      const cols = prev.map?.cols ?? 20;
-      const rows = prev.map?.rows ?? 12;
-      const allKeys: string[] = [];
-      for (let x = 0; x < cols; x++) {
-        for (let y = 0; y < rows; y++) {
-          allKeys.push(`${x},${y}`);
-        }
-      }
-      return {
-        ...prev,
-        map: {
-          cols,
-          rows,
-          gridFeet: 5,
-          templates: [],
-          ...(prev.map ?? {}),
-          fogCells: allKeys,
-        },
-      };
-    });
-  }, [persistEncounter]);
-
-  const clearAllFog = useCallback(() => {
-    persistEncounter((prev) => ({
-      ...prev,
-      map: {
-        cols: 20,
-        rows: 12,
-        gridFeet: 5,
-        templates: [],
-        ...(prev.map ?? {}),
-        fogCells: [],
-      },
-    }));
-  }, [persistEncounter]);
-
-  const setTerrainCell = useCallback(
-    (x: number, y: number, kind: 'wall' | 'difficult' | 'water' | null) => {
-      persistEncounter((prev) => {
-        const filtered = (prev.map?.terrainCells ?? []).filter((t) => !(t.x === x && t.y === y));
-        const nextTerrain = kind ? [...filtered, { x, y, kind }] : filtered;
-        return {
-          ...prev,
-          map: {
-            cols: 20,
-            rows: 12,
-            gridFeet: 5,
-            templates: [],
-            ...(prev.map ?? {}),
-            terrainCells: nextTerrain,
-          },
-        };
-      });
-    },
-    [persistEncounter]
-  );
-
-  const clearTerrain = useCallback(() => {
-    persistEncounter((prev) => ({
-      ...prev,
-      map: {
-        cols: 20,
-        rows: 12,
-        gridFeet: 5,
-        templates: [],
-        ...(prev.map ?? {}),
-        terrainCells: [],
-      },
-    }));
-  }, [persistEncounter]);
-
-  useEffect(() => {
-    if (typeof BroadcastChannel === 'undefined') return;
-    const ch = new BroadcastChannel('dnd-forge-player-display');
-    playerDisplayChannelRef.current = ch;
-    ch.onmessage = (evt: MessageEvent) => {
-      if (evt.data?.type === 'request_sync') {
-        ch.postMessage({
-          type: 'sync_state',
-          encounter: encounterRef.current,
-          sharedHandout: sharedHandoutRef.current,
-          pings: activePingsRef.current.filter((p) => Date.now() - p.timestamp < 3200),
-        });
-      }
-    };
-    return () => {
-      ch.close();
-      playerDisplayChannelRef.current = null;
-    };
-  }, []);
-
-  useEffect(() => {
-    playerDisplayChannelRef.current?.postMessage({
-      type: 'sync_state',
-      encounter,
-      sharedHandout: activeSharedHandout,
-      pings: activePings.filter((p) => Date.now() - p.timestamp < 3200),
-    });
-  }, [encounter, activeSharedHandout, activePings]);
-
-  const saveCurrentMapAsScene = useCallback(
-    async (name: string) => {
-      const clean = name.trim() || encounter.name || 'Untitled Scene';
-      const m = encounter.map;
-      const scene: BattlemapScene = {
-        id: `scene-${Date.now().toString(36)}`,
-        name: clean,
-        imageDataUrl: m?.imageDataUrl,
-        cols: m?.cols ?? 20,
-        rows: m?.rows ?? 12,
-        gridFeet: m?.gridFeet ?? 5,
-        fogCells: m?.fogCells ? [...m.fogCells] : [],
-        terrainCells: m?.terrainCells ? [...m.terrainCells] : [],
-        sketches: m?.sketches ? [...m.sketches] : [],
-        gridOpacity: m?.gridOpacity,
-        imageScale: m?.imageScale,
-        imageOffsetX: m?.imageOffsetX,
-        imageOffsetY: m?.imageOffsetY,
-        dynamicVision: m?.dynamicVision,
-        autoRevealFog: m?.autoRevealFog,
-        updatedAt: new Date().toISOString(),
-      };
-      await saveScene(scene);
-      setScenes((prev) => [scene, ...prev.filter((s) => s.id !== scene.id)]);
-      appendLog(`Saved battlemap scene "${clean}".`, 'info');
-    },
-    [encounter.name, encounter.map, appendLog]
-  );
-
-  const loadSceneToEncounter = useCallback(
-    (sceneId: string) => {
-      const scene = scenes.find((s) => s.id === sceneId);
-      if (!scene) return;
-      persistEncounter((prev) => ({
-        ...prev,
-        map: {
-          cols: scene.cols,
-          rows: scene.rows,
-          gridFeet: scene.gridFeet,
-          templates: [],
-          imageDataUrl: scene.imageDataUrl,
-          fogCells: scene.fogCells ? [...scene.fogCells] : [],
-          terrainCells: scene.terrainCells ? [...scene.terrainCells] : [],
-          sketches: scene.sketches ? [...scene.sketches] : [],
-          gridOpacity: scene.gridOpacity,
-          imageScale: scene.imageScale,
-          imageOffsetX: scene.imageOffsetX,
-          imageOffsetY: scene.imageOffsetY,
-          dynamicVision: scene.dynamicVision,
-          autoRevealFog: scene.autoRevealFog,
-        },
-      }));
-      appendLog(`Loaded battlemap scene "${scene.name}".`, 'info');
-    },
-    [scenes, persistEncounter, appendLog]
-  );
-
-  const deleteScene = useCallback(
-    async (sceneId: string) => {
-      await deleteSceneRecord(sceneId);
-      setScenes((prev) => prev.filter((s) => s.id !== sceneId));
-      appendLog('Deleted battlemap scene.', 'info');
-    },
-    [appendLog]
-  );
-
-  const setCombatantPortrait = useCallback(
-    (combatantId: string, portraitUrl: string | undefined) => {
-      persistEncounter((prev) => ({
-        ...prev,
-        combatants: prev.combatants.map((c) =>
-          c.id === combatantId ? { ...c, portraitUrl } : c
-        ),
-      }));
-    },
-    [persistEncounter]
-  );
-
-  const setCombatantVision = useCallback(
-    (combatantId: string, visionFeet: number) => {
-      const safeFeet = Math.max(5, Math.min(300, Math.round(visionFeet)));
-      persistEncounter((prev) => ({
-        ...prev,
-        combatants: prev.combatants.map((c) =>
-          c.id === combatantId ? { ...c, visionFeet: safeFeet } : c
-        ),
-      }));
-    },
-    [persistEncounter]
-  );
-
-  const addMapSketchStroke = useCallback(
-    (stroke: MapSketchStroke) => {
-      if (stroke.points.length < 2) return;
-      persistEncounter((prev) => ({
-        ...prev,
-        map: {
-          cols: 20,
-          rows: 12,
-          gridFeet: 5,
-          templates: [],
-          ...(prev.map ?? {}),
-          sketches: [...(prev.map?.sketches ?? []), stroke],
-        },
-      }));
-    },
-    [persistEncounter]
-  );
-
-  const clearMapSketches = useCallback(() => {
-    persistEncounter((prev) => ({
-      ...prev,
-      map: {
-        cols: 20,
-        rows: 12,
-        gridFeet: 5,
-        templates: [],
-        ...(prev.map ?? {}),
-        sketches: [],
-      },
-    }));
-  }, [persistEncounter]);
-
-  const broadcastMapPing = useCallback(
-    (x: number, y: number) => {
-      const ping: MapPingEvent = {
-        id: `ping-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`,
-        x,
-        y,
-        color: '#f59e0b',
-        senderName: rawChar.name,
-        timestamp: Date.now(),
-      };
-      setActivePings((prev) => [...prev.filter((p) => Date.now() - p.timestamp < 3200), ping]);
-      setTimeout(() => {
-        setActivePings((prev) => prev.filter((p) => p.id !== ping.id));
-      }, 3300);
-      const session = liveSessionRef.current;
-      if (session && session.getState().role !== 'idle') {
-        session.broadcast({
-          type: 'ping',
-          senderId: session.senderId,
-          senderName: rawChar.name,
-          x,
-          y,
-          color: ping.color,
-          timestamp: ping.timestamp,
-        });
-      }
-    },
-    [rawChar.name]
-  );
 
   const setWorldMapImage = useCallback(
     (worldMapImageDataUrl: string | undefined) => {
@@ -1093,27 +665,27 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     duplicateEncounter: combat.duplicateEncounter,
     deleteEncounter: combat.deleteEncounter,
     addPartyToEncounter: combat.addPartyToEncounter,
-    moveCombatantToken,
-    setEncounterMapImage,
-    addMapTemplate,
-    clearMapTemplates,
-    updateEncounterMapSettings,
-    toggleFogCells,
-    fillAllFog,
-    clearAllFog,
-    setTerrainCell,
-    clearTerrain,
+    moveCombatantToken: battlemap.moveCombatantToken,
+    setEncounterMapImage: battlemap.setEncounterMapImage,
+    addMapTemplate: battlemap.addMapTemplate,
+    clearMapTemplates: battlemap.clearMapTemplates,
+    updateEncounterMapSettings: battlemap.updateEncounterMapSettings,
+    toggleFogCells: battlemap.toggleFogCells,
+    fillAllFog: battlemap.fillAllFog,
+    clearAllFog: battlemap.clearAllFog,
+    setTerrainCell: battlemap.setTerrainCell,
+    clearTerrain: battlemap.clearTerrain,
     scenes: core.scenes,
-    saveCurrentMapAsScene,
-    loadSceneToEncounter,
-    deleteScene,
-    setCombatantPortrait,
+    saveCurrentMapAsScene: battlemap.saveCurrentMapAsScene,
+    loadSceneToEncounter: battlemap.loadSceneToEncounter,
+    deleteScene: battlemap.deleteScene,
+    setCombatantPortrait: battlemap.setCombatantPortrait,
     setCharacterAvatar: character.setCharacterAvatar,
-    setCombatantVision,
-    addMapSketchStroke,
-    clearMapSketches,
+    setCombatantVision: battlemap.setCombatantVision,
+    addMapSketchStroke: battlemap.addMapSketchStroke,
+    clearMapSketches: battlemap.clearMapSketches,
     activePings: core.activePings,
-    broadcastMapPing,
+    broadcastMapPing: battlemap.broadcastMapPing,
     targetAttackCombatants: combat.targetAttackCombatants,
     targetSaveCombatants: combat.targetSaveCombatants,
     setWorldMapImage,

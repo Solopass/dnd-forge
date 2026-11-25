@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { App } from '../../../App';
 import { db } from '../../../storage/db';
 import { APP_VERSION } from '../../../version';
@@ -193,5 +193,17 @@ describe('Player view hides DM detail', () => {
     const hpBars = container.querySelectorAll('.battlemap-scroll svg rect[height="4"][fill="#0d1117"]');
     expect(tokens.length).toBeGreaterThan(1);
     expect(hpBars.length).toBeLessThan(tokens.length);
+  });
+
+  it('Player x Unified Command combat panel has no encounter management controls', async () => {
+    await renderApp({ role: 'player', uiMode: 'unified' }, async () => {
+      await screen.findByLabelText('Unified workspace navigation');
+    });
+    const panel = screen.getByLabelText('Encounter and Linked Summons');
+    for (const name of ['+ New', 'Dup', 'Del', 'Reset', 'Start! (Roll Init)', 'Roll All Init', '+ Party', '+ Add Creature', 'Builder / Forge', '+ Timer', 'Next Turn']) {
+      expect(within(panel).queryByRole('button', { name }), name).toBeNull();
+    }
+    expect(within(panel).queryByLabelText('Active encounter')).toBeNull();
+    expect(within(panel).queryByText(/Quick Demo/)).toBeNull();
   });
 });

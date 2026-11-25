@@ -169,6 +169,9 @@ export function SummonCombatDrawer({
   return (
     <aside className="pane" aria-label="Encounter and Linked Summons">
       <div className="card forge-stack">
+        {playerView ? (
+          <div className="forge-section-label">{encounter.name}</div>
+        ) : (
         <div className="forge-row-between">
           <select
             aria-label="Active encounter"
@@ -212,6 +215,7 @@ export function SummonCombatDrawer({
             )}
           </div>
         </div>
+        )}
 
         <div className="forge-row-between" style={{ flexWrap: 'wrap' }}>
           <div className="tabular forge-muted" style={{ fontSize: 11 }}>
@@ -234,7 +238,7 @@ export function SummonCombatDrawer({
             )}
           </div>
           <div className="forge-row" style={{ flexWrap: 'wrap' }}>
-            {!isPlayerRole && (
+            {!playerView && (
               <>
                 {onStartEncounterAlert && (
                   <button
@@ -252,6 +256,10 @@ export function SummonCombatDrawer({
                 <button type="button" className="btn" onClick={onRollAllInitiative} title="Roll 1d20 + DEX for all combatants">
                   Roll All Init
                 </button>
+              </>
+            )}
+            {!isPlayerRole && (
+              <>
                 <button
                   type="button"
                   className={`pill ${playerView ? 'active' : ''}`}
@@ -268,7 +276,7 @@ export function SummonCombatDrawer({
                 Battlemap
               </button>
             )}
-            {!isPlayerRole && (
+            {!playerView && (
               <>
                 <button type="button" className="btn" onClick={onResetEncounter} title="Clear monsters/summons and reset to Round 1">
                   Reset

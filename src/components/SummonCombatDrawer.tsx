@@ -875,6 +875,19 @@ export function SummonCombatDrawer({
                     ))}
                   </div>
                 )}
+
+                {!hideHp && node.kind !== 'pc' && (node.notes || node.monsterMeta?.senses || node.monsterMeta?.resistances?.length || node.monsterMeta?.immunities?.length) && (
+                  <div className="subpanel forge-muted" style={{ padding: '5px 8px', fontSize: 11, lineHeight: 1.4 }}>
+                    {node.monsterMeta?.senses && <div><strong>Senses:</strong> {node.monsterMeta.senses}</div>}
+                    {node.monsterMeta?.resistances && node.monsterMeta.resistances.length > 0 && (
+                      <div><strong>Resistances:</strong> {node.monsterMeta.resistances.join(', ')}</div>
+                    )}
+                    {node.monsterMeta?.immunities && node.monsterMeta.immunities.length > 0 && (
+                      <div><strong>Immunities:</strong> {node.monsterMeta.immunities.join(', ')}</div>
+                    )}
+                    {node.notes && <div>{node.notes.slice(0, 220)}{node.notes.length > 220 ? '…' : ''}</div>}
+                  </div>
+                )}
               </div>
             )}
           </div>

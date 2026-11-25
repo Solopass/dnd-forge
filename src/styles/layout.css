@@ -487,6 +487,15 @@
     flex-wrap: wrap;
     position: static;
   }
+
+  .btn,
+  .pill,
+  .forge-input,
+  .input,
+  .select {
+    min-height: 36px;
+    padding: 6px 10px;
+  }
 }
 
 .pill-row {

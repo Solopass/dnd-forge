@@ -4,12 +4,40 @@ import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
 import { CompendiumEntity, CreatureSize } from '../types/compendium';
 import { ModalDialog } from './ModalDialog';
 
+interface EncounterPreset {
+  id: string;
+  name: string;
+  items: Array<{ entityId: string; name: string; count: number }>;
+}
+
+const PRESETS_KEY = 'sidereroll-encounter-presets';
+
+function readEncounterPresets(): EncounterPreset[] {
+  try {
+    const raw = localStorage.getItem(PRESETS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? (parsed as EncounterPreset[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveEncounterPresets(next: EncounterPreset[]): void {
+  try {
+    localStorage.setItem(PRESETS_KEY, JSON.stringify(next));
+  } catch {
+    // ignore storage errors
+  }
+}
+
 interface EncounterBuilderModalProps {
   isOpen: boolean;
   onClose: () => void;
   partyLevels: number[];
   compendiumMonsters?: CompendiumEntity[];
   onSpawnMonsters: (monsters: CompendiumEntity[]) => void;
+  onLaunchAndStart?: (monsters: CompendiumEntity[]) => void;
   onCreateCustomMonster: (entity: CompendiumEntity) => void;
 }
 
@@ -19,6 +47,7 @@ export function EncounterBuilderModal({
   partyLevels,
   compendiumMonsters = [],
   onSpawnMonsters,
+  onLaunchAndStart,
   onCreateCustomMonster,
 }: EncounterBuilderModalProps) {
   const [tab, setTab] = useState<'builder' | 'forge'>('builder');
@@ -27,6 +56,8 @@ export function EncounterBuilderModal({
   const [sizeFilter, setSizeFilter] = useState<'all' | CreatureSize>('all');
   const [rulesetFilter, setRulesetFilter] = useState<'all' | '2014' | '2024'>('all');
   const [staged, setStaged] = useState<Array<{ entity: CompendiumEntity; count: number }>>([]);
+  const [presets, setPresets] = useState<EncounterPreset[]>(readEncounterPresets);
+  const [presetName, setPresetName] = useState('');
 
   // Custom Monster Forge fields
   const [mName, setMName] = useState('');
@@ -86,12 +117,45 @@ export function EncounterBuilderModal({
     });
   };
 
-  const handleSpawnStaged = () => {
+  const handleSpawnStaged = (startCombat = false) => {
     const expanded = staged.flatMap((s) => Array.from({ length: s.count }, () => s.entity));
     if (expanded.length === 0) return;
-    onSpawnMonsters(expanded);
+    if (startCombat && onLaunchAndStart) {
+      onLaunchAndStart(expanded);
+    } else {
+      onSpawnMonsters(expanded);
+    }
     setStaged([]);
     onClose();
+  };
+
+  const handleSavePreset = () => {
+    const clean = presetName.trim();
+    if (!clean || staged.length === 0) return;
+    const next: EncounterPreset[] = [
+      {
+        id: `enc-preset-${Date.now().toString(36)}`,
+        name: clean,
+        items: staged.map((s) => ({ entityId: s.entity.id, name: s.entity.name, count: s.count })),
+      },
+      ...presets,
+    ];
+    setPresets(next);
+    saveEncounterPresets(next);
+    setPresetName('');
+  };
+
+  const resolvePresetMonsters = (preset: EncounterPreset): CompendiumEntity[] => {
+    const out: CompendiumEntity[] = [];
+    for (const item of preset.items) {
+      const found =
+        allMonsters.find((m) => m.id === item.entityId) ??
+        allMonsters.find((m) => m.name.toLowerCase() === item.name.toLowerCase());
+      if (found) {
+        for (let i = 0; i < item.count; i++) out.push(found);
+      }
+    }
+    return out;
   };
 
   const handleCreateCustom = (spawnNow: boolean) => {
@@ -169,7 +233,7 @@ export function EncounterBuilderModal({
                   type="button"
                   className="btn btn-primary"
                   disabled={staged.length === 0}
-                  onClick={handleSpawnStaged}
+                  onClick={() => handleSpawnStaged(false)}
                 >
                   Spawn ({stagedCrs.length})
                 </button>
@@ -177,23 +241,111 @@ export function EncounterBuilderModal({
             </div>
 
             {staged.length > 0 && (
-              <div className="pill-row">
-                {staged.map((s) => (
+              <div className="forge-stack" style={{ gap: 6 }}>
+                <div className="pill-row">
+                  {staged.map((s) => (
+                    <button
+                      key={s.entity.id}
+                      type="button"
+                      className="pill active"
+                      title="Click to remove one"
+                      onClick={() =>
+                        setStaged((prev) =>
+                          prev
+                            .map((p) => (p.entity.id === s.entity.id ? { ...p, count: p.count - 1 } : p))
+                            .filter((p) => p.count > 0)
+                        )
+                      }
+                    >
+                      {s.count}× {s.entity.name} (CR {s.entity.monsterMeta?.cr ?? '?'}) ×
+                    </button>
+                  ))}
+                </div>
+                <div className="forge-row" style={{ flexWrap: 'wrap', gap: 6 }}>
+                  <input
+                    type="text"
+                    className="input"
+                    style={{ flex: '1 1 160px' }}
+                    placeholder="Preset name (e.g. Goblin Ambush)..."
+                    value={presetName}
+                    onChange={(e) => setPresetName(e.target.value)}
+                  />
                   <button
-                    key={s.entity.id}
                     type="button"
-                    className="pill active"
-                    title="Click to remove one"
-                    onClick={() =>
-                      setStaged((prev) =>
-                        prev
-                          .map((p) => (p.entity.id === s.entity.id ? { ...p, count: p.count - 1 } : p))
-                          .filter((p) => p.count > 0)
-                      )
-                    }
+                    className="btn"
+                    disabled={!presetName.trim()}
+                    onClick={handleSavePreset}
                   >
-                    {s.count}× {s.entity.name} (CR {s.entity.monsterMeta?.cr ?? '?'}) ×
+                    Save Preset
                   </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => handleSpawnStaged(false)}
+                  >
+                    Spawn ({staged.reduce((s, x) => s + x.count, 0)})
+                  </button>
+                  {onLaunchAndStart && (
+                    <button
+                      type="button"
+                      className="btn btn-danger"
+                      onClick={() => handleSpawnStaged(true)}
+                      title="Spawn monsters and immediately flash Roll Initiative!"
+                    >
+                      Launch &amp; Start!
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {presets.length > 0 && (
+              <div className="forge-row" style={{ flexWrap: 'wrap', gap: 6 }}>
+                <span className="muted-label">Saved Presets:</span>
+                {presets.map((pr) => (
+                  <span key={pr.id} className="subpanel forge-row" style={{ padding: '3px 6px', gap: 4 }}>
+                    <strong style={{ fontSize: 11 }}>{pr.name}</strong>
+                    <button
+                      type="button"
+                      className="pill"
+                      onClick={() => {
+                        const loaded: Array<{ entity: CompendiumEntity; count: number }> = [];
+                        for (const item of pr.items) {
+                          const found =
+                            allMonsters.find((m) => m.id === item.entityId) ??
+                            allMonsters.find((m) => m.name.toLowerCase() === item.name.toLowerCase());
+                          if (found) loaded.push({ entity: found, count: item.count });
+                        }
+                        setStaged(loaded);
+                      }}
+                    >
+                      Load
+                    </button>
+                    <button
+                      type="button"
+                      className="pill active"
+                      onClick={() => {
+                        const list = resolvePresetMonsters(pr);
+                        if (list.length === 0) return;
+                        if (onLaunchAndStart) onLaunchAndStart(list);
+                        else onSpawnMonsters(list);
+                        onClose();
+                      }}
+                    >
+                      Launch!
+                    </button>
+                    <button
+                      type="button"
+                      className="pill"
+                      onClick={() => {
+                        const next = presets.filter((x) => x.id !== pr.id);
+                        setPresets(next);
+                        saveEncounterPresets(next);
+                      }}
+                    >
+                      ×
+                    </button>
+                  </span>
                 ))}
               </div>
             )}

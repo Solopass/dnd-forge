@@ -1954,6 +1954,23 @@ export function App() {
               );
             }
           }}
+          onLaunchAndStart={(monsters) => {
+            for (const m of monsters) {
+              if (!m.monsterMeta) continue;
+              store.addMonsterToEncounter(
+                m.name,
+                m.monsterMeta.ac,
+                m.monsterMeta.hp,
+                m.monsterMeta.dexModifier,
+                m.activities,
+                m.monsterMeta.cr,
+                m.monsterMeta,
+                m.entries.join(' '),
+                m.imageUrl
+              );
+            }
+            store.startEncounterAlert();
+          }}
           onCreateCustomMonster={(entity) => {
             void store.createHomebrewEntity(entity, false);
           }}

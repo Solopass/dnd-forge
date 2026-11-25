@@ -2310,6 +2310,17 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
             ? list.map((e) => (e.id === msg.encounter.id ? msg.encounter : e))
             : [...list, msg.encounter]
         );
+        setClaimedTokenId((prevClaim) => {
+          if (prevClaim && msg.encounter.combatants.some((c) => c.id === prevClaim)) {
+            return prevClaim;
+          }
+          const matched = msg.encounter.combatants.find(
+            (c) =>
+              c.kind === 'pc' &&
+              (c.id === rawChar.id || c.name.toLowerCase() === rawChar.name.toLowerCase())
+          );
+          return matched ? matched.id : prevClaim;
+        });
         appendLog(`[LIVE] Encounter synced from DM (${msg.senderName}).`, 'info');
       } finally {
         setTimeout(() => {

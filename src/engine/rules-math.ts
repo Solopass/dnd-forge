@@ -425,8 +425,8 @@ export function computeCharacterSheet(
     const wisInitBonus = Math.max(0, abilityModifiers.wis);
     if (wisInitBonus > 0) {
       initiativeModifiers.push({
-        id: 'subclass-gloom-stalker-init',
-        source: 'Dread Ambusher',
+        id: 'gloom-stalker-dread-ambusher',
+        source: 'Dread Ambusher (WIS)',
         value: wisInitBonus,
       });
     }

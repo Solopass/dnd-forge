@@ -71,7 +71,9 @@ const CharacterManagerModal = lazy(() =>
   import('./components/CharacterManagerModal').then((m) => ({ default: m.CharacterManagerModal }))
 );
 import { BUILTIN_CONTENT_PACKS } from './engine/srd-packs';
+import { computeCharacterSheet } from './engine/rules-math';
 import { detectRulesetPreset } from './engine/ruleset-config';
+import type { DmHubTab } from './components/DmHubModal';
 import {
   applyThemeToDocument,
   BUILTIN_THEMES,
@@ -316,6 +318,12 @@ export function App() {
   const mobileTablistRef = useRef<HTMLDivElement | null>(null);
 
   const isPlayerRole = tableRole === 'player' || store.liveStatus.role === 'player';
+  const [dmSection, setDmSection] = useState<DmHubTab | 'battlemap'>('party');
+  const [inspectedPcId, setInspectedPcId] = useState<string | null>(null);
+  const openPcSheetFromDm = async (characterId: string) => {
+    await store.switchCharacter(characterId);
+    setInspectedPcId(characterId);
+  };
   const effectivePlayerView = isPlayerRole ? true : playerView;
   const isCombatActive = store.encounter.combatants.length > 1 || store.encounter.round > 1;
   const showCenterBattlemap =
@@ -775,7 +783,38 @@ export function App() {
               {APP_VERSION}
             </span>
           </span>
-          {isInDmStudio ? (
+          {!isPlayerRole ? (
+            <>
+              <select
+                aria-label="Active campaign"
+                value={store.campaign.id}
+                onChange={(e) => void store.switchCampaign(e.target.value)}
+                style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', border: '1px solid var(--border-subtle)', borderRadius: 4, padding: '4px 8px', fontSize: 12, fontWeight: 700 }}
+              >
+                {store.campaignList.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.entries.length} notes)
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setCharManagerOpen(true)}
+                title="Manage Party Characters, Import PDFs, or Open a Sheet"
+              >
+                Party ({store.characterList.length})
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => setEncounterBuilderOpen(true)}
+                title="Build & Launch Encounters"
+              >
+                Encounter Forge
+              </button>
+            </>
+          ) : isInDmStudio ? (
             <span className="badge">DM Studio • {store.campaign.name}</span>
           ) : (
             <>
@@ -814,38 +853,61 @@ export function App() {
         </div>
 
         <div className="topbar-center">
-          <div className="mode-switcher" role="group" aria-label="Interface layout mode">
-            <button
-              type="button"
-              className={`mode-switcher-btn ${!modularMode && uiMode === 'classic' ? 'active' : ''}`}
-              aria-pressed={!modularMode && uiMode === 'classic'}
-              onClick={() => {
-                setModularEnabled(false);
-                setUiMode('classic');
-              }}
-            >
-              Beyond Classic
-            </button>
-            <button
-              type="button"
-              className={`mode-switcher-btn ${!modularMode && uiMode === 'unified' ? 'active' : ''}`}
-              aria-pressed={!modularMode && uiMode === 'unified'}
-              onClick={() => {
-                setModularEnabled(false);
-                setUiMode('unified');
-              }}
-            >
-              Unified Command
-            </button>
-            <button
-              type="button"
-              className={`mode-switcher-btn ${modularMode ? 'active' : ''}`}
-              aria-pressed={modularMode}
-              onClick={() => setModularEnabled(true)}
-            >
-              Modular Grid
-            </button>
-          </div>
+          {!isPlayerRole ? (
+            <div className="mode-switcher" role="group" aria-label="DM Workspace View">
+              <button
+                type="button"
+                className={`mode-switcher-btn ${dmSection !== 'battlemap' ? 'active' : ''}`}
+                aria-pressed={dmSection !== 'battlemap'}
+                onClick={() => {
+                  if (dmSection === 'battlemap') setDmSection('party');
+                }}
+              >
+                DM Studio
+              </button>
+              <button
+                type="button"
+                className={`mode-switcher-btn ${dmSection === 'battlemap' ? 'active' : ''}`}
+                aria-pressed={dmSection === 'battlemap'}
+                onClick={() => setDmSection('battlemap')}
+              >
+                Tactical Battlemap
+              </button>
+            </div>
+          ) : (
+            <div className="mode-switcher" role="group" aria-label="Interface layout mode">
+              <button
+                type="button"
+                className={`mode-switcher-btn ${!modularMode && uiMode === 'classic' ? 'active' : ''}`}
+                aria-pressed={!modularMode && uiMode === 'classic'}
+                onClick={() => {
+                  setModularEnabled(false);
+                  setUiMode('classic');
+                }}
+              >
+                Beyond Classic
+              </button>
+              <button
+                type="button"
+                className={`mode-switcher-btn ${!modularMode && uiMode === 'unified' ? 'active' : ''}`}
+                aria-pressed={!modularMode && uiMode === 'unified'}
+                onClick={() => {
+                  setModularEnabled(false);
+                  setUiMode('unified');
+                }}
+              >
+                Unified Command
+              </button>
+              <button
+                type="button"
+                className={`mode-switcher-btn ${modularMode ? 'active' : ''}`}
+                aria-pressed={modularMode}
+                onClick={() => setModularEnabled(true)}
+              >
+                Modular Grid
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="topbar-actions">
@@ -949,7 +1011,7 @@ export function App() {
         </div>
       </header>
 
-      {!modularMode && uiMode === 'classic' && (
+      {isPlayerRole && !modularMode && uiMode === 'classic' && (
         <div className="beyond-hero-banner">
           <div className="beyond-hero-identity">
             <label
@@ -1016,7 +1078,7 @@ export function App() {
         </div>
       )}
 
-      {!modularMode && uiMode === 'classic' && (
+      {isPlayerRole && !modularMode && uiMode === 'classic' && (
         <div className="beyond-ability-bar" aria-label="Ability scores and combat vitals">
           <div className="beyond-ability-strip">
             {(['str', 'dex', 'con', 'int', 'wis', 'cha'] as const).map((key) => {
@@ -1251,7 +1313,93 @@ export function App() {
         </div>
       )}
 
-      {modularMode ? (
+      {!isPlayerRole ? (
+        <div className="dm-workspace-grid">
+          <nav className="dm-left-rail" aria-label="DM Studio navigation">
+            {(
+              [
+                ['party', 'Party & Sync'],
+                ['binder', 'Campaign Binder'],
+                ['clock', 'World Clock'],
+                ['loot', 'Loot & Shops'],
+                ['dmscreen', 'DM Screen'],
+                ['xp', 'Party XP & Milestones'],
+                ['improv', 'Improv'],
+                ['worldmap', 'World Map'],
+                ['soundboard', 'Soundboard'],
+                ['battlemap', 'Tactical Battlemap'],
+              ] as Array<[DmHubTab | 'battlemap', string]>
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                className={`unified-rail-btn ${dmSection === key ? 'active' : ''}`}
+                onClick={() => setDmSection(key)}
+              >
+                <span>{label}</span>
+              </button>
+            ))}
+
+            <hr style={{ width: '100%', border: 0, borderTop: '1px solid var(--border-subtle)', margin: '6px 0' }} />
+            <div className="forge-section-label" style={{ paddingLeft: 4, marginBottom: 2 }}>
+              PARTY ({store.characterList.length})
+            </div>
+            {store.characterList.map((pc) => {
+              const resolved = computeCharacterSheet(pc);
+              return (
+                <div key={pc.id} className="dm-party-mini-card">
+                  <div className="forge-row-between" style={{ gap: 4 }}>
+                    <strong style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {pc.name}
+                    </strong>
+                    <span className="badge tabular">AC {resolved.ac.final}</span>
+                  </div>
+                  <div className="forge-row-between tabular forge-muted" style={{ fontSize: 11 }}>
+                    <span>HP {resolved.hp.current}/{resolved.hp.max}</span>
+                    <span>PP {resolved.passivePerception}</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn"
+                    style={{ width: '100%', fontSize: 11, padding: '3px 6px' }}
+                    onClick={() => void openPcSheetFromDm(pc.id)}
+                  >
+                    Open Sheet
+                  </button>
+                </div>
+              );
+            })}
+          </nav>
+
+          <main className="dm-center-stage">
+            {dmSection === 'battlemap' ? (
+              <Suspense fallback={null}>
+                <BattlemapModal
+                  isOpen
+                  embeddedFull
+                  onClose={() => setDmSection('party')}
+                  {...sharedBattlemapProps}
+                  playerView={effectivePlayerView}
+                />
+              </Suspense>
+            ) : (
+              <Suspense fallback={null}>
+                <DmHubModal
+                  isOpen
+                  embedded
+                  activeTab={dmSection}
+                  onTabChange={(t) => setDmSection(t)}
+                  onOpenCharacterSheet={(id) => void openPcSheetFromDm(id)}
+                  onClose={() => {}}
+                  {...sharedDmHubProps}
+                />
+              </Suspense>
+            )}
+          </main>
+
+          {combatDrawerNode}
+        </div>
+      ) : modularMode ? (
         <Suspense fallback={null}>
           <ModularCanvas
             layout={activeLayout}
@@ -1606,6 +1754,18 @@ export function App() {
         onImportHomebrew={store.importMarkdownHomebrew}
         onImportJsonText={store.importJsonFilePayload}
       />
+
+      <ModalDialog
+        wide
+        isOpen={inspectedPcId !== null}
+        onClose={() => setInspectedPcId(null)}
+        title={`${store.rawChar.name} — Character Sheet (DM Inspector)`}
+      >
+        <div className="pc-sheet-modal-grid">
+          {vitalsNode}
+          {actionBoardNode}
+        </div>
+      </ModalDialog>
 
       <Suspense fallback={null}>
         <CharacterBuilderDrawer

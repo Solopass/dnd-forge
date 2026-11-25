@@ -12,7 +12,8 @@
 
 .app-shell > .workspace-grid,
 .app-shell > .unified-shell,
-.app-shell > .modular-shell {
+.app-shell > .modular-shell,
+.app-shell > .dm-workspace-grid {
   flex: 1 1 0;
   min-height: 0;
 }
@@ -1925,4 +1926,60 @@ button.stat-tile:hover {
 .initiative-alert-banner {
   border: 2px solid var(--accent-red);
   animation: initiative-flash 0.9s ease-in-out 4;
+}
+
+.dm-workspace-grid {
+  display: grid;
+  grid-template-columns: 224px minmax(0, 1fr) minmax(310px, 375px);
+  gap: 1px;
+  background: var(--border-subtle);
+  overflow: hidden;
+  min-height: 0;
+}
+
+.dm-left-rail {
+  background: var(--bg-rail);
+  padding: 10px 8px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dm-center-stage {
+  background: var(--bg-base);
+  padding: 12px 14px;
+  overflow-y: auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dm-party-mini-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 7px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pc-sheet-modal-grid {
+  display: grid;
+  grid-template-columns: minmax(270px, 320px) minmax(0, 1fr);
+  gap: 10px;
+  height: 76vh;
+  overflow: hidden;
+}
+
+@media (max-width: 1080px) {
+  .dm-workspace-grid,
+  .pc-sheet-modal-grid {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+    height: auto;
+  }
 }

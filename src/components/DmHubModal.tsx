@@ -33,9 +33,23 @@ import { RawCharacterState } from '../types/character';
 import { CombatEncounterState } from '../types/combat';
 import { ModalDialog } from './ModalDialog';
 
+export type DmHubTab =
+  | 'party'
+  | 'binder'
+  | 'clock'
+  | 'loot'
+  | 'dmscreen'
+  | 'xp'
+  | 'improv'
+  | 'worldmap'
+  | 'soundboard';
+
 interface DmHubModalProps {
   isOpen: boolean;
   embedded?: boolean;
+  activeTab?: DmHubTab;
+  onTabChange?: (tab: DmHubTab) => void;
+  onOpenCharacterSheet?: (characterId: string) => void;
   onClose: () => void;
   campaign: CampaignRecord;
   campaignList: CampaignRecord[];
@@ -87,6 +101,9 @@ const CATEGORIES: Array<{ key: 'all' | CampaignCategory; label: string }> = [
 export function DmHubModal({
   isOpen,
   embedded = false,
+  activeTab: activeTabProp,
+  onTabChange,
+  onOpenCharacterSheet,
   onClose,
   campaign,
   campaignList,
@@ -124,7 +141,12 @@ export function DmHubModal({
   onPushCampaignRepo,
   onPromptPartyRoll,
 }: DmHubModalProps) {
-  const [tab, setTab] = useState<'party' | 'binder' | 'clock' | 'loot' | 'dmscreen' | 'xp' | 'improv' | 'worldmap' | 'soundboard'>('party');
+  const [internalTab, setInternalTab] = useState<DmHubTab>('party');
+  const tab = activeTabProp ?? internalTab;
+  const setTab = (next: DmHubTab) => {
+    setInternalTab(next);
+    onTabChange?.(next);
+  };
   const [promptDc, setPromptDc] = useState('12');
   const [dtOwner, setDtOwner] = useState('');
   const [dtTitle, setDtTitle] = useState('');
@@ -358,6 +380,7 @@ export function DmHubModal({
                         <th style={{ padding: '4px 6px' }}>Pass. Perc</th>
                         <th style={{ padding: '4px 6px' }}>Pass. Insight</th>
                         <th style={{ padding: '4px 6px' }}>Spell DC</th>
+                        {onOpenCharacterSheet && <th style={{ padding: '4px 6px' }}>Sheet</th>}
                       </tr>
                     </thead>
                     <tbody className="tabular">
@@ -378,6 +401,17 @@ export function DmHubModal({
                             <td style={{ padding: '5px 6px' }}>
                               {resolved.spellcasting.primaryAbility ? resolved.spellcasting.saveDc.final : '—'}
                             </td>
+                            {onOpenCharacterSheet && (
+                              <td style={{ padding: '5px 6px' }}>
+                                <button
+                                  type="button"
+                                  className="btn"
+                                  onClick={() => onOpenCharacterSheet(pc.id)}
+                                >
+                                  Open Sheet
+                                </button>
+                              </td>
+                            )}
                           </tr>
                         );
                       })}
@@ -1725,6 +1759,14 @@ export function DmHubModal({
   );
 
   if (embedded) {
+    if (activeTabProp) {
+      return (
+        <div className="forge-stack">
+          {topCampaignBar}
+          {hubContent}
+        </div>
+      );
+    }
     return (
       <div className="forge-stack">
         {topCampaignBar}

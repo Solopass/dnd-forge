@@ -27,7 +27,6 @@ export function TopBar({ store, ui }: AppSectionProps) {
     isPlayerRole,
     setTableRolePersisted,
     setModularEnabled,
-    isInDmStudio,
   } = ui;
   return (
     <header className="topbar">
@@ -84,8 +83,6 @@ export function TopBar({ store, ui }: AppSectionProps) {
               Encounter Forge
             </button>
           </>
-        ) : isInDmStudio ? (
-          <span className="badge">DM Studio • {store.campaign.name}</span>
         ) : (
           <>
             <select

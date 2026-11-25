@@ -37,6 +37,8 @@ export function DmLayout({ store, ui, panels }: AppLayoutProps) {
             key={key}
             type="button"
             className={`unified-rail-btn ${dmSection === key ? 'active' : ''}`}
+            aria-label={label}
+            aria-current={dmSection === key ? 'page' : undefined}
             onClick={() => setDmSection(key)}
           >
             <span>{label}</span>

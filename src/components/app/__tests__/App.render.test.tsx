@@ -216,4 +216,14 @@ describe('Player view hides DM detail', () => {
     expect(select.options[0]?.textContent).toBe('Add condition…');
     expect(screen.getByRole('button', { name: 'Toggle Cond' }).hasAttribute('disabled')).toBe(true);
   });
+
+  it('DM Studio side-nav buttons have names and mark the current section', async () => {
+    await renderApp({ role: 'dm' }, async () => {
+      await screen.findByLabelText('DM Studio navigation');
+    });
+    const nav = screen.getByLabelText('DM Studio navigation');
+    const current = within(nav).getByRole('button', { name: 'Party & Sync' });
+    expect(current.getAttribute('aria-current')).toBe('page');
+    expect(within(nav).getByRole('button', { name: 'Campaign Binder' }).hasAttribute('aria-current')).toBe(false);
+  });
 });

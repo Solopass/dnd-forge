@@ -31,6 +31,8 @@ export function UnifiedLayout({ store, ui, panels }: AppLayoutProps) {
         <button
           type="button"
           className={`unified-rail-btn ${unifiedView === 'sheet' ? 'active' : ''}`}
+          aria-label="Play Sheet"
+          aria-current={unifiedView === 'sheet' ? 'page' : undefined}
           onClick={() => setUnifiedView('sheet')}
         >
           <span className="forge-row" style={{ gap: 6 }}><SwordsIcon size={14} /> Play Sheet</span>
@@ -40,6 +42,8 @@ export function UnifiedLayout({ store, ui, panels }: AppLayoutProps) {
           <button
             type="button"
             className={`unified-rail-btn ${unifiedView === 'dm' ? 'active' : ''}`}
+            aria-label="DM Studio"
+            aria-current={unifiedView === 'dm' ? 'page' : undefined}
             onClick={() => setUnifiedView('dm')}
           >
             <span className="forge-row" style={{ gap: 6 }}><BookIcon size={14} /> DM Studio</span>
@@ -49,6 +53,8 @@ export function UnifiedLayout({ store, ui, panels }: AppLayoutProps) {
         <button
           type="button"
           className={`unified-rail-btn ${unifiedView === 'vtt' ? 'active' : ''}`}
+          aria-label="Tactical VTT"
+          aria-current={unifiedView === 'vtt' ? 'page' : undefined}
           onClick={() => setUnifiedView('vtt')}
         >
           <span className="forge-row" style={{ gap: 6 }}><MapIcon size={14} /> Tactical VTT</span>

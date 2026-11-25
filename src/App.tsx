@@ -1,4 +1,21 @@
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
+import {
+  BattlemapModal,
+  CharacterBuilderDrawer,
+  CharacterManagerModal,
+  DmHubModal,
+  EncounterBuilderModal,
+  EquipmentSpellDrawer,
+  LevelUpModal,
+  LiveTableModal,
+  ModularCanvas,
+  MonsterStatblockModal,
+  NewCharacterModal,
+  RulesetModal,
+  SettingsModal,
+  ShortRestModal,
+  ThemeStudioModal,
+} from './components/app/lazy';
 import './styles/tokens.css';
 import './styles/layout.css';
 import { useSheetStore } from './state/useSheetStore';
@@ -6,41 +23,6 @@ import { CommandPalette, StatusConsole } from './components/SummonCombatDrawer';
 import { ModalDialog } from './components/ModalDialog';
 import { ToastStack } from './components/ToastStack';
 
-const NewCharacterModal = lazy(() =>
-  import('./components/NewCharacterModal').then((m) => ({ default: m.NewCharacterModal }))
-);
-
-const BattlemapModal = lazy(() =>
-  import('./components/BattlemapModal').then((m) => ({ default: m.BattlemapModal }))
-);
-const SettingsModal = lazy(() =>
-  import('./components/SettingsModal').then((m) => ({ default: m.SettingsModal }))
-);
-const RulesetModal = lazy(() =>
-  import('./components/RulesetModal').then((m) => ({ default: m.RulesetModal }))
-);
-const ThemeStudioModal = lazy(() =>
-  import('./components/ThemeStudioModal').then((m) => ({ default: m.ThemeStudioModal }))
-);
-const ModularCanvas = lazy(() =>
-  import('./components/ModularCanvas').then((m) => ({ default: m.ModularCanvas }))
-);
-const LevelUpModal = lazy(() =>
-  import('./components/LevelUpModal').then((m) => ({ default: m.LevelUpModal }))
-);
-const DmHubModal = lazy(() =>
-  import('./components/DmHubModal').then((m) => ({ default: m.DmHubModal }))
-);
-const MonsterStatblockModal = lazy(() =>
-  import('./components/MonsterStatblockModal').then((m) => ({ default: m.MonsterStatblockModal }))
-);
-
-const CharacterBuilderDrawer = lazy(() =>
-  import('./components/CharacterBuilderDrawer').then((m) => ({ default: m.CharacterBuilderDrawer }))
-);
-const EquipmentSpellDrawer = lazy(() =>
-  import('./components/EquipmentSpellDrawer').then((m) => ({ default: m.EquipmentSpellDrawer }))
-);
 import {
   BackpackIcon,
   BookIcon,
@@ -48,18 +30,6 @@ import {
   SwordsIcon,
 } from './components/Icons';
 
-const LiveTableModal = lazy(() =>
-  import('./components/LiveTableModal').then((m) => ({ default: m.LiveTableModal }))
-);
-const EncounterBuilderModal = lazy(() =>
-  import('./components/EncounterBuilderModal').then((m) => ({ default: m.EncounterBuilderModal }))
-);
-const ShortRestModal = lazy(() =>
-  import('./components/ShortRestModal').then((m) => ({ default: m.ShortRestModal }))
-);
-const CharacterManagerModal = lazy(() =>
-  import('./components/CharacterManagerModal').then((m) => ({ default: m.CharacterManagerModal }))
-);
 import { computeCharacterSheet } from './engine/rules-math';
 import { detectRulesetPreset } from './engine/ruleset-config';
 import type { DmHubTab } from './components/DmHubModal';

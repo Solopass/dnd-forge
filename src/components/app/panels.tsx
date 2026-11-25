@@ -1,15 +1,12 @@
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
 import { VitalsColumn } from '../VitalsColumn';
 import { ActionEconomyBoard } from '../ActionEconomyBoard';
 import { SummonCombatDrawer } from '../SummonCombatDrawer';
 import { BUILTIN_CONTENT_PACKS } from '../../engine/srd-packs';
 import { evaluateDiceExpression } from '../../engine/dice';
+import { ItemInspectorPanel } from './lazy';
 import type { AppUi } from './useAppUiState';
 import type { SheetStore } from './types';
-
-const ItemInspectorPanel = lazy(() =>
-  import('../ItemInspectorPanel').then((m) => ({ default: m.ItemInspectorPanel }))
-);
 
 /**
  * The pieces every layout shares (vitals, action board, combat drawer, right slot, battlemap and

@@ -128,11 +128,27 @@ export function parseFree5eFeatMarkdown(
   };
 }
 
+/**
+ * True for Free5e's alphabetical index pages (`Spell_Descriptions/A/_A.md` etc.): a heading
+ * followed only by links to the real pages. Parsing one as content produced fake spells
+ * named "A", "B", "C"... (audit item C2).
+ */
+export function isFree5eIndexPage(md: string, path = ''): boolean {
+  const base = path.split('/').pop() ?? '';
+  if (base.startsWith('_')) return true;
+  const body = md
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !/^#{1,6}\s/.test(line) && !/^<!--.*-->$/.test(line));
+  return body.length > 0 && body.every((line) => /^(?:[-*]\s+)?\[[^\]]+\]\([^)]+\)$/.test(line));
+}
+
 export function parseFree5eMarkdownAuto(
   md: string,
   fallbackCategory: ItemCategory = 'gear',
   sourceLabel = 'Free5e (CC-BY-4.0)'
 ): CompendiumEntity | null {
+  if (isFree5eIndexPage(md)) return null;
   if (/\[_metadata_:spell_name\]:-/i.test(md)) {
     return parseFree5eSpellMarkdown(md, sourceLabel);
   }

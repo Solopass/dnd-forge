@@ -17,28 +17,38 @@ export { normalizeEntries };
  * Files in src/custom-content/_templates/ are ignored by auto-loading and serve
  * purely as reference templates for AI formatting.
  */
-const hasGlob = typeof import.meta.glob === 'function';
-const monsterLoaders = hasGlob
-  ? import.meta.glob<Record<string, unknown>>('../custom-content/monsters/*.json', { import: 'default' })
-  : {};
-const itemLoaders = hasGlob
-  ? import.meta.glob<Record<string, unknown>>('../custom-content/items/*.json', { import: 'default' })
-  : {};
-const spellLoaders = hasGlob
-  ? import.meta.glob<Record<string, unknown>>('../custom-content/spells/*.json', { import: 'default' })
-  : {};
-const featureLoaders = hasGlob
-  ? import.meta.glob<Record<string, unknown>>('../custom-content/features/*.json', { import: 'default' })
-  : {};
-const characterModules = hasGlob
-  ? import.meta.glob<Record<string, unknown>>('../custom-content/characters/*.json', { eager: true, import: 'default' })
-  : {};
-const themeModules = hasGlob
-  ? import.meta.glob<Record<string, unknown>>('../custom-content/themes/*.json', { eager: true, import: 'default' })
-  : {};
-const layoutModules = hasGlob
-  ? import.meta.glob<Record<string, unknown>>('../custom-content/layouts/*.json', { eager: true, import: 'default' })
-  : {};
+// Vite rewrites literal `import.meta.glob(...)` calls at build time, but `typeof import.meta.glob`
+// is a runtime check that is always false in the browser, so it can't be used as a guard (it once
+// was, and the whole SRD library silently stopped loading). Under Bun (the content CLI scripts)
+// `import.meta.glob` doesn't exist and the call throws: fall back to no files there.
+function globOrEmpty<T>(load: () => Record<string, T>): Record<string, T> {
+  try {
+    return load();
+  } catch {
+    return {};
+  }
+}
+const monsterLoaders = globOrEmpty(() =>
+  import.meta.glob<Record<string, unknown>>('../custom-content/monsters/*.json', { import: 'default' })
+);
+const itemLoaders = globOrEmpty(() =>
+  import.meta.glob<Record<string, unknown>>('../custom-content/items/*.json', { import: 'default' })
+);
+const spellLoaders = globOrEmpty(() =>
+  import.meta.glob<Record<string, unknown>>('../custom-content/spells/*.json', { import: 'default' })
+);
+const featureLoaders = globOrEmpty(() =>
+  import.meta.glob<Record<string, unknown>>('../custom-content/features/*.json', { import: 'default' })
+);
+const characterModules = globOrEmpty(() =>
+  import.meta.glob<Record<string, unknown>>('../custom-content/characters/*.json', { eager: true, import: 'default' })
+);
+const themeModules = globOrEmpty(() =>
+  import.meta.glob<Record<string, unknown>>('../custom-content/themes/*.json', { eager: true, import: 'default' })
+);
+const layoutModules = globOrEmpty(() =>
+  import.meta.glob<Record<string, unknown>>('../custom-content/layouts/*.json', { eager: true, import: 'default' })
+);
 
 function slugify(value: string): string {
   return value

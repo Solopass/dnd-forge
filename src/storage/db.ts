@@ -108,6 +108,18 @@ export async function upsertCompendiumEntities(entities: CompendiumEntity[]): Pr
   return indexed.length;
 }
 
+/**
+ * Removes the fake one-letter spells ("A".."Z", ids `free5e-spl-a`..) that older Free5e syncs
+ * created from the repo's alphabetical index pages (audit item C2). Safe to run on every start.
+ */
+export async function removeFree5eIndexJunk(): Promise<number> {
+  const junkIds = 'abcdefghijklmnopqrstuvwxyz'.split('').map((letter) => `free5e-spl-${letter}`);
+  const existing = await db.compendium.bulkGet(junkIds);
+  const toDelete = junkIds.filter((_, i) => existing[i] !== undefined);
+  if (toDelete.length > 0) await db.compendium.bulkDelete(toDelete);
+  return toDelete.length;
+}
+
 export async function exportFullBundle(): Promise<BackupBundle> {
   const [characters, compendiumRecords, encounters, campaigns, scenes] = await Promise.all([
     db.characters.toArray(),

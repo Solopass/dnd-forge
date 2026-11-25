@@ -193,6 +193,8 @@ async function fetchFree5eTreeFromGitHub(
       .map((n) => n.path as string);
 
     for (const p of files) {
+      // `_A.md`-style files are alphabetical index pages, not content
+      if ((p.split('/').pop() ?? '').startsWith('_')) continue;
       if (
         p.startsWith('en-US/Characters_Codex/06_Spellcasting/Spell_Descriptions/') &&
         !p.endsWith('/Spell_Descriptions.md')

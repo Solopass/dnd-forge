@@ -13,7 +13,14 @@ import { syncClassResourcePools } from '../../engine/classes';
 import { createDefaultCampaign } from '../../engine/dm-tools';
 import { LivePeerInfo, LiveTableMessage, LiveTableRole, LiveTableSession } from '../../engine/live-sync';
 import { playTableSound } from '../../engine/sound';
-import { db, saveCampaign, saveCharacter, saveEncounter, upsertCompendiumEntities } from '../../storage/db';
+import {
+  db,
+  removeFree5eIndexJunk,
+  saveCampaign,
+  saveCharacter,
+  saveEncounter,
+  upsertCompendiumEntities,
+} from '../../storage/db';
 import type { ConsoleLine, ToastMessage } from './types';
 
 export function useStoreCore(initialCharacter: RawCharacterState, initialEncounter: CombatEncounterState) {
@@ -231,6 +238,7 @@ export function useStoreCore(initialCharacter: RawCharacterState, initialEncount
         const customRepoEntities = await loadCustomRepoEntities();
         const combinedEntities = [...basePackEntities, ...customRepoEntities];
         await upsertCompendiumEntities(combinedEntities);
+        await removeFree5eIndexJunk();
         const refreshed = await db.compendium.toArray();
         if (active && refreshed.length > 0) {
           setCompendium(refreshed);

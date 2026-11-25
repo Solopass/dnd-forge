@@ -1750,13 +1750,9 @@ export function App() {
         searchCompendium={store.searchCompendium}
         onAddCompendiumItem={store.addCompendiumItemToSheet}
         onInstallContentPack={store.installContentPack}
-        onSyncFree5ePack={() =>
-          store.syncCampaignExternalRepo({
-            owner: 'Solopass',
-            repo: 'free5e',
-            branch: 'main',
-          })
-        }
+        onSyncFree5ePack={store.syncFree5ePack}
+        free5eSyncing={store.free5eSyncing}
+        free5eCount={store.compendium.filter((e) => e.id.startsWith('free5e-')).length}
         onImportDdbPdf={store.importDdbPdfFile}
         onImportHomebrew={store.importMarkdownHomebrew}
         onImportJsonText={store.importJsonFilePayload}

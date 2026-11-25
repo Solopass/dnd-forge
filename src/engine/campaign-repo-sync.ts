@@ -108,6 +108,71 @@ async function fetchRepoJson(
   return JSON.parse(text) as unknown;
 }
 
+async function discoverFree5ePathsViaRaw(
+  config: ExternalRepoConfig,
+  token?: string
+): Promise<Array<{ path: string; category: ItemCategory }>> {
+  const targets: Array<{ path: string; category: ItemCategory }> = [
+    { path: 'en-US/Characters_Codex/03_Creating_a_Character/Equipment/Weapons_table.md', category: 'weapon' },
+    { path: 'en-US/Characters_Codex/03_Creating_a_Character/Equipment/Armor_table.md', category: 'armor' },
+    { path: 'en-US/Characters_Codex/03_Creating_a_Character/Equipment/Adventuring_Gear.md', category: 'gear' },
+    { path: 'en-US/Characters_Codex/03_Creating_a_Character/Equipment/Tools.md', category: 'gear' },
+  ];
+
+  const extractLinks = (md: string): string[] => {
+    const out: string[] = [];
+    const re = /\]\(\.\/([^)\s]+\.md)\)/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(md)) !== null) {
+      if (m[1]) out.push(m[1]);
+    }
+    return out;
+  };
+
+  try {
+    const featsIdx = await fetchRepoText(
+      config,
+      'en-US/Characters_Codex/03_Creating_a_Character/Feats/Feats.md',
+      token
+    );
+    for (const rel of extractLinks(featsIdx)) {
+      targets.push({ path: `en-US/Characters_Codex/03_Creating_a_Character/Feats/${rel}`, category: 'feat' });
+    }
+  } catch {
+    // ignore if missing
+  }
+
+  try {
+    const spellsIdx = await fetchRepoText(
+      config,
+      'en-US/Characters_Codex/06_Spellcasting/Spell_Descriptions.md',
+      token
+    );
+    const letterFiles = extractLinks(spellsIdx);
+    const letterContents = await Promise.all(
+      letterFiles.map(async (rel) => {
+        try {
+          const full = `en-US/Characters_Codex/06_Spellcasting/${rel}`;
+          const dir = full.slice(0, full.lastIndexOf('/'));
+          const text = await fetchRepoText(config, full, token);
+          return extractLinks(text).map((sp) => `${dir}/${sp}`);
+        } catch {
+          return [];
+        }
+      })
+    );
+    for (const group of letterContents) {
+      for (const path of group) {
+        targets.push({ path, category: 'spell' });
+      }
+    }
+  } catch {
+    // ignore if missing
+  }
+
+  return targets;
+}
+
 async function fetchFree5eTreeFromGitHub(
   config: ExternalRepoConfig,
   token?: string
@@ -117,36 +182,39 @@ async function fetchFree5eTreeFromGitHub(
   const headers: Record<string, string> = { Accept: 'application/vnd.github+json' };
   if (token?.trim()) headers.Authorization = `Bearer ${token.trim()}`;
 
-  const treeRes = await fetch(treeUrl, { headers });
-  if (!treeRes.ok) return null;
-  const treeData = (await treeRes.json()) as {
-    tree?: Array<{ path?: string; type?: string }>;
-  };
-  const files = (treeData.tree ?? [])
-    .filter((n) => n.type === 'blob' && typeof n.path === 'string' && n.path.endsWith('.md'))
-    .map((n) => n.path as string);
+  let targets: Array<{ path: string; category: ItemCategory }> = [];
+  const treeRes = await fetch(treeUrl, { headers }).catch(() => null);
+  if (treeRes?.ok) {
+    const treeData = (await treeRes.json()) as {
+      tree?: Array<{ path?: string; type?: string }>;
+    };
+    const files = (treeData.tree ?? [])
+      .filter((n) => n.type === 'blob' && typeof n.path === 'string' && n.path.endsWith('.md'))
+      .map((n) => n.path as string);
 
-  const targets: Array<{ path: string; category: ItemCategory }> = [];
-  for (const p of files) {
-    if (
-      p.startsWith('en-US/Characters_Codex/06_Spellcasting/Spell_Descriptions/') &&
-      !p.endsWith('/Spell_Descriptions.md')
-    ) {
-      targets.push({ path: p, category: 'spell' });
-    } else if (p.startsWith('en-US/Characters_Codex/03_Creating_a_Character/Feats/Feats/')) {
-      targets.push({ path: p, category: 'feat' });
-    } else if (p === 'en-US/Characters_Codex/03_Creating_a_Character/Equipment/Weapons_table.md') {
-      targets.push({ path: p, category: 'weapon' });
-    } else if (p === 'en-US/Characters_Codex/03_Creating_a_Character/Equipment/Armor_table.md') {
-      targets.push({ path: p, category: 'armor' });
-    } else if (
-      p === 'en-US/Characters_Codex/03_Creating_a_Character/Equipment/Adventuring_Gear.md' ||
-      p === 'en-US/Characters_Codex/03_Creating_a_Character/Equipment/Tools.md'
-    ) {
-      targets.push({ path: p, category: 'gear' });
-    } else if (p.startsWith('en-US/Monstrous_Manuscript/02_Monsters_A-Z/Monsters/')) {
-      targets.push({ path: p, category: 'monster' });
+    for (const p of files) {
+      if (
+        p.startsWith('en-US/Characters_Codex/06_Spellcasting/Spell_Descriptions/') &&
+        !p.endsWith('/Spell_Descriptions.md')
+      ) {
+        targets.push({ path: p, category: 'spell' });
+      } else if (p.startsWith('en-US/Characters_Codex/03_Creating_a_Character/Feats/Feats/')) {
+        targets.push({ path: p, category: 'feat' });
+      } else if (p === 'en-US/Characters_Codex/03_Creating_a_Character/Equipment/Weapons_table.md') {
+        targets.push({ path: p, category: 'weapon' });
+      } else if (p === 'en-US/Characters_Codex/03_Creating_a_Character/Equipment/Armor_table.md') {
+        targets.push({ path: p, category: 'armor' });
+      } else if (
+        p === 'en-US/Characters_Codex/03_Creating_a_Character/Equipment/Adventuring_Gear.md' ||
+        p === 'en-US/Characters_Codex/03_Creating_a_Character/Equipment/Tools.md'
+      ) {
+        targets.push({ path: p, category: 'gear' });
+      } else if (p.startsWith('en-US/Monstrous_Manuscript/02_Monsters_A-Z/Monsters/')) {
+        targets.push({ path: p, category: 'monster' });
+      }
     }
+  } else {
+    targets = await discoverFree5ePathsViaRaw(config, token);
   }
 
   if (targets.length === 0) return null;

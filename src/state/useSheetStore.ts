@@ -133,6 +133,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     return Array.from(map.values());
   });
   const [rollMode, setRollMode] = useState<RollMode>('normal');
+  const [free5eSyncing, setFree5eSyncing] = useState(false);
   const [pendingConcDc, setPendingConcDc] = useState<number | null>(null);
   const [initiativeAlert, setInitiativeAlert] = useState<{
     senderName: string;
@@ -285,6 +286,36 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
           setCompendium(refreshed);
         } else if (active && customRepoEntities.length > 0) {
           setCompendium(combinedEntities);
+        }
+
+        const hasFree5e = refreshed.some((e) => e.id.startsWith('free5e-'));
+        const alreadyAutoSynced =
+          typeof localStorage !== 'undefined' &&
+          localStorage.getItem('sidereroll-free5e-autosynced') === '1';
+        if (active && !hasFree5e && !alreadyAutoSynced) {
+          setFree5eSyncing(true);
+          void fetchCampaignPackFromGitHub({ owner: 'Solopass', repo: 'free5e', branch: 'main' })
+            .then(async (res) => {
+              if (!active || res.entities.length === 0) return;
+              await upsertCompendiumEntities(res.entities);
+              setCompendium((prev) => {
+                const map = new Map(prev.map((e) => [e.id, e]));
+                for (const e of res.entities) map.set(e.id, e);
+                return Array.from(map.values());
+              });
+              try {
+                localStorage.setItem('sidereroll-free5e-autosynced', '1');
+              } catch {
+                // ignore
+              }
+              appendLog(`Auto-synced ${res.entities.length} Free5e items from Solopass/free5e.`, 'info');
+            })
+            .catch(() => {
+              // manual sync button remains available in Packs / DM Hub
+            })
+            .finally(() => {
+              if (active) setFree5eSyncing(false);
+            });
         }
       } catch (err) {
         appendLog(`Storage hydration warning: ${String(err)}`, 'warn');
@@ -3982,7 +4013,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   );
 
   const syncCampaignExternalRepo = useCallback(
-    async (repoConfig?: ExternalRepoConfig) => {
+    async (repoConfig?: ExternalRepoConfig, persistAsCampaignRepo = true) => {
       const cfg = repoConfig ?? campaign.externalRepo;
       if (!cfg?.owner || !cfg?.repo) {
         appendLog('Set an owner/repo (e.g. Solopass/my-campaign) before syncing.', 'warn');
@@ -4009,15 +4040,17 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
             return Array.from(map.values());
           });
         }
-        persistCampaign((prev) => {
-          const existingEntryIds = new Set(prev.entries.map((e) => e.id));
-          const newEntries = result.entries.filter((e) => !existingEntryIds.has(e.id));
-          return {
-            ...prev,
-            externalRepo: { ...cfg, lastSyncedAt: result.syncedAt },
-            entries: newEntries.length > 0 ? [...newEntries, ...prev.entries] : prev.entries,
-          };
-        });
+        if (persistAsCampaignRepo) {
+          persistCampaign((prev) => {
+            const existingEntryIds = new Set(prev.entries.map((e) => e.id));
+            const newEntries = result.entries.filter((e) => !existingEntryIds.has(e.id));
+            return {
+              ...prev,
+              externalRepo: { ...cfg, lastSyncedAt: result.syncedAt },
+              entries: newEntries.length > 0 ? [...newEntries, ...prev.entries] : prev.entries,
+            };
+          });
+        }
         appendLog(
           `Synced ${cfg.owner}/${cfg.repo}: ${result.entities.length} entities, ${result.characters.length} characters, ${result.entries.length} binder entries.`,
           'info'
@@ -4031,6 +4064,23 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     },
     [campaign.externalRepo, persistCampaign, appendLog, pushToast]
   );
+
+  const syncFree5ePack = useCallback(async () => {
+    setFree5eSyncing(true);
+    try {
+      await syncCampaignExternalRepo(
+        { owner: 'Solopass', repo: 'free5e', branch: 'main' },
+        false
+      );
+      try {
+        localStorage.setItem('sidereroll-free5e-autosynced', '1');
+      } catch {
+        // ignore
+      }
+    } finally {
+      setFree5eSyncing(false);
+    }
+  }, [syncCampaignExternalRepo]);
 
   const pushCharacterToCampaignRepo = useCallback(
     async (character: RawCharacterState) => {
@@ -4350,6 +4400,8 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     claimPartyStashItem,
     addPartyStashItem,
     syncCampaignExternalRepo,
+    syncFree5ePack,
+    free5eSyncing,
     pushCharacterToCampaignRepo,
     pushCampaignToRepo,
     toggleItemEquipped,

@@ -910,6 +910,8 @@ interface CommandPaletteProps {
   onAddCompendiumItem: (item: CompendiumEntity) => void;
   onInstallContentPack: (packId: string) => Promise<void>;
   onSyncFree5ePack?: () => Promise<void>;
+  free5eSyncing?: boolean;
+  free5eCount?: number;
   onImportDdbPdf: (file: File) => Promise<void>;
   onImportHomebrew: (rawMarkdown: string) => Promise<void>;
   onImportJsonText: (rawJson: string) => Promise<void>;
@@ -928,6 +930,8 @@ export function CommandPalette({
   onAddCompendiumItem,
   onInstallContentPack,
   onSyncFree5ePack,
+  free5eSyncing = false,
+  free5eCount = 0,
   onImportDdbPdf,
   onImportHomebrew,
   onImportJsonText,
@@ -1194,18 +1198,26 @@ export function CommandPalette({
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div className="forge-row-between" style={{ fontSize: 12, color: 'var(--text-secondary)', flexWrap: 'wrap', gap: 6 }}>
               <span>All built-in SRD 5.1 / 2024 SRD 5.2 &amp; Repo content packs are automatically pre-installed.</span>
-              <div className="forge-row" style={{ gap: 6 }}>
+              <div className="forge-row" style={{ gap: 6, flexWrap: 'wrap' }}>
+                {free5eCount > 0 && (
+                  <span className="badge tabular">Free5e: {free5eCount} items ✓</span>
+                )}
                 {onSyncFree5ePack && (
                   <button
                     type="button"
                     className="btn btn-primary"
+                    disabled={free5eSyncing}
                     onClick={async () => {
                       await onSyncFree5ePack();
                       setTab('search');
                     }}
-                    title="Pull native Markdown spells & feats directly from github.com/Solopass/free5e (CC-BY-4.0)"
+                    title="Pull native Markdown spells, feats, and gear directly from github.com/Solopass/free5e (CC-BY-4.0)"
                   >
-                    Sync Free5e (Solopass/free5e)
+                    {free5eSyncing
+                      ? 'Syncing Solopass/free5e...'
+                      : free5eCount > 0
+                        ? 'Re-sync Free5e'
+                        : 'Sync Free5e (Solopass/free5e)'}
                   </button>
                 )}
                 <button

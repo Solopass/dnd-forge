@@ -154,3 +154,145 @@ export function parseFree5eMarkdownAuto(
   }
   return null;
 }
+
+function parseMarkdownTableRows(md: string): string[][] {
+  const rows: string[][] = [];
+  for (const line of md.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('|')) continue;
+    if (/^\|[\s:|-]+\|$/.test(trimmed)) continue; // separator row
+    const cells = trimmed
+      .slice(1, trimmed.endsWith('|') ? -1 : undefined)
+      .split('|')
+      .map((c) => c.trim());
+    if (cells.length >= 2) rows.push(cells);
+  }
+  return rows;
+}
+
+export function parseFree5eWeaponsTable(
+  md: string,
+  sourceLabel = 'Free5e (CC-BY-4.0)'
+): CompendiumEntity[] {
+  const out: CompendiumEntity[] = [];
+  let inRanged = false;
+  for (const cells of parseMarkdownTableRows(md)) {
+    const rawName = cells[0] ?? '';
+    if (!rawName || rawName.toLowerCase() === 'name') continue;
+    if (rawName.startsWith('**') && rawName.endsWith('**')) {
+      inRanged = rawName.toLowerCase().includes('ranged');
+      continue;
+    }
+    const cost = cells[1] ?? '';
+    const dmgCell = cells[2] ?? '';
+    const props = cells[4] ?? '';
+    const dmgMatch = dmgCell.match(/^(\S+)\s+([a-zA-Z]+)/);
+    const dmgDice = dmgMatch?.[1] ?? '1d4';
+    const dmgType = dmgMatch?.[2]?.toLowerCase() ?? 'bludgeoning';
+    const isFinesse = props.toLowerCase().includes('finesse');
+    const isRanged = inRanged || props.toLowerCase().includes('ammunition');
+    const attackAbility: AbilityKey = isRanged ? 'dex' : isFinesse ? 'dex' : 'str';
+
+    out.push({
+      id: `free5e-wpn-${slugify(rawName)}`,
+      name: rawName,
+      source: sourceLabel,
+      ruleset: '2014',
+      category: 'weapon',
+      activities: [
+        {
+          id: `act-f5e-${slugify(rawName)}`,
+          name: rawName,
+          type: 'attack',
+          actionEconomy: 'action',
+          attackAbility,
+          attackBonusFormula: `@${attackAbility} + @prof`,
+          damageFormula: `${dmgDice} + @${attackAbility}`,
+          damageType: dmgType,
+        },
+      ],
+      entries: [
+        `${dmgCell}${props && props !== '—' ? ` • ${props}` : ''}${cost && cost !== '—' ? ` • Cost: ${cost}` : ''}`,
+      ],
+    });
+  }
+  return out;
+}
+
+export function parseFree5eArmorTable(
+  md: string,
+  sourceLabel = 'Free5e (CC-BY-4.0)'
+): CompendiumEntity[] {
+  const out: CompendiumEntity[] = [];
+  for (const cells of parseMarkdownTableRows(md)) {
+    const rawName = cells[0] ?? '';
+    if (!rawName || rawName.toLowerCase() === 'armor') continue;
+    if (rawName.startsWith('**') && rawName.endsWith('**')) continue;
+
+    const cost = cells[1] ?? '';
+    const acCell = cells[2] ?? '';
+    const strReq = cells[3] ?? '';
+    const stealth = cells[4] ?? '';
+    const isShield = rawName.toLowerCase() === 'shield' || acCell.trim().startsWith('+');
+    const baseMatch = acCell.match(/(\d+)/);
+    const baseAc = baseMatch?.[1] ? Number.parseInt(baseMatch[1], 10) : 11;
+    const hasDex = acCell.toLowerCase().includes('dex');
+    const dexCap = !hasDex ? 0 : acCell.toLowerCase().includes('max 2') ? 2 : null;
+
+    out.push({
+      id: `free5e-${isShield ? 'shd' : 'arm'}-${slugify(rawName)}`,
+      name: rawName,
+      source: sourceLabel,
+      ruleset: '2014',
+      category: isShield ? 'shield' : 'armor',
+      acFormula: isShield ? undefined : { base: baseAc, dexCap },
+      acFlatBonus: isShield ? 2 : undefined,
+      activities: [],
+      entries: [
+        `AC ${acCell}${strReq && strReq !== '—' ? ` • ${strReq}` : ''}${stealth && stealth !== '—' ? ` • Stealth: ${stealth}` : ''}${cost && cost !== '—' ? ` • Cost: ${cost}` : ''}`,
+      ],
+    });
+  }
+  return out;
+}
+
+export function parseFree5eGearTable(
+  md: string,
+  sourceLabel = 'Free5e (CC-BY-4.0)'
+): CompendiumEntity[] {
+  const out: CompendiumEntity[] = [];
+  for (const cells of parseMarkdownTableRows(md)) {
+    const rawName = cells[0] ?? '';
+    if (!rawName || /^(item|name|tool)$/i.test(rawName)) continue;
+    if (rawName.startsWith('**') && rawName.endsWith('**')) continue;
+    const rest = cells.slice(1).filter((c) => c && c !== '—').join(' • ');
+    out.push({
+      id: `free5e-gear-${slugify(rawName)}`,
+      name: rawName,
+      source: sourceLabel,
+      ruleset: '2014',
+      category: 'gear',
+      activities: [],
+      entries: [rest || rawName],
+    });
+  }
+  return out;
+}
+
+export function parseFree5eMarkdownBatch(
+  md: string,
+  fallbackCategory: ItemCategory = 'gear',
+  sourceLabel = 'Free5e (CC-BY-4.0)'
+): CompendiumEntity[] {
+  if (fallbackCategory === 'weapon' && /\|\s*Damage\s*\|/i.test(md)) {
+    return parseFree5eWeaponsTable(md, sourceLabel);
+  }
+  if (fallbackCategory === 'armor' && /\|\s*Armor Class/i.test(md)) {
+    return parseFree5eArmorTable(md, sourceLabel);
+  }
+  if (fallbackCategory === 'gear' && /^\|.+\|$/m.test(md) && !/\[_metadata_:/i.test(md)) {
+    return parseFree5eGearTable(md, sourceLabel);
+  }
+  const single = parseFree5eMarkdownAuto(md, fallbackCategory, sourceLabel);
+  return single ? [single] : [];
+}

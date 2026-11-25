@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { extractSrdSpellcasterClasses } from '../classes';
-import { parseFree5eFeatMarkdown, parseFree5eMarkdownAuto, parseFree5eSpellMarkdown } from '../free5e-parser';
+import {
+  parseFree5eArmorTable,
+  parseFree5eFeatMarkdown,
+  parseFree5eMarkdownAuto,
+  parseFree5eSpellMarkdown,
+  parseFree5eWeaponsTable,
+} from '../free5e-parser';
 import { BUILTIN_CONTENT_PACKS } from '../srd-packs';
 import {
   normalizeCustomCharacter,
@@ -333,5 +339,24 @@ A stinking bubble of acid deals 1d6 acid damage.`;
 
     const autoSpell = parseFree5eMarkdownAuto(acidSplashMd, 'gear');
     expect(autoSpell?.id).toBe('free5e-spl-acid-splash');
+
+    const weaponsMd = `| Name | Cost | Damage | Weight | Properties |
+|:---|---:|:---|---:|:---|
+| **Simple Ranged Weapons** | | | | |
+| Shortbow | 25 gp | 1d6 piercing | 2 lb. | Ammunition (range 80/320) |`;
+    const weapons = parseFree5eWeaponsTable(weaponsMd);
+    expect(weapons).toHaveLength(1);
+    expect(weapons[0]?.activities[0]?.attackAbility).toBe('dex');
+    expect(weapons[0]?.activities[0]?.damageFormula).toBe('1d6 + @dex');
+
+    const armorMd = `| Armor | Cost | Armor Class (AC) | Strength | Stealth | Weight |
+|:---|---:|:---|:---|:---|:---|
+| Breastplate | 400 gp | 14 + Dex modifier (max 2) | — | — | 20 lb. |
+| Shield | 10 gp | +2 | — | — | 6 lb. |`;
+    const armors = parseFree5eArmorTable(armorMd);
+    expect(armors).toHaveLength(2);
+    expect(armors[0]?.acFormula).toEqual({ base: 14, dexCap: 2 });
+    expect(armors[1]?.category).toBe('shield');
+    expect(armors[1]?.acFlatBonus).toBe(2);
   });
 });

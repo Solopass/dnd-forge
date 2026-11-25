@@ -2,7 +2,7 @@ import { CampaignEntry, CampaignRecord, ExternalRepoConfig } from '../types/camp
 import { RawCharacterState } from '../types/character';
 import { CompendiumEntity, ItemCategory } from '../types/compendium';
 import { normalizeCustomCharacter, normalizeCustomEntity } from './custom-content-loader';
-import { parseFree5eMarkdownAuto } from './free5e-parser';
+import { parseFree5eMarkdownBatch } from './free5e-parser';
 
 const PAT_STORAGE_KEY = 'sidereroll-github-pat';
 
@@ -135,6 +135,15 @@ async function fetchFree5eTreeFromGitHub(
       targets.push({ path: p, category: 'spell' });
     } else if (p.startsWith('en-US/Characters_Codex/03_Creating_a_Character/Feats/Feats/')) {
       targets.push({ path: p, category: 'feat' });
+    } else if (p === 'en-US/Characters_Codex/03_Creating_a_Character/Equipment/Weapons_table.md') {
+      targets.push({ path: p, category: 'weapon' });
+    } else if (p === 'en-US/Characters_Codex/03_Creating_a_Character/Equipment/Armor_table.md') {
+      targets.push({ path: p, category: 'armor' });
+    } else if (
+      p === 'en-US/Characters_Codex/03_Creating_a_Character/Equipment/Adventuring_Gear.md' ||
+      p === 'en-US/Characters_Codex/03_Creating_a_Character/Equipment/Tools.md'
+    ) {
+      targets.push({ path: p, category: 'gear' });
     } else if (p.startsWith('en-US/Monstrous_Manuscript/02_Monsters_A-Z/Monsters/')) {
       targets.push({ path: p, category: 'monster' });
     }
@@ -151,14 +160,14 @@ async function fetchFree5eTreeFromGitHub(
       slice.map(async (t) => {
         try {
           const md = await fetchRepoText(config, t.path, token);
-          return parseFree5eMarkdownAuto(md, t.category, sourceLabel);
+          return parseFree5eMarkdownBatch(md, t.category, sourceLabel);
         } catch {
-          return null;
+          return [];
         }
       })
     );
-    for (const ent of results) {
-      if (ent) entities.push(ent);
+    for (const batch of results) {
+      entities.push(...batch);
     }
   }
 
@@ -222,8 +231,7 @@ export async function fetchCampaignPackFromGitHub(
             : 'gear');
     if (specPath.toLowerCase().endsWith('.md')) {
       const mdText = await fetchRepoText(config, specPath, token);
-      const parsed = parseFree5eMarkdownAuto(mdText, fallbackCat, sourceLabel);
-      if (parsed) {
+      for (const parsed of parseFree5eMarkdownBatch(mdText, fallbackCat, sourceLabel)) {
         if (parsed.imageUrl) parsed.imageUrl = resolveRepoAssetUrl(parsed.imageUrl, config);
         entities.push(parsed);
       }

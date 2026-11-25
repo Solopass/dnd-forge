@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { useSheetStore } from '../useSheetStore';
-import { SEED_CHARACTER, SEED_ENCOUNTER } from '../../App';
+import { SEED_CHARACTER, SEED_ENCOUNTER } from '../seed';
 import { db } from '../../storage/db';
 import type { ResolvedActivity } from '../../types/character';
 
@@ -33,7 +33,12 @@ beforeEach(async () => {
   await db.open();
 });
 
-afterEach(() => {
+afterEach(async () => {
+  // unmount the hook so it stops saving, then wait for its queued Dexie writes:
+  // a read-write transaction over every table only starts after earlier ones finish
+  cleanup();
+  await db.transaction('rw', db.tables, () => undefined);
+  localStorage.clear();
   vi.restoreAllMocks();
 });
 
@@ -488,6 +493,12 @@ Claws. +7 to hit, 2d8 + 5 slashing damage`;
       await h.result.current.switchCharacter('char-armorer-01');
     });
     expect(h.result.current.rawChar.id).toBe('char-armorer-01');
+    const heroId = h.result.current.characterList.find((c) => c.name === 'Test Hero')!.id;
+    await act(async () => {
+      await h.result.current.deleteCharacter(heroId);
+    });
+    expect(h.result.current.characterList).toHaveLength(startCount);
+    expect(await db.characters.get(heroId)).toBeUndefined();
   });
 
   it('toggleCombatantCondition handles monsters and toggleCombatantEconomy flips usage', async () => {

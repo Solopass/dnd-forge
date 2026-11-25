@@ -22,6 +22,19 @@ function normalize(html: string): string {
   });
 }
 
+// Lazy chunks load at their own pace (slower on a cold or busy machine), so wait until the
+// DOM has stopped changing before snapshotting.
+async function settle(container: HTMLElement) {
+  let last = '';
+  let stable = 0;
+  for (let i = 0; i < 150 && stable < 6; i++) {
+    await new Promise((r) => setTimeout(r, 100));
+    const now = container.innerHTML;
+    stable = now === last ? stable + 1 : 0;
+    last = now;
+  }
+}
+
 type Setup = { role: 'dm' | 'player'; uiMode?: 'classic' | 'unified'; modular?: boolean };
 
 async function renderApp(opts: Setup, ready: () => Promise<unknown>) {
@@ -34,8 +47,7 @@ async function renderApp(opts: Setup, ready: () => Promise<unknown>) {
     expect(await db.compendium.count()).toBeGreaterThan(0);
   }, { timeout: 10000 });
   await ready();
-  // let lazy chunks and trailing state updates settle
-  await new Promise((r) => setTimeout(r, 300));
+  await settle(view.container);
   await ready();
   return view;
 }
@@ -96,6 +108,7 @@ describe('App layouts render', () => {
     });
     fireEvent.click(screen.getByText('Combat Rail ON'));
     await screen.findByText('Combat Rail OFF');
+    await settle(container);
     expect(screen.queryByRole('tablist', { name: 'Right panel tabs' })).toBeNull();
     expect(normalize(container.innerHTML)).toMatchSnapshot();
   });
@@ -115,6 +128,7 @@ describe('App layouts render', () => {
     });
     fireEvent.click(screen.getByText('Tactical VTT'));
     await screen.findByText('← Play Sheet');
+    await settle(container);
     expect(normalize(container.innerHTML)).toMatchSnapshot();
   });
 
@@ -132,6 +146,7 @@ describe('App layouts render', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: 'Tactical Battlemap', pressed: false }));
     await waitFor(() => expect(container.querySelector('.battlemap-scroll')).not.toBeNull());
+    await settle(container);
     expect(normalize(container.innerHTML)).toMatchSnapshot();
   });
 
@@ -141,6 +156,7 @@ describe('App layouts render', () => {
     });
     fireEvent.click(screen.getByText(/Active Battlemap/));
     await waitFor(() => expect(container.querySelector('.center-battlemap-slot .battlemap-scroll')).not.toBeNull());
+    await settle(container);
     expect(normalize(container.innerHTML)).toMatchSnapshot();
   });
 });

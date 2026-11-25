@@ -40,6 +40,16 @@ export function buildAppPanels(store: SheetStore, ui: AppUi) {
     isInDmStudio,
   } = ui;
 
+  const rollCheck = (label: string, mod: number) => {
+    const sign = mod >= 0 ? '+' : '';
+    const res = evaluateDiceExpression(`1d20${sign}${mod}`, store.rollMode);
+    store.appendLog(`${label} (${res.mode}): ${res.total}`, res.isCrit ? 'crit' : 'roll');
+  };
+
+  type TriggerArgs = Parameters<SheetStore['triggerActivity']>;
+  const triggerActivity = (act: TriggerArgs[0], slot: TriggerArgs[1], ritual: TriggerArgs[2]) =>
+    store.triggerActivity(act, slot, ritual, selectedTargetIds);
+
   const vitalsNode = (
     <VitalsColumn
       sheet={store.resolvedSheet}
@@ -64,11 +74,7 @@ export function buildAppPanels(store: SheetStore, ui: AppUi) {
       onSpendHitDie={store.spendHitDie}
       onUpdateSenses={store.updateSenses}
       onUpdateSpeeds={store.updateSpeeds}
-      onRollCheck={(label, mod) => {
-        const sign = mod >= 0 ? '+' : '';
-        const res = evaluateDiceExpression(`1d20${sign}${mod}`, store.rollMode);
-        store.appendLog(`${label} (${res.mode}): ${res.total}`, res.isCrit ? 'crit' : 'roll');
-      }}
+      onRollCheck={rollCheck}
     />
   );
 
@@ -79,9 +85,7 @@ export function buildAppPanels(store: SheetStore, ui: AppUi) {
       layoutVariant={uiMode}
       rollMode={store.rollMode}
       onChangeRollMode={store.setRollMode}
-      onTriggerActivity={(act, slot, ritual) =>
-        store.triggerActivity(act, slot, ritual, selectedTargetIds)
-      }
+      onTriggerActivity={triggerActivity}
       onRollInlineExpression={store.rollInlineExpression}
       onToggleEquipped={store.toggleItemEquipped}
       onTogglePrepared={store.toggleItemPrepared}
@@ -93,11 +97,7 @@ export function buildAppPanels(store: SheetStore, ui: AppUi) {
       flankingRule={store.houseRules.flankingRule}
       onToggleBuff={store.toggleBuff}
       onDivineSmite={store.divineSmite}
-      onRollCheck={(label, mod) => {
-        const sign = mod >= 0 ? '+' : '';
-        const res = evaluateDiceExpression(`1d20${sign}${mod}`, store.rollMode);
-        store.appendLog(`${label} (${res.mode}): ${res.total}`, res.isCrit ? 'crit' : 'roll');
-      }}
+      onRollCheck={rollCheck}
       campaign={store.campaign}
       onUpdateQuantity={store.updateItemQuantity}
       onUpdateContainer={store.updateItemContainer}
@@ -207,9 +207,7 @@ export function buildAppPanels(store: SheetStore, ui: AppUi) {
             <ItemInspectorPanel
               item={inspectedItem}
               sheet={store.resolvedSheet}
-              onTriggerActivity={(act, slot, ritual) =>
-        store.triggerActivity(act, slot, ritual, selectedTargetIds)
-      }
+              onTriggerActivity={triggerActivity}
               onRollInlineExpression={store.rollInlineExpression}
               onToggleEquipped={store.toggleItemEquipped}
               onTogglePrepared={store.toggleItemPrepared}
@@ -335,6 +333,8 @@ export function buildAppPanels(store: SheetStore, ui: AppUi) {
   };
 
   return {
+    triggerActivity,
+    rollCheck,
     vitalsNode,
     actionBoardNode,
     combatDrawerNode,

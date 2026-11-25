@@ -13,13 +13,13 @@ export function ModularLayout({ store, ui, panels }: AppLayoutProps) {
     activeLayout,
     setPaletteInitialCat,
     setPaletteInitialRuleset,
-    selectedTargetIds,
     isPlayerRole,
     handleChangeLayout,
   } = ui;
   const {
     combatDrawerNode,
     sharedBattlemapProps,
+    triggerActivity,
   } = panels;
   return (
     <Suspense fallback={null}>
@@ -37,9 +37,7 @@ export function ModularLayout({ store, ui, panels }: AppLayoutProps) {
         flankingRule={store.houseRules.flankingRule}
         onToggleBuff={store.toggleBuff}
         onDivineSmite={store.divineSmite}
-        onTriggerActivity={(act, slot, ritual) =>
-    store.triggerActivity(act, slot, ritual, selectedTargetIds)
-  }
+        onTriggerActivity={triggerActivity}
         onRollInlineExpression={store.rollInlineExpression}
         onAdjustHp={store.adjustHp}
         onSetTempHp={store.setTempHp}

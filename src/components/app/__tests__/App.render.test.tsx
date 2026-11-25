@@ -268,4 +268,24 @@ describe('Player view hides DM detail', () => {
     expect(within(header).getByRole('button', { name: 'Battlemap' })).toBeTruthy();
     expect(within(header).getByRole('button', { name: 'Themes' })).toBeTruthy();
   });
+
+  it('DM role: layout controls are locked or hidden, not silently inert', async () => {
+    // jsdom has no <dialog>.showModal(); fake just enough for ModalDialog to open
+    HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) {
+      this.setAttribute('open', '');
+    };
+    HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) {
+      this.removeAttribute('open');
+    };
+    await renderApp({ role: 'dm', modular: true }, async () => {
+      await screen.findByLabelText('DM Studio navigation');
+    });
+    expect(screen.queryByRole('button', { name: 'Edit Blocks' })).toBeNull();
+    const header = screen.getByRole('banner');
+    fireEvent.click(within(header).getByRole('button', { name: /More/ }));
+    fireEvent.click(within(header).getByRole('button', { name: 'Settings' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Layouts apply to the Player view.')).toBeTruthy();
+    expect(within(dialog).getByRole('button', { name: /Unified Command Studio/ }).hasAttribute('disabled')).toBe(true);
+  });
 });

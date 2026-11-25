@@ -16,6 +16,8 @@ interface SettingsModalProps {
   onClose: () => void;
   uiMode?: UiMode;
   onChangeUiMode?: (mode: UiMode) => void;
+  /** DM role always uses DM Studio, so the layout choice only applies to the Player view. */
+  layoutsLocked?: boolean;
   rulesetPresetLabel?: string;
   onOpenRulesetModal?: () => void;
   activeThemeName?: string;
@@ -48,6 +50,7 @@ export function SettingsModal({
   onClose,
   uiMode,
   onChangeUiMode,
+  layoutsLocked = false,
   rulesetPresetLabel,
   onOpenRulesetModal,
   activeThemeName,
@@ -138,6 +141,7 @@ export function SettingsModal({
             <button
               type="button"
               className={`pill ${effectiveUiMode === 'classic' ? 'active' : ''}`}
+              disabled={layoutsLocked}
               onClick={() => setUiMode('classic')}
             >
               D&amp;D Beyond Classic (Default)
@@ -145,11 +149,13 @@ export function SettingsModal({
             <button
               type="button"
               className={`pill ${effectiveUiMode === 'unified' ? 'active' : ''}`}
+              disabled={layoutsLocked}
               onClick={() => setUiMode('unified')}
             >
               Unified Command Studio
             </button>
           </div>
+          {layoutsLocked && <div className="forge-muted">Layouts apply to the Player view.</div>}
           <div className="forge-muted">
             Classic mimics the familiar D&amp;D Beyond character sheet with modal DM/VTT tools. Unified embeds DM Studio &amp; Tactical VTT directly in the main canvas with a left workspace rail.
           </div>

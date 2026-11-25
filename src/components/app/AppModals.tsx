@@ -376,6 +376,7 @@ export function AppModals({ store, ui, panels }: AppLayoutProps) {
           onClose={() => setSettingsOpen(false)}
           uiMode={uiMode}
           onChangeUiMode={setUiMode}
+          layoutsLocked={!isPlayerRole}
           rulesetPresetLabel={(() => {
             const p = detectRulesetPreset(store.houseRules);
             return p === '2014' ? '2014 Classic' : p === '2024' ? '2024 Revised' : 'Custom Mix';

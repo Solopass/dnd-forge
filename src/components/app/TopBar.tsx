@@ -224,7 +224,7 @@ export function TopBar({ store, ui }: AppSectionProps) {
       </div>
 
       <div className="topbar-actions">
-        {modularMode && (
+        {modularMode && isPlayerRole && (
           <button
             type="button"
             className={`btn ${isEditingLayout ? 'btn-primary' : ''}`}

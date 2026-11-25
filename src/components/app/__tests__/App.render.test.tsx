@@ -206,4 +206,14 @@ describe('Player view hides DM detail', () => {
     expect(within(panel).queryByLabelText('Active encounter')).toBeNull();
     expect(within(panel).queryByText(/Quick Demo/)).toBeNull();
   });
+
+  it('the sheet condition picker starts on a placeholder, not on a real condition', async () => {
+    await renderApp({ role: 'player', uiMode: 'unified' }, async () => {
+      await screen.findByLabelText('Unified workspace navigation');
+    });
+    const select = screen.getByLabelText('Condition to toggle') as HTMLSelectElement;
+    expect(select.value).toBe('');
+    expect(select.options[0]?.textContent).toBe('Add condition…');
+    expect(screen.getByRole('button', { name: 'Toggle Cond' }).hasAttribute('disabled')).toBe(true);
+  });
 });

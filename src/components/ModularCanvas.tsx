@@ -136,7 +136,7 @@ export function ModularCanvas({
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [resizingInfo, setResizingInfo] = useState<{ id: WidgetId; text: string } | null>(null);
   const [hpInput, setHpInput] = useState('5');
-  const [condSelect, setCondSelect] = useState('Poisoned');
+  const [condSelect, setCondSelect] = useState('');
   const [skillView, setSkillView] = useState<'wheel' | 'list'>('wheel');
   const [smiteLevel, setSmiteLevel] = useState(1);
   const [savedPresets, setSavedPresets] = useState<WorkspaceLayoutConfig[]>(() => readStoredSavedLayouts());
@@ -445,13 +445,21 @@ export function ModularCanvas({
                 value={condSelect}
                 onChange={(e) => setCondSelect(e.target.value)}
               >
+                <option value="">Add condition…</option>
                 {STANDARD_CONDITIONS.map((c) => (
                   <option key={c} value={c}>
                     {c}
                   </option>
                 ))}
               </select>
-              <button type="button" className="btn" onClick={() => onToggleCondition(condSelect)}>
+              <button
+                type="button"
+                className="btn"
+                disabled={condSelect === ''}
+                onClick={() => {
+                  if (condSelect) onToggleCondition(condSelect);
+                }}
+              >
                 Toggle
               </button>
               <span className="badge tabular">Exh {sheet.exhaustion}</span>

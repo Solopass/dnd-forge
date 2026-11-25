@@ -86,7 +86,7 @@ export function VitalsColumn({
   const [tempHpInput, setTempHpInput] = useState('');
   const [skillsExpanded, setSkillsExpanded] = useState(true);
   const [skillFilter, setSkillFilter] = useState('');
-  const [selectedCondition, setSelectedCondition] = useState<string>(STANDARD_CONDITIONS[0]);
+  const [selectedCondition, setSelectedCondition] = useState<string>('');
   const [showDefenseEditor, setShowDefenseEditor] = useState(false);
   const [showWildShapePicker, setShowWildShapePicker] = useState(false);
   const [selectedBeastId, setSelectedBeastId] = useState(WILD_SHAPE_BEAST_FORMS[0]?.id ?? '');
@@ -521,13 +521,21 @@ export function VitalsColumn({
             onChange={(e) => setSelectedCondition(e.target.value)}
             style={{ flex: 1, padding: '3px 6px' }}
           >
+            <option value="">Add condition…</option>
             {STANDARD_CONDITIONS.map((cond) => (
               <option key={cond} value={cond}>
                 {cond}
               </option>
             ))}
           </select>
-          <button type="button" className="btn" onClick={() => onToggleCondition(selectedCondition)}>
+          <button
+            type="button"
+            className="btn"
+            disabled={selectedCondition === ''}
+            onClick={() => {
+              if (selectedCondition) onToggleCondition(selectedCondition);
+            }}
+          >
             Toggle Cond
           </button>
           <button

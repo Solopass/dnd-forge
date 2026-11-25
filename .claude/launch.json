@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dnd-forge",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "dev", "--", "--port", "5198", "--strictPort"],
+      "port": 5198
+    },
+    {
+      "name": "content-gui",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "content:gui"],
+      "port": 4179
+    }
+  ]
+}

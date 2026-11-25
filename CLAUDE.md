@@ -1,11 +1,12 @@
 # CLAUDE.md — Local AI Architect & Builder Rules
 
 ## Build & Verification
-- Install: `npm install`
-- Test: `npm test`
-- Typecheck & Bundle: `npm run build`
-- Dev Server: `npm run dev`
+- Install: `bun install`
+- Test: `bun run test`
+- Typecheck & Bundle: `bun run build`
+- Dev Server: `bun run dev`
 - Version Bump (run before every push): `bun run version:bump` (`small` = +0.01, `medium` = +0.10, `major` = +1.00)
+- npm is not installed on this machine; use bun for every script.
 
 ## Architectural Invariants
 1. **Strict One-Way Layer Flow (`components -> state -> engine -> storage`):**

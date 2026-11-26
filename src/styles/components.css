@@ -188,3 +188,24 @@
 .magic-row .forge-input { padding: 2px 6px; font-size: 11px; }
 .magic-row__bonus { width: 64px; }
 .magic-row__name { flex: 1 1 120px; min-width: 100px; }
+
+/* Content fixes: report / fix editor, Fixes tab, "fixed" badge */
+.fix-report-btn { margin-left: auto; margin-right: 6px; }
+.badge-fixed { color: var(--accent-amber); border-color: var(--accent-amber-border); }
+.fix-form__row { display: flex; flex-wrap: wrap; gap: 8px; }
+.fix-form__row .fix-field { flex: 1 1 140px; }
+.fix-field { display: flex; flex-direction: column; gap: 2px; font-size: 12px; }
+.fix-field > span { color: var(--text-muted); }
+.fix-form__text { resize: vertical; min-height: 90px; font-family: inherit; }
+.fix-form__activity { border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 6px 8px; display: flex; flex-direction: column; gap: 6px; }
+.fix-form__activity legend { font-size: 12px; font-weight: 700; padding: 0 4px; }
+.fix-form__error { color: var(--accent-red, #f85149); }
+.fix-form__file { display: none; }
+.fix-state--approved { color: var(--accent-green, #3fb950); }
+.fix-state--rejected { color: var(--text-muted); }
+.fix-state--needs-re-review { color: var(--accent-amber); }
+.fix-diff { width: 100%; border-collapse: collapse; font-size: 12px; }
+.fix-diff th { text-align: left; font-weight: 600; padding: 3px 6px; white-space: nowrap; vertical-align: top; }
+.fix-diff td { padding: 3px 6px; vertical-align: top; word-break: break-word; }
+.fix-diff__before { color: var(--text-muted); text-decoration: line-through; }
+.fix-diff__after { color: var(--accent-green, #3fb950); }

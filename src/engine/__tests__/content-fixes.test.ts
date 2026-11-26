@@ -6,6 +6,7 @@ import {
   buildPatch,
   createFix,
   diffEntities,
+  entityIdForSheetItem,
   exportFixesFile,
   fixState,
   hashEntity,
@@ -156,5 +157,15 @@ describe('createFix and fix files', () => {
     expect(bad.fixes).toEqual([]);
     expect(bad.skipped).toHaveLength(3);
     expect(parseFixesFile({ nope: 1 }, new Set()).skipped).toHaveLength(1);
+  });
+});
+
+describe('entityIdForSheetItem', () => {
+  it('maps an Add-to-sheet copy back to its entry, and unknown ids to null', () => {
+    const known = new Set(['syn-spark', 'plain-item']);
+    expect(entityIdForSheetItem('plain-item', known)).toBe('plain-item');
+    expect(entityIdForSheetItem('syn-spark-lq3k2a9z', known)).toBe('syn-spark');
+    expect(entityIdForSheetItem('other-lq3k2a9z', known)).toBeNull();
+    expect(entityIdForSheetItem('syn-spark-x', known)).toBeNull();
   });
 });

@@ -46,6 +46,7 @@ export function useAppUiState(store: SheetStore) {
   const [charManagerOpen, setCharManagerOpen] = useState(false);
   const [paletteInitialCat, setPaletteInitialCat] = useState<'all' | ItemCategory>('all');
   const [paletteInitialRuleset, setPaletteInitialRuleset] = useState<'all' | '2014' | '2024'>('all');
+  const [paletteFixEntityId, setPaletteFixEntityId] = useState<string | null>(null);
   const [liveTableOpen, setLiveTableOpen] = useState(false);
   const [encounterBuilderOpen, setEncounterBuilderOpen] = useState(false);
   const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
@@ -256,6 +257,8 @@ export function useAppUiState(store: SheetStore) {
     setPaletteInitialCat,
     paletteInitialRuleset,
     setPaletteInitialRuleset,
+    paletteFixEntityId,
+    setPaletteFixEntityId,
     liveTableOpen,
     setLiveTableOpen,
     encounterBuilderOpen,

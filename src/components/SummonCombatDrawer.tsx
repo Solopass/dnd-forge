@@ -5,6 +5,8 @@ import { ActionEconomy, STANDARD_CONDITIONS } from '../types/core';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
 import { extractSrdSpellcasterClasses, spellOnClassList } from '../engine/classes';
 import { DuplicatesReview } from './DuplicatesReview';
+import { ContentFixEditor } from './ContentFixEditor';
+import { ContentFixesReview, type ContentFixApi } from './ContentFixesReview';
 import {
   dedupeCompendium,
   DEFAULT_SOURCE_PRIORITY,
@@ -923,6 +925,10 @@ interface CommandPaletteProps {
   dupDecisions?: readonly DuplicateDecision[];
   onResolveDuplicate?: (group: NearDuplicateGroup, action: DuplicateAction, keepId?: string) => void | Promise<void>;
   onUndoDuplicate?: (groupId: string) => void | Promise<void>;
+  /** Flag it, fix it, review it: the Fixes tab and the Report / fix button on entries. */
+  fixApi?: ContentFixApi;
+  /** Opens the dialog straight on the fix editor for this entry (from the item inspector). */
+  initialFixEntityId?: string | null;
   onImportHomebrew: (rawMarkdown: string) => Promise<void>;
   onImportJsonText: (rawJson: string) => Promise<void>;
 }
@@ -948,10 +954,13 @@ export function CommandPalette({
   dupDecisions,
   onResolveDuplicate,
   onUndoDuplicate,
+  fixApi,
+  initialFixEntityId = null,
   onImportHomebrew,
   onImportJsonText,
 }: CommandPaletteProps) {
-  const [tab, setTab] = useState<'search' | 'packs' | 'pdf' | 'markdown' | 'json' | 'dupes'>('search');
+  const [tab, setTab] = useState<'search' | 'packs' | 'pdf' | 'markdown' | 'json' | 'dupes' | 'fixes'>('search');
+  const [fixTargetId, setFixTargetId] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<'all' | CompendiumEntity['category']>(initialCategory);
   const [rulesetFilter, setRulesetFilter] = useState<'all' | '2014' | '2024'>(initialRuleset);
   const [customOnly, setCustomOnly] = useState(false);
@@ -972,8 +981,9 @@ export function CommandPalette({
       setShowAllMatches(false);
       setQuery('');
       setClassCastableOnly(initialCategory === 'spell' && maxCastableSpellLevel > 0);
+      setFixTargetId(initialFixEntityId);
     }
-  }, [isOpen, initialCategory, initialRuleset, maxCastableSpellLevel]);
+  }, [isOpen, initialCategory, initialRuleset, maxCastableSpellLevel, initialFixEntityId]);
 
   const charClassSet = extractSrdSpellcasterClasses(characterClasses);
   const allMatches = searchCompendium(query)
@@ -1003,6 +1013,8 @@ export function CommandPalette({
   const matches =
     categoryFilter === 'spell' || showAllMatches ? allMatches : allMatches.slice(0, 120);
   const ownedSet = new Set(ownedItemNames.map((n) => n.toLowerCase()));
+  const fixTarget = fixApi && fixTargetId ? fixApi.getEffective(fixTargetId) : undefined;
+  const pendingFixCount = fixApi ? fixApi.fixes.filter((f) => f.status === 'proposed').length : 0;
 
   return (
     <ModalDialog isOpen={isOpen} onClose={onClose} title="Compendium, SRD Packs & Importers">
@@ -1051,9 +1063,36 @@ export function CommandPalette({
                 Duplicates
               </button>
             )}
+            {fixApi && (
+              <button
+                type="button"
+                className={`pill ${tab === 'fixes' ? 'active' : ''}`}
+                onClick={() => {
+                  setTab('fixes');
+                  setFixTargetId(null);
+                }}
+              >
+                Fixes
+                {pendingFixCount > 0 ? ` (${pendingFixCount})` : ''}
+              </button>
+            )}
         </div>
 
-        {tab === 'search' && (
+        {fixApi && fixTarget && (
+          <ContentFixEditor
+            entity={fixTarget}
+            onSubmit={async (edited, note) => {
+              const r = await fixApi.propose(fixTarget.id, edited, note);
+              if (!r.ok) return r.error;
+              setFixTargetId(null);
+              setTab('fixes');
+              return null;
+            }}
+            onCancel={() => setFixTargetId(null)}
+          />
+        )}
+
+        {tab === 'search' && !fixTarget && (
           <div>
             <input
               autoFocus
@@ -1161,6 +1200,9 @@ export function CommandPalette({
                 >
                   <div className="combat-drawer__div-4">
                     <strong>{item.name}</strong>{' '}
+                    {item.fixedBy && item.fixedBy.length > 0 && (
+                      <span className="badge badge-fixed" title="An approved fix is applied to this entry">fixed</span>
+                    )}{' '}
                     <span className="combat-drawer__span-3">
                       [
                       {item.category === 'spell'
@@ -1180,6 +1222,11 @@ export function CommandPalette({
                       </div>
                     )}
                   </div>
+                  {fixApi && (
+                    <button type="button" className="btn text-sm fix-report-btn" title="Report a mistake or propose a fix" onClick={() => setFixTargetId(item.id)}>
+                      Report / fix
+                    </button>
+                  )}
                   {item.category === 'monster' && isPlayerRole ? (
                     <span className="badge" title="Switch to DM role to spawn monsters">DM Only</span>
                   ) : (
@@ -1275,6 +1322,8 @@ export function CommandPalette({
             onUndo={onUndoDuplicate}
           />
         )}
+
+        {tab === 'fixes' && fixApi && !fixTarget && <ContentFixesReview api={fixApi} />}
 
         {tab === 'pdf' && (
           <div className="combat-drawer__div-6">

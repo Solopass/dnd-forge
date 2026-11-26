@@ -4,6 +4,7 @@ import { ActionEconomyBoard } from '../ActionEconomyBoard';
 import { SummonCombatDrawer } from '../SummonCombatDrawer';
 import { BUILTIN_CONTENT_PACKS } from '../../engine/srd-packs';
 import { evaluateDiceExpression } from '../../engine/dice';
+import { entityIdForSheetItem } from '../../engine/content-fixes';
 import { ItemInspectorPanel } from './lazy';
 import type { AppUi } from './useAppUiState';
 import type { SheetStore } from './types';
@@ -20,6 +21,7 @@ export function buildAppPanels(store: SheetStore, ui: AppUi) {
     setBattlemapOpen,
     setShortRestOpen,
     setPaletteInitialCat,
+    setPaletteFixEntityId,
     setPaletteInitialRuleset,
     setEncounterBuilderOpen,
     selectedTargetIds,
@@ -215,6 +217,12 @@ export function buildAppPanels(store: SheetStore, ui: AppUi) {
               onUpdateContainer={store.updateItemContainer}
               onDepositToPartyStash={store.depositItemToPartyStash}
               onUpdateMagic={store.updateItemMagic}
+              onReportFix={(it) => {
+                const entityId = entityIdForSheetItem(it.id, new Set(store.compendium.map((e) => e.id)));
+                if (!entityId) return;
+                setPaletteFixEntityId(entityId);
+                setPaletteOpen(true);
+              }}
               onRemoveItem={(id) => {
                 store.removeSheetItem(id);
                 setInspectedItemId(null);

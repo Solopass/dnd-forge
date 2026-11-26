@@ -202,6 +202,16 @@ export function applyFixesToList(entities: readonly CompendiumEntity[], fixes: r
   });
 }
 
+/**
+ * Sheet items made by "Add to sheet" have the entry's id plus a base-36 timestamp ("fx-bolt-lq3k2a9z").
+ * Returns the compendium id the sheet item came from, or null when it is not a known entry.
+ */
+export function entityIdForSheetItem(itemId: string, knownIds: { has(id: string): boolean }): string | null {
+  if (knownIds.has(itemId)) return itemId;
+  const m = /^(.+)-[a-z0-9]{6,9}$/.exec(itemId);
+  return m && knownIds.has(m[1]!) ? m[1]! : null;
+}
+
 export function newFixId(now = Date.now(), rand = Math.random()): string {
   return `fix-${now.toString(36)}-${rand.toString(36).slice(2, 7)}`;
 }

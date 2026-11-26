@@ -20,6 +20,7 @@ import {
   ThemeStudioModal,
 } from './lazy';
 import type { AppLayoutProps } from './types';
+import type { ContentFixApi } from '../ContentFixesReview';
 
 export function AppModals({ store, ui, panels }: AppLayoutProps) {
   const {
@@ -53,6 +54,8 @@ export function AppModals({ store, ui, panels }: AppLayoutProps) {
     setPaletteInitialCat,
     paletteInitialRuleset,
     setPaletteInitialRuleset,
+    paletteFixEntityId,
+    setPaletteFixEntityId,
     liveTableOpen,
     setLiveTableOpen,
     encounterBuilderOpen,
@@ -83,6 +86,25 @@ export function AppModals({ store, ui, panels }: AppLayoutProps) {
     actionBoardNode,
     sharedBattlemapProps,
   } = panels;
+  const fixRole = isPlayerRole ? 'player' : 'dm';
+  const fixApi: ContentFixApi = {
+    role: fixRole,
+    fixes: store.contentFixes,
+    entities: store.compendium,
+    getEffective: (id) => store.effectiveCompendium.find((e) => e.id === id),
+    propose: async (id, edited, note) => {
+      const r = await store.proposeContentFix(id, edited, note, fixRole);
+      return r.ok ? { ok: true } : r;
+    },
+    review: async (id, decision, patch) => {
+      const r = await store.reviewContentFix(id, decision, fixRole, patch);
+      return r.ok ? { ok: true } : r;
+    },
+    remove: (id) => store.deleteContentFix(id, fixRole),
+    patchAgainstOriginal: store.patchAgainstOriginal,
+    exportFile: store.exportContentFixes,
+    importText: store.importContentFixes,
+  };
   return (
     <>
       <StatusConsole
@@ -101,6 +123,7 @@ export function AppModals({ store, ui, panels }: AppLayoutProps) {
           setPaletteOpen(false);
           setPaletteInitialCat('all');
           setPaletteInitialRuleset('all');
+          setPaletteFixEntityId(null);
         }}
         isPlayerRole={isPlayerRole}
         initialCategory={paletteInitialCat}
@@ -139,6 +162,8 @@ export function AppModals({ store, ui, panels }: AppLayoutProps) {
         dupDecisions={store.dupDecisions}
         onResolveDuplicate={store.resolveDuplicateGroup}
         onUndoDuplicate={store.undoDuplicateDecision}
+        fixApi={fixApi}
+        initialFixEntityId={paletteFixEntityId}
       />
 
       <ModalDialog

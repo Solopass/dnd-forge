@@ -18,6 +18,8 @@ interface ItemInspectorPanelProps {
   onDepositToPartyStash: (id: string) => void;
   onRemoveItem: (id: string) => void;
   onUpdateMagic?: (id: string, patch: { magicBonus?: 0 | 1 | 2 | 3; customName?: string }) => void;
+  /** Opens the Report / fix editor for the compendium entry this item came from (omitted when it is not from the compendium). */
+  onReportFix?: (item: CompendiumEntity) => void;
   onBackToCombat?: () => void;
 }
 
@@ -34,6 +36,7 @@ export const ItemInspectorPanel: React.FC<ItemInspectorPanelProps> = ({
   onDepositToPartyStash,
   onRemoveItem,
   onUpdateMagic,
+  onReportFix,
   onBackToCombat,
 }) => {
   const [upcastLevel, setUpcastLevel] = useState<number | null>(null);
@@ -132,11 +135,18 @@ export const ItemInspectorPanel: React.FC<ItemInspectorPanelProps> = ({
             )}
           </div>
         </div>
-        {onBackToCombat && (
-          <button type="button" className="btn text-sm" onClick={onBackToCombat}>
-            Combat
-          </button>
-        )}
+        <div className="forge-row gap-2">
+          {onReportFix && (
+            <button type="button" className="btn text-sm" title="Report a mistake in this entry or propose a fix" onClick={() => onReportFix(item)}>
+              Report / fix
+            </button>
+          )}
+          {onBackToCombat && (
+            <button type="button" className="btn text-sm" onClick={onBackToCombat}>
+              Combat
+            </button>
+          )}
+        </div>
       </div>
 
       {item.imageUrl && (

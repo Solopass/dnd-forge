@@ -22,7 +22,7 @@ export type FixResult = { ok: true; fix: ContentFix } | { ok: false; error: stri
  * export / import fixes. Fixes live in their own table and layer on top of the stored entries.
  */
 export function useContentFixActions(core: StoreCore) {
-  const { compendium, effectiveCompendium, contentFixes, setContentFixes, appendLog, pushToast } = core;
+  const { compendium, effectiveCompendium, contentFixes, setContentFixes, appendLog, pushToast, liveSessionRef, liveStatus, rawChar } = core;
 
   const authorLabel = (role: TableRole) => (role === 'player' ? 'Player' : 'DM');
 
@@ -45,9 +45,14 @@ export function useContentFixActions(core: StoreCore) {
       await putFix(made.fix);
       appendLog(`Fix proposed for "${base.name}" by ${made.fix.author}: ${made.fix.note}`, 'info');
       pushToast(`Fix proposed for ${base.name}`, 'info');
+      // At a live table a player's proposal also goes to the DM's review queue.
+      const session = liveSessionRef.current;
+      if (role === 'player' && session && liveStatus.role === 'player') {
+        session.broadcast({ type: 'content_fix_proposed', senderId: session.senderId, senderName: rawChar.name, fix: made.fix });
+      }
       return { ok: true, fix: made.fix };
     },
-    [compendium, effectiveCompendium, putFix, appendLog, pushToast]
+    [compendium, effectiveCompendium, putFix, appendLog, pushToast, liveSessionRef, liveStatus.role, rawChar.name]
   );
 
   /**

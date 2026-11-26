@@ -121,3 +121,18 @@ Classes, Hit Dice, Spellcasting Progression, and Subclass level-up auto-grants l
 - The duplicate finder never flags "+N X" as a possible duplicate of "X" or of another "+M X".
 - Old saves: a sheet item that is a folded variant is migrated when the character loads to the base item + `magicBonus` (same item id; equipped, attuned, quantity and container are kept). Variants without a base are left alone.
 - For your own packs: ship the base item and let players set the bonus; add a separate "+N" entry only for items with extra effects (those are not folded unless a plain base of the same name exists).
+
+---
+
+## 8. Fixing entries you imported (or the built-in ones)
+
+Imported and built-in entries can have mistakes. Instead of editing the source data, anyone can flag and fix an entry in the app; the fix is a separate, reviewable layer.
+
+- **Report / fix** (button on compendium search rows and in the item inspector) opens an editor for the name, text, spell level, range, attack bonus, damage formula and type, save ability and DC, and CR / AC / HP for monsters. It is prefilled with the current values and a note ("what is wrong?") is required. Saving creates a **proposed** fix: only the changed fields are stored, next to a hash of the original entry.
+- A proposed or rejected fix changes nothing. The **DM** approves, rejects, or edits-then-approves it in the **Fixes** tab of the Packs / Compendium dialog (before/after diff per field); players can propose but not approve. Approved fixes apply everywhere entries are read (search, Add to sheet, Level-Up picks, new character presets, Encounter Builder, monster picks) on top of duplicate folding, and the entry shows a "fixed" badge. Sheet items already added keep the values they had when added.
+- **Revert to original** deletes the fix. Stored entries are never edited, so re-imports and Free5e resyncs do not remove fixes.
+- If the original entry changes after a fix was made (a re-import with new text, a resync), the fix is shown as **Needs re-review** and is not applied until the DM looks at the diff and approves it again.
+- **Export fixes / Import fixes** (Fixes tab) write and read a JSON file (`sidereroll-content-fixes`, each fix with the entry's name and source) so fixes can be shared, or later turned into a pull request on the source repo. Imported fixes always arrive as proposed and go through the same review. Backups include the fixes.
+- At a Live Table, a player's proposed fix is also sent to the host's Fixes queue.
+- Patch keys are `name`, `entries`, `range`, `spellLevel`, ..., `monsterMeta.<field>`, `activities.<activityId>.<field>`; `null` removes a field.
+

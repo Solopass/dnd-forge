@@ -5,7 +5,8 @@ import { applyEffectWithConcentrationCheck } from '../../engine/combat-machine';
 import { decodeCharacterShareCode, LiveTableMessage, LiveTableSession } from '../../engine/live-sync';
 import { playTableSound } from '../../engine/sound';
 import { tabletopSoundboard } from '../../engine/soundboard';
-import { saveEncounter } from '../../storage/db';
+import { saveContentFix, saveEncounter } from '../../storage/db';
+import { parseFixesFile } from '../../engine/content-fixes';
 import type { StoreCore } from './core';
 import type { useContentImportActions } from './content-import';
 import type { useCombatActions } from './combat';
@@ -36,6 +37,9 @@ export function useLiveTableActions(core: StoreCore, deps: LiveTableDeps) {
     encounter,
     lastBroadcastDigestRef,
     resolvedSheet,
+    compendium,
+    contentFixes,
+    setContentFixes,
   } = core;
   const { importSingleCharacter, targetAttackCombatants, targetSaveCombatants } = deps;
 
@@ -196,6 +200,21 @@ export function useLiveTableActions(core: StoreCore, deps: LiveTableDeps) {
 
     if (msg.type === 'target_save' && liveStatus.role === 'host') {
       targetSaveCombatants(msg.attackerName, msg.targetIds, msg.activity, msg.explicitDc);
+      return;
+    }
+
+    if (msg.type === 'content_fix_proposed' && liveStatus.role === 'host') {
+      if (contentFixes.some((f) => f.id === msg.fix?.id)) return;
+      const { fixes } = parseFixesFile([msg.fix], new Set(contentFixes.map((f) => f.id)));
+      const fix = fixes[0];
+      const entry = fix ? compendium.find((e) => e.id === fix.entityId) : undefined;
+      if (!fix || !entry) {
+        appendLog(`[LIVE] Ignored a fix from ${msg.senderName} (unknown entry or malformed).`, 'warn');
+        return;
+      }
+      void saveContentFix(fix).then(() => setContentFixes((prev) => [...prev.filter((f) => f.id !== fix.id), fix]));
+      appendLog(`[LIVE] ${msg.senderName} proposed a fix for "${entry.name}": ${fix.note}`, 'info');
+      pushToast(`${msg.senderName} proposed a fix for ${entry.name}`, 'info');
       return;
     }
 

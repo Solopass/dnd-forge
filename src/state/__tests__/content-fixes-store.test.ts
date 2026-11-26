@@ -167,3 +167,33 @@ describe('content fixes (store level)', () => {
     });
   });
 });
+
+describe('Live Table', () => {
+  it('a player proposal reaches the host review queue as proposed', async () => {
+    if (typeof BroadcastChannel === 'undefined') return; // transport missing in this environment
+    const host = await setupStore();
+    await importBolt(host);
+    const player = renderHook(() => useSheetStore(SEED_CHARACTER, SEED_ENCOUNTER));
+    await waitFor(() => expect(player.result.current.compendium.some((e) => e.id === 'fx-bolt')).toBe(true), { timeout: 20_000 });
+    act(() => {
+      host.result.current.hostLocalTable('FIXRM');
+      player.result.current.joinLocalTable('FIXRM');
+    });
+    await waitFor(() => expect(host.result.current.liveStatus.role).toBe('host'));
+    await waitFor(() => expect(player.result.current.liveStatus.role).toBe('player'));
+    const edited = structuredClone(player.result.current.searchCompendium('synthetic fixbolt').find((e) => e.id === 'fx-bolt')!);
+    edited.activities[0]!.damageFormula = '4d6';
+    await act(async () => {
+      expect((await player.result.current.proposeContentFix('fx-bolt', edited, 'wrong dice', 'player')).ok).toBe(true);
+    });
+    await waitFor(() => expect(host.result.current.contentFixes).toHaveLength(1));
+    expect(host.result.current.contentFixes[0]).toMatchObject({ entityId: 'fx-bolt', status: 'proposed', author: 'Player' });
+    // proposed only: the host's entry is unchanged until the DM approves
+    expect(host.result.current.searchCompendium('synthetic fixbolt').find((e) => e.id === 'fx-bolt')!.activities[0]!.damageFormula).toBe('1d6');
+    act(() => {
+      host.result.current.disconnectLiveTable();
+      player.result.current.disconnectLiveTable();
+    });
+  });
+});
+

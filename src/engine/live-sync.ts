@@ -2,6 +2,7 @@ import { RawCharacterState } from '../types/character';
 import { CombatEncounterState } from '../types/combat';
 import { Activity, CompendiumEntity } from '../types/compendium';
 import { WeaponMastery } from '../types/core';
+import type { ContentFix } from '../types/content-fix';
 
 export type LiveTableRole = 'idle' | 'host' | 'player';
 
@@ -116,6 +117,13 @@ export type LiveTableMessage =
       targetIds: string[];
       activity: Activity;
       explicitDc?: number;
+    }
+  | {
+      /** A player's proposed content fix, sent to the host's review queue (arrives as "proposed"). */
+      type: 'content_fix_proposed';
+      senderId: string;
+      senderName: string;
+      fix: ContentFix;
     }
   | {
       type: 'claim_token';

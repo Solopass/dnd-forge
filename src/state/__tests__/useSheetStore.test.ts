@@ -5,17 +5,23 @@ import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { useSheetStore } from '../useSheetStore';
 import { SEED_CHARACTER, SEED_ENCOUNTER } from '../seed';
 import { db } from '../../storage/db';
+import { expectedCompendiumSize } from './compendiumReady';
 import type { ResolvedActivity } from '../../types/character';
 
 async function setup() {
+  // computed first (and cached) so it never runs alongside the store's own SRD load
+  const size = await expectedCompendiumSize();
   const hook = renderHook(() => useSheetStore(SEED_CHARACTER, SEED_ENCOUNTER));
   // wait for the startup Dexie hydration to finish (it ends by refreshing the compendium from the db)
-  await waitFor(async () => {
-    const count = await db.compendium.count();
-    expect(count).toBeGreaterThan(0);
-    expect(hook.result.current.compendium.length).toBe(count);
-    expect(hook.result.current.encounterList.length).toBeGreaterThan(0);
-  });
+  // (a slow machine otherwise sees a half-loaded compendium and the default 1 s waitFor times out)
+  await waitFor(
+    async () => {
+      expect(await db.compendium.count()).toBe(size);
+      expect(hook.result.current.compendium.length).toBe(size);
+      expect(hook.result.current.encounterList.length).toBeGreaterThan(0);
+    },
+    { timeout: 20_000 }
+  );
   return hook;
 }
 

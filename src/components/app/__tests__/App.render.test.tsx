@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { App } from '../../../App';
 import { db } from '../../../storage/db';
+import { expectedCompendiumSize, waitForFullCompendiumInDb } from '../../../state/__tests__/compendiumReady';
 import { APP_VERSION } from '../../../version';
 import { SEED_ENCOUNTER } from '../../../state/seed';
 import { ACTIVE_LAYOUT_STORAGE_KEY, BUILTIN_LAYOUT_PRESETS } from '../../../engine/layout-engine';
@@ -53,11 +54,10 @@ async function renderApp(opts: Setup, ready: () => Promise<unknown>) {
   localStorage.setItem('dnd-forge-table-role', opts.role);
   localStorage.setItem('dnd-forge-ui-mode', opts.uiMode ?? 'classic');
   localStorage.setItem('dnd-forge-modular-mode', opts.modular ? '1' : '0');
+  await expectedCompendiumSize(); // cached; computed before App starts its own load
   const view = render(<App />);
-  // startup Dexie hydration ends by refreshing the compendium from the db
-  await waitFor(async () => {
-    expect(await db.compendium.count()).toBeGreaterThan(0);
-  }, { timeout: 10000 });
+  // wait for the FULL load (about 4,000 entries): a slower machine would otherwise snapshot mid-load
+  await waitForFullCompendiumInDb(waitFor);
   await ready();
   await settle(view.container);
   await ready();

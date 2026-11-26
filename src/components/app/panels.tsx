@@ -21,7 +21,6 @@ export function buildAppPanels(store: SheetStore, ui: AppUi) {
     setShortRestOpen,
     setPaletteInitialCat,
     setPaletteInitialRuleset,
-    setDmHubOpen,
     setEncounterBuilderOpen,
     selectedTargetIds,
     setSelectedTargetIds,
@@ -273,7 +272,6 @@ export function buildAppPanels(store: SheetStore, ui: AppUi) {
     activeCharacterName: store.rawChar.name,
     activeCharacterGp: store.rawChar.currency?.gp ?? 0,
     encounter: store.encounter,
-    onSwitchCampaign: store.switchCampaign,
     onCreateCampaign: store.createCampaign,
     onDeleteCampaign: store.deleteCampaign,
     onUpsertEntry: store.upsertCampaignEntry,
@@ -321,7 +319,6 @@ export function buildAppPanels(store: SheetStore, ui: AppUi) {
           }
         }
       }
-      setDmHubOpen(false);
     },
     onPrintPacket: () => {
       document.body.classList.add('print-session-mode');

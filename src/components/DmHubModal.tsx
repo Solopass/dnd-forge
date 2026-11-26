@@ -31,7 +31,6 @@ import {
 } from '../types/campaign';
 import { RawCharacterState } from '../types/character';
 import { CombatEncounterState } from '../types/combat';
-import { ModalDialog } from './ModalDialog';
 
 export type DmHubTab =
   | 'party'
@@ -45,19 +44,15 @@ export type DmHubTab =
   | 'soundboard';
 
 interface DmHubModalProps {
-  isOpen: boolean;
-  embedded?: boolean;
   activeTab?: DmHubTab;
   onTabChange?: (tab: DmHubTab) => void;
   onOpenCharacterSheet?: (characterId: string) => void;
-  onClose: () => void;
   campaign: CampaignRecord;
   campaignList: CampaignRecord[];
   characterList: RawCharacterState[];
   activeCharacterName: string;
   activeCharacterGp: number;
   encounter: CombatEncounterState;
-  onSwitchCampaign: (id: string) => Promise<void>;
   onCreateCampaign: (name: string, setting: string) => Promise<void>;
   onDeleteCampaign: (id: string) => Promise<void>;
   onUpsertEntry: (entry: Omit<CampaignEntry, 'updatedAt'>) => void;
@@ -99,19 +94,15 @@ const CATEGORIES: Array<{ key: 'all' | CampaignCategory; label: string }> = [
 ];
 
 export function DmHubModal({
-  isOpen,
-  embedded = false,
   activeTab: activeTabProp,
   onTabChange,
   onOpenCharacterSheet,
-  onClose,
   campaign,
   campaignList,
   characterList,
   activeCharacterName,
   activeCharacterGp,
   encounter,
-  onSwitchCampaign,
   onCreateCampaign,
   onDeleteCampaign,
   onUpsertEntry,
@@ -267,24 +258,10 @@ export function DmHubModal({
     ['soundboard', 'Soundboard'],
   ] as const;
 
-  // The app header already has the campaign picker, so the embedded DM Studio bar omits it.
-  const renderCampaignBar = (showPicker: boolean) => (
+  // The app header already has the campaign picker, so this bar omits it.
+  const renderCampaignBar = () => (
     <div className="card forge-row-between wrap gap-3">
       <div className="forge-row wrap">
-        {showPicker && (
-          <select
-            aria-label="Active campaign"
-            className="forge-input dm-hub__input"
-            value={campaign.id}
-            onChange={(e) => void onSwitchCampaign(e.target.value)}
-          >
-            {campaignList.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} ({c.entries.length} notes)
-              </option>
-            ))}
-          </select>
-        )}
         <input
           aria-label="New campaign name"
           type="text"
@@ -345,21 +322,6 @@ export function DmHubModal({
 
   const hubContent = (
     <div className="forge-stack">
-      {!embedded && renderCampaignBar(true)}
-      {!embedded && (
-        <div className="pill-row">
-          {dmTabs.map(([k, label]) => (
-            <button
-              key={k}
-              type="button"
-              className={`pill ${tab === k ? 'active' : ''}`}
-              onClick={() => setTab(k)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
 
         {tab === 'party' && (
           <div className="forge-stack">
@@ -1745,40 +1707,32 @@ export function DmHubModal({
     </div>
   );
 
-  if (embedded) {
-    if (activeTabProp) {
-      return (
-        <div className="forge-stack">
-          {tab === 'binder' && renderCampaignBar(false)}
-          {hubContent}
-        </div>
-      );
-    }
+  if (activeTabProp) {
     return (
       <div className="forge-stack">
-        {tab === 'binder' && renderCampaignBar(false)}
-        <div className="dm-studio-shell">
-          <nav className="card dm-studio-nav" aria-label="DM Studio sections">
-            {dmTabs.map(([k, label]) => (
-              <button
-                key={k}
-                type="button"
-                className={`unified-rail-btn ${tab === k ? 'active' : ''}`}
-                onClick={() => setTab(k)}
-              >
-                <span>{label}</span>
-              </button>
-            ))}
-          </nav>
-          <div>{hubContent}</div>
-        </div>
+        {tab === 'binder' && renderCampaignBar()}
+        {hubContent}
       </div>
     );
   }
-
   return (
-    <ModalDialog isOpen={isOpen} wide onClose={onClose} title="DM Campaign Hub & Session Prep">
-      {hubContent}
-    </ModalDialog>
+    <div className="forge-stack">
+      {tab === 'binder' && renderCampaignBar()}
+      <div className="dm-studio-shell">
+        <nav className="card dm-studio-nav" aria-label="DM Studio sections">
+          {dmTabs.map(([k, label]) => (
+            <button
+              key={k}
+              type="button"
+              className={`unified-rail-btn ${tab === k ? 'active' : ''}`}
+              onClick={() => setTab(k)}
+            >
+              <span>{label}</span>
+            </button>
+          ))}
+        </nav>
+        <div>{hubContent}</div>
+      </div>
+    </div>
   );
 }

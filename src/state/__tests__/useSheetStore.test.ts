@@ -87,7 +87,6 @@ describe('useSheetStore characterization', () => {
         "campaignList",
         "canRedo",
         "canUndo",
-        "castRitualSpell",
         "characterList",
         "claimCombatantToken",
         "claimPartyStashItem",
@@ -293,17 +292,6 @@ describe('useSheetStore characterization', () => {
     const healed = h.result.current.rawChar.hp.current - before;
     expect(healed).toBeGreaterThanOrEqual(1);
     expect(healed).toBeLessThanOrEqual(8 + 3);
-  });
-
-  it('castRitualSpell logs without spending a slot', async () => {
-    const h = await setup();
-    const activity = Object.values(h.result.current.resolvedSheet.actionsByEconomy)
-      .flat()
-      .find((a: ResolvedActivity) => a.id === 'act-summon-construct');
-    expect(activity).toBeDefined();
-    act(() => h.result.current.castRitualSpell(activity as ResolvedActivity));
-    expect(logTexts(h)[0]).toContain('as a Ritual');
-    expect(h.result.current.rawChar.resources.find((r) => r.id === 'spell_slot_3')?.current).toBe(2);
   });
 
   it('triggerActivity on a slot spell consumes a slot and starts concentration; dropConcentration ends it', async () => {

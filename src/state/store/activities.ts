@@ -55,16 +55,6 @@ export function useActivitiesActions(core: StoreCore) {
     appendLog(`${rawChar.name} rolled Initiative: ${roll.total} (${roll.mode}).`, 'roll');
   }, [rawChar, resolvedSheet, rollMode, persistEncounter, appendLog]);
 
-  const castRitualSpell = useCallback(
-    (activity: ResolvedActivity) => {
-      appendLog(
-        `Cast ${activity.parentItemName} as a Ritual (+10 min, no spell slot spent).`,
-        'info'
-      );
-    },
-    [appendLog]
-  );
-
   const rollInlineExpression = useCallback(
     (label: string, expression: string) => {
       const res = evaluateDiceExpression(expression, rollMode);
@@ -429,7 +419,6 @@ export function useActivitiesActions(core: StoreCore) {
 
   return {
     rollCharacterInitiative,
-    castRitualSpell,
     rollInlineExpression,
     triggerCombatantActivity,
     triggerActivity,

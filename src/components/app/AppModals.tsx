@@ -7,7 +7,6 @@ import {
   BattlemapModal,
   CharacterBuilderDrawer,
   CharacterManagerModal,
-  DmHubModal,
   EncounterBuilderModal,
   EquipmentSpellDrawer,
   LevelUpModal,
@@ -55,8 +54,6 @@ export function AppModals({ store, ui, panels }: AppLayoutProps) {
     setPaletteInitialRuleset,
     liveTableOpen,
     setLiveTableOpen,
-    dmHubOpen,
-    setDmHubOpen,
     encounterBuilderOpen,
     setEncounterBuilderOpen,
     effectivePlayerView,
@@ -84,7 +81,6 @@ export function AppModals({ store, ui, panels }: AppLayoutProps) {
     vitalsNode,
     actionBoardNode,
     sharedBattlemapProps,
-    sharedDmHubProps,
   } = panels;
   return (
     <>
@@ -312,12 +308,6 @@ export function AppModals({ store, ui, panels }: AppLayoutProps) {
           onClose={() => setBattlemapOpen(false)}
           {...sharedBattlemapProps}
         />
-
-        <DmHubModal
-          isOpen={dmHubOpen}
-          onClose={() => setDmHubOpen(false)}
-          {...sharedDmHubProps}
-        />
       </Suspense>
 
       <Suspense fallback={null}>
@@ -473,7 +463,6 @@ export function AppModals({ store, ui, panels }: AppLayoutProps) {
           settingsOpen ||
           levelUpOpen ||
           liveTableOpen ||
-          dmHubOpen ||
           encounterBuilderOpen ||
           shortcutsOpen ||
           Boolean(inspectedCombatantId)

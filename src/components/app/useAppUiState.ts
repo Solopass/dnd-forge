@@ -46,7 +46,6 @@ export function useAppUiState(store: SheetStore) {
   const [paletteInitialCat, setPaletteInitialCat] = useState<'all' | 'weapon' | 'armor' | 'shield' | 'gear' | 'spell' | 'feature' | 'feat' | 'infusion' | 'monster'>('all');
   const [paletteInitialRuleset, setPaletteInitialRuleset] = useState<'all' | '2014' | '2024'>('all');
   const [liveTableOpen, setLiveTableOpen] = useState(false);
-  const [dmHubOpen, setDmHubOpen] = useState(false);
   const [encounterBuilderOpen, setEncounterBuilderOpen] = useState(false);
   const [selectedTargetIds, setSelectedTargetIds] = useState<string[]>([]);
   const [tableRole, setTableRole] = useState<'dm' | 'player'>(() => {
@@ -258,8 +257,6 @@ export function useAppUiState(store: SheetStore) {
     setPaletteInitialRuleset,
     liveTableOpen,
     setLiveTableOpen,
-    dmHubOpen,
-    setDmHubOpen,
     encounterBuilderOpen,
     setEncounterBuilderOpen,
     selectedTargetIds,

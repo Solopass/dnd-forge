@@ -134,7 +134,7 @@ export function UnifiedLayout({ store, ui, panels }: AppLayoutProps) {
           {unifiedView === 'dm' && !isPlayerRole && (
             <div className="pane" style={{ padding: 14, flex: 1, minHeight: 0 }}>
               <Suspense fallback={null}>
-                <DmHubModal isOpen embedded onClose={() => setUnifiedView('sheet')} {...sharedDmHubProps} />
+                <DmHubModal {...sharedDmHubProps} />
               </Suspense>
             </div>
           )}

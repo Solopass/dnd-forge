@@ -90,12 +90,9 @@ export function DmLayout({ store, ui, panels }: AppLayoutProps) {
         ) : (
           <Suspense fallback={null}>
             <DmHubModal
-              isOpen
-              embedded
               activeTab={dmSection}
               onTabChange={(t) => setDmSection(t)}
               onOpenCharacterSheet={(id) => void openPcSheetFromDm(id)}
-              onClose={() => {}}
               {...sharedDmHubProps}
             />
           </Suspense>

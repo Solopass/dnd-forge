@@ -153,7 +153,6 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     rollCharacterInitiative: activities.rollCharacterInitiative,
     takeRest: character.takeRest,
     spendHitDiceBulk: character.spendHitDiceBulk,
-    castRitualSpell: activities.castRitualSpell,
     updateSenses: character.updateSenses,
     updateSpeeds: character.updateSpeeds,
     updateStructuredProficiencies: character.updateStructuredProficiencies,

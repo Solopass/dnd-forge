@@ -636,6 +636,8 @@ function sanitizeEntityUnsafe(raw: unknown, ctx: SanitizeContext): EntityOutcome
 export interface Rejection {
   source: string;
   reason: string;
+  /** "duplicate": an identical copy of an entry already taken (harmless, but listed). */
+  kind?: 'duplicate';
 }
 
 function stable(value: unknown): string {
@@ -644,6 +646,13 @@ function stable(value: unknown): string {
     return `{${Object.keys(value).filter((k) => value[k] !== undefined).sort().map((k) => `${JSON.stringify(k)}:${stable(value[k])}`).join(',')}}`;
   }
   return JSON.stringify(value) ?? 'null';
+}
+
+/** Same entry apart from which file it came from. */
+function sameContent(a: CompendiumEntity, b: CompendiumEntity): boolean {
+  const { packFile: _a, ...restA } = a;
+  const { packFile: _b, ...restB } = b;
+  return stable(restA) === stable(restB);
 }
 
 /**
@@ -661,8 +670,8 @@ export function dedupeProcessedIds(items: ProcessedEntity[], rejected: Rejection
       kept.push(item);
       continue;
     }
-    if (item.explicitId && first.explicitId && stable(item.entity) === stable(first.entity)) {
-      rejected.push({ source: item.entity.name, reason: `exact duplicate of an earlier entry (id "${item.entity.id}")` });
+    if (item.explicitId && first.explicitId && sameContent(item.entity, first.entity)) {
+      rejected.push({ source: item.entity.name, reason: `exact duplicate of an earlier entry (id "${item.entity.id}")`, kind: 'duplicate' });
       continue;
     }
     const base = item.entity.id;

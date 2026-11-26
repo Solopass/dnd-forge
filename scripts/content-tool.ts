@@ -8,6 +8,7 @@ import {
   convertRawEntityToSidereroll,
 } from '../src/engine/content-converter';
 import { extractStatblocksFromText, summarizeExtraction } from '../src/engine/statblock-extractor';
+import { analyzePackFiles, formatPackDoctor } from '../src/engine/import-pipeline';
 import { buildCharacterFromDdbFields } from '../src/engine/ddb-pdf-importer';
 import { CompendiumEntity, ItemCategory } from '../src/types/compendium';
 import { Ruleset } from '../src/types/core';
@@ -249,10 +250,64 @@ function verifyConvertedOutput(
   console.log(`Verified ${converted.length} converted entities in ${relOut} (0 errors).`);
 }
 
+const PACK_SKIP_DIRS = new Set(['node_modules', '.git', '.github', '.vscode', 'dist']);
+const PACK_BINARY = /\.(png|jpe?g|gif|webp|svg|ico|pdf|zip|woff2?|ttf|mp3|ogg|wav|mp4)$/i;
+
+/** Every text file under `dir`, keyed by forward-slash path relative to it. */
+function readPackFiles(dir: string): Record<string, string> {
+  const files: Record<string, string> = {};
+  const walk = (current: string) => {
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      if (entry.name.startsWith('.') || PACK_SKIP_DIRS.has(entry.name)) continue;
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (!PACK_BINARY.test(entry.name) && fs.statSync(full).size < 20 * 1024 * 1024) {
+        files[path.relative(dir, full).split(path.sep).join('/')] = fs.readFileSync(full, 'utf8');
+      }
+    }
+  };
+  walk(dir);
+  return files;
+}
+
+/** "Pack doctor": reads a pack folder the way an install would and prints counts and the top problems. Returns the exit code. */
+export async function runPackDoctor(dir: string): Promise<{ code: number; lines: string[] }> {
+  if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) return { code: 1, lines: [`Not a folder: ${dir}`] };
+  const analysis = await analyzePackFiles(readPackFiles(dir), path.basename(path.resolve(dir)));
+  const kind = analysis.kind === 'v1' ? 'pack.json (v1)' : analysis.kind === 'v0' ? 'campaign-pack.json (v0)' : 'no manifest, loose files';
+  const lines = [`Pack doctor: ${analysis.packName} [${analysis.packId}] - ${kind}`];
+  for (const problem of analysis.manifestProblems) lines.push(`Manifest problem: ${problem}`);
+  lines.push(...formatPackDoctor(analysis.report));
+  for (const w of analysis.warnings.slice(0, 15)) lines.push(`Warning: ${w}`);
+  if (analysis.warnings.length > 15) lines.push(`... and ${analysis.warnings.length - 15} more warnings`);
+  const realRejects = analysis.report.rejected.filter((r) => r.kind !== 'duplicate').length;
+  const bad = analysis.manifestProblems.length + realRejects + analysis.report.unreadable.length;
+  lines.push(
+    bad > 0
+      ? `FAILED: ${realRejects} rejected, ${analysis.report.unreadable.length} unreadable, ${analysis.manifestProblems.length} manifest problem(s). Repaired entries are fine but worth a look.`
+      : analysis.report.accepted + analysis.report.characters === 0
+        ? 'FAILED: nothing in this folder could be imported.'
+        : `OK: ${analysis.report.accepted} entries and ${analysis.report.characters} character(s) import${analysis.report.repaired.length > 0 ? ` (${analysis.report.repaired.length} auto-repaired)` : ' cleanly'}.`
+  );
+  const failed = bad > 0 || analysis.report.accepted + analysis.report.characters === 0;
+  return { code: failed ? 1 : 0, lines };
+}
+
 async function runCli() {
   const args = process.argv.slice(2);
   const cmd = args[0] ?? 'validate';
   const repoRoot = process.cwd();
+
+  if (cmd === 'validate' && args.includes('--pack')) {
+    const dir = args[args.indexOf('--pack') + 1];
+    if (!dir || dir.startsWith('--')) {
+      console.error('Usage: bun run content:validate --pack <folder>');
+      process.exit(1);
+    }
+    const res = await runPackDoctor(path.resolve(dir));
+    for (const line of res.lines) console.log(line);
+    process.exit(res.code);
+  }
 
   if (cmd === 'validate') {
     const report = validateCustomContentDir(repoRoot);

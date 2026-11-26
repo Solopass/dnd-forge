@@ -8,6 +8,7 @@ import { BUILTIN_CONTENT_PACKS } from '../srd-packs';
 import { BACKGROUND_PRESETS } from '../backgrounds';
 import { planEntityImport } from '../import-preview';
 import { extractStatblocksFromText, summarizeExtraction } from '../statblock-extractor';
+import { analyzePackFiles, runImportPipeline } from '../import-pipeline';
 import type { CompendiumEntity } from '../../types/compendium';
 
 // LOCAL-ONLY: these read the user's own gitignored material in "DnD content/" / "local-content/".
@@ -76,6 +77,43 @@ describe.skipIf(!fs.existsSync(packDir))('LOCAL custom content pack import', () 
   });
 });
 
+function textFiles(dir: string, base = dir): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const f of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, f.name);
+    if (f.isDirectory()) Object.assign(out, textFiles(p, base));
+    else if (/\.(json|md|markdown|csv|tsv)$/i.test(f.name)) out[path.relative(base, p).split(path.sep).join('/')] = fs.readFileSync(p, 'utf8');
+  }
+  return out;
+}
+
+describe.skipIf(!fs.existsSync(packDir))('LOCAL real pack through the import pipeline (counts only)', () => {
+  it('the pack doctor reads it without throwing; every file is accounted for', async () => {
+    const files = textFiles(packDir);
+    const a = await analyzePackFiles(files, 'local-pack');
+    const r = a.report;
+    console.log(
+      `LOCAL pipeline (${a.kind}): ${Object.keys(files).length} files, ${r.accepted} accepted (${r.repaired.length} repaired), ${r.rejected.length} rejected, ` +
+        `${r.unreadable.length} unreadable, ${r.characters} characters; manifest problems: ${a.manifestProblems.length}; ` +
+        `top problem kinds: ${r.topProblems.slice(0, 3).map((p) => `${p.text.slice(0, 50)} x${p.count}`).join('; ') || 'none'}`
+    );
+    expect(r.accepted + r.characters + r.rejected.length + r.unreadable.length).toBeGreaterThan(150);
+    // nothing the old importer accepted may be lost by the new one
+    const old = new Set<string>();
+    for (const f of Object.keys(files).filter((n) => n.endsWith('.json'))) {
+      try {
+        parseCustomContentJson(files[f], () => undefined, getClassDefinition).entities.forEach((e) => old.add(e.id));
+      } catch {
+        // an unreadable file is reported by the pipeline as unreadable
+      }
+    }
+    const now = new Set(a.result.accepted.map((e) => e.id));
+    const lost = [...old].filter((id) => !now.has(id));
+    console.log(`LOCAL pipeline vs old parser: ${old.size} accepted before, ${now.size} now, ${lost.length} accepted before but not now`);
+    expect(lost.length).toBeLessThanOrEqual(Math.ceil(old.size * 0.01));
+  });
+});
+
 describe.skipIf(!fs.existsSync(vrPdf))('LOCAL monster book PDF (bulk PDF -> monsters)', () => {
   it('finds and parses the bestiary statblocks; output goes to local-content/ only', async () => {
     const toolPath = path.join(root, 'scripts', 'content-tool.ts'); // variable path: keeps scripts/ out of the app type-check
@@ -91,5 +129,8 @@ describe.skipIf(!fs.existsSync(vrPdf))('LOCAL monster book PDF (bulk PDF -> mons
     );
     expect(s.found).toBeGreaterThan(20);
     expect(s.clean).toBeGreaterThan(s.found / 2);
+    const piped = runImportPipeline(pages.join('\n---\n'), { assumeFormat: 'pdf-text' });
+    console.log(`LOCAL monster pdf through the pipeline: ${piped.accepted.length} accepted (${piped.repaired.length} repaired), ${piped.rejected.length} rejected`);
+    expect(piped.accepted.length).toBeGreaterThan(20);
   }, 60000);
 });

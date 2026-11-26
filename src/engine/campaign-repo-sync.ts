@@ -4,8 +4,8 @@ import { CompendiumEntity, ItemCategory } from '../types/compendium';
 import {
   buildImportReport,
   mergePipelineResults,
+  processPackFiles,
   runImportPipeline,
-  runImportPipelineOnEntities,
   type ImportReport,
   type PipelineResult,
 } from './import-pipeline';
@@ -16,7 +16,6 @@ import {
   convertLegacyManifest,
   expandGlobs,
   free5eTargetsFromTree,
-  guessCategoryFromPath,
   isFree5eRepo,
   isGlob,
   parsePackManifest,
@@ -385,82 +384,27 @@ async function materializePack(input: MaterializeInput): Promise<FetchedPack> {
     return out;
   };
 
-  const results: PipelineResult[] = [];
-  const unreadable: string[] = [];
-  let filesRead = 0;
   const mapEntity = (entity: CompendiumEntity): CompendiumEntity => {
     const imageUrl = entity.imageUrl ? resolveRepoAssetUrl(entity.imageUrl, pinned) : undefined;
     const source = !entity.source || DEFAULT_SOURCE_LABELS.has(entity.source) ? sourceLabel : entity.source;
     return { ...entity, source, ...(imageUrl ? { imageUrl } : {}) };
   };
-  const stableIds = manifest.id === FREE5E_PACK_ID;
-  const shared = { sourceLabel, ...(defaultRuleset ? { defaultRuleset } : {}), mapEntity };
-  const prefixed = (path: string, r: PipelineResult): PipelineResult => ({
-    ...r,
-    rejected: r.rejected.map((x) => ({ source: `${path}: ${x.source}`, reason: x.reason })),
+  const processed = await processPackFiles({
+    packId: manifest.id,
+    sourceLabel,
+    ...(defaultRuleset ? { defaultRuleset } : {}),
+    mapEntity,
+    mapCharacter: (ch) => (ch.avatarUrl ? { ...ch, avatarUrl: resolveRepoAssetUrl(ch.avatarUrl, pinned) ?? ch.avatarUrl } : ch),
+    contentPaths: expand(manifest.content, 'content'),
+    characterPaths: expand(manifest.characters, 'characters'),
+    ...(legacy ? { categoryHints: legacy.categoryHints, inlineEntities: legacy.inlineEntities, inlineCharacters: legacy.inlineCharacters } : {}),
+    read: (path) => fetchRepoText(pinned, path, token),
   });
-
-  if (legacy && legacy.inlineEntities.length > 0) {
-    results.push(runImportPipelineOnEntities(legacy.inlineEntities, { ...shared, categoryHint: 'gear', name: 'campaign-pack.json' }));
-  }
-
-  const SKIPPED_NAMES = /(^|\/)(readme|license|licence|changelog|contributing|code_of_conduct)(\.[a-z]+)?$/i;
-  const NOT_CONTENT = /\.(png|jpe?g|gif|webp|svg|ico|pdf|zip|woff2?|ttf|mp3|ogg|wav|mp4)$/i;
-  for (const path of expand(manifest.content, 'content')) {
-    if (NOT_CONTENT.test(path)) {
-      warnings.push(`${path}: not a content file (image or binary), skipped.`);
-      continue;
-    }
-    if (SKIPPED_NAMES.test(path)) continue;
-    const hint = legacy?.categoryHints[path] ?? guessCategoryFromPath(path);
-    let text: string;
-    try {
-      text = await fetchRepoText(pinned, path, token);
-    } catch (err) {
-      unreadable.push(path);
-      warnings.push(`${path}: could not be read (${err instanceof Error ? err.message : String(err)}).`);
-      continue;
-    }
-    filesRead++;
-    const result = prefixed(path, runImportPipeline(text, { ...shared, name: path, categoryHint: hint, stableIds, packFile: path }));
-    if (result.format === 'invalid-json' || result.format === 'binary' || result.format === 'unknown') {
-      unreadable.push(path);
-      warnings.push(result.format === 'invalid-json' ? `${path}: not valid JSON, skipped.` : `${path}: ${result.rejected[0]?.reason ?? 'could not be read'}; skipped.`);
-      continue;
-    }
-    if (result.accepted.length === 0 && result.rejected.length === 0 && result.warnings.length === 0) warnings.push(`${path}: no entries found.`);
-    results.push(result);
-  }
+  warnings.push(...processed.warnings);
+  const { unreadable, characters, merged, filesRead } = processed;
   // when every listed file failed there is nothing to install: say so instead of installing an empty pack
-  if (unreadable.length > 0 && filesRead === 0 && results.length === 0) {
+  if (processed.allFailed) {
     throw new Error(`None of the pack files could be read (${unreadable.slice(0, 3).join(', ')}${unreadable.length > 3 ? ', ...' : ''}). Try again later.`);
-  }
-
-  const characters: RawCharacterState[] = [];
-  const charResults: PipelineResult[] = [];
-  const takeCharacters = (r: PipelineResult) => {
-    for (const ch of r.characters) {
-      characters.push(ch.avatarUrl ? { ...ch, avatarUrl: resolveRepoAssetUrl(ch.avatarUrl, pinned) ?? ch.avatarUrl } : ch);
-    }
-    charResults.push(r);
-  };
-  if (legacy && legacy.inlineCharacters.length > 0) takeCharacters(runImportPipeline(JSON.stringify(legacy.inlineCharacters), { name: 'campaign-pack.json (characters)' }));
-  for (const path of expand(manifest.characters, 'characters')) {
-    let text: string;
-    try {
-      text = await fetchRepoText(pinned, path, token);
-    } catch (err) {
-      unreadable.push(path);
-      warnings.push(`${path}: could not be read (${err instanceof Error ? err.message : String(err)}).`);
-      continue;
-    }
-    const r = prefixed(path, runImportPipeline(text, { name: path }));
-    if (r.format === 'invalid-json' || r.format === 'binary' || r.format === 'unknown') {
-      unreadable.push(path);
-      warnings.push(`${path}: ${r.rejected[0]?.reason ?? 'could not be read'}; skipped.`);
-      continue;
-    }
-    takeCharacters(r);
   }
 
   let entries: CampaignEntry[] = legacy ? (legacy.entries as CampaignEntry[]) : [];
@@ -478,7 +422,6 @@ async function materializePack(input: MaterializeInput): Promise<FetchedPack> {
     }
   }
 
-  const merged = mergePipelineResults([...results, ...charResults.map((r) => ({ ...r, items: [] }))]);
   const entities = assignPackIdentity(
     merged.items.map((i) => ({ entity: i.entity, hadId: i.explicitId })),
     identity
@@ -491,8 +434,8 @@ async function materializePack(input: MaterializeInput): Promise<FetchedPack> {
     entities,
     characters,
     entries,
-    warnings: [...warnings, ...merged.warnings],
-    report: buildImportReport(merged, { files: filesRead + characters.length, unreadable, format: 'pack' }),
+    warnings,
+    report: { ...buildImportReport(merged, { files: filesRead, unreadable, format: 'pack' }), characters: characters.length },
     unreadable,
     syncedAt: new Date().toISOString(),
   };

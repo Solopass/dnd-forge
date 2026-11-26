@@ -8,7 +8,7 @@ import { extractStatblocksFromText } from './statblock-extractor';
 import { splitMarkdownBlocks } from './content-converter';
 import { normalizeIncomingCharacter, type ClassLookup } from './character-adapter';
 import { buildCharacterFromDdbFields } from './ddb-pdf-importer';
-import { guessCategoryFromPath } from './pack-manifest';
+import { convertLegacyManifest, expandGlobs, guessCategoryFromPath, isGlob, parsePackManifest } from './pack-manifest';
 import {
   dedupeProcessedIds,
   normalizeFormula,
@@ -680,4 +680,218 @@ export function formatPackDoctor(report: ImportReport): string[] {
   for (const r of report.rejected.slice(0, 10)) lines.push(`Rejected: ${r.source}: ${r.reason}`);
   if (report.rejected.length > 10) lines.push(`... and ${report.rejected.length - 10} more rejected`);
   return lines;
+}
+
+// ---------------------------------------------------------------- packs (shared by the app and the CLI)
+
+export interface PackFilesInput {
+  /** Pack id: the Free5e pack keeps its parsers' stable ids. */
+  packId: string;
+  sourceLabel: string;
+  defaultRuleset?: Ruleset;
+  mapEntity?: (entity: CompendiumEntity) => CompendiumEntity;
+  mapCharacter?: (character: RawCharacterState) => RawCharacterState;
+  contentPaths: readonly string[];
+  characterPaths: readonly string[];
+  categoryHints?: Readonly<Record<string, ItemCategory>>;
+  /** Entities / characters written straight into an old campaign-pack.json. */
+  inlineEntities?: readonly unknown[];
+  inlineCharacters?: readonly unknown[];
+  /** Reads one file of the pack (a repo file, a local file ...). May throw: that file is then "unreadable". */
+  read: (path: string) => Promise<string>;
+}
+
+export interface PackFilesOutput {
+  /** Entities of every readable file, ids made unique across files. */
+  merged: PipelineResult;
+  characters: RawCharacterState[];
+  /** Files that could not be read or are not text; on an update their entries are kept. */
+  unreadable: string[];
+  /** File-level notes ("x.json: not valid JSON, skipped."). */
+  warnings: string[];
+  filesRead: number;
+  /** Every listed file failed: there is nothing to install. */
+  allFailed: boolean;
+}
+
+const SKIPPED_NAMES = /(^|\/)(readme|license|licence|changelog|contributing|code_of_conduct)(\.[a-z]+)?$/i;
+const NOT_CONTENT = /\.(png|jpe?g|gif|webp|svg|ico|pdf|zip|woff2?|ttf|mp3|ogg|wav|mp4)$/i;
+const UNREADABLE_FORMATS: ReadonlySet<DetectedFormat> = new Set(['invalid-json', 'binary', 'unknown']);
+
+/** Reads every file a pack lists through the pipeline. Never throws; file problems end up in the output. */
+export async function processPackFiles(input: PackFilesInput): Promise<PackFilesOutput> {
+  const warnings: string[] = [];
+  const unreadable: string[] = [];
+  const results: PipelineResult[] = [];
+  let filesRead = 0;
+  const stableIds = input.packId === 'free5e';
+  const shared: PipelineOptions = {
+    sourceLabel: input.sourceLabel,
+    ...(input.defaultRuleset ? { defaultRuleset: input.defaultRuleset } : {}),
+    ...(input.mapEntity ? { mapEntity: input.mapEntity } : {}),
+  };
+  const prefixed = (path: string, r: PipelineResult): PipelineResult => ({
+    ...r,
+    rejected: r.rejected.map((x) => ({ source: `${path}: ${x.source}`, reason: x.reason })),
+  });
+  const readText = async (path: string): Promise<string | null> => {
+    try {
+      return await input.read(path);
+    } catch (err) {
+      unreadable.push(path);
+      warnings.push(`${path}: could not be read (${err instanceof Error ? err.message : String(err)}).`);
+      return null;
+    }
+  };
+
+  if (input.inlineEntities && input.inlineEntities.length > 0) {
+    results.push(runImportPipelineOnEntities(input.inlineEntities, { ...shared, categoryHint: 'gear', name: 'campaign-pack.json' }));
+  }
+
+  for (const path of input.contentPaths) {
+    if (NOT_CONTENT.test(path)) {
+      warnings.push(`${path}: not a content file (image or binary), skipped.`);
+      continue;
+    }
+    if (SKIPPED_NAMES.test(path)) continue;
+    const text = await readText(path);
+    if (text === null) continue;
+    filesRead++;
+    const hint = input.categoryHints?.[path] ?? guessCategoryFromPath(path);
+    const result = prefixed(path, runImportPipeline(text, { ...shared, name: path, categoryHint: hint, stableIds, packFile: path }));
+    if (UNREADABLE_FORMATS.has(result.format)) {
+      unreadable.push(path);
+      warnings.push(result.format === 'invalid-json' ? `${path}: not valid JSON, skipped.` : `${path}: ${result.rejected[0]?.reason ?? 'could not be read'}; skipped.`);
+      continue;
+    }
+    if (result.accepted.length === 0 && result.rejected.length === 0 && result.warnings.length === 0) warnings.push(`${path}: no entries found.`);
+    results.push(result);
+  }
+  const allFailed = unreadable.length > 0 && filesRead === 0 && results.length === 0;
+
+  const charResults: PipelineResult[] = [];
+  const takeCharacters = (r: PipelineResult) => {
+    charResults.push({ ...r, items: [] });
+  };
+  if (input.inlineCharacters && input.inlineCharacters.length > 0) {
+    takeCharacters(runImportPipeline(JSON.stringify(input.inlineCharacters), { name: 'campaign-pack.json (characters)' }));
+  }
+  for (const path of input.characterPaths) {
+    const text = await readText(path);
+    if (text === null) continue;
+    const r = prefixed(path, runImportPipeline(text, { name: path }));
+    if (UNREADABLE_FORMATS.has(r.format)) {
+      unreadable.push(path);
+      warnings.push(r.format === 'invalid-json' ? `${path}: not valid JSON, skipped.` : `${path}: ${r.rejected[0]?.reason ?? 'could not be read'}; skipped.`);
+      continue;
+    }
+    takeCharacters(r);
+  }
+
+  const merged = mergePipelineResults([...results, ...charResults]);
+  // characters can sit in content files, in character files or inline: they all come out of the merge
+  const characters = input.mapCharacter ? merged.characters.map(input.mapCharacter) : merged.characters;
+  return { merged, characters, unreadable, warnings: [...warnings, ...merged.warnings], filesRead, allFailed };
+}
+
+export interface PackAnalysis {
+  /** Which kind of pack: pack.json (v1), campaign-pack.json (v0) or just loose files. */
+  kind: 'v1' | 'v0' | 'loose';
+  /** Problems with the manifest itself (empty when fine). */
+  manifestProblems: string[];
+  packId: string;
+  packName: string;
+  report: ImportReport;
+  warnings: string[];
+  result: PipelineResult;
+}
+
+/** The "pack doctor": reads a pack given as `{ path: text }` the way an install would and reports on it. */
+export async function analyzePackFiles(files: Readonly<Record<string, string>>, fallbackName = 'pack'): Promise<PackAnalysis> {
+  const paths = Object.keys(files).sort();
+  const problems: string[] = [];
+  let kind: PackAnalysis['kind'] = 'loose';
+  let packId = fallbackName;
+  let packName = fallbackName;
+  let sourceLabel = fallbackName;
+  let ruleset: Ruleset | undefined;
+  let content: string[] = [];
+  let characterPatterns: string[] = [];
+  let categoryHints: Record<string, ItemCategory> | undefined;
+  let inlineEntities: unknown[] = [];
+  let inlineCharacters: unknown[] = [];
+
+  const parseJsonFile = (path: string): unknown => {
+    try {
+      return JSON.parse((files[path] ?? '').replace(/^﻿/, '')) as unknown;
+    } catch (err) {
+      problems.push(`${path} is not valid JSON (${err instanceof Error ? err.message.slice(0, 100) : 'unreadable'})`);
+      return undefined;
+    }
+  };
+
+  if (files['pack.json'] !== undefined) {
+    kind = 'v1';
+    const raw = parseJsonFile('pack.json');
+    if (raw !== undefined) {
+      const parsed = parsePackManifest(raw);
+      if (parsed.ok) {
+        packId = parsed.manifest.id;
+        packName = parsed.manifest.name;
+        sourceLabel = parsed.manifest.name;
+        if (parsed.manifest.ruleset === '2014' || parsed.manifest.ruleset === '2024') ruleset = parsed.manifest.ruleset;
+        content = parsed.manifest.content;
+        characterPatterns = parsed.manifest.characters;
+      } else problems.push(...parsed.errors);
+    }
+  } else if (files['campaign-pack.json'] !== undefined) {
+    kind = 'v0';
+    const raw = parseJsonFile('campaign-pack.json');
+    if (raw !== undefined) {
+      const legacy = convertLegacyManifest(raw, { owner: 'local', repo: fallbackName });
+      packId = legacy.manifest.id;
+      packName = legacy.manifest.name;
+      sourceLabel = legacy.sourceLabel;
+      content = legacy.manifest.content;
+      characterPatterns = legacy.manifest.characters;
+      categoryHints = legacy.categoryHints;
+      inlineEntities = legacy.inlineEntities;
+      inlineCharacters = legacy.inlineCharacters;
+    }
+  } else {
+    content = paths.filter((p) => /\.(json|md|markdown|csv|tsv|txt)$/i.test(p));
+  }
+
+  const warnings: string[] = [];
+  const expand = (patterns: string[], field: string): string[] => {
+    const out: string[] = [];
+    for (const pattern of patterns) {
+      const hits = expandGlobs([pattern], paths).filter((f) => f !== 'pack.json' && f !== 'campaign-pack.json');
+      if (isGlob(pattern) && hits.length === 0) warnings.push(`"${field}" pattern "${pattern}" matched no files.`);
+      if (!isGlob(pattern) && hits.length === 0) {
+        // an explicit path with no file behind it: report it as unreadable below
+        out.push(pattern);
+        continue;
+      }
+      for (const h of hits) if (!out.includes(h)) out.push(h);
+    }
+    return out;
+  };
+
+  const out = await processPackFiles({
+    packId,
+    sourceLabel,
+    ...(ruleset ? { defaultRuleset: ruleset } : {}),
+    contentPaths: expand(content, 'content'),
+    characterPaths: expand(characterPatterns, 'characters'),
+    ...(categoryHints ? { categoryHints } : {}),
+    inlineEntities,
+    inlineCharacters,
+    read: (path) => {
+      const text = files[path];
+      return text === undefined ? Promise.reject(new Error('file not found in the pack')) : Promise.resolve(text);
+    },
+  });
+  const report = buildImportReport(out.merged, { files: out.filesRead, unreadable: out.unreadable, format: 'pack' });
+  return { kind, manifestProblems: problems, packId, packName, report: { ...report, characters: out.characters.length }, warnings: [...warnings, ...out.warnings], result: out.merged };
 }

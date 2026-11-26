@@ -369,14 +369,7 @@ export function BattlemapModal({
       <svg
         ref={svgRef}
         viewBox={`0 0 ${cols * CELL_PX} ${rows * CELL_PX}`}
-        style={{
-          width: `${Math.round(zoom * 100)}%`,
-          minWidth: `${Math.round(cols * 32 * zoom)}px`,
-          display: 'block',
-          background: '#0b0e14',
-          userSelect: 'none',
-          touchAction: 'none',
-        }}
+        className="battlemap__svg" style={{ width: `${Math.round(zoom * 100)}%`, minWidth: `${Math.round(cols * 32 * zoom)}px` }}
         onPointerDown={handleSvgPointerDown}
         onPointerMove={handleSvgPointerMove}
         onPointerUp={handleSvgPointerUp}
@@ -808,13 +801,12 @@ export function BattlemapModal({
         <div className="toolbar-group">
           <select
             aria-label="AoE template tool"
-            className="forge-input"
+            className="forge-input battlemap__input"
             value={mode === 'sphere' || mode === 'cone' || mode === 'line' || mode === 'cube' ? mode : ''}
             onChange={(e) => {
               const v = e.target.value as MapMode | '';
               if (v) setMode(v);
             }}
-            style={{ padding: '3px 6px', fontSize: 11 }}
           >
             <option value="">AoE Template...</option>
             <option value="sphere">Sphere 20ft</option>
@@ -824,7 +816,7 @@ export function BattlemapModal({
           </select>
           <select
             aria-label="Fog and terrain brush"
-            className="forge-input"
+            className="forge-input battlemap__input"
             value={
               mode === 'fog_paint' || mode === 'fog_reveal' || mode === 'wall' || mode === 'difficult' || mode === 'erase_terrain'
                 ? mode
@@ -834,7 +826,6 @@ export function BattlemapModal({
               const v = e.target.value as MapMode | '';
               if (v) setMode(v);
             }}
-            style={{ padding: '3px 6px', fontSize: 11 }}
           >
             <option value="">Fog / Terrain...</option>
             <option value="fog_paint">Fog Paint</option>
@@ -941,13 +932,8 @@ export function BattlemapModal({
                 key={col}
                 type="button"
                 aria-label={`Sketch color ${col}`}
-                className="btn"
-                style={{
-                  minWidth: 26,
-                  padding: '2px 6px',
-                  background: col,
-                  border: sketchColor === col ? '2px solid #f0f6fc' : '1px solid #30363d',
-                }}
+                className="btn battlemap__btn"
+                style={{ background: col, border: sketchColor === col ? '2px solid #f0f6fc' : '1px solid #30363d' }}
                 onClick={() => setSketchColor(col)}
               />
             ))}
@@ -956,18 +942,17 @@ export function BattlemapModal({
       </div>
 
       {showCalibrate && (
-        <div className="subpanel forge-stack" style={{ padding: 10 }}>
+        <div className="subpanel forge-stack battlemap__subpanel">
           <div className="forge-row-between wrap gap-2">
             <div className="forge-row wrap">
               <select
                 aria-label="Load preset battlemap"
-                className="forge-input"
+                className="forge-input battlemap__input"
                 value=""
                 onChange={(e) => {
                   const preset = BUILTIN_MAP_PRESETS.find((p) => p.id === e.target.value);
                   if (preset) onSetMapImage(preset.dataUrl);
                 }}
-                style={{ padding: '3px 6px', fontSize: 11 }}
               >
                 <option value="">Preset Maps...</option>
                 {BUILTIN_MAP_PRESETS.map((p) => (
@@ -996,8 +981,7 @@ export function BattlemapModal({
               <div className="forge-row wrap">
                 <input
                   type="text"
-                  className="input"
-                  style={{ width: 140 }}
+                  className="input battlemap__input-2"
                   placeholder="Scene name..."
                   value={sceneNameInput}
                   onChange={(e) => setSceneNameInput(e.target.value)}
@@ -1058,19 +1042,18 @@ export function BattlemapModal({
 
         {/* Selected Token Quick Actions, Portrait & Vision Editor */}
         {selectedToken && !playerView && (
-          <div className="subpanel forge-row-between" style={{ padding: '6px 10px', flexWrap: 'wrap', gap: 6 }}>
+          <div className="subpanel forge-row-between battlemap__subpanel-2">
             <div className="forge-row wrap gap-2">
               <span className="badge tabular">
                 Token: <strong>{selectedToken.name}</strong> • HP {selectedToken.hp.current}/{selectedToken.hp.max} • AC {selectedToken.ac}
               </span>
               {onAdjustTokenHp && (
-                <div className="forge-row" style={{ gap: 3 }}>
+                <div className="forge-row battlemap__row">
                   {[-5, -1, 1, 5].map((delta) => (
                     <button
                       key={delta}
                       type="button"
-                      className="btn"
-                      style={{ padding: '1px 6px', fontSize: 11 }}
+                      className="btn battlemap__btn-2"
                       onClick={() => onAdjustTokenHp(selectedToken.id, delta)}
                     >
                       {delta > 0 ? `+${delta}` : delta}
@@ -1079,7 +1062,7 @@ export function BattlemapModal({
                 </div>
               )}
               {onToggleTokenCondition && (
-                <div className="forge-row" style={{ gap: 3 }}>
+                <div className="forge-row battlemap__row">
                   {['Prone', 'Poisoned', 'Stunned'].map((cond) => {
                     const active = selectedToken.conditions.includes(cond);
                     return (
@@ -1133,8 +1116,7 @@ export function BattlemapModal({
                 <span className="muted-label">Vision (ft)</span>
                 <input
                   type="number"
-                  className="input input-compact"
-                  style={{ width: 64 }}
+                  className="input input-compact battlemap__input-3"
                   min={5}
                   max={300}
                   step={5}
@@ -1149,13 +1131,12 @@ export function BattlemapModal({
         )}
 
         {showCalibrate && (
-          <div className="subpanel forge-row" style={{ padding: 10, flexWrap: 'wrap', gap: 10 }}>
+          <div className="subpanel forge-row battlemap__subpanel-3">
             <label className="forge-row">
               <span className="muted-label">Cols</span>
               <input
                 type="number"
-                className="input input-compact"
-                style={{ width: 64 }}
+                className="input input-compact battlemap__input-3"
                 min={8}
                 max={40}
                 value={cols}
@@ -1168,8 +1149,7 @@ export function BattlemapModal({
               <span className="muted-label">Rows</span>
               <input
                 type="number"
-                className="input input-compact"
-                style={{ width: 64 }}
+                className="input input-compact battlemap__input-3"
                 min={6}
                 max={30}
                 value={rows}
@@ -1204,8 +1184,7 @@ export function BattlemapModal({
               <span className="muted-label">Offset X</span>
               <input
                 type="number"
-                className="input input-compact"
-                style={{ width: 64 }}
+                className="input input-compact battlemap__input-3"
                 value={imageOffsetX}
                 onChange={(e) => onUpdateMapSettings({ imageOffsetX: Number.parseInt(e.target.value, 10) || 0 })}
               />
@@ -1214,8 +1193,7 @@ export function BattlemapModal({
               <span className="muted-label">Offset Y</span>
               <input
                 type="number"
-                className="input input-compact"
-                style={{ width: 64 }}
+                className="input input-compact battlemap__input-3"
                 value={imageOffsetY}
                 onChange={(e) => onUpdateMapSettings({ imageOffsetY: Number.parseInt(e.target.value, 10) || 0 })}
               />

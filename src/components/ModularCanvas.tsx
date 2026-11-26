@@ -234,17 +234,17 @@ export function ModularCanvas({
       : '';
     return (
       <div key={act.id} className="forge-list-row gap-2">
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ fontWeight: 600, fontSize: 12 }}>
+        <div className="modular-canvas__div">
+          <div className="modular-canvas__div-2">
             {act.name}{' '}
             {act.weaponMastery && (
-              <span className="badge" style={{ color: 'var(--accent-gold)', fontSize: 10 }}>
+              <span className="badge modular-canvas__badge">
                 Mastery: {act.weaponMastery}
               </span>
             )}
           </div>
           {parsed && (
-            <div className="forge-muted" style={{ fontSize: 11, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div className="forge-muted modular-canvas__muted">
               {parsed}
             </div>
           )}
@@ -252,8 +252,8 @@ export function ModularCanvas({
         <div className="forge-row gap-1">
           <button
             type="button"
-            className="btn"
-            style={{ padding: '2px 5px', fontSize: 11, color: pinnedIds.includes(act.id) ? 'var(--accent-gold)' : 'var(--text-muted)' }}
+            className="btn modular-canvas__btn"
+            style={{ color: pinnedIds.includes(act.id) ? 'var(--accent-gold)' : 'var(--text-muted)' }}
             onClick={() => togglePin(act.id)}
             aria-label={pinnedIds.includes(act.id) ? `Unpin ${act.name}` : `Pin ${act.name}`}
           >
@@ -279,7 +279,7 @@ export function ModularCanvas({
           <div className="forge-stack">
             <div className="forge-row-between">
               <div>
-                <div style={{ fontWeight: 800, fontSize: 15 }}>{sheet.name}</div>
+                <div className="modular-canvas__div-3">{sheet.name}</div>
                 <div className="forge-muted text-sm">
                   Lvl {sheet.totalLevel} • {sheet.ruleset.toUpperCase()} • Prof +{sheet.proficiencyBonus.final}
                 </div>
@@ -295,19 +295,18 @@ export function ModularCanvas({
               </span>
               <span className="badge">Speed {sheet.speed.final} ft</span>
             </div>
-            <div className="subpanel forge-row-between" style={{ padding: '8px 10px' }}>
+            <div className="subpanel forge-row-between modular-canvas__subpanel">
               <div className="tabular">
-                <span style={{ fontSize: 20, fontWeight: 800 }}>{sheet.hp.current}</span>
+                <span className="modular-canvas__span">{sheet.hp.current}</span>
                 <span className="forge-muted"> / {sheet.hp.max} HP</span>
-                {sheet.hp.temp > 0 && <span className="badge" style={{ marginLeft: 6 }}>+{sheet.hp.temp} Temp</span>}
+                {sheet.hp.temp > 0 && <span className="badge modular-canvas__badge-2">+{sheet.hp.temp} Temp</span>}
               </div>
               <div className="forge-row gap-1">
                 <input
                   aria-label="HP amount"
                   type="number"
                   min={1}
-                  className="forge-input tabular"
-                  style={{ width: 52 }}
+                  className="forge-input tabular modular-canvas__input"
                   value={hpInput}
                   onChange={(e) => setHpInput(e.target.value)}
                 />
@@ -346,7 +345,7 @@ export function ModularCanvas({
                   <strong role="rowheader" className="text-md">
                     {full}
                   </strong>
-                  <span role="cell" className="badge tabular" style={{ justifySelf: 'center', padding: '1px 6px' }}>
+                  <span role="cell" className="badge tabular modular-canvas__badge-3">
                     {stat.score.final}
                   </span>
                   <button
@@ -410,7 +409,7 @@ export function ModularCanvas({
                 />
               </Suspense>
             ) : (
-              <div className="forge-stack" style={{ maxHeight: 240, overflowY: 'auto' }}>
+              <div className="forge-stack modular-canvas__stack">
                 {(Object.keys(SKILL_ABILITY_MAP) as SkillKey[]).map((sk) => {
                   const val = sheet.skills[sk].final;
                   return (
@@ -488,7 +487,7 @@ export function ModularCanvas({
                 ))
               )}
               {autoCond.reasons.length > 0 && (
-                <span className="badge" style={{ color: 'var(--accent-warning)' }}>
+                <span className="badge modular-canvas__badge-4">
                   {autoCond.reasons[0]}
                 </span>
               )}
@@ -564,8 +563,7 @@ export function ModularCanvas({
                     {available.length > 1 && (
                       <select
                         aria-label="Divine Smite slot level"
-                        className="forge-input tabular"
-                        style={{ padding: '1px 4px', fontSize: 10, width: 46 }}
+                        className="forge-input tabular modular-canvas__input-2"
                         value={chosen}
                         onChange={(e) => setSmiteLevel(Number.parseInt(e.target.value, 10))}
                       >
@@ -623,8 +621,7 @@ export function ModularCanvas({
               {onOpenCompendium && (
                 <button
                   type="button"
-                  className="btn btn-primary"
-                  style={{ fontSize: 10, padding: '2px 8px' }}
+                  className="btn btn-primary modular-canvas__btn-2"
                   onClick={() => onOpenCompendium('spell')}
                 >
                   + Add Spell
@@ -634,7 +631,7 @@ export function ModularCanvas({
             {slotPools.length > 0 && (
               <div className="forge-row wrap gap-3">
                 {slotPools.map(({ lvl, pool }) => (
-                  <div key={pool.id} className="forge-row" style={{ gap: 3 }}>
+                  <div key={pool.id} className="forge-row modular-canvas__row">
                     <span className="muted-label tabular">L{lvl}</span>
                     {Array.from({ length: pool.max }).map((_, i) => {
                       const filled = i < pool.current;
@@ -709,7 +706,7 @@ export function ModularCanvas({
         return (
           <div className="forge-stack">
             {feats.map((f) => (
-              <div key={f.id} className="subpanel" style={{ padding: '6px 8px' }}>
+              <div key={f.id} className="subpanel modular-canvas__subpanel-2">
                 <strong className="text-md">{f.name}</strong>
                 {f.entries[0] && <div className="forge-muted text-sm">{f.entries[0]}</div>}
               </div>
@@ -720,10 +717,10 @@ export function ModularCanvas({
       }
 
       case 'combat_tracker':
-        return <div style={{ minWidth: 0 }}>{combatDrawerNode}</div>;
+        return <div className="modular-canvas__div-4">{combatDrawerNode}</div>;
 
       case 'mini_vtt':
-        return <div style={{ minWidth: 0 }}>{miniVttNode}</div>;
+        return <div className="modular-canvas__div-4">{miniVttNode}</div>;
 
       case 'dice_console':
         return (
@@ -740,7 +737,7 @@ export function ModularCanvas({
                 </button>
               ))}
             </div>
-            <div className="forge-stack" style={{ maxHeight: 160, overflowY: 'auto' }}>
+            <div className="forge-stack modular-canvas__stack-2">
               {consoleLines.slice(-8).reverse().map((line) => (
                 <div key={line.id} className="forge-muted tabular text-sm">
                   {line.text}
@@ -757,7 +754,7 @@ export function ModularCanvas({
         return (
           <div className="forge-stack">
             <div className="forge-row-between wrap gap-2">
-              <strong className="tabular" style={{ fontSize: 13 }}>
+              <strong className="tabular modular-canvas__tabular">
                 {formatWorldClock(campaign.clock)}
               </strong>
               <span className="badge">{campaign.clock.weather}</span>
@@ -770,10 +767,10 @@ export function ModularCanvas({
                 <button type="button" className="btn" onClick={() => onAdvanceClock(1440)}>+1d</button>
               </div>
             )}
-            <div className="forge-stack" style={{ maxHeight: 150, overflowY: 'auto' }}>
+            <div className="forge-stack modular-canvas__stack-3">
               {campaign.entries.slice(0, 5).map((entry) => (
-                <div key={entry.id} className="subpanel" style={{ padding: '5px 8px' }}>
-                  <div style={{ fontWeight: 600, fontSize: 12 }}>
+                <div key={entry.id} className="subpanel modular-canvas__subpanel-3">
+                  <div className="modular-canvas__div-2">
                     {entry.title} <span className="badge">{entry.category.toUpperCase()}</span>
                   </div>
                   {entry.summary && <div className="forge-muted text-sm">{entry.summary}</div>}
@@ -818,7 +815,7 @@ export function ModularCanvas({
                 ))}
               </select>
             )}
-            <div className="forge-stack" style={{ maxHeight: 150, overflowY: 'auto' }}>
+            <div className="forge-stack modular-canvas__stack-3">
               {campaign.partyLootItems.length === 0 ? (
                 <div className="forge-muted text-md">No stash items.</div>
               ) : (
@@ -849,7 +846,7 @@ export function ModularCanvas({
     <div className="modular-shell">
       {(encounter.combatants.length > 1 || encounter.round > 1) &&
         !layout.widgets.find((w) => w.id === 'mini_vtt')?.visible && (
-          <div className="subpanel forge-row-between" style={{ padding: '6px 10px' }}>
+          <div className="subpanel forge-row-between modular-canvas__subpanel-4">
             <span className="badge">Combat Active (Round {encounter.round})</span>
             <button
               type="button"
@@ -892,8 +889,7 @@ export function ModularCanvas({
             <input
               aria-label="Save custom layout preset name"
               type="text"
-              className="forge-input"
-              style={{ width: 140 }}
+              className="forge-input modular-canvas__input-3"
               placeholder="Save preset as..."
               value={presetNameInput}
               onChange={(e) => setPresetNameInput(e.target.value)}
@@ -928,7 +924,7 @@ export function ModularCanvas({
             </button>
           </div>
           {hiddenWidgets.length > 0 && (
-            <div className="pill-row" style={{ width: '100%' }}>
+            <div className="pill-row modular-canvas__pill-row">
               <span className="muted-label">Hidden blocks (click to restore):</span>
               {hiddenWidgets.map((hw) => (
                 <button
@@ -1019,8 +1015,7 @@ export function ModularCanvas({
                     ))}
                     <select
                       aria-label={`${w.label} height`}
-                      className="forge-input"
-                      style={{ padding: '1px 4px', fontSize: 10 }}
+                      className="forge-input modular-canvas__input-4"
                       value={w.heightPreset}
                       onChange={(e) =>
                         onChangeLayout(
@@ -1034,8 +1029,7 @@ export function ModularCanvas({
                     </select>
                     <select
                       aria-label={`${w.label} accent`}
-                      className="forge-input"
-                      style={{ padding: '1px 4px', fontSize: 10 }}
+                      className="forge-input modular-canvas__input-4"
                       value={w.accent ?? 'default'}
                       onChange={(e) =>
                         onChangeLayout(setWidgetAccent(layout, w.id, e.target.value as WidgetAccent))

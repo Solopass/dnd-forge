@@ -1,5 +1,6 @@
 import './styles/tokens.css';
 import './styles/layout.css';
+import './styles/components.css';
 import './styles/utilities.css';
 import { useSheetStore } from './state/useSheetStore';
 import { SEED_CHARACTER, SEED_ENCOUNTER } from './state/seed';

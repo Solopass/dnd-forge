@@ -1,0 +1,184 @@
+/*
+ * Static styles moved out of the biggest components. One section per component.
+ * Selectors start with :root so they win over layout.css rules the way the old inline styles did.
+ * Anything computed at runtime (positions, widths from data, state colors) stays inline.
+ */
+
+/* DmHubModal */
+:root .dm-hub__input { font-weight: 700; }
+:root .dm-hub__input-2 { width: 170px; }
+:root .dm-hub__div { overflow-x: auto; }
+:root .dm-hub__table { width: 100%; border-collapse: collapse; font-size: 12px; }
+:root .dm-hub__tr { border-bottom: 1px solid var(--border-subtle); text-align: left; color: var(--text-secondary); }
+:root .dm-hub__th { padding: 4px 6px; }
+:root .dm-hub__tr-2 { border-bottom: 1px solid var(--border-subtle); }
+:root .dm-hub__td { padding: 5px 6px; }
+:root .dm-hub__input-3 { width: 58px; padding: 2px 6px; }
+:root .dm-hub__input-4 { flex: 1 1 180px; }
+:root .dm-hub__input-5 { width: 80px; }
+:root .dm-hub__input-6 { flex: 1 1 170px; }
+:root .dm-hub__grid-2 { align-items: start; }
+:root .dm-hub__stack { padding: 6px 8px 10px; }
+:root .dm-hub__img { max-width: 100%; max-height: 160px; object-fit: contain; border-radius: 6px; }
+:root .dm-hub__subpanel { padding: 6px 10px; }
+:root .dm-hub__tabular { font-size: 22px; font-weight: 700; }
+:root .dm-hub__input-7 { width: 68px; }
+:root .dm-hub__input-8 { flex: 1; min-width: 180px; }
+:root .dm-hub__input-9 { width: 115px; }
+:root .dm-hub__subpanel-2 { padding: 8px 10px; flex-wrap: wrap; gap: 8px; }
+:root .dm-hub__div-2 { font-weight: 600; }
+:root .dm-hub__badge { color: var(--accent-green); border-color: rgba(16,185,129,0.5); }
+:root .dm-hub__card { background: var(--bg-base); }
+:root .dm-hub__div-3 { color: var(--accent-blue); }
+:root .dm-hub__btn { margin-left: 8px; }
+:root .dm-hub__input-10 { width: 190px; }
+:root .dm-hub__stack-2 { max-height: 170px; overflow-y: auto; }
+:root .dm-hub__card-2 { align-items: center; }
+:root .dm-hub__input-11 { width: 100px; }
+:root .dm-hub__subpanel-3 { padding: 10px; }
+:root .dm-hub__input-12 { width: 150px; }
+:root .dm-hub__card-3 { position: relative; min-height: 320px; background: #0b0e14; overflow: hidden; cursor: crosshair; }
+:root .dm-hub__img-2 { width: 100%; max-height: 52vh; object-fit: contain; display: block; }
+:root .dm-hub__muted { padding: 40px; text-align: center; }
+:root .dm-hub__button { position: absolute; transform: translate(-50%, -50%); color: #0d1117; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 700; cursor: pointer; }
+:root .dm-hub__audio { width: 100%; }
+
+/* SummonCombatDrawer */
+:root .combat-drawer__input { flex: 1; font-weight: 700; padding: 3px 6px; }
+:root .combat-drawer__cost-badge { border-color: currentColor; }
+:root .combat-drawer__subpanel { padding: 4px 8px; flex-wrap: wrap; gap: 6px; }
+:root .combat-drawer__input-2 { width: 100%; padding: 4px 8px; }
+:root .combat-drawer__input-3 { flex: 1; padding: 3px 6px; }
+:root .combat-drawer__input-4 { padding: 4px 8px; width: 100%; }
+:root .combat-drawer__div { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 4px; }
+:root .combat-drawer__input-5 { padding: 3px 6px; min-width: 0; }
+:root .combat-drawer__section-label { color: var(--accent-amber); }
+:root .combat-drawer__input-6 { flex: 1; padding: 2px 6px; font-size: 11px; }
+:root .combat-drawer__input-7 { width: 52px; padding: 2px 4px; font-size: 11px; }
+:root .combat-drawer__subpanel-2 { padding: 6px 10px; gap: 6px; flex-wrap: wrap; border-color: var(--accent-red); }
+:root .combat-drawer__span { display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+:root .combat-drawer__input-8 { width: 38px; padding: 1px 4px; font-size: 11px; text-align: center; }
+:root .combat-drawer__conc-badge { border-color: var(--accent-red); color: var(--accent-red); }
+:root .combat-drawer__pill-row { margin-top: 4px; }
+:root .combat-drawer__stack { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border-subtle); gap: 6px; }
+:root .combat-drawer__input-9 { padding: 1px 4px; font-size: 11px; }
+:root .combat-drawer__btn { margin-left: auto; }
+:root .combat-drawer__input-10 { width: 92px; padding: 2px 4px; font-size: 11px; }
+:root .combat-drawer__input-11 { flex: 1; padding: 2px 4px; font-size: 11px; }
+:root .combat-drawer__subpanel-3 { padding: 5px 8px; font-size: 11px; line-height: 1.4; }
+:root .combat-drawer__pill-row-2 { margin-bottom: 10px; }
+:root .combat-drawer__input-12 { width: 100%; background: var(--bg-base); color: var(--text-primary); border: 1px solid var(--border-subtle); padding: 7px 10px; margin-bottom: 8px; }
+:root .combat-drawer__pill-row-3 { margin-bottom: 8px; flex-wrap: wrap; }
+:root .combat-drawer__span-2 { opacity: 0.35; }
+:root .combat-drawer__div-2 { max-height: 280px; overflow-y: auto; }
+:root .combat-drawer__div-3 { display: flex; justify-content: space-between; align-items: center; padding: 6px 4px; border-bottom: 1px solid var(--border-subtle); }
+:root .combat-drawer__div-4 { min-width: 0; }
+:root .combat-drawer__span-3 { font-size: 11px; color: var(--text-secondary); }
+:root .combat-drawer__div-5 { font-size: 10px; color: var(--text-secondary); }
+:root .combat-drawer__div-6 { display: flex; flex-direction: column; gap: 8px; }
+:root .combat-drawer__row-between { font-size: 12px; color: var(--text-secondary); flex-wrap: wrap; gap: 6px; }
+:root .combat-drawer__card { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+:root .combat-drawer__span-4 { font-size: 11px; color: var(--accent-blue); }
+:root .combat-drawer__div-7 { font-size: 12px; color: var(--text-secondary); }
+:root .combat-drawer__badge { color: var(--accent-green); border-color: rgba(63,185,80,0.4); }
+:root .combat-drawer__input-13 { color: var(--text-primary); }
+:root .combat-drawer__textarea { width: 100%; background: var(--bg-base); color: var(--text-primary); border: 1px solid var(--border-subtle); font-family: var(--font-mono); padding: 8px; }
+:root .combat-drawer__div-8 { display: flex; justify-content: flex-end; margin-top: 8px; }
+:root .combat-drawer__div-9 { font-size: 12px; color: var(--text-secondary); margin-top: 8px; }
+:root .combat-drawer__label { display: inline-flex; align-items: center; gap: 5px; }
+:root .combat-drawer__input-14 { width: 190px; padding: 3px 8px; }
+
+/* VitalsColumn */
+:root .vitals__tabular { min-width: 16px; text-align: center; }
+:root .vitals__div { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-subtle); }
+:root .vitals__input { width: 95px; }
+:root .vitals__muted { text-transform: capitalize; }
+:root .vitals__input-2 { width: 54px; padding: 2px 4px; font-size: 11px; }
+:root .vitals__row-between { margin-top: 8px; flex-wrap: wrap; gap: 6px; }
+:root .vitals__row { margin-top: 8px; flex-wrap: wrap; }
+:root .vitals__input-3 { width: 64px; padding: 3px 6px; }
+:root .vitals__input-4 { width: 56px; padding: 3px 6px; }
+:root .vitals__input-5 { width: 60px; padding: 3px 6px; }
+:root .vitals__div-2 { margin-top: 8px; padding: 6px; background: rgba(248, 81, 73, 0.12); border-radius: 4px; }
+:root .vitals__row-between-2 { margin-bottom: 4px; }
+:root .vitals__span { font-size: 11px; color: var(--accent-red); font-weight: 700; }
+:root .vitals__row-2 { margin-top: 8px; }
+:root .vitals__input-6 { flex: 1; padding: 3px 6px; }
+:root .vitals__input-7 { flex: 1; padding: 3px 6px; font-size: 11px; }
+:root .vitals__input-8 { padding: 3px 6px; font-size: 11px; }
+:root .vitals__badge { color: var(--accent-amber); }
+:root .vitals__strong { font-size: 12px; letter-spacing: 0.04em; }
+:root .vitals__badge-2 { justify-self: center; padding: 1px 6px; }
+:root .vitals__muted-label { min-width: 22px; }
+:root .vitals__pip-row { flex: 1; flex-wrap: wrap; gap: 3px; }
+:root .vitals__pip-row-2 { gap: 3px; }
+:root .vitals__tabular-2 { min-width: 32px; text-align: center; font-size: 11px; }
+:root .vitals__list-row { flex-direction: column; align-items: stretch; gap: 4px; }
+:root .vitals__tabular-3 { min-width: 38px; text-align: center; }
+:root .vitals__input-9 { width: 46px; padding: 3px 4px; }
+:root .vitals__row-between-3 { margin-bottom: 6px; flex-wrap: wrap; gap: 4px; }
+:root .vitals__row-3 { margin-bottom: 6px; gap: 6px; }
+:root .vitals__list-row-2 { padding: 2px 0; }
+
+/* ModularCanvas */
+:root .modular-canvas__div { min-width: 0; flex: 1; }
+:root .modular-canvas__div-2 { font-weight: 600; font-size: 12px; }
+:root .modular-canvas__badge { color: var(--accent-gold); font-size: 10px; }
+:root .modular-canvas__muted { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root .modular-canvas__btn { padding: 2px 5px; font-size: 11px; }
+:root .modular-canvas__div-3 { font-weight: 800; font-size: 15px; }
+:root .modular-canvas__subpanel { padding: 8px 10px; }
+:root .modular-canvas__span { font-size: 20px; font-weight: 800; }
+:root .modular-canvas__badge-2 { margin-left: 6px; }
+:root .modular-canvas__input { width: 52px; }
+:root .modular-canvas__badge-3 { justify-self: center; padding: 1px 6px; }
+:root .modular-canvas__stack { max-height: 240px; overflow-y: auto; }
+:root .modular-canvas__badge-4 { color: var(--accent-warning); }
+:root .modular-canvas__input-2 { padding: 1px 4px; font-size: 10px; width: 46px; }
+:root .modular-canvas__btn-2 { font-size: 10px; padding: 2px 8px; }
+:root .modular-canvas__row { gap: 3px; }
+:root .modular-canvas__subpanel-2 { padding: 6px 8px; }
+:root .modular-canvas__div-4 { min-width: 0; }
+:root .modular-canvas__stack-2 { max-height: 160px; overflow-y: auto; }
+:root .modular-canvas__tabular { font-size: 13px; }
+:root .modular-canvas__stack-3 { max-height: 150px; overflow-y: auto; }
+:root .modular-canvas__subpanel-3 { padding: 5px 8px; }
+:root .modular-canvas__subpanel-4 { padding: 6px 10px; }
+:root .modular-canvas__input-3 { width: 140px; }
+:root .modular-canvas__pill-row { width: 100%; }
+:root .modular-canvas__input-4 { padding: 1px 4px; font-size: 10px; }
+
+/* ActionEconomyBoard */
+:root .action-economy__button { background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer; text-align: left; text-decoration: underline; text-decoration-color: var(--border-subtle); text-underline-offset: 2px; }
+:root .action-economy__badge { margin-left: 4px; border-color: rgba(245, 158, 11, 0.4); color: var(--accent-amber); }
+:root .action-economy__btn { padding: 2px 6px; font-size: 11px; }
+:root .action-economy__input { padding: 3px 4px; font-size: 11px; }
+:root .action-economy__span { color: var(--accent-purple); font-weight: 600; }
+:root .action-economy__span-2 { text-decoration: underline dotted; color: var(--text-primary); }
+:root .action-economy__btn-2 { font-size: 11px; padding: 2px 8px; }
+:root .action-economy__input-2 { padding: 2px 4px; font-size: 11px; width: 52px; }
+:root .action-economy__pill { border-color: rgba(245, 158, 11, 0.45); color: var(--accent-amber); }
+:root .action-economy__subpanel { padding: 6px 8px; flex-wrap: wrap; gap: 10px; }
+:root .action-economy__row { gap: 4px; }
+:root .action-economy__muted-label { color: var(--accent-amber); }
+:root .action-economy__stack { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-subtle); gap: 4px; }
+:root .action-economy__list-row { padding: 4px 6px; }
+:root .action-economy__button-2 { background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer; text-decoration: underline; text-decoration-color: var(--border-subtle); text-underline-offset: 2px; }
+:root .action-economy__subpanel-2 { padding: 8px; gap: 6px; }
+:root .action-economy__subpanel-3 { padding: 8px; gap: 4px; }
+:root .action-economy__list-row-2 { flex-direction: column; align-items: flex-start; gap: 2px; }
+:root .action-economy__subpanel-4 { padding: 8px; }
+:root .action-economy__card { border-color: rgba(245, 158, 11, 0.35); }
+:root .action-economy__div { color: var(--text-muted); font-size: 12px; }
+
+/* BattlemapModal */
+:root .battlemap__svg { display: block; background: #0b0e14; user-select: none; touch-action: none; }
+:root .battlemap__input { padding: 3px 6px; font-size: 11px; }
+:root .battlemap__btn { min-width: 26px; padding: 2px 6px; }
+:root .battlemap__subpanel { padding: 10px; }
+:root .battlemap__input-2 { width: 140px; }
+:root .battlemap__subpanel-2 { padding: 6px 10px; flex-wrap: wrap; gap: 6px; }
+:root .battlemap__row { gap: 3px; }
+:root .battlemap__btn-2 { padding: 1px 6px; font-size: 11px; }
+:root .battlemap__input-3 { width: 64px; }
+:root .battlemap__subpanel-3 { padding: 10px; flex-wrap: wrap; gap: 10px; }

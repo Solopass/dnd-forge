@@ -171,18 +171,7 @@ export function ActionEconomyBoard({
             <button
               type="button"
               onClick={() => onInspectItem(act.parentItemId)}
-              style={{
-                background: 'none',
-                border: 'none',
-                padding: 0,
-                color: 'inherit',
-                font: 'inherit',
-                cursor: 'pointer',
-                textAlign: 'left',
-                textDecoration: 'underline',
-                textDecorationColor: 'var(--border-subtle)',
-                textUnderlineOffset: 2,
-              }}
+              className="action-economy__button"
               title="Open full details in right Inspector panel"
             >
               <strong>{act.name}</strong>
@@ -197,8 +186,7 @@ export function ActionEconomyBoard({
           {act.ritual && <span className="ritual-badge">RITUAL</span>}
           {act.weaponMastery && (
             <span
-              className="badge"
-              style={{ marginLeft: 4, borderColor: 'rgba(245, 158, 11, 0.4)', color: 'var(--accent-amber)' }}
+              className="badge action-economy__badge"
               title={`2024 Weapon Mastery: ${act.weaponMastery}`}
             >
               Mastery: {act.weaponMastery}
@@ -226,8 +214,8 @@ export function ActionEconomyBoard({
         <div className="forge-row">
           <button
             type="button"
-            className="btn"
-            style={{ padding: '2px 6px', fontSize: 11, color: pinnedIds.includes(act.id) ? 'var(--accent-amber)' : 'var(--text-muted)' }}
+            className="btn action-economy__btn"
+            style={{ color: pinnedIds.includes(act.id) ? 'var(--accent-amber)' : 'var(--text-muted)' }}
             title={pinnedIds.includes(act.id) ? 'Unpin from favorites' : 'Pin to favorites'}
             aria-label={pinnedIds.includes(act.id) ? `Unpin ${act.name}` : `Pin ${act.name}`}
             onClick={() => togglePin(act.id)}
@@ -247,8 +235,7 @@ export function ActionEconomyBoard({
           {higherSlots.length > 1 && (
             <select
               aria-label={`Cast level for ${act.name}`}
-              className="forge-input tabular"
-              style={{ padding: '3px 4px', fontSize: 11 }}
+              className="forge-input tabular action-economy__input"
               value={chosenSlot}
               onChange={(e) => {
                 const lvl = Number.parseInt(e.target.value, 10);
@@ -307,14 +294,14 @@ export function ActionEconomyBoard({
       }
       if (seg.kind === 'save') {
         return (
-          <span key={i} style={{ color: 'var(--accent-purple)', fontWeight: 600 }}>
+          <span key={i} className="action-economy__span">
             {seg.display}
           </span>
         );
       }
       if (seg.kind === 'ref') {
         return (
-          <span key={i} style={{ textDecoration: 'underline dotted', color: 'var(--text-primary)' }}>
+          <span key={i} className="action-economy__span-2">
             {seg.display}
           </span>
         );
@@ -395,16 +382,14 @@ export function ActionEconomyBoard({
               <div className="forge-row gap-2">
                 <button
                   type="button"
-                  className="btn btn-primary"
-                  style={{ fontSize: 11, padding: '2px 8px' }}
+                  className="btn btn-primary action-economy__btn-2"
                   onClick={() => onOpenCompendium('spell')}
                 >
                   + Add Spell
                 </button>
                 <button
                   type="button"
-                  className="btn"
-                  style={{ fontSize: 11, padding: '2px 8px' }}
+                  className="btn action-economy__btn-2"
                   onClick={() => onOpenCompendium('gear')}
                 >
                   + Add Gear
@@ -481,8 +466,7 @@ export function ActionEconomyBoard({
                       {availableSmiteLevels.length > 1 && (
                         <select
                           aria-label="Divine Smite slot level"
-                          className="forge-input tabular"
-                          style={{ padding: '2px 4px', fontSize: 11, width: 52 }}
+                          className="forge-input tabular action-economy__input-2"
                           value={chosen}
                           onChange={(e) => setSmiteLevel(Number.parseInt(e.target.value, 10))}
                         >
@@ -495,8 +479,7 @@ export function ActionEconomyBoard({
                       )}
                       <button
                         type="button"
-                        className="pill"
-                        style={{ borderColor: 'rgba(245, 158, 11, 0.45)', color: 'var(--accent-amber)' }}
+                        className="pill action-economy__pill"
                         title={`Spend a Level ${chosen} slot to roll ${diceCount}d8 Radiant Divine Smite`}
                         onClick={() => onDivineSmite(chosen)}
                       >
@@ -582,8 +565,7 @@ export function ActionEconomyBoard({
                 {onOpenCompendium && (
                   <button
                     type="button"
-                    className="btn btn-primary"
-                    style={{ fontSize: 11, padding: '2px 8px' }}
+                    className="btn btn-primary action-economy__btn-2"
                     onClick={() => onOpenCompendium('spell')}
                   >
                     + Add Spell
@@ -592,7 +574,7 @@ export function ActionEconomyBoard({
               </div>
             </div>
             {(spellSlotPools.length > 0 || pactPool) && (
-              <div className="subpanel forge-row" style={{ padding: '6px 8px', flexWrap: 'wrap', gap: 10 }}>
+              <div className="subpanel forge-row action-economy__subpanel">
                 {spellSlotPools.map(({ lvl, pool }) => (
                   <div key={pool.id} className="forge-row gap-1">
                     <span className="muted-label tabular">L{lvl}</span>
@@ -615,8 +597,8 @@ export function ActionEconomyBoard({
                   </div>
                 ))}
                 {pactPool && (
-                  <div className="forge-row" style={{ gap: 4, borderLeft: spellSlotPools.length > 0 ? '1px solid var(--border-subtle)' : undefined, paddingLeft: spellSlotPools.length > 0 ? 10 : 0 }}>
-                    <span className="muted-label tabular" style={{ color: 'var(--accent-amber)' }}>
+                  <div className="forge-row action-economy__row" style={{ borderLeft: spellSlotPools.length > 0 ? '1px solid var(--border-subtle)' : undefined, paddingLeft: spellSlotPools.length > 0 ? 10 : 0 }}>
+                    <span className="muted-label tabular action-economy__muted-label">
                       Pact (SR)
                     </span>
                     {Array.from({ length: pactPool.max }).map((_, idx) => {
@@ -664,7 +646,7 @@ export function ActionEconomyBoard({
                 );
               }
               return (
-                <div className="forge-stack" style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-subtle)', gap: 4 }}>
+                <div className="forge-stack action-economy__stack">
                   <div className="forge-row-between wrap gap-2">
                     <div className="forge-section-label mb-0">
                       SPELLBOOK &amp; PREPARATION ({allSpells.length})
@@ -687,7 +669,7 @@ export function ActionEconomyBoard({
                     </div>
                   </div>
                   {allSpells.map((sp) => (
-                    <div key={sp.id} className="forge-list-row" style={{ padding: '4px 6px' }}>
+                    <div key={sp.id} className="forge-list-row action-economy__list-row">
                       <div className="forge-row gap-2 wrap">
                         <span className="badge tabular text-xs">
                           {(sp.spellLevel ?? 0) === 0 ? 'Cantrip' : `L${sp.spellLevel}`}
@@ -696,17 +678,7 @@ export function ActionEconomyBoard({
                           <button
                             type="button"
                             onClick={() => onInspectItem(sp.id)}
-                            style={{
-                              background: 'none',
-                              border: 'none',
-                              padding: 0,
-                              color: 'inherit',
-                              font: 'inherit',
-                              cursor: 'pointer',
-                              textDecoration: 'underline',
-                              textDecorationColor: 'var(--border-subtle)',
-                              textUnderlineOffset: 2,
-                            }}
+                            className="action-economy__button-2"
                           >
                             <strong>{sp.name}</strong>
                           </button>
@@ -792,7 +764,7 @@ export function ActionEconomyBoard({
               )}
             </div>
             {rawChar?.structuredProficiencies && (
-              <div className="subpanel forge-stack" style={{ padding: 8, gap: 6 }}>
+              <div className="subpanel forge-stack action-economy__subpanel-2">
                 <div className="forge-section-label">PROFICIENCIES &amp; LANGUAGES</div>
                 {rawChar.structuredProficiencies.armor.length > 0 && (
                   <div className="forge-row wrap gap-1">
@@ -840,7 +812,7 @@ export function ActionEconomyBoard({
             )}
             {rawChar?.details &&
               Object.values(rawChar.details).some((v) => Boolean(v && v.trim())) && (
-                <div className="subpanel forge-stack" style={{ padding: 8, gap: 4 }}>
+                <div className="subpanel forge-stack action-economy__subpanel-3">
                   <div className="forge-section-label">CHARACTER DETAILS</div>
                   <div className="pill-row text-sm">
                     {rawChar.details.age && <span className="badge">Age: {rawChar.details.age}</span>}
@@ -862,24 +834,13 @@ export function ActionEconomyBoard({
               <div className="forge-muted">No class features or feats listed yet.</div>
             ) : (
               featItems.map((feat) => (
-                <div key={feat.id} className="forge-list-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 2 }}>
+                <div key={feat.id} className="forge-list-row action-economy__list-row-2">
                   <div>
                     {onInspectItem ? (
                       <button
                         type="button"
                         onClick={() => onInspectItem(feat.id)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          padding: 0,
-                          color: 'inherit',
-                          font: 'inherit',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          textDecoration: 'underline',
-                          textDecorationColor: 'var(--border-subtle)',
-                          textUnderlineOffset: 2,
-                        }}
+                        className="action-economy__button"
                         title="Open full details in right Inspector panel"
                       >
                         <strong>{feat.name}</strong>
@@ -899,7 +860,7 @@ export function ActionEconomyBoard({
               ))
             )}
             {rawChar?.notes && (rawChar.notes.proficiencies || rawChar.notes.bio || rawChar.notes.campaign) && (
-              <div className="subpanel forge-stack" style={{ padding: 8 }}>
+              <div className="subpanel forge-stack action-economy__subpanel-4">
                 <div className="forge-section-label">PROFICIENCIES &amp; NOTES</div>
                 {rawChar.notes.proficiencies && (
                   <div className="pre-wrap text-md">
@@ -929,9 +890,9 @@ export function ActionEconomyBoard({
         const pinnedItems = allAvailable.filter((act) => pinnedIds.includes(act.id) && matchesFilter(act));
         if (pinnedItems.length === 0) return null;
         return (
-          <section className="card" style={{ borderColor: 'rgba(245, 158, 11, 0.35)' }}>
+          <section className="card action-economy__card">
             <div className="card-header">
-              <div className="forge-section-label" style={{ color: 'var(--accent-amber)' }}>
+              <div className="forge-section-label action-economy__muted-label">
                 ★ PINNED FAVORITES ({pinnedItems.length})
               </div>
             </div>
@@ -955,7 +916,7 @@ export function ActionEconomyBoard({
               </div>
             </div>
             {items.length === 0 ? (
-              <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>No matching actions.</div>
+              <div className="action-economy__div">No matching actions.</div>
             ) : (
               items.map(renderActivityRow)
             )}

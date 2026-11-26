@@ -165,7 +165,7 @@ export function VitalsColumn({
             >
               -
             </button>
-            <span className="tabular" style={{ minWidth: 16, textAlign: 'center' }}>
+            <span className="tabular vitals__tabular">
               {sheet.exhaustion}
             </span>
             <button
@@ -222,7 +222,7 @@ export function VitalsColumn({
         )}
 
         {inspectAc && (
-          <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}>
+          <div className="vitals__div">
             <div className="forge-muted text-sm">
               Formula: {sheet.ac.activeFormulaSource} ({sheet.ac.base})
               {sheet.ac.modifiers.map((m) => ` + ${m.value} (${m.source})`).join('')}
@@ -234,8 +234,7 @@ export function VitalsColumn({
                 placeholder="Override AC"
                 value={acInput}
                 onChange={(e) => setAcInput(e.target.value)}
-                className="forge-input tabular"
-                style={{ width: 95 }}
+                className="forge-input tabular vitals__input"
               />
               <button
                 type="button"
@@ -287,19 +286,18 @@ export function VitalsColumn({
         )}
 
         {inspectSenses && (onUpdateSenses || onUpdateSpeeds) && (
-          <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}>
+          <div className="vitals__div">
             <div className="forge-stack gap-2">
               {onUpdateSpeeds && (
                 <div className="forge-row wrap gap-2">
                   {(['walk', 'fly', 'swim', 'climb', 'burrow'] as const).map((k) => (
                     <label key={k} className="forge-row gap-1 text-sm">
-                      <span className="forge-muted" style={{ textTransform: 'capitalize' }}>{k}</span>
+                      <span className="forge-muted vitals__muted">{k}</span>
                       <input
                         type="number"
                         min={0}
                         step={5}
-                        className="forge-input tabular"
-                        style={{ width: 54, padding: '2px 4px', fontSize: 11 }}
+                        className="forge-input tabular vitals__input-2"
                         value={k === 'walk' ? sheet.speeds.walk : sheet.speeds[k]}
                         onChange={(e) =>
                           onUpdateSpeeds({ [k]: Math.max(0, Number.parseInt(e.target.value, 10) || 0) })
@@ -313,13 +311,12 @@ export function VitalsColumn({
                 <div className="forge-row wrap gap-2">
                   {(['darkvision', 'blindsight', 'tremorsense', 'truesight'] as const).map((k) => (
                     <label key={k} className="forge-row gap-1 text-sm">
-                      <span className="forge-muted" style={{ textTransform: 'capitalize' }}>{k}</span>
+                      <span className="forge-muted vitals__muted">{k}</span>
                       <input
                         type="number"
                         min={0}
                         step={5}
-                        className="forge-input tabular"
-                        style={{ width: 54, padding: '2px 4px', fontSize: 11 }}
+                        className="forge-input tabular vitals__input-2"
                         value={sheet.senses[k]}
                         onChange={(e) =>
                           onUpdateSenses({ [k]: Math.max(0, Number.parseInt(e.target.value, 10) || 0) })
@@ -333,7 +330,7 @@ export function VitalsColumn({
           </div>
         )}
 
-        <div className="forge-row-between" style={{ marginTop: 8, flexWrap: 'wrap', gap: 6 }}>
+        <div className="forge-row-between vitals__row-between">
           <span className="tabular">
             HP <strong>{sheet.hp.current}</strong> / {sheet.hp.max}
             {sheet.hp.temp > 0 ? ` (+${sheet.hp.temp} tmp)` : ''}
@@ -365,7 +362,7 @@ export function VitalsColumn({
         </div>
 
         {!isUnified && (
-          <div className="forge-row" style={{ marginTop: 8, flexWrap: 'wrap' }}>
+          <div className="forge-row vitals__row">
             <input
               aria-label="Exact damage or healing amount"
               type="number"
@@ -373,8 +370,7 @@ export function VitalsColumn({
               placeholder="Amt"
               value={hpDeltaInput}
               onChange={(e) => setHpDeltaInput(e.target.value)}
-              className="forge-input tabular"
-              style={{ width: 64, padding: '3px 6px' }}
+              className="forge-input tabular vitals__input-3"
             />
             <button type="button" className="btn btn-danger" onClick={() => applyCustomHp(-1)}>
               Dmg
@@ -404,8 +400,7 @@ export function VitalsColumn({
                   placeholder="Amt"
                   value={hpDeltaInput}
                   onChange={(e) => setHpDeltaInput(e.target.value)}
-                  className="forge-input tabular"
-                  style={{ width: 56, padding: '3px 6px' }}
+                  className="forge-input tabular vitals__input-4"
                 />
                 <button type="button" className="btn btn-danger" onClick={() => applyCustomHp(-1)}>
                   Dmg
@@ -437,8 +432,7 @@ export function VitalsColumn({
               placeholder="Temp"
               value={tempHpInput}
               onChange={(e) => setTempHpInput(e.target.value)}
-              className="forge-input tabular"
-              style={{ width: 60, padding: '3px 6px' }}
+              className="forge-input tabular vitals__input-5"
             />
             <button
               type="button"
@@ -460,9 +454,9 @@ export function VitalsColumn({
         )}
 
         {sheet.hp.current === 0 && (
-          <div style={{ marginTop: 8, padding: 6, background: 'rgba(248, 81, 73, 0.12)', borderRadius: 4 }}>
-            <div className="forge-row-between" style={{ marginBottom: 4 }}>
-              <span style={{ fontSize: 11, color: 'var(--accent-red)', fontWeight: 700 }}>
+          <div className="vitals__div-2">
+            <div className="forge-row-between vitals__row-between-2">
+              <span className="vitals__span">
                 DEATH SAVING THROWS
               </span>
               <button type="button" className="btn btn-primary" onClick={onRollDeathSave}>
@@ -495,7 +489,7 @@ export function VitalsColumn({
         )}
 
         {!isUnified && (
-          <div className="forge-row" style={{ marginTop: 8 }}>
+          <div className="forge-row vitals__row-2">
             <button
               type="button"
               className="btn flex-1"
@@ -512,13 +506,12 @@ export function VitalsColumn({
           </div>
         )}
 
-        <div className="forge-row" style={{ marginTop: 8 }}>
+        <div className="forge-row vitals__row-2">
           <select
             aria-label="Condition to toggle"
-            className="forge-input"
+            className="forge-input vitals__input-6"
             value={selectedCondition}
             onChange={(e) => setSelectedCondition(e.target.value)}
-            style={{ flex: 1, padding: '3px 6px' }}
           >
             <option value="">Add condition…</option>
             {STANDARD_CONDITIONS.map((cond) => (
@@ -575,10 +568,9 @@ export function VitalsColumn({
           <div className="forge-row mt-2 wrap">
             <select
               aria-label="Wild Shape beast form"
-              className="forge-input"
+              className="forge-input vitals__input-7"
               value={selectedBeastId}
               onChange={(e) => setSelectedBeastId(e.target.value)}
-              style={{ flex: 1, padding: '3px 6px', fontSize: 11 }}
             >
               {WILD_SHAPE_BEAST_FORMS.map((b) => (
                 <option key={b.id} value={b.id}>
@@ -646,10 +638,9 @@ export function VitalsColumn({
           <div className="forge-row mt-2 wrap">
             <select
               aria-label="Defense category"
-              className="forge-input"
+              className="forge-input vitals__input-8"
               value={defenseKind}
               onChange={(e) => setDefenseKind(e.target.value as 'resistances' | 'immunities' | 'vulnerabilities')}
-              style={{ padding: '3px 6px', fontSize: 11 }}
             >
               <option value="resistances">Resistance</option>
               <option value="immunities">Immunity</option>
@@ -657,10 +648,9 @@ export function VitalsColumn({
             </select>
             <select
               aria-label="Damage type"
-              className="forge-input"
+              className="forge-input vitals__input-7"
               value={defenseType}
               onChange={(e) => setDefenseType(e.target.value)}
-              style={{ flex: 1, padding: '3px 6px', fontSize: 11 }}
             >
               {['acid', 'bludgeoning', 'cold', 'fire', 'force', 'lightning', 'necrotic', 'piercing', 'poison', 'psychic', 'radiant', 'slashing', 'thunder'].map(
                 (dt) => (
@@ -712,7 +702,7 @@ export function VitalsColumn({
           return (
             <div className="forge-row-between mt-2">
               <span className="forge-muted text-xs">Auto Roll Effect</span>
-              <span className="badge" style={{ color: 'var(--accent-amber)' }}>
+              <span className="badge vitals__badge">
                 {reasons[0]}
               </span>
             </div>
@@ -742,10 +732,10 @@ export function VitalsColumn({
               const fullName = key.toUpperCase();
               return (
                 <div key={key} className="ability-matrix-row" role="row">
-                  <strong role="rowheader" style={{ fontSize: 12, letterSpacing: '0.04em' }}>
+                  <strong role="rowheader" className="vitals__strong">
                     {fullName}
                   </strong>
-                  <span role="cell" className="badge tabular" style={{ justifySelf: 'center', padding: '1px 6px' }}>
+                  <span role="cell" className="badge tabular vitals__badge-2">
                     {ab.score.final}
                   </span>
                   <button
@@ -807,10 +797,10 @@ export function VitalsColumn({
                           : `L${pool.id.replace('spell_slot_', '')}`;
                       return (
                         <div key={pool.id} className="resource-slot-chip">
-                          <span className="muted-label tabular" style={{ minWidth: 22 }}>
+                          <span className="muted-label tabular vitals__muted-label">
                             {shortLbl}
                           </span>
-                          <div className="pip-row" style={{ flex: 1, flexWrap: 'wrap', gap: 3 }}>
+                          <div className="pip-row vitals__pip-row">
                             {Array.from({ length: Math.min(pool.max, 9) }, (_, idx) => {
                               const filled = idx < pool.current;
                               return (
@@ -840,7 +830,7 @@ export function VitalsColumn({
                       {pool.name}
                     </span>
                     {pool.max > 0 && pool.max <= 6 && (
-                      <div className="pip-row" style={{ gap: 3 }}>
+                      <div className="pip-row vitals__pip-row-2">
                         {Array.from({ length: pool.max }, (_, idx) => {
                           const filled = idx < pool.current;
                           return (
@@ -856,7 +846,7 @@ export function VitalsColumn({
                         })}
                       </div>
                     )}
-                    <div className="forge-row" style={{ gap: 3 }}>
+                    <div className="forge-row vitals__pip-row-2">
                       <button
                         type="button"
                         className="btn"
@@ -865,7 +855,7 @@ export function VitalsColumn({
                       >
                         -
                       </button>
-                      <span className="tabular" style={{ minWidth: 32, textAlign: 'center', fontSize: 11 }}>
+                      <span className="tabular vitals__tabular-2">
                         {pool.current}/{pool.max}
                       </span>
                       <button
@@ -884,12 +874,12 @@ export function VitalsColumn({
           })()
         ) : (
           sheet.resources.map((pool) => (
-            <div key={pool.id} className="forge-list-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
+            <div key={pool.id} className="forge-list-row vitals__list-row">
               <div className="forge-row-between">
                 <span>{pool.name}</span>
                 <div className="forge-row">
                   <button type="button" className="btn" onClick={() => onAdjustResource(pool.id, -1)}>-</button>
-                  <span className="tabular" style={{ minWidth: 38, textAlign: 'center' }}>
+                  <span className="tabular vitals__tabular-3">
                     {pool.current}/{pool.max}
                   </span>
                   <button type="button" className="btn" onClick={() => onAdjustResource(pool.id, 1)}>+</button>
@@ -922,16 +912,14 @@ export function VitalsColumn({
               placeholder="Custom Pool (e.g. Luck)"
               value={newPoolName}
               onChange={(e) => setNewPoolName(e.target.value)}
-              className="forge-input"
-              style={{ flex: 1, padding: '3px 6px' }}
+              className="forge-input vitals__input-6"
             />
             <input
               aria-label="Custom resource pool max"
               type="number"
               value={newPoolMax}
               onChange={(e) => setNewPoolMax(e.target.value)}
-              className="forge-input tabular"
-              style={{ width: 46, padding: '3px 4px' }}
+              className="forge-input tabular vitals__input-9"
             />
             <button
               type="button"
@@ -951,7 +939,7 @@ export function VitalsColumn({
       </div>
 
       <div className="card">
-        <div className="forge-row-between" style={{ marginBottom: 6, flexWrap: 'wrap', gap: 4 }}>
+        <div className="forge-row-between vitals__row-between-3">
           <span className="forge-label tabular">
             PASSIVE: PERC {sheet.passivePerception} • INV {sheet.passiveInvestigation} • INS {sheet.passiveInsight}
           </span>
@@ -990,15 +978,14 @@ export function VitalsColumn({
         )}
         {skillsExpanded && (!isUnified || skillView === 'list') && (
           <>
-            <div className="forge-row" style={{ marginBottom: 6, gap: 6 }}>
+            <div className="forge-row vitals__row-3">
               <input
                 aria-label="Filter skills"
                 type="text"
                 placeholder="Filter skills..."
                 value={skillFilter}
                 onChange={(e) => setSkillFilter(e.target.value)}
-                className="forge-input"
-                style={{ flex: 1, padding: '3px 6px' }}
+                className="forge-input vitals__input-6"
               />
               <button
                 type="button"
@@ -1025,8 +1012,7 @@ export function VitalsColumn({
               return (
                 <div
                   key={skillKey}
-                  className="forge-list-row"
-                  style={{ padding: '2px 0' }}
+                  className="forge-list-row vitals__list-row-2"
                 >
                   <span style={{ color: profMod ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
                     {badge}

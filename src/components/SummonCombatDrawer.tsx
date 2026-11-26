@@ -176,10 +176,9 @@ export function SummonCombatDrawer({
         <div className="forge-row-between">
           <select
             aria-label="Active encounter"
-            className="forge-input"
+            className="forge-input combat-drawer__input"
             value={encounter.id}
             onChange={(e) => onSwitchEncounter(e.target.value)}
-            style={{ flex: 1, fontWeight: 700, padding: '3px 6px' }}
           >
             {encounterList.map((enc) => (
               <option key={enc.id} value={enc.id}>
@@ -223,16 +222,13 @@ export function SummonCombatDrawer({
             Round {encounter.round} • {encounter.combatants.length} Combatants
             {difficulty && (
               <span
-                className="cost-badge"
-                style={{
-                  color:
+                className="cost-badge combat-drawer__cost-badge"
+                style={{ color:
                     difficulty.rating === 'Deadly'
                       ? 'var(--accent-red)'
                       : difficulty.rating === 'Hard'
                       ? 'var(--accent-amber)'
-                      : 'var(--accent-green)',
-                  borderColor: 'currentColor',
-                }}
+                      : 'var(--accent-green)' }}
               >
                 {difficulty.rating.toUpperCase()} • {difficulty.adjustedXp.toLocaleString()} adj XP
               </span>
@@ -309,7 +305,7 @@ export function SummonCombatDrawer({
             </div>
           </div>
           {selectedTargetIds.length > 0 && (
-            <div className="subpanel forge-row-between" style={{ padding: '4px 8px', flexWrap: 'wrap', gap: 6 }}>
+            <div className="subpanel forge-row-between combat-drawer__subpanel">
               <div className="pill-row">
                 <span className="muted-label">Targets ({selectedTargetIds.length}):</span>
                 {encounter.combatants
@@ -332,19 +328,17 @@ export function SummonCombatDrawer({
               <input
                 aria-label="Search compendium monsters"
                 type="text"
-                className="forge-input"
+                className="forge-input combat-drawer__input-2"
                 placeholder={`Search ${srdMonsters.length} monsters (name, CR, 2024)...`}
                 value={mobSearch}
                 onChange={(e) => setMobSearch(e.target.value)}
-                style={{ width: '100%', padding: '4px 8px' }}
               />
               <div className="forge-row">
             <select
               aria-label="Quick add SRD monster"
-              className="forge-input"
+              className="forge-input combat-drawer__input-3"
               value={srdMobId}
               onChange={(e) => setSrdMobId(e.target.value)}
-              style={{ flex: 1, padding: '3px 6px' }}
             >
               <option value="">
                 Pick Monster ({filteredSrdMonsters.length} shown of {srdMonsters.length})...
@@ -385,10 +379,9 @@ export function SummonCombatDrawer({
               placeholder="Custom NPC/Monster name..."
               value={mobName}
               onChange={(e) => setMobName(e.target.value)}
-              className="forge-input"
-              style={{ padding: '4px 8px', width: '100%' }}
+              className="forge-input combat-drawer__input-4"
             />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 4 }}>
+            <div className="combat-drawer__div">
               <input
                 aria-label="Enemy AC"
                 type="number"
@@ -396,8 +389,7 @@ export function SummonCombatDrawer({
                 placeholder="AC"
                 value={mobAc}
                 onChange={(e) => setMobAc(e.target.value)}
-                className="forge-input tabular"
-                style={{ padding: '3px 6px', minWidth: 0 }}
+                className="forge-input tabular combat-drawer__input-5"
               />
               <input
                 aria-label="Enemy HP"
@@ -406,8 +398,7 @@ export function SummonCombatDrawer({
                 placeholder="HP"
                 value={mobHp}
                 onChange={(e) => setMobHp(e.target.value)}
-                className="forge-input tabular"
-                style={{ padding: '3px 6px', minWidth: 0 }}
+                className="forge-input tabular combat-drawer__input-5"
               />
               <input
                 aria-label="Enemy CR"
@@ -416,8 +407,7 @@ export function SummonCombatDrawer({
                 placeholder="CR"
                 value={mobCr}
                 onChange={(e) => setMobCr(e.target.value)}
-                className="forge-input tabular"
-                style={{ padding: '3px 6px', minWidth: 0 }}
+                className="forge-input tabular combat-drawer__input-5"
               />
               <button
                 type="button"
@@ -470,7 +460,7 @@ export function SummonCombatDrawer({
 
       <div className="card forge-stack">
         <div className="forge-row-between">
-          <div className="forge-section-label" style={{ color: 'var(--accent-amber)' }}>
+          <div className="forge-section-label combat-drawer__section-label">
             ACTIVE EFFECTS &amp; TIMERS ({encounter.activeEffects.length})
           </div>
           {!playerView && (
@@ -519,20 +509,18 @@ export function SummonCombatDrawer({
             <input
               aria-label="Timed effect name"
               type="text"
-              className="forge-input"
+              className="forge-input combat-drawer__input-6"
               placeholder="Effect timer (e.g. Bless)"
               value={effectNameInput}
               onChange={(e) => setEffectNameInput(e.target.value)}
-              style={{ flex: 1, padding: '2px 6px', fontSize: 11 }}
             />
             <input
               aria-label="Effect duration rounds"
               type="number"
               min={1}
-              className="forge-input tabular"
+              className="forge-input tabular combat-drawer__input-7"
               value={effectRoundsInput}
               onChange={(e) => setEffectRoundsInput(e.target.value)}
-              style={{ width: 52, padding: '2px 4px', fontSize: 11 }}
               title="Duration in rounds"
             />
             <button
@@ -552,8 +540,7 @@ export function SummonCombatDrawer({
 
       {!playerView && selectedTargetIds.length > 0 && (
         <div
-          className="subpanel forge-row-between"
-          style={{ padding: '6px 10px', gap: 6, flexWrap: 'wrap', borderColor: 'var(--accent-red)' }}
+          className="subpanel forge-row-between combat-drawer__subpanel-2"
         >
           <span className="text-sm">
             <strong>Targets ({selectedTargetIds.length}):</strong>{' '}
@@ -584,7 +571,7 @@ export function SummonCombatDrawer({
             }}
           >
             <div className="forge-row-between wrap gap-1">
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+              <span className="combat-drawer__span">
                 <input
                   aria-label={`${node.name} initiative`}
                   type="number"
@@ -595,13 +582,12 @@ export function SummonCombatDrawer({
                     const val = Number.parseInt(e.target.value, 10);
                     if (!Number.isNaN(val)) onSetCombatantInitiative(node.id, val);
                   }}
-                  className="forge-input tabular"
-                  style={{ width: 38, padding: '1px 4px', fontSize: 11, textAlign: 'center' }}
+                  className="forge-input tabular combat-drawer__input-8"
                 />
                 {node.ownerId ? '↳ ' : ''}
                 <strong>{node.name}</strong>
                 {isActive && <span className="turn-badge">TURN</span>}
-                {isDown && <span className="conc-badge" style={{ borderColor: 'var(--accent-red)', color: 'var(--accent-red)' }}>0 HP</span>}
+                {isDown && <span className="conc-badge combat-drawer__conc-badge">0 HP</span>}
                 {node.hidden && <span className="conc-badge">HIDDEN</span>}
                 <span className="tabular forge-muted text-sm">
                   AC {hideHp ? '?' : node.ac}
@@ -690,7 +676,7 @@ export function SummonCombatDrawer({
             )}
 
             {node.conditions.length > 0 && (
-              <div className="pill-row" style={{ marginTop: 4 }}>
+              <div className="pill-row combat-drawer__pill-row">
                 {node.conditions.map((c) => (
                   <button
                     key={c}
@@ -706,7 +692,7 @@ export function SummonCombatDrawer({
             )}
 
             {isExpanded && (
-              <div className="forge-stack" style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid var(--border-subtle)', gap: 6 }}>
+              <div className="forge-stack combat-drawer__stack">
                 {!playerView && (
                   <div className="forge-row wrap gap-1">
                     {!isPlayerRole && onMoveCombatantOrder && (
@@ -743,10 +729,9 @@ export function SummonCombatDrawer({
                         </button>
                         <select
                           aria-label={`${node.name} creature size`}
-                          className="forge-input"
+                          className="forge-input combat-drawer__input-9"
                           value={node.size ?? 'medium'}
                           onChange={(e) => onSetCombatantSize(node.id, e.target.value as CreatureSize)}
-                          style={{ padding: '1px 4px', fontSize: 11 }}
                         >
                           <option value="tiny">T (1x1)</option>
                           <option value="small">S (1x1)</option>
@@ -759,8 +744,7 @@ export function SummonCombatDrawer({
                     )}
                     <button
                       type="button"
-                      className="btn btn-danger"
-                      style={{ marginLeft: 'auto' }}
+                      className="btn btn-danger combat-drawer__btn"
                       title="Remove from encounter"
                       aria-label={`Remove ${node.name}`}
                       onClick={() => onRemoveCombatant(node.id)}
@@ -824,8 +808,7 @@ export function SummonCombatDrawer({
                           applyCombatantDelta(node.id, -1);
                         }
                       }}
-                      className="forge-input tabular"
-                      style={{ width: 92, padding: '2px 4px', fontSize: 11 }}
+                      className="forge-input tabular combat-drawer__input-10"
                     />
                     <button type="button" className="btn btn-danger" onClick={() => applyCombatantDelta(node.id, -1)}>
                       Dmg
@@ -835,10 +818,9 @@ export function SummonCombatDrawer({
                     </button>
                     <select
                       aria-label={`${node.name} condition`}
-                      className="forge-input"
+                      className="forge-input combat-drawer__input-11"
                       value={mobCond}
                       onChange={(e) => setMobCond(e.target.value)}
-                      style={{ flex: 1, padding: '2px 4px', fontSize: 11 }}
                     >
                       {STANDARD_CONDITIONS.map((c) => (
                         <option key={c} value={c}>{c}</option>
@@ -885,7 +867,7 @@ export function SummonCombatDrawer({
                 )}
 
                 {!hideHp && node.kind !== 'pc' && (node.notes || node.monsterMeta?.senses || node.monsterMeta?.resistances?.length || node.monsterMeta?.immunities?.length) && (
-                  <div className="subpanel forge-muted" style={{ padding: '5px 8px', fontSize: 11, lineHeight: 1.4 }}>
+                  <div className="subpanel forge-muted combat-drawer__subpanel-3">
                     {node.monsterMeta?.senses && <div><strong>Senses:</strong> {node.monsterMeta.senses}</div>}
                     {node.monsterMeta?.resistances && node.monsterMeta.resistances.length > 0 && (
                       <div><strong>Resistances:</strong> {node.monsterMeta.resistances.join(', ')}</div>
@@ -1001,7 +983,7 @@ export function CommandPalette({
 
   return (
     <ModalDialog isOpen={isOpen} onClose={onClose} title="Compendium, SRD Packs & Importers">
-      <div className="pill-row" style={{ marginBottom: 10 }}>
+      <div className="pill-row combat-drawer__pill-row-2">
             <button
               type="button"
               className={`pill ${tab === 'search' ? 'active' : ''}`}
@@ -1048,16 +1030,9 @@ export function CommandPalette({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search local spells, weapons, armor, feats, monsters..."
-              style={{
-                width: '100%',
-                background: 'var(--bg-base)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border-subtle)',
-                padding: '7px 10px',
-                marginBottom: 8,
-              }}
+              className="combat-drawer__input-12"
             />
-            <div className="pill-row" style={{ marginBottom: 8, flexWrap: 'wrap' }}>
+            <div className="pill-row combat-drawer__pill-row-3">
               {(['all', 'spell', 'monster', 'weapon', 'armor', 'gear', 'feat', 'feature'] as const).map((cat) => (
                 <button
                   key={cat}
@@ -1068,7 +1043,7 @@ export function CommandPalette({
                   {cat.toUpperCase()}
                 </button>
               ))}
-              <span style={{ opacity: 0.35 }}>|</span>
+              <span className="combat-drawer__span-2">|</span>
               {(['all', '2014', '2024'] as const).map((rs) => (
                 <button
                   key={rs}
@@ -1087,7 +1062,7 @@ export function CommandPalette({
               >
                 DLC / REPO
               </button>
-              <span className="badge tabular" style={{ marginLeft: 'auto' }}>
+              <span className="badge tabular combat-drawer__btn">
                 {matches.length}/{allMatches.length}
               </span>
               {allMatches.length > matches.length && (
@@ -1101,7 +1076,7 @@ export function CommandPalette({
               )}
             </div>
             {categoryFilter === 'spell' && (
-              <div className="pill-row" style={{ marginBottom: 8, flexWrap: 'wrap' }}>
+              <div className="pill-row combat-drawer__pill-row-3">
                 <button
                   type="button"
                   className={`pill ${spellLevelFilter === 'all' ? 'active' : ''}`}
@@ -1119,7 +1094,7 @@ export function CommandPalette({
                     {lvl === 0 ? 'Cantrip' : `L${lvl}`}
                   </button>
                 ))}
-                <span style={{ opacity: 0.35 }}>|</span>
+                <span className="combat-drawer__span-2">|</span>
                 <button
                   type="button"
                   className={`pill ${spellTagFilter === 'conc' ? 'active' : ''}`}
@@ -1146,21 +1121,15 @@ export function CommandPalette({
                 )}
               </div>
             )}
-            <div style={{ maxHeight: 280, overflowY: 'auto' }}>
+            <div className="combat-drawer__div-2">
               {matches.map((item) => (
                 <div
                   key={item.id}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '6px 4px',
-                    borderBottom: '1px solid var(--border-subtle)',
-                  }}
+                  className="combat-drawer__div-3"
                 >
-                  <div style={{ minWidth: 0 }}>
+                  <div className="combat-drawer__div-4">
                     <strong>{item.name}</strong>{' '}
-                    <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                    <span className="combat-drawer__span-3">
                       [
                       {item.category === 'spell'
                         ? `${(item.spellLevel ?? 0) === 0 ? 'Cantrip' : `Lvl ${item.spellLevel}`}`
@@ -1169,7 +1138,7 @@ export function CommandPalette({
                       {item.source} • {item.ruleset}]
                     </span>
                     {item.category === 'spell' && (
-                      <div style={{ fontSize: 10, color: 'var(--text-secondary)' }}>
+                      <div className="combat-drawer__div-5">
                         {[item.castingTime, item.range, item.concentration ? 'CONC' : '', item.ritual ? 'RITUAL' : '']
                           .filter(Boolean)
                           .join(' • ')}
@@ -1203,8 +1172,8 @@ export function CommandPalette({
         )}
 
         {tab === 'packs' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div className="forge-row-between" style={{ fontSize: 12, color: 'var(--text-secondary)', flexWrap: 'wrap', gap: 6 }}>
+          <div className="combat-drawer__div-6">
+            <div className="forge-row-between combat-drawer__row-between">
               <span>All built-in SRD 5.1 / 2024 SRD 5.2 &amp; Repo content packs are automatically pre-installed.</span>
               <div className="forge-row gap-2 wrap">
                 {free5eCount > 0 && (
@@ -1245,17 +1214,16 @@ export function CommandPalette({
             {BUILTIN_CONTENT_PACKS.map((pack) => (
               <div
                 key={pack.id}
-                className="card"
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}
+                className="card combat-drawer__card"
               >
                 <div>
                   <strong>{pack.name}</strong>{' '}
-                  <span style={{ fontSize: 11, color: 'var(--accent-blue)' }}>
+                  <span className="combat-drawer__span-4">
                     [{pack.ruleset.toUpperCase()} • {pack.entities.length} items]
                   </span>
-                  <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{pack.description}</div>
+                  <div className="combat-drawer__div-7">{pack.description}</div>
                 </div>
-                <span className="badge" style={{ color: 'var(--accent-green)', borderColor: 'rgba(63,185,80,0.4)' }}>
+                <span className="badge combat-drawer__badge">
                   Installed ✓
                 </span>
               </div>
@@ -1264,8 +1232,8 @@ export function CommandPalette({
         )}
 
         {tab === 'pdf' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+          <div className="combat-drawer__div-6">
+            <div className="combat-drawer__div-7">
               Upload a character sheet PDF exported from <strong>D&amp;D Beyond</strong> (<em>Export to PDF</em>). Extracts character name, species, classes/levels, ability scores, HP, AC, saves, skills, weapons, and spells locally in your browser:
             </div>
             <input
@@ -1277,7 +1245,7 @@ export function CommandPalette({
                 await onImportDdbPdf(file);
                 onClose();
               }}
-              style={{ color: 'var(--text-primary)' }}
+              className="combat-drawer__input-13"
             />
           </div>
         )}
@@ -1294,16 +1262,9 @@ Armor Class: 13
 Hit Points: 59
 16 (+3) 12 (+1) 17 (+3) 3 (-4) 12 (+1) 7 (-2)
 Claws. +7 to hit, 2d8 + 5 slashing damage`}
-              style={{
-                width: '100%',
-                background: 'var(--bg-base)',
-                color: 'var(--text-primary)',
-                border: '1px solid var(--border-subtle)',
-                fontFamily: 'var(--font-mono)',
-                padding: 8,
-              }}
+              className="combat-drawer__textarea"
             />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+            <div className="combat-drawer__div-8">
               <button
                 type="button"
                 className="btn btn-primary"
@@ -1332,9 +1293,9 @@ Claws. +7 to hit, 2d8 + 5 slashing damage`}
                 await onImportJsonText(text);
                 onClose();
               }}
-              style={{ color: 'var(--text-primary)' }}
+              className="combat-drawer__input-13"
             />
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8 }}>
+            <div className="combat-drawer__div-9">
               Supports both Sidereroll full backup bundles and 5e.tools JSON datasets (<code>spell</code>, <code>item</code>, <code>feat</code>, <code>monster</code>) for importing expansion books and DLC content.
             </div>
           </div>
@@ -1373,7 +1334,7 @@ export function StatusConsole({
     <footer className="status-console-shell">
       <div className="status-console-bar">
         <form className="forge-row" onSubmit={handleRollSubmit}>
-          <label htmlFor="dice-console-input" className="forge-label" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+          <label htmlFor="dice-console-input" className="forge-label combat-drawer__label">
             <DiceIcon size={14} /> DICE TRAY
           </label>
           <input
@@ -1382,8 +1343,7 @@ export function StatusConsole({
             value={diceInput}
             onChange={(e) => setDiceInput(e.target.value)}
             placeholder="2d6+4, 4d6kh3, 1d20+9..."
-            className="forge-input tabular"
-            style={{ width: 190, padding: '3px 8px' }}
+            className="forge-input tabular combat-drawer__input-14"
           />
           <button type="submit" className="btn btn-brand">
             Roll

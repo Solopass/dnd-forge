@@ -270,10 +270,9 @@ export function DmHubModal({
         {showPicker && (
           <select
             aria-label="Active campaign"
-            className="forge-input"
+            className="forge-input dm-hub__input"
             value={campaign.id}
             onChange={(e) => void onSwitchCampaign(e.target.value)}
-            style={{ fontWeight: 700 }}
           >
             {campaignList.map((c) => (
               <option key={c.id} value={c.id}>
@@ -285,11 +284,10 @@ export function DmHubModal({
         <input
           aria-label="New campaign name"
           type="text"
-          className="forge-input"
+          className="forge-input dm-hub__input-2"
           value={newCampName}
           onChange={(e) => setNewCampName(e.target.value)}
           placeholder="New campaign name..."
-          style={{ width: 170 }}
         />
         <button
           type="button"
@@ -373,39 +371,39 @@ export function DmHubModal({
               {characterList.length === 0 ? (
                 <div className="forge-muted text-md">No player characters saved yet.</div>
               ) : (
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <div className="dm-hub__div">
+                  <table className="dm-hub__table">
                     <thead>
-                      <tr style={{ borderBottom: '1px solid var(--border-subtle)', textAlign: 'left', color: 'var(--text-secondary)' }}>
-                        <th style={{ padding: '4px 6px' }}>Character</th>
-                        <th style={{ padding: '4px 6px' }}>AC</th>
-                        <th style={{ padding: '4px 6px' }}>HP</th>
-                        <th style={{ padding: '4px 6px' }}>Pass. Perc</th>
-                        <th style={{ padding: '4px 6px' }}>Pass. Insight</th>
-                        <th style={{ padding: '4px 6px' }}>Spell DC</th>
-                        {onOpenCharacterSheet && <th style={{ padding: '4px 6px' }}>Sheet</th>}
+                      <tr className="dm-hub__tr">
+                        <th className="dm-hub__th">Character</th>
+                        <th className="dm-hub__th">AC</th>
+                        <th className="dm-hub__th">HP</th>
+                        <th className="dm-hub__th">Pass. Perc</th>
+                        <th className="dm-hub__th">Pass. Insight</th>
+                        <th className="dm-hub__th">Spell DC</th>
+                        {onOpenCharacterSheet && <th className="dm-hub__th">Sheet</th>}
                       </tr>
                     </thead>
                     <tbody className="tabular">
                       {characterList.map((pc) => {
                         const resolved = computeCharacterSheet(pc);
                         return (
-                          <tr key={pc.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                            <td style={{ padding: '5px 6px' }}>
+                          <tr key={pc.id} className="dm-hub__tr-2">
+                            <td className="dm-hub__td">
                               <strong>{pc.name}</strong>{' '}
                               <span className="forge-muted text-sm">
                                 ({pc.classes.map((c) => `${c.className} ${c.level}`).join('/')})
                               </span>
                             </td>
-                            <td style={{ padding: '5px 6px' }}>{resolved.ac.final}</td>
-                            <td style={{ padding: '5px 6px' }}>{resolved.hp.current}/{resolved.hp.max}</td>
-                            <td style={{ padding: '5px 6px' }}>{resolved.passivePerception}</td>
-                            <td style={{ padding: '5px 6px' }}>{resolved.passiveInsight}</td>
-                            <td style={{ padding: '5px 6px' }}>
+                            <td className="dm-hub__td">{resolved.ac.final}</td>
+                            <td className="dm-hub__td">{resolved.hp.current}/{resolved.hp.max}</td>
+                            <td className="dm-hub__td">{resolved.passivePerception}</td>
+                            <td className="dm-hub__td">{resolved.passiveInsight}</td>
+                            <td className="dm-hub__td">
                               {resolved.spellcasting.primaryAbility ? resolved.spellcasting.saveDc.final : '—'}
                             </td>
                             {onOpenCharacterSheet && (
-                              <td style={{ padding: '5px 6px' }}>
+                              <td className="dm-hub__td">
                                 <button
                                   type="button"
                                   className="btn"
@@ -434,8 +432,7 @@ export function DmHubModal({
                     <span className="forge-muted">DC:</span>
                     <input
                       type="number"
-                      className="forge-input tabular"
-                      style={{ width: 58, padding: '2px 6px' }}
+                      className="forge-input tabular dm-hub__input-3"
                       value={promptDc}
                       onChange={(e) => setPromptDc(e.target.value)}
                     />
@@ -507,8 +504,7 @@ export function DmHubModal({
                   <input
                     name="repoSlug"
                     type="text"
-                    className="forge-input"
-                    style={{ flex: '1 1 180px' }}
+                    className="forge-input dm-hub__input-4"
                     defaultValue={
                       campaign.externalRepo
                         ? `${campaign.externalRepo.owner}/${campaign.externalRepo.repo}`
@@ -519,16 +515,14 @@ export function DmHubModal({
                   <input
                     name="repoBranch"
                     type="text"
-                    className="forge-input"
-                    style={{ width: 80 }}
+                    className="forge-input dm-hub__input-5"
                     defaultValue={campaign.externalRepo?.branch ?? 'main'}
                     placeholder="main"
                   />
                   <input
                     name="repoPath"
                     type="text"
-                    className="forge-input"
-                    style={{ flex: '1 1 170px' }}
+                    className="forge-input dm-hub__input-6"
                     defaultValue={campaign.externalRepo?.packPath ?? 'campaign-pack.json'}
                     placeholder="campaign-pack.json"
                     title="Manifest path inside the repo (e.g. campaign-pack.json or campaigns/strahd/campaign-pack.json)"
@@ -599,7 +593,7 @@ export function DmHubModal({
         )}
 
         {tab === 'binder' && (
-          <div className="forge-grid-2" style={{ alignItems: 'start' }}>
+          <div className="forge-grid-2 dm-hub__grid-2">
             <div className="card forge-stack">
               <div className="forge-row-between">
                 <div className="pill-row">
@@ -637,12 +631,12 @@ export function DmHubModal({
                           </span>
                         </span>
                       </summary>
-                      <div className="forge-stack" style={{ padding: '6px 8px 10px' }}>
+                      <div className="forge-stack dm-hub__stack">
                         {entry.imageDataUrl && (
                           <img
                             src={entry.imageDataUrl}
                             alt={entry.title}
-                            style={{ maxWidth: '100%', maxHeight: 160, objectFit: 'contain', borderRadius: 6 }}
+                            className="dm-hub__img"
                           />
                         )}
                         <div className="pre-wrap text-md">
@@ -778,7 +772,7 @@ export function DmHubModal({
                 )}
               </div>
               {activeSharedHandout && onHideHandout && (
-                <div className="subpanel forge-row-between" style={{ padding: '6px 10px' }}>
+                <div className="subpanel forge-row-between dm-hub__subpanel">
                   <span className="badge">Showing to Players: {activeSharedHandout.title}</span>
                   <button type="button" className="btn" onClick={onHideHandout}>
                     Hide Handout
@@ -811,10 +805,10 @@ export function DmHubModal({
 
         {tab === 'clock' && (
           <div className="forge-stack">
-            <div className="forge-grid-2" style={{ alignItems: 'start' }}>
+            <div className="forge-grid-2 dm-hub__grid-2">
             <div className="card forge-stack">
               <div className="forge-section-label">WORLD CLOCK &amp; REST PACING</div>
-              <div className="tabular" style={{ fontSize: 22, fontWeight: 700 }}>
+              <div className="tabular dm-hub__tabular">
                 {formatWorldClock(campaign.clock)}
               </div>
               <label className="forge-field">
@@ -862,10 +856,9 @@ export function DmHubModal({
                   aria-label="Timer minutes"
                   type="number"
                   min={1}
-                  className="forge-input tabular"
+                  className="forge-input tabular dm-hub__input-7"
                   value={timerMins}
                   onChange={(e) => setTimerMins(e.target.value)}
-                  style={{ width: 68 }}
                 />
                 <button
                   type="button"
@@ -910,27 +903,24 @@ export function DmHubModal({
                   <input
                     aria-label="Downtime owner"
                     type="text"
-                    className="forge-input"
+                    className="forge-input dm-hub__input-2"
                     placeholder="PC or Bastion (e.g. Seraphina)"
                     value={dtOwner}
                     onChange={(e) => setDtOwner(e.target.value)}
-                    style={{ width: 170 }}
                   />
                   <input
                     aria-label="Downtime project title"
                     type="text"
-                    className="forge-input"
+                    className="forge-input dm-hub__input-8"
                     placeholder="Project (e.g. Scribe Spell Scroll)"
                     value={dtTitle}
                     onChange={(e) => setDtTitle(e.target.value)}
-                    style={{ flex: 1, minWidth: 180 }}
                   />
                   <select
                     aria-label="Downtime project kind"
-                    className="forge-input"
+                    className="forge-input dm-hub__input-9"
                     value={dtKind}
                     onChange={(e) => setDtKind(e.target.value as DowntimeProject['kind'])}
-                    style={{ width: 115 }}
                   >
                     <option value="craft">Craft</option>
                     <option value="scribe">Scribe</option>
@@ -941,10 +931,9 @@ export function DmHubModal({
                     aria-label="Downtime total days"
                     type="number"
                     min={1}
-                    className="forge-input tabular"
+                    className="forge-input tabular dm-hub__input-7"
                     value={dtDays}
                     onChange={(e) => setDtDays(e.target.value)}
-                    style={{ width: 68 }}
                   />
                   <button
                     type="button"
@@ -977,13 +966,13 @@ export function DmHubModal({
                     const pct = Math.min(100, Math.round((proj.daysDone / Math.max(1, proj.daysTotal)) * 100));
                     const complete = proj.daysDone >= proj.daysTotal;
                     return (
-                      <div key={proj.id} className="subpanel forge-row-between" style={{ padding: '8px 10px', flexWrap: 'wrap', gap: 8 }}>
+                      <div key={proj.id} className="subpanel forge-row-between dm-hub__subpanel-2">
                         <div>
-                          <div style={{ fontWeight: 600 }}>
+                          <div className="dm-hub__div-2">
                             {proj.title}{' '}
                             <span className="badge">{proj.kind.toUpperCase()}</span>{' '}
                             {complete && (
-                              <span className="badge" style={{ color: 'var(--accent-green)', borderColor: 'rgba(16,185,129,0.5)' }}>
+                              <span className="badge dm-hub__badge">
                                 COMPLETE
                               </span>
                             )}
@@ -1008,7 +997,7 @@ export function DmHubModal({
 
         {tab === 'loot' && (
           <div className="forge-stack">
-            <div className="forge-grid-2" style={{ alignItems: 'start' }}>
+            <div className="forge-grid-2 dm-hub__grid-2">
               <div className="card forge-stack">
                 <div className="forge-section-label">SRD TREASURE &amp; HOARD ROLLER</div>
                 <div className="forge-row wrap">
@@ -1042,7 +1031,7 @@ export function DmHubModal({
                 </div>
 
                 {lastTreasure && (
-                  <div className="card forge-stack" style={{ background: 'var(--bg-base)' }}>
+                  <div className="card forge-stack dm-hub__card">
                     <div className="tabular">
                       <strong>Rolled Coins ({lastTreasure.totalGpValue.toLocaleString()} GP value):</strong>{' '}
                       {lastTreasure.coins.pp > 0 ? `${lastTreasure.coins.pp} pp ` : ''}
@@ -1055,7 +1044,7 @@ export function DmHubModal({
                       <div className="forge-muted">Gems / Art: {lastTreasure.valuables.join(', ')}</div>
                     )}
                     {lastTreasure.magicItems.length > 0 && (
-                      <div style={{ color: 'var(--accent-blue)' }}>
+                      <div className="dm-hub__div-3">
                         Magic Items: {lastTreasure.magicItems.join(', ')}
                       </div>
                     )}
@@ -1090,8 +1079,7 @@ export function DmHubModal({
                   Shared Gold: <strong>{campaign.partyLootGp.toLocaleString()} GP</strong>{' '}
                   <button
                     type="button"
-                    className="btn"
-                    style={{ marginLeft: 8 }}
+                    className="btn dm-hub__btn"
                     disabled={campaign.partyLootGp < characterList.length}
                     onClick={() => void onDistributeGold(campaign.partyLootGp)}
                   >
@@ -1105,8 +1093,7 @@ export function DmHubModal({
                   {onAssignLootToCharacter && characterList.length > 0 && campaign.partyLootItems.length > 0 && (
                     <select
                       aria-label="Recipient character for party stash"
-                      className="forge-input"
-                      style={{ width: 190 }}
+                      className="forge-input dm-hub__input-10"
                       value={lootRecipientId || characterList[0]?.id || ''}
                       onChange={(e) => setLootRecipientId(e.target.value)}
                     >
@@ -1121,7 +1108,7 @@ export function DmHubModal({
                 {campaign.partyLootItems.length === 0 ? (
                   <div className="forge-muted text-md">No items in Party Stash yet.</div>
                 ) : (
-                  <div className="forge-stack" style={{ maxHeight: 170, overflowY: 'auto' }}>
+                  <div className="forge-stack dm-hub__stack-2">
                     {campaign.partyLootItems.map((itemName, idx) => (
                       <div key={`${itemName}-${idx}`} className="forge-list-row">
                         <span className="text-md">{itemName}</span>
@@ -1227,7 +1214,7 @@ export function DmHubModal({
                   <summary>
                     <span>{sec.title}</span>
                   </summary>
-                  <div style={{ padding: '6px 8px 10px' }}>
+                  <div className="dm-hub__stack">
                     <div tabIndex={0} role="region" aria-labelledby={`${sec.id}-cap`} className="table-wrapper">
                       <table
                         className="dm-table"
@@ -1280,7 +1267,7 @@ export function DmHubModal({
 
         {tab === 'xp' && (
           <div className="forge-stack">
-            <div className="card forge-grid-2" style={{ alignItems: 'center' }}>
+            <div className="card forge-grid-2 dm-hub__card-2">
               <div className="forge-stack">
                 <div className="forge-section-label">PARTY XP &amp; MILESTONE AWARDS</div>
                 <div className="forge-muted tabular">
@@ -1291,10 +1278,9 @@ export function DmHubModal({
                     aria-label="XP amount to award party"
                     type="number"
                     min={0}
-                    className="forge-input tabular"
+                    className="forge-input tabular dm-hub__input-11"
                     value={customXp}
                     onChange={(e) => setCustomXp(e.target.value)}
-                    style={{ width: 100 }}
                   />
                   <button
                     type="button"
@@ -1387,7 +1373,7 @@ export function DmHubModal({
         )}
 
         {tab === 'improv' && (
-          <div className="forge-grid-2" style={{ alignItems: 'start' }}>
+          <div className="forge-grid-2 dm-hub__grid-2">
             <div className="card forge-stack">
               <div className="forge-section-label">ONE-CLICK NPC &amp; TAVERN GENERATORS</div>
               <div className="forge-row wrap">
@@ -1407,7 +1393,7 @@ export function DmHubModal({
                 </button>
               </div>
               {previewNpc && (
-                <div className="subpanel forge-stack" style={{ padding: 10 }}>
+                <div className="subpanel forge-stack dm-hub__subpanel-3">
                   <strong>{previewNpc.title}</strong>
                   <span className="muted-label">{previewNpc.summary}</span>
                   <div className="pre-wrap text-md">{previewNpc.body}</div>
@@ -1424,7 +1410,7 @@ export function DmHubModal({
                 </div>
               )}
               {previewTavern && (
-                <div className="subpanel forge-stack" style={{ padding: 10 }}>
+                <div className="subpanel forge-stack dm-hub__subpanel-3">
                   <strong>{previewTavern.title}</strong>
                   <span className="muted-label">{previewTavern.summary}</span>
                   <div className="pre-wrap text-md">{previewTavern.body}</div>
@@ -1472,7 +1458,7 @@ export function DmHubModal({
                 </button>
               </div>
               {previewEnc && (
-                <div className="subpanel forge-stack" style={{ padding: 10 }}>
+                <div className="subpanel forge-stack dm-hub__subpanel-3">
                   <div className="forge-row-between">
                     <strong>{previewEnc.title}</strong>
                     <span className="badge tabular">
@@ -1526,8 +1512,7 @@ export function DmHubModal({
               <div className="forge-row wrap">
                 <input
                   type="text"
-                  className="forge-input"
-                  style={{ width: 150 }}
+                  className="forge-input dm-hub__input-12"
                   placeholder="Next pin label..."
                   value={pinLabel}
                   onChange={(e) => setPinLabel(e.target.value)}
@@ -1560,14 +1545,7 @@ export function DmHubModal({
             </div>
 
             <div
-              className="card"
-              style={{
-                position: 'relative',
-                minHeight: 320,
-                background: '#0b0e14',
-                overflow: 'hidden',
-                cursor: 'crosshair',
-              }}
+              className="card dm-hub__card-3"
               onClick={(e) => {
                 if (!onUpsertWorldMapPin) return;
                 const rect = e.currentTarget.getBoundingClientRect();
@@ -1590,10 +1568,10 @@ export function DmHubModal({
                 <img
                   src={campaign.worldMapImageDataUrl}
                   alt="Campaign World Map"
-                  style={{ width: '100%', maxHeight: '52vh', objectFit: 'contain', display: 'block' }}
+                  className="dm-hub__img-2"
                 />
               ) : (
-                <div style={{ padding: 40, textAlign: 'center' }} className="forge-muted">
+                <div className="forge-muted dm-hub__muted">
                   Upload a region/world map above, or click anywhere on this canvas to drop interactive campaign pins.
                 </div>
               )}
@@ -1611,20 +1589,7 @@ export function DmHubModal({
                   <button
                     key={pin.id}
                     type="button"
-                    style={{
-                      position: 'absolute',
-                      left: `${pin.xPct}%`,
-                      top: `${pin.yPct}%`,
-                      transform: 'translate(-50%, -50%)',
-                      background: bg,
-                      color: '#0d1117',
-                      border: selectedPinId === pin.id ? '2px solid #f0f6fc' : '1px solid #0d1117',
-                      borderRadius: 999,
-                      padding: '2px 8px',
-                      fontSize: 11,
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                    }}
+                    className="dm-hub__button" style={{ left: `${pin.xPct}%`, top: `${pin.yPct}%`, background: bg, border: selectedPinId === pin.id ? '2px solid #f0f6fc' : '1px solid #0d1117' }}
                     onClick={(ev) => {
                       ev.stopPropagation();
                       setSelectedPinId(pin.id);
@@ -1670,7 +1635,7 @@ export function DmHubModal({
         )}
 
         {tab === 'soundboard' && (
-          <div className="forge-grid-2" style={{ alignItems: 'start' }}>
+          <div className="forge-grid-2 dm-hub__grid-2">
             <div className="card forge-stack">
               <div className="forge-section-label">AMBIENT LOOPS (OFFLINE WEB AUDIO)</div>
               <label className="forge-row">
@@ -1765,7 +1730,7 @@ export function DmHubModal({
                 {customAudioName && <span className="muted-label">{customAudioName}</span>}
               </div>
               {customAudioUrl && (
-                <audio controls src={customAudioUrl} style={{ width: '100%' }} />
+                <audio controls src={customAudioUrl} className="dm-hub__audio" />
               )}
             </div>
           </div>

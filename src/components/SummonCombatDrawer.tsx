@@ -4,6 +4,7 @@ import { Activity, CompendiumEntity, CreatureSize, MonsterStatMeta } from '../ty
 import { ActionEconomy, STANDARD_CONDITIONS } from '../types/core';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
 import { extractSrdSpellcasterClasses, spellOnClassList } from '../engine/classes';
+import { dedupeCompendium } from '../engine/compendium-dedupe';
 import { CONDITION_RULES } from '../engine/conditions';
 import { getQualitativeHealthLabel } from '../engine/dm-tools';
 import { evaluateEncounterDifficulty } from '../engine/encounter-math';
@@ -133,12 +134,13 @@ export function SummonCombatDrawer({
     setExpandedIds((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const srdMonsters =
+  const srdMonsters = dedupeCompendium(
     compendiumMonsters && compendiumMonsters.length > 0
       ? compendiumMonsters
       : BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities).filter(
           (e) => e.category === 'monster' && e.monsterMeta
-        );
+        )
+  );
   const filteredSrdMonsters = srdMonsters
     .filter((m) => {
       const q = mobSearch.trim().toLowerCase();

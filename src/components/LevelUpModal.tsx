@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { CLASS_DEFINITIONS, extractSrdSpellcasterClasses, getClassDefinition, getSubclassPresets, spellOnClassList } from '../engine/classes';
+import { dedupeCompendium, normalizeEntityName } from '../engine/compendium-dedupe';
 import { evaluateDiceExpression } from '../engine/dice';
 import { computeAbilityModifier, computeEffectiveCasterLevel } from '../engine/rules-math';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
@@ -92,9 +93,14 @@ export function LevelUpModal({
   const allPackEntities = useMemo(() => {
     const map = new Map(BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities).map((e) => [e.id, e]));
     for (const e of compendiumEntities) map.set(e.id, e);
-    return Array.from(map.values());
+    return dedupeCompendium(Array.from(map.values()));
   }, [compendiumEntities]);
   const ownedIds = useMemo(() => new Set(character.items.map((i) => i.id)), [character.items]);
+  // a spell owned under another source's id (SRD vs pack copy) must not be offered again
+  const ownedSpellNames = useMemo(
+    () => new Set(character.items.filter((i) => i.category === 'spell').map((i) => normalizeEntityName(i.name))),
+    [character.items]
+  );
 
   const featOptions = useMemo(() => {
     const q = featFilter.trim().toLowerCase();
@@ -137,13 +143,14 @@ export function LevelUpModal({
         (e) =>
           e.category === 'spell' &&
           !ownedIds.has(e.id) &&
+          !ownedSpellNames.has(normalizeEntityName(e.name)) &&
           (e.spellLevel ?? 0) <= maxNewSpellLevel &&
           (!matchCharRulesetOnly || e.ruleset === character.ruleset || e.ruleset === 'homebrew') &&
           (showAllClassSpells || spellOnClassList(e, classSet))
       )
       .filter((e) => !q || e.name.toLowerCase().includes(q))
       .sort((a, b) => (a.spellLevel ?? 0) - (b.spellLevel ?? 0) || a.name.localeCompare(b.name));
-  }, [allPackEntities, ownedIds, maxNewSpellLevel, spellFilter, matchCharRulesetOnly, character.ruleset, showAllClassSpells, selectedClass, effectiveSub]);
+  }, [allPackEntities, ownedIds, ownedSpellNames, maxNewSpellLevel, spellFilter, matchCharRulesetOnly, character.ruleset, showAllClassSpells, selectedClass, effectiveSub]);
 
   const matchingClassFeatures = useMemo(() => {
     const clsLower = selectedClass.toLowerCase();

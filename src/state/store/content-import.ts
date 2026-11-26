@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { RawCharacterState } from '../../types/character';
 import { CompendiumEntity } from '../../types/compendium';
 import { parseHomebrewMarkdownBlock } from '../../engine/statblock-parser';
@@ -6,6 +6,7 @@ import { parseFree5eMarkdownAuto } from '../../engine/free5e-parser';
 import { adapt5eToolsPayload } from '../../engine/five-tools-adapter';
 import { parseDndBeyondPdfBuffer } from '../../engine/ddb-pdf-importer';
 import { BUILTIN_CONTENT_PACKS } from '../../engine/srd-packs';
+import { dedupeCompendium } from '../../engine/compendium-dedupe';
 import { parseCustomContentJson } from '../../engine/custom-content-loader';
 import { buildCampaignPackExport, fetchCampaignPackFromGitHub, getStoredGithubPat, pushFileToGitHubRepo, tryFetchExistingManifest } from '../../engine/campaign-repo-sync';
 import { ExternalRepoConfig } from '../../types/campaign';
@@ -243,17 +244,19 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
     [persistCharacter, appendLog]
   );
 
+  // Search shows one entry per name (SRD copy wins over Free5e/duplicate pack copies); nothing is deleted.
+  const searchableCompendium = useMemo(() => dedupeCompendium(compendium), [compendium]);
   const searchCompendium = useCallback(
     (query: string): CompendiumEntity[] => {
       const rawQ = query.trim().toLowerCase();
-      if (!rawQ) return compendium;
+      if (!rawQ) return searchableCompendium;
       const normQ = normalizeSearchQuery(query);
-      return compendium.filter((item) => {
+      return searchableCompendium.filter((item) => {
         if (item.name.toLowerCase().includes(rawQ)) return true;
         return normQ ? buildSearchTokens(item).includes(normQ) : false;
       });
     },
-    [compendium]
+    [searchableCompendium]
   );
 
   const importSingleCharacter = useCallback(

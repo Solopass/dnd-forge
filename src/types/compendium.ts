@@ -109,6 +109,8 @@ export interface CompendiumEntity {
   packVersion?: string;
   /** Commit sha (or ref) of the pack repo the entry was read from. */
   packRef?: string;
+  /** Path of the pack file this entry was read from (lets an update tell "removed" from "file unreadable"). */
+  packFile?: string;
   /** Derived by the duplicate folding (never stored): the other sources that carry this same entry. */
   alsoIn?: string[];
   /** Derived (never stored): ids of the approved content fixes applied to this entry. */

@@ -1,4 +1,5 @@
 import { normalizeEntries } from './entries';
+import { pickImageRef } from './image-ref';
 import { parseHomebrewMarkdownBlock } from './statblock-parser';
 import { Activity, CompendiumEntity, CreatureSize, ItemCategory } from '../types/compendium';
 import { AbilityKey, Ruleset } from '../types/core';
@@ -290,9 +291,7 @@ export function convertRawEntityToSidereroll(
     ...higherEntries.map((h) => (h.startsWith('At Higher Levels') ? h : `At Higher Levels: ${h}`)),
   ];
   const { duration, concentration } = extractDurationString(raw.duration);
-  const rawImg = [raw.imageUrl, raw.image, raw.img, raw.portraitUrl, raw.tokenUrl].find(
-    (v): v is string => typeof v === 'string' && v.trim().length > 0
-  );
+  const imageUrl = pickImageRef(raw, { keepRelative: true });
 
   const resolvedSource =
     sourceOverride ??
@@ -308,7 +307,7 @@ export function convertRawEntityToSidereroll(
     source: resolvedSource,
     ruleset: raw.ruleset === '2024' ? '2024' : ruleset,
     category,
-    imageUrl: rawImg?.trim(),
+    imageUrl,
     entries: entries.length > 0 ? entries : [name],
     activities: inferActivitiesFromRaw(raw, id, name, category, entries),
   };

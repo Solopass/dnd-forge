@@ -10,6 +10,7 @@ import {
   type PipelineResult,
 } from './import-pipeline';
 import { PACK_FORMAT_V1, type InstalledPack, type PackManifest } from '../types/pack';
+import { sanitizeImageRef } from './image-ref';
 import {
   FREE5E_PACK_ID,
   assignPackIdentity,
@@ -110,9 +111,8 @@ export function resolveRepoAssetUrl(rawUrl: string | undefined, config: External
   if (!rawUrl) return undefined;
   const trimmed = rawUrl.trim();
   if (!trimmed) return undefined;
-  if (!trimmed.startsWith('./')) return trimmed;
-  const branch = config.branch?.trim() || 'main';
-  return `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${branch}/${trimmed.slice(2)}`;
+  // config.branch holds the pinned commit sha when the pack was pinned, so images come from the same commit.
+  return sanitizeImageRef(trimmed, { repo: { owner: config.owner, repo: config.repo, ref: config.branch?.trim() || 'main' } });
 }
 
 async function fetchRepoText(
@@ -406,14 +406,15 @@ async function materializePack(input: MaterializeInput): Promise<FetchedPack> {
   const mapEntity = (entity: CompendiumEntity): CompendiumEntity => {
     const imageUrl = entity.imageUrl ? resolveRepoAssetUrl(entity.imageUrl, pinned) : undefined;
     const source = !entity.source || DEFAULT_SOURCE_LABELS.has(entity.source) ? sourceLabel : entity.source;
-    return { ...entity, source, ...(imageUrl ? { imageUrl } : {}) };
+    const { imageUrl: _raw, ...rest } = entity;
+    return { ...rest, source, ...(imageUrl ? { imageUrl } : {}) };
   };
   const processed = await processPackFiles({
     packId: manifest.id,
     sourceLabel,
     ...(defaultRuleset ? { defaultRuleset } : {}),
     mapEntity,
-    mapCharacter: (ch) => (ch.avatarUrl ? { ...ch, avatarUrl: resolveRepoAssetUrl(ch.avatarUrl, pinned) ?? ch.avatarUrl } : ch),
+    mapCharacter: (ch) => (ch.avatarUrl ? { ...ch, avatarUrl: resolveRepoAssetUrl(ch.avatarUrl, pinned) } : ch),
     contentPaths: expand(manifest.content, 'content'),
     characterPaths: expand(manifest.characters, 'characters'),
     ...(legacy ? { categoryHints: legacy.categoryHints, inlineEntities: legacy.inlineEntities, inlineCharacters: legacy.inlineCharacters } : {}),

@@ -1,6 +1,7 @@
 import type { Activity, ActivityType, CompendiumEntity, CreatureSize, ItemCategory, MonsterStatMeta } from '../types/compendium';
 import type { AbilityKey, ActionEconomy, Ruleset, WeaponMastery } from '../types/core';
 import { normalizeEntries } from './entries';
+import { pickImageRef, sanitizeArtCredit } from './image-ref';
 
 /**
  * The one place where incoming content is cleaned: text (BOM, CRLF, unicode, HTML, 5e.tools tags),
@@ -523,8 +524,10 @@ function sanitizeEntityUnsafe(raw: unknown, ctx: SanitizeContext): EntityOutcome
 
   const entity: CompendiumEntity = { id, name, source, ruleset, category, activities: [], entries: trimmedEntries };
 
-  const img = [raw.imageUrl, raw.image, raw.img, raw.portraitUrl, raw.tokenUrl].find((v): v is string => typeof v === 'string' && v.trim().length > 0);
-  if (img) entity.imageUrl = img.trim().slice(0, 2000);
+  const img = pickImageRef(raw, { keepRelative: true });
+  if (img) entity.imageUrl = img;
+  const credit = sanitizeArtCredit(raw.artCredit);
+  if (credit) entity.artCredit = credit;
 
   for (const key of ['castingTime', 'range', 'components', 'duration', 'container', 'customName'] as const) {
     const t = str(raw[key], key === 'components' ? 300 : 120);

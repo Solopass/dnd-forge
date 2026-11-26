@@ -77,6 +77,8 @@ export interface CompendiumEntity {
   ruleset: Ruleset;
   category: ItemCategory;
   imageUrl?: string;
+  /** Optional credit line shown under the image. */
+  artCredit?: string;
   equipped?: boolean;
   prepared?: boolean;
   alwaysPrepared?: boolean;

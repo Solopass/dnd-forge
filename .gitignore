@@ -4,3 +4,7 @@ dist/
 .DS_Store
 CLAUDE.local.md
 HANDOFF.md
+
+# Local source material (published books, personal packs): never commit, public repo
+/DnD content/
+/local-content/

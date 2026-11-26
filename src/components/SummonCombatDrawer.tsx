@@ -7,6 +7,7 @@ import { extractSrdSpellcasterClasses, spellOnClassList } from '../engine/classe
 import { DuplicatesReview } from './DuplicatesReview';
 import { ContentFixEditor } from './ContentFixEditor';
 import { ContentFixesReview, type ContentFixApi } from './ContentFixesReview';
+import { PacksPanel, type PackApi } from './PacksPanel';
 import {
   dedupeCompendium,
   DEFAULT_SOURCE_PRIORITY,
@@ -927,6 +928,8 @@ interface CommandPaletteProps {
   onUndoDuplicate?: (groupId: string) => void | Promise<void>;
   /** Flag it, fix it, review it: the Fixes tab and the Report / fix button on entries. */
   fixApi?: ContentFixApi;
+  /** Installed packs: list, add from GitHub, update, uninstall. */
+  packApi?: PackApi;
   /** Opens the dialog straight on the fix editor for this entry (from the item inspector). */
   initialFixEntityId?: string | null;
   onImportHomebrew: (rawMarkdown: string) => Promise<void>;
@@ -955,6 +958,7 @@ export function CommandPalette({
   onResolveDuplicate,
   onUndoDuplicate,
   fixApi,
+  packApi,
   initialFixEntityId = null,
   onImportHomebrew,
   onImportJsonText,
@@ -1255,6 +1259,7 @@ export function CommandPalette({
 
         {tab === 'packs' && (
           <div className="combat-drawer__div-6">
+            {packApi && <PacksPanel api={packApi} />}
             <div className="forge-row-between combat-drawer__row-between">
               <span>All built-in SRD 5.1 / 2024 SRD 5.2 &amp; Repo content packs are automatically pre-installed.</span>
               <div className="forge-row gap-2 wrap">

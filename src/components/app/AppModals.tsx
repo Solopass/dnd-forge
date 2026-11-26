@@ -21,6 +21,7 @@ import {
 } from './lazy';
 import type { AppLayoutProps } from './types';
 import type { ContentFixApi } from '../ContentFixesReview';
+import type { PackApi } from '../PacksPanel';
 
 export function AppModals({ store, ui, panels }: AppLayoutProps) {
   const {
@@ -105,6 +106,13 @@ export function AppModals({ store, ui, panels }: AppLayoutProps) {
     exportFile: store.exportContentFixes,
     importText: store.importContentFixes,
   };
+  const packApi: PackApi = {
+    packs: store.packs,
+    install: store.installPack,
+    update: store.updatePack,
+    uninstall: store.uninstallPack,
+    checkUpdate: store.checkPackUpdate,
+  };
   return (
     <>
       <StatusConsole
@@ -159,10 +167,11 @@ export function AppModals({ store, ui, panels }: AppLayoutProps) {
         onImportJsonText={store.importJsonFilePayload}
         allEntities={store.compendium}
         sourcePriority={store.sourcePriority}
-        dupDecisions={store.dupDecisions}
+        dupDecisions={store.dupDecisions.filter((d) => !d.orphaned)}
         onResolveDuplicate={store.resolveDuplicateGroup}
         onUndoDuplicate={store.undoDuplicateDecision}
         fixApi={fixApi}
+        packApi={packApi}
         initialFixEntityId={paletteFixEntityId}
       />
 

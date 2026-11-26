@@ -48,7 +48,7 @@ export function TopBar({ store, ui }: AppSectionProps) {
       : []),
     {
       key: 'shortcuts',
-      label: 'Keyboard Shortcuts & Tips (?)',
+      label: 'Keyboard Shortcuts & Tips',
       onSelect: () => setShortcutsOpen(true),
     },
     { key: 'settings', label: 'Settings', title: 'Settings & Theme', onSelect: () => setSettingsOpen(true) },

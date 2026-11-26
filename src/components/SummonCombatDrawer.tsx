@@ -169,7 +169,8 @@ export function SummonCombatDrawer({
   return (
     <aside className="pane" aria-label="Encounter and Linked Summons">
       <div className="card forge-stack">
-        {playerView ? (
+        {/* encounter management is hidden for the player role; a DM previewing Player View keeps it */}
+        {isPlayerRole ? (
           <div className="forge-section-label">{encounter.name}</div>
         ) : (
         <div className="forge-row-between">
@@ -238,7 +239,7 @@ export function SummonCombatDrawer({
             )}
           </div>
           <div className="forge-row" style={{ flexWrap: 'wrap' }}>
-            {!playerView && (
+            {!isPlayerRole && (
               <>
                 {onStartEncounterAlert && (
                   <button
@@ -276,7 +277,7 @@ export function SummonCombatDrawer({
                 Battlemap
               </button>
             )}
-            {!playerView && (
+            {!isPlayerRole && (
               <>
                 <button type="button" className="btn" onClick={onResetEncounter} title="Clear monsters/summons and reset to Round 1">
                   Reset

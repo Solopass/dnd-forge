@@ -8,6 +8,9 @@ import { db } from '../../storage/db';
 import { expectedCompendiumSize } from './compendiumReady';
 import type { ResolvedActivity } from '../../types/character';
 
+// startup loads ~4,000 compendium entries; give slow CI runners room beyond Vitest's 5 s default
+vi.setConfig({ testTimeout: 30_000 });
+
 async function setup() {
   // computed first (and cached) so it never runs alongside the store's own SRD load
   const size = await expectedCompendiumSize();

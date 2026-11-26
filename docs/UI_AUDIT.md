@@ -29,6 +29,12 @@ Each item says how it was checked. Fix order for phase 5: broken first, then mis
 - [x] **N9 cleanup — `onTriggerActivity` is wired three times and `onRollCheck` twice** across the layouts; move each into `components/app/panels.tsx` once. **fixed: triggerActivity and rollCheck are defined once in panels.tsx.**
 - [ ] **N10 left over from phase 3:** (a) the app-level DM Hub modal (`dmHubOpen`) has no opener now that the header button is gone; (b) Edit Blocks stays in the header for Player x Modular Grid; (c) the Unified layout's "DM Studio" rail view is unreachable (DM always uses DmLayout); (d) the per-monster condition picker in the combat drawer still defaults to a real condition; (e) phone layout not touched.
 
+- [ ] **N11 (from the phase 3 review)** — smaller follow-ups:
+  - The More menu doesn't close when you Tab out of it, and closes on `mousedown` rather than `pointerdown`.
+  - In the DM role, Settings' layout pills are disabled, so a DM can't pick the Player layout ahead of time.
+  - `compendiumReady.ts` (tests) must be updated if startup ever upserts more content, or if built-in ids ever collide with `free5e-spl-<letter>`.
+  - The DM Hub modal state (`dmHubOpen`) and its `renderCampaignBar(true)` path are unreachable now; remove them.
+
 ## DM tools
 
 All ten DM Studio tabs render without errors (Party & Sync, Campaign Binder, World Clock, Loot & Shops, DM Screen, Party XP & Milestones, Improv, World Map, Soundboard, Tactical Battlemap). Checked working: NPC and tavern generators, +1 Hr clock, treasure roller, Give to PC, Distribute All GP, XP award, DM Screen dice, soundboard play/stop.

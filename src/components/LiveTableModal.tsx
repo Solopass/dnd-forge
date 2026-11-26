@@ -9,6 +9,20 @@ import {
 import { RawCharacterState } from '../types/character';
 import { ModalDialog } from './ModalDialog';
 
+type LiveTab = 'local' | 'webrtc' | 'share';
+export const LIVE_TAB_STORAGE_KEY = 'dnd-forge-live-table-tab';
+
+/** Cross-device (WebRTC) is the default: laptops at a table are on different devices. */
+function readStoredLiveTab(): LiveTab {
+  try {
+    const v = localStorage.getItem(LIVE_TAB_STORAGE_KEY);
+    if (v === 'local' || v === 'webrtc' || v === 'share') return v;
+  } catch {
+    // best effort: fall back to the default
+  }
+  return 'webrtc';
+}
+
 interface LiveTableModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -54,7 +68,15 @@ export function LiveTableModal({
   onClaimToken,
   onLog,
 }: LiveTableModalProps) {
-  const [tab, setTab] = useState<'local' | 'webrtc' | 'share'>('local');
+  const [tab, setTabState] = useState<LiveTab>(readStoredLiveTab);
+  const setTab = (next: LiveTab) => {
+    setTabState(next);
+    try {
+      localStorage.setItem(LIVE_TAB_STORAGE_KEY, next);
+    } catch {
+      // best effort
+    }
+  };
   const [roomInput, setRoomInput] = useState(() => generateRoomCode());
   const [pendingPeerId, setPendingPeerId] = useState('');
   const [generatedInvite, setGeneratedInvite] = useState('');
@@ -242,7 +264,7 @@ export function LiveTableModal({
             className={`pill ${tab === 'local' ? 'active' : ''}`}
             onClick={() => setTab('local')}
           >
-            Local Browser Room
+            Same computer (testing)
           </button>
           <button
             type="button"
@@ -264,7 +286,7 @@ export function LiveTableModal({
         {tab === 'local' && (
           <div className="card forge-stack">
             <div className="forge-muted">
-              Instant same-browser / second-window sync via <code>BroadcastChannel</code>. Open Sidereroll in another tab on the same device and join with the same room code to sync rolls, encounters, and HP live.
+              For testing on one computer only: instant sync between tabs or windows of this browser via <code>BroadcastChannel</code>. It does not reach other devices; use the Remote WebRTC tab for that. Open Sidereroll in another tab and join with the same room code.
             </div>
             <div className="forge-row wrap">
               <label className="forge-row flex-1">
@@ -305,7 +327,27 @@ export function LiveTableModal({
         {tab === 'webrtc' && (
           <div className="card forge-stack">
             <div className="forge-muted">
-              Serverless peer-to-peer connection across devices. DM generates an Invite Code, sends it over Discord/chat, player generates a Reply Code back, and DM clicks Link Peer.
+              Serverless peer-to-peer link between two devices on different computers. No account or server is needed; you swap two codes by chat.
+            </div>
+            <div className="forge-grid-2">
+              <div className="forge-stack">
+                <div className="forge-section-label">HOW TO: DM (HOST)</div>
+                <ol className="forge-muted" aria-label="Host steps">
+                  <li>Click &quot;1. Create WebRTC Invite Code&quot; and copy the invite.</li>
+                  <li>Send it to your player (Discord, text, anything).</li>
+                  <li>Paste the player&apos;s reply code below and click &quot;3. Link Peer&quot;.</li>
+                  <li>Done: the status at the top shows the connected peer.</li>
+                </ol>
+              </div>
+              <div className="forge-stack">
+                <div className="forge-section-label">HOW TO: PLAYER</div>
+                <ol className="forge-muted" aria-label="Player steps">
+                  <li>Paste the DM&apos;s invite code on the right.</li>
+                  <li>Click &quot;Accept Invite &amp; Generate Reply&quot; and copy the reply.</li>
+                  <li>Send the reply code back to the DM.</li>
+                  <li>Done once the DM links you: the status shows PLAYER.</li>
+                </ol>
+              </div>
             </div>
             <div className="forge-grid-2">
               <div className="forge-stack">

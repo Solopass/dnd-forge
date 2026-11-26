@@ -5,8 +5,9 @@ import { CompendiumEntity } from '../types/compendium';
 import { BattlemapScene, CombatEncounterState } from '../types/combat';
 import type { DuplicateDecision } from '../engine/compendium-dedupe';
 import type { ContentFix } from '../types/content-fix';
+import type { InstalledPack } from '../types/pack';
 
-export const CURRENT_SCHEMA_VERSION = 5;
+export const CURRENT_SCHEMA_VERSION = 6;
 
 export interface IndexedCompendiumRecord extends CompendiumEntity {
   searchTokens: string;
@@ -23,6 +24,7 @@ export interface BackupBundle {
   scenes?: BattlemapScene[];
   dupDecisions?: DuplicateDecision[];
   contentFixes?: ContentFix[];
+  packs?: InstalledPack[];
 }
 
 export function normalizeSearchQuery(raw: string): string {
@@ -48,6 +50,7 @@ export class DndForgeDatabase extends Dexie {
   scenes!: Table<BattlemapScene, string>;
   dupDecisions!: Table<DuplicateDecision, string>;
   contentFixes!: Table<ContentFix, string>;
+  packs!: Table<InstalledPack, string>;
 
   constructor() {
     super('dnd-forge-local-db');
@@ -85,7 +88,7 @@ export class DndForgeDatabase extends Dexie {
 
     // v5: content fixes (reviewable corrections to compendium entries), a separate layer so that
     // re-imports and resyncs never touch them. Only a new table; every existing record is kept.
-    this.version(CURRENT_SCHEMA_VERSION).stores({
+    this.version(5).stores({
       characters: 'id, name, ruleset',
       compendium: 'id, name, category, source, ruleset, searchTokens',
       encounters: 'id, name',
@@ -94,6 +97,44 @@ export class DndForgeDatabase extends Dexie {
       dupDecisions: 'id',
       contentFixes: 'id, entityId, status',
     });
+
+    // v6: installed packs (a `packs` table) and a `packId` index on the compendium. Nothing is removed.
+    // Entries that older Free5e syncs wrote (ids `free5e-*`) get stamped as belonging to the `free5e` pack.
+    this.version(CURRENT_SCHEMA_VERSION)
+      .stores({
+        characters: 'id, name, ruleset',
+        compendium: 'id, name, category, source, ruleset, searchTokens, packId',
+        encounters: 'id, name',
+        campaigns: 'id, name',
+        scenes: 'id, name',
+        dupDecisions: 'id',
+        contentFixes: 'id, entityId, status',
+        packs: 'id',
+      })
+      .upgrade(async (tx) => {
+        let legacyFree5e = 0;
+        await tx
+          .table('compendium')
+          .toCollection()
+          .modify((e: { id?: unknown; packId?: string }) => {
+            if (!e.packId && typeof e.id === 'string' && e.id.startsWith('free5e-')) {
+              e.packId = 'free5e';
+              legacyFree5e++;
+            }
+          });
+        if (legacyFree5e > 0) {
+          await tx.table('packs').put({
+            id: 'free5e',
+            name: 'Free5e',
+            version: 'unknown',
+            repo: 'Solopass/free5e',
+            ref: 'main',
+            license: 'CC-BY-4.0',
+            entityCount: legacyFree5e,
+            installedAt: new Date().toISOString(),
+          } satisfies InstalledPack);
+        }
+      });
 
     this.on('versionchange', () => {
       this.close();
@@ -143,6 +184,45 @@ export async function deleteContentFix(id: string): Promise<void> {
   await db.contentFixes.delete(id);
 }
 
+export async function savePack(pack: InstalledPack): Promise<void> {
+  await db.packs.put(structuredClone(pack));
+}
+
+/**
+ * Removes exactly the compendium entries that belong to a pack (by provenance) and the pack record.
+ * Content fixes and duplicate decisions that point at them are kept but marked `orphaned`.
+ * Returns the removed entity ids.
+ */
+export async function removePackFromDb(packId: string): Promise<string[]> {
+  const removed: string[] = [];
+  await db.transaction('rw', [db.compendium, db.packs, db.contentFixes, db.dupDecisions], async () => {
+    const owned = await db.compendium.where('packId').equals(packId).primaryKeys();
+    removed.push(...owned);
+    await db.compendium.bulkDelete(owned);
+    await db.packs.delete(packId);
+    if (owned.length > 0) await markOrphans(new Set(owned), true);
+  });
+  return removed;
+}
+
+/** Sets or clears `orphaned` on fixes / duplicate decisions that point at the given entity ids. */
+export async function markOrphans(entityIds: ReadonlySet<string>, orphaned: boolean): Promise<void> {
+  const fixes = (await db.contentFixes.toArray()).filter((f) => entityIds.has(f.entityId) && !!f.orphaned !== orphaned);
+  for (const f of fixes) {
+    if (orphaned) f.orphaned = true;
+    else delete f.orphaned;
+  }
+  if (fixes.length > 0) await db.contentFixes.bulkPut(fixes);
+  const decisions = (await db.dupDecisions.toArray()).filter(
+    (d) => d.memberIds.some((m) => entityIds.has(m)) && !!d.orphaned !== orphaned
+  );
+  for (const d of decisions) {
+    if (orphaned) d.orphaned = true;
+    else delete d.orphaned;
+  }
+  if (decisions.length > 0) await db.dupDecisions.bulkPut(decisions);
+}
+
 export async function deleteSceneRecord(sceneId: string): Promise<void> {
   await db.scenes.delete(sceneId);
 }
@@ -169,7 +249,7 @@ export async function removeFree5eIndexJunk(): Promise<number> {
 }
 
 export async function exportFullBundle(): Promise<BackupBundle> {
-  const [characters, compendiumRecords, encounters, campaigns, scenes, dupDecisions, contentFixes] = await Promise.all([
+  const [characters, compendiumRecords, encounters, campaigns, scenes, dupDecisions, contentFixes, packs] = await Promise.all([
     db.characters.toArray(),
     db.compendium.toArray(),
     db.encounters.toArray(),
@@ -177,6 +257,7 @@ export async function exportFullBundle(): Promise<BackupBundle> {
     db.scenes.toArray(),
     db.dupDecisions.toArray(),
     db.contentFixes.toArray(),
+    db.packs.toArray(),
   ]);
 
   const compendium: CompendiumEntity[] = compendiumRecords.map(({ searchTokens: _omit, ...rest }) => rest);
@@ -192,6 +273,7 @@ export async function exportFullBundle(): Promise<BackupBundle> {
     scenes,
     dupDecisions,
     contentFixes,
+    packs,
   };
 }
 
@@ -255,11 +337,18 @@ export async function importBackupBundle(
       )
     : [];
 
+  const validPacks = Array.isArray(candidate.packs)
+    ? candidate.packs.filter(
+        (p): p is InstalledPack =>
+          typeof p === 'object' && p !== null && typeof p.id === 'string' && typeof p.name === 'string' && typeof p.repo === 'string'
+      )
+    : [];
+
   if (Array.isArray(candidate.characters) && validCharacters.length < candidate.characters.length) {
     warnings.push(`Skipped ${candidate.characters.length - validCharacters.length} malformed character record(s).`);
   }
 
-  await db.transaction('rw', [db.characters, db.compendium, db.encounters, db.campaigns, db.scenes, db.dupDecisions, db.contentFixes], async () => {
+  await db.transaction('rw', [db.characters, db.compendium, db.encounters, db.campaigns, db.scenes, db.dupDecisions, db.contentFixes, db.packs], async () => {
     if (mode === 'replace') {
       await db.characters.clear();
       await db.compendium.clear();
@@ -268,6 +357,7 @@ export async function importBackupBundle(
       await db.scenes.clear();
       await db.dupDecisions.clear();
       await db.contentFixes.clear();
+      await db.packs.clear();
     }
     if (validCharacters.length > 0) {
       await db.characters.bulkPut(structuredClone(validCharacters));
@@ -289,6 +379,9 @@ export async function importBackupBundle(
     }
     if (validFixes.length > 0) {
       await db.contentFixes.bulkPut(structuredClone(validFixes));
+    }
+    if (validPacks.length > 0) {
+      await db.packs.bulkPut(structuredClone(validPacks));
     }
   });
 

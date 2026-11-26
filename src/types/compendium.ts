@@ -104,6 +104,11 @@ export interface CompendiumEntity {
   modifiers?: PassiveModifierRule[];
   activities: Activity[];
   entries: string[];
+  /** Provenance: the installed pack this entry came from (absent for built-in SRD / hand-made content). */
+  packId?: string;
+  packVersion?: string;
+  /** Commit sha (or ref) of the pack repo the entry was read from. */
+  packRef?: string;
   /** Derived by the duplicate folding (never stored): the other sources that carry this same entry. */
   alsoIn?: string[];
   /** Derived (never stored): ids of the approved content fixes applied to this entry. */

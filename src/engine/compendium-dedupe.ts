@@ -38,6 +38,9 @@ export function normalizeEntityName(name: string): string {
 }
 
 export function sourceTierOf(e: CompendiumEntity): SourceTier {
+  // provenance first: the Free5e pack is the Free5e tier, any other installed pack is "mine"
+  if (e.packId) return e.packId === 'free5e' ? 'free5e' : 'mine';
+  // old data without provenance: fall back to the source / id strings
   if (/^free5e/i.test(e.id) || /free5e/i.test(e.source)) return 'free5e';
   const isSrdSource = /^SRD/i.test(e.source) || /^PHB \/ SRD/i.test(e.source) || /^srd/i.test(e.id);
   if (isSrdSource) {
@@ -315,6 +318,8 @@ export interface DuplicateDecision {
   /** The entry that stays (keep-one / merge). */
   keepId?: string;
   decidedAt: string;
+  /** A member's pack was uninstalled: the decision is kept (for a reinstall) but does nothing meanwhile. */
+  orphaned?: boolean;
 }
 
 /** Applies review decisions to a (already exact-deduped) list: hides the non-kept members, merges fields. */

@@ -16,4 +16,6 @@ export interface ContentFix {
   status: ContentFixStatus;
   createdAt: string;
   reviewedAt: string | null;
+  /** The entry this fix points at is gone (its pack was uninstalled). Kept, not deleted; cleared if the entry returns. */
+  orphaned?: boolean;
 }

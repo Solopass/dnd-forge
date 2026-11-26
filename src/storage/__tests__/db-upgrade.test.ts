@@ -5,9 +5,9 @@ import { describe, expect, it } from 'vitest';
 import { DndForgeDatabase, CURRENT_SCHEMA_VERSION } from '../db';
 import { moveSourceTier, readStoredSourcePriority, saveSourcePriority } from '../source-priority';
 
-describe('Dexie v3 -> v5 (Duplicates decisions + content fixes tables)', () => {
+describe('Dexie v3 -> v6 (Duplicates decisions + content fixes + packs)', () => {
   it('keeps every existing record and adds an empty dupDecisions table', async () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(5);
+    expect(CURRENT_SCHEMA_VERSION).toBe(6);
     const name = 'dnd-forge-local-db';
     await Dexie.delete(name);
     // an old install: schema version 3, with data
@@ -26,18 +26,19 @@ describe('Dexie v3 -> v5 (Duplicates decisions + content fixes tables)', () => {
 
     const db = new DndForgeDatabase();
     await db.open();
-    expect(db.verno).toBe(5);
+    expect(db.verno).toBe(6);
     expect((await db.characters.get('c1'))?.name).toBe('Old Hero');
     expect((await db.compendium.get('e1'))?.name).toBe('Old Spell');
     expect(await db.dupDecisions.count()).toBe(0);
     await db.dupDecisions.put({ id: 'a|b', memberIds: ['a', 'b'], action: 'keep-both', decidedAt: 'now' });
     expect((await db.dupDecisions.get('a|b'))?.action).toBe('keep-both');
+    expect(await db.packs.count()).toBe(0);
     db.close();
     await Dexie.delete(name);
   });
 });
 
-describe('Dexie v4 -> v5 (content fixes table)', () => {
+describe('Dexie v4 -> v6 (content fixes table, then packs)', () => {
   it('keeps every existing record (including duplicate decisions) and adds an empty contentFixes table', async () => {
     const name = 'dnd-forge-local-db';
     await Dexie.delete(name);
@@ -58,7 +59,7 @@ describe('Dexie v4 -> v5 (content fixes table)', () => {
 
     const db = new DndForgeDatabase();
     await db.open();
-    expect(db.verno).toBe(5);
+    expect(db.verno).toBe(6);
     expect((await db.characters.get('c1'))?.name).toBe('Old Hero');
     expect(((await db.characters.get('c1')) as unknown as { items: Array<{ name: string }> }).items[0]!.name).toBe('+1 Longsword');
     expect((await db.compendium.get('e1'))?.name).toBe('Old Spell');
@@ -70,6 +71,51 @@ describe('Dexie v4 -> v5 (content fixes table)', () => {
     });
     expect((await db.contentFixes.where('entityId').equals('e1').toArray()).length).toBe(1);
     expect((await db.contentFixes.where('status').equals('proposed').toArray()).length).toBe(1);
+    db.close();
+    await Dexie.delete(name);
+  });
+});
+
+describe('Dexie v5 -> v6 (packs table + packId index)', () => {
+  it('keeps every record, stamps legacy Free5e entries with the free5e pack and indexes packId', async () => {
+    const name = 'dnd-forge-local-db';
+    await Dexie.delete(name);
+    const old = new Dexie(name);
+    old.version(5).stores({
+      characters: 'id, name, ruleset',
+      compendium: 'id, name, category, source, ruleset, searchTokens',
+      encounters: 'id, name',
+      campaigns: 'id, name',
+      scenes: 'id, name',
+      dupDecisions: 'id',
+      contentFixes: 'id, entityId, status',
+    });
+    await old.open();
+    await old.table('characters').put({ id: 'c1', name: 'Old Hero', ruleset: '2014' });
+    await old.table('compendium').bulkPut([
+      { id: 'e1', name: 'Old Spell', category: 'spell', source: 'Mine', ruleset: '2014', searchTokens: 'old spell' },
+      { id: 'free5e-spl-alarm', name: 'Alarm', category: 'spell', source: 'Free5e (Solopass/free5e)', ruleset: '2014', searchTokens: 'alarm' },
+    ]);
+    await old.table('dupDecisions').put({ id: 'a|b', memberIds: ['a', 'b'], action: 'keep-both', decidedAt: 'then' });
+    await old.table('contentFixes').put({
+      id: 'fix-1', entityId: 'e1', baseSnapshotHash: 'h', patch: { range: '60 feet' }, note: 'typo', author: 'Player',
+      status: 'proposed', createdAt: 'now', reviewedAt: null,
+    });
+    old.close();
+
+    const db = new DndForgeDatabase();
+    await db.open();
+    expect(db.verno).toBe(6);
+    expect((await db.characters.get('c1'))?.name).toBe('Old Hero');
+    expect((await db.compendium.get('e1'))?.name).toBe('Old Spell');
+    expect((await db.compendium.get('e1'))?.packId).toBeUndefined();
+    expect((await db.compendium.get('free5e-spl-alarm'))?.packId).toBe('free5e');
+    expect((await db.dupDecisions.get('a|b'))?.action).toBe('keep-both');
+    expect((await db.contentFixes.get('fix-1'))?.status).toBe('proposed');
+    const packs = await db.packs.toArray();
+    expect(packs.map((p) => p.id)).toEqual(['free5e']);
+    expect(packs[0]?.repo).toBe('Solopass/free5e');
+    expect((await db.compendium.where('packId').equals('free5e').toArray()).map((e) => e.id)).toEqual(['free5e-spl-alarm']);
     db.close();
     await Dexie.delete(name);
   });

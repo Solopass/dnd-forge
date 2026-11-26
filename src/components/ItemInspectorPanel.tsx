@@ -39,7 +39,7 @@ export const ItemInspectorPanel: React.FC<ItemInspectorPanelProps> = ({
     return (
       <div className="card forge-stack" style={{ padding: 14 }}>
         <div className="forge-section-label">ITEM &amp; SPELL INSPECTOR</div>
-        <div className="forge-muted" style={{ fontSize: 12 }}>
+        <div className="forge-muted text-md">
           Click any <strong>spell, weapon, inventory item, or feature/feat</strong> on your sheet to inspect its full rules text, metadata, and rollable actions here.
         </div>
       </div>
@@ -99,7 +99,7 @@ export const ItemInspectorPanel: React.FC<ItemInspectorPanelProps> = ({
   };
 
   return (
-    <div className="card forge-stack" style={{ gap: 10 }}>
+    <div className="card forge-stack gap-4">
       <div className="forge-row-between" style={{ alignItems: 'flex-start', gap: 8 }}>
         <div>
           <div style={{ fontWeight: 800, fontSize: 16, lineHeight: 1.2 }}>{item.name}</div>
@@ -125,7 +125,7 @@ export const ItemInspectorPanel: React.FC<ItemInspectorPanelProps> = ({
           </div>
         </div>
         {onBackToCombat && (
-          <button type="button" className="btn" style={{ fontSize: 11 }} onClick={onBackToCombat}>
+          <button type="button" className="btn text-sm" onClick={onBackToCombat}>
             Combat
           </button>
         )}
@@ -211,8 +211,7 @@ export const ItemInspectorPanel: React.FC<ItemInspectorPanelProps> = ({
           </select>
           <button
             type="button"
-            className="btn"
-            style={{ fontSize: 11 }}
+            className="btn text-sm"
             onClick={() => onDepositToPartyStash(item.id)}
           >
             → Party
@@ -304,12 +303,12 @@ export const ItemInspectorPanel: React.FC<ItemInspectorPanelProps> = ({
       <div className="forge-stack" style={{ gap: 6, fontSize: 12, lineHeight: 1.5 }}>
         {item.entries.length > 0 ? (
           item.entries.map((para, idx) => (
-            <div key={idx} style={{ whiteSpace: 'pre-wrap' }}>
+            <div key={idx} className="pre-wrap">
               {renderTaggedText(para, `entry-${idx}`)}
             </div>
           ))
         ) : (
-          <div className="forge-muted" style={{ fontSize: 11 }}>
+          <div className="forge-muted text-sm">
             No description text recorded for this item yet.
           </div>
         )}
@@ -342,15 +341,15 @@ export const ItemInspectorPanel: React.FC<ItemInspectorPanelProps> = ({
             return (
               <div key={act.id} className="subpanel forge-row-between" style={{ padding: '6px 8px', flexWrap: 'wrap', gap: 6 }}>
                 <div>
-                  <strong style={{ fontSize: 12 }}>{act.name}</strong>
-                  <div className="forge-muted tabular" style={{ fontSize: 11 }}>
+                  <strong className="text-md">{act.name}</strong>
+                  <div className="forge-muted tabular text-sm">
                     {act.computedAttackBonus !== null &&
                       `Hit ${act.computedAttackBonus >= 0 ? `+${act.computedAttackBonus}` : act.computedAttackBonus}`}
                     {act.computedSaveDc !== null && `DC ${act.computedSaveDc} ${act.saveAbility?.toUpperCase()}`}
                     {previewDamage && ` • ${previewDamage} ${act.damageType ?? ''}`}
                   </div>
                 </div>
-                <div className="forge-row" style={{ gap: 4 }}>
+                <div className="forge-row gap-1">
                   {higherSlots.length > 1 && (
                     <select
                       aria-label="Upcast slot level"
@@ -396,7 +395,7 @@ export const ItemInspectorPanel: React.FC<ItemInspectorPanelProps> = ({
       )}
 
       <div className="forge-row-between" style={{ paddingTop: 4, borderTop: '1px solid var(--border-subtle)' }}>
-        <span className="forge-muted" style={{ fontSize: 10 }}>
+        <span className="forge-muted text-xs">
           ID: {item.id}
         </span>
         <button

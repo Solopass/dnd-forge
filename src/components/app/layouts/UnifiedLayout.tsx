@@ -35,7 +35,7 @@ export function UnifiedLayout({ store, ui, panels }: AppLayoutProps) {
           aria-current={unifiedView === 'sheet' ? 'page' : undefined}
           onClick={() => setUnifiedView('sheet')}
         >
-          <span className="forge-row" style={{ gap: 6 }}><SwordsIcon size={14} /> Play Sheet</span>
+          <span className="forge-row gap-2"><SwordsIcon size={14} /> Play Sheet</span>
           <span className="badge">Lvl {charLevel}</span>
         </button>
         {!isPlayerRole && (
@@ -46,7 +46,7 @@ export function UnifiedLayout({ store, ui, panels }: AppLayoutProps) {
             aria-current={unifiedView === 'dm' ? 'page' : undefined}
             onClick={() => setUnifiedView('dm')}
           >
-            <span className="forge-row" style={{ gap: 6 }}><BookIcon size={14} /> DM Studio</span>
+            <span className="forge-row gap-2"><BookIcon size={14} /> DM Studio</span>
             <span className="badge">{store.campaign.entries.length}</span>
           </button>
         )}
@@ -57,21 +57,21 @@ export function UnifiedLayout({ store, ui, panels }: AppLayoutProps) {
           aria-current={unifiedView === 'vtt' ? 'page' : undefined}
           onClick={() => setUnifiedView('vtt')}
         >
-          <span className="forge-row" style={{ gap: 6 }}><MapIcon size={14} /> Tactical VTT</span>
+          <span className="forge-row gap-2"><MapIcon size={14} /> Tactical VTT</span>
           <span className="badge">{isCombatActive ? `Live R${store.encounter.round}` : `Rnd ${store.encounter.round}`}</span>
         </button>
         {!isInDmStudio && (
           <>
             <div className="subpanel forge-stack" style={{ padding: '8px', gap: 6, marginTop: 4 }}>
-              <div className="forge-row-between tabular" style={{ fontSize: 11 }}>
+              <div className="forge-row-between tabular text-sm">
                 <strong>HP {store.resolvedSheet.hp.current}/{store.resolvedSheet.hp.max}</strong>
                 <span>AC {store.resolvedSheet.ac.final}</span>
               </div>
-              <div className="forge-row" style={{ gap: 4 }}>
-                <button type="button" className="btn" style={{ flex: 1, fontSize: 11 }} onClick={() => setShortRestOpen(true)}>
+              <div className="forge-row gap-1">
+                <button type="button" className="btn flex-1 text-sm" onClick={() => setShortRestOpen(true)}>
                   Short Rest
                 </button>
-                <button type="button" className="btn" style={{ flex: 1, fontSize: 11 }} onClick={() => store.takeRest('long_rest')}>
+                <button type="button" className="btn flex-1 text-sm" onClick={() => store.takeRest('long_rest')}>
                   Long Rest
                 </button>
               </div>
@@ -81,7 +81,7 @@ export function UnifiedLayout({ store, ui, panels }: AppLayoutProps) {
               <span>Build &amp; Stats</span>
             </button>
             <button type="button" className="unified-rail-btn" onClick={() => setGearOpen(true)}>
-              <span className="forge-row" style={{ gap: 6 }}><BackpackIcon size={14} /> Gear &amp; Spells</span>
+              <span className="forge-row gap-2"><BackpackIcon size={14} /> Gear &amp; Spells</span>
               <span className="badge">{store.resolvedSheet.attunementCount}/3</span>
             </button>
           </>
@@ -109,7 +109,7 @@ export function UnifiedLayout({ store, ui, panels }: AppLayoutProps) {
                 flexShrink: 0,
               }}
             >
-              <div className="forge-row" style={{ gap: 8, flexWrap: 'wrap' }}>
+              <div className="forge-row gap-3 wrap">
                 <span className="badge tabular">
                   Round {store.encounter.round} • Turn:{' '}
                   {store.encounter.combatants[store.encounter.activeTurnIndex]?.name ?? 'None'}
@@ -152,7 +152,7 @@ export function UnifiedLayout({ store, ui, panels }: AppLayoutProps) {
                   </button>
                   <span className="badge">Speed {store.resolvedSheet.speed.final}ft</span>
                 </div>
-                <div className="forge-row" style={{ gap: 4 }}>
+                <div className="forge-row gap-1">
                   <button type="button" className="btn btn-danger" onClick={() => store.adjustHp(-5)}>
                     -5 HP
                   </button>

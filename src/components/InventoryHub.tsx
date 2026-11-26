@@ -79,7 +79,7 @@ export const InventoryHub: React.FC<InventoryHubProps> = ({
   return (
     <div className="forge-stack">
       {mode === 'both' && (
-        <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+        <div className="forge-row-between wrap gap-2">
           <div className="pill-row">
             <button
               type="button"
@@ -106,12 +106,12 @@ export const InventoryHub: React.FC<InventoryHubProps> = ({
 
       {view === 'personal' && (
         <div className="forge-stack">
-          <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
-            <div className="pill-row tabular" style={{ fontSize: 11 }}>
+          <div className="forge-row-between wrap gap-2">
+            <div className="pill-row tabular text-sm">
               <span className="badge">Attuned {attunementCount}/3</span>
               <span className="badge">Purse {totalGpValue.toFixed(1)} gp</span>
             </div>
-            <div className="forge-row" style={{ gap: 6 }}>
+            <div className="forge-row gap-2">
               {onOpenCompendium && (
                 <button
                   type="button"
@@ -137,7 +137,7 @@ export const InventoryHub: React.FC<InventoryHubProps> = ({
           </div>
 
           {onUpdateCurrency && (
-            <div className="forge-row" style={{ flexWrap: 'wrap', gap: 4 }}>
+            <div className="forge-row wrap gap-1">
               {COINS.map((coin) => (
                 <div
                   key={coin}
@@ -167,7 +167,7 @@ export const InventoryHub: React.FC<InventoryHubProps> = ({
             </div>
           )}
 
-          <div className="pill-row" style={{ fontSize: 10 }}>
+          <div className="pill-row text-xs">
             {CONTAINERS.map((c) => (
               <button
                 key={c}
@@ -182,7 +182,7 @@ export const InventoryHub: React.FC<InventoryHubProps> = ({
 
           <div className="forge-stack" style={{ maxHeight: 260, overflowY: 'auto' }}>
             {filteredPersonal.length === 0 ? (
-              <div className="forge-muted" style={{ fontSize: 12 }}>
+              <div className="forge-muted text-md">
                 No items in {containerFilter}.
               </div>
             ) : (
@@ -212,7 +212,7 @@ export const InventoryHub: React.FC<InventoryHubProps> = ({
                     ) : (
                       <strong>{item.name}</strong>
                     )}{' '}
-                    <span className="forge-muted" style={{ fontSize: 10 }}>
+                    <span className="forge-muted text-xs">
                       {item.category.toUpperCase()}
                       {item.container ? ` • ${item.container}` : ''}
                     </span>
@@ -226,7 +226,7 @@ export const InventoryHub: React.FC<InventoryHubProps> = ({
                     >
                       -
                     </button>
-                    <span className="tabular" style={{ fontSize: 11 }}>
+                    <span className="tabular text-sm">
                       ×{item.quantity ?? 1}
                     </span>
                     <button
@@ -288,8 +288,8 @@ export const InventoryHub: React.FC<InventoryHubProps> = ({
 
       {view === 'party' && (
         <div className="forge-stack">
-          <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
-            <span className="forge-muted" style={{ fontSize: 11 }}>
+          <div className="forge-row-between wrap gap-2">
+            <span className="forge-muted text-sm">
               Shared across party • Claiming moves 1 to <strong>{characterName}</strong>
             </span>
             {campaign && (
@@ -301,8 +301,7 @@ export const InventoryHub: React.FC<InventoryHubProps> = ({
 
           {onAddPartyStashItem && (
             <form
-              className="forge-row"
-              style={{ gap: 6 }}
+              className="forge-row gap-2"
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!stashName.trim()) return;
@@ -313,8 +312,7 @@ export const InventoryHub: React.FC<InventoryHubProps> = ({
             >
               <input
                 type="text"
-                className="forge-input"
-                style={{ flex: 1 }}
+                className="forge-input flex-1"
                 placeholder="Add shared item (e.g. Potion of Healing, Rope)..."
                 value={stashName}
                 onChange={(e) => setStashName(e.target.value)}
@@ -335,7 +333,7 @@ export const InventoryHub: React.FC<InventoryHubProps> = ({
 
           <div className="forge-stack" style={{ maxHeight: 240, overflowY: 'auto' }}>
             {partyStash.length === 0 ? (
-              <div className="forge-muted" style={{ fontSize: 12 }}>
+              <div className="forge-muted text-md">
                 Party Shared Inventory is empty. Deposit items from your inventory or add shared loot above.
               </div>
             ) : (
@@ -345,7 +343,7 @@ export const InventoryHub: React.FC<InventoryHubProps> = ({
                     <strong>{item.name}</strong>{' '}
                     <span className="badge tabular">×{item.quantity ?? 1}</span>
                     {item.entries[0] && (
-                      <div className="forge-muted" style={{ fontSize: 10 }}>
+                      <div className="forge-muted text-xs">
                         {item.entries[0]}
                       </div>
                     )}

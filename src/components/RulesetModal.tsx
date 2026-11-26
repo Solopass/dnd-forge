@@ -27,7 +27,7 @@ export function RulesetModal({
       <div className="forge-stack">
         <div className="subpanel forge-row-between" style={{ padding: '10px 12px', flexWrap: 'wrap', gap: 8 }}>
           <div>
-            <div className="forge-row" style={{ gap: 8 }}>
+            <div className="forge-row gap-3">
               <span className="forge-section-label">ACTIVE RULESET PROFILE</span>
               <span
                 className="badge"
@@ -67,7 +67,7 @@ export function RulesetModal({
             const currentVal = houseRules[rule.key];
             return (
               <div key={rule.key} className="card forge-stack">
-                <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+                <div className="forge-row-between wrap gap-2">
                   <strong>{rule.title}</strong>
                   <div className="pill-row">
                     {rule.options.map((opt) => (
@@ -87,7 +87,7 @@ export function RulesetModal({
                     ))}
                   </div>
                 </div>
-                <div className="forge-muted" style={{ fontSize: 12 }}>
+                <div className="forge-muted text-md">
                   {rule.summary2014vs2024}
                 </div>
                 <div className="forge-muted" style={{ fontSize: 11, color: 'var(--text-primary)' }}>

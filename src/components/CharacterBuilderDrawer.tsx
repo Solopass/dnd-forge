@@ -191,7 +191,7 @@ export function CharacterBuilderDrawer({
 
         <div className="card">
           <div className="forge-row-between" style={{ marginBottom: 6 }}>
-            <div className="forge-section-label" style={{ marginBottom: 0 }}>
+            <div className="forge-section-label mb-0">
               CLASSES &amp; MULTICLASS PROGRESSION
             </div>
             <button
@@ -214,7 +214,7 @@ export function CharacterBuilderDrawer({
             return (
               <div key={cls.className} className="forge-list-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
                 <div className="forge-row-between">
-                  <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+                  <div className="forge-row wrap">
                     <strong>{cls.className}</strong>
                     <input
                       aria-label={`${cls.className} subclass`}
@@ -261,7 +261,7 @@ export function CharacterBuilderDrawer({
                 )}
                 {activeSub && (
                   <div className="forge-row-between" style={{ marginTop: 4, gap: 8 }}>
-                    <div className="forge-muted" style={{ fontSize: 11 }}>
+                    <div className="forge-muted text-sm">
                       {activeSub.summary}
                     </div>
                     {activeSub.bonusEntityIds && activeSub.bonusEntityIds.length > 0 && (

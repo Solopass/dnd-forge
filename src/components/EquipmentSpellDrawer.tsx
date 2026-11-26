@@ -169,7 +169,7 @@ export function EquipmentSpellDrawer({
 
       {tab === 'gear' && (
         <div className="forge-stack">
-          <div className="forge-row-between forge-muted tabular" style={{ fontSize: 11, flexWrap: 'wrap', gap: 6 }}>
+          <div className="forge-row-between forge-muted tabular text-sm wrap gap-2">
             {maxPrepared !== null && (
               <span style={{ color: preparedCount > maxPrepared ? 'var(--accent-amber)' : 'var(--text-secondary)' }}>
                 Prepared Spells: <strong>{preparedCount}</strong> / {maxPrepared}
@@ -190,7 +190,7 @@ export function EquipmentSpellDrawer({
               <div key={item.id} className="forge-list-row">
                 <div>
                   <strong>{item.name}</strong>{' '}
-                  <span className="forge-muted" style={{ fontSize: 11 }}>
+                  <span className="forge-muted text-sm">
                     ({item.category.toUpperCase()})
                     {item.container ? ` • [${item.container}]` : ''}
                   </span>
@@ -301,11 +301,11 @@ export function EquipmentSpellDrawer({
       {tab === 'notes' && (
         <div className="forge-stack">
           <div className="card forge-stack">
-            <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
-              <span className="forge-section-label" style={{ marginBottom: 0 }}>
+            <div className="forge-row-between wrap gap-2">
+              <span className="forge-section-label mb-0">
                 CURRENCY
               </span>
-              <div className="forge-row" style={{ gap: 6 }}>
+              <div className="forge-row gap-2">
                 <span className="tabular forge-muted">
                   Total Value: <strong>{totalGpValue.toFixed(2)} GP</strong>
                 </span>
@@ -367,7 +367,7 @@ export function EquipmentSpellDrawer({
           {onUpdateDetails && (
             <div className="card forge-stack">
               <div className="forge-section-label">CHARACTER DESCRIPTION &amp; TRAITS</div>
-              <div className="forge-row" style={{ flexWrap: 'wrap', gap: 6 }}>
+              <div className="forge-row wrap gap-2">
                 {(
                   [
                     ['alignment', 'Alignment'],

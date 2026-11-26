@@ -121,7 +121,7 @@ export function LiveTableModal({
             </div>
           </div>
           {liveStatus.role !== 'idle' && (
-            <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+            <div className="forge-row wrap">
               {liveStatus.role === 'host' && (
                 <button type="button" className="btn btn-primary" onClick={onPushEncounter}>
                   Push Encounter
@@ -138,10 +138,10 @@ export function LiveTableModal({
         </div>
 
         {liveStatus.role === 'player' && onClaimToken && pcTokens.length > 0 && (
-          <div className="card forge-row-between" style={{ flexWrap: 'wrap', gap: 8 }}>
+          <div className="card forge-row-between wrap gap-3">
             <div>
               <div className="forge-section-label">CLAIM MY BATTLEMAP TOKEN</div>
-              <div className="forge-muted" style={{ fontSize: 11 }}>
+              <div className="forge-muted text-sm">
                 Select which PC token on the Battlemap you control.
               </div>
             </div>
@@ -163,7 +163,7 @@ export function LiveTableModal({
         {liveStatus.role === 'host' && onSendRollRequest && (
           <div className="card forge-stack">
             <div className="forge-section-label">DM ROLL PROMPT (LIVE TABLE)</div>
-            <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+            <div className="forge-row wrap">
               <select
                 aria-label="Roll request kind"
                 className="forge-input"
@@ -266,8 +266,8 @@ export function LiveTableModal({
             <div className="forge-muted">
               Instant same-browser / second-window sync via <code>BroadcastChannel</code>. Open Sidereroll in another tab on the same device and join with the same room code to sync rolls, encounters, and HP live.
             </div>
-            <div className="forge-row" style={{ flexWrap: 'wrap' }}>
-              <label className="forge-row" style={{ flex: 1 }}>
+            <div className="forge-row wrap">
+              <label className="forge-row flex-1">
                 <span className="forge-label">ROOM CODE</span>
                 <input
                   aria-label="Live room code"
@@ -396,7 +396,7 @@ export function LiveTableModal({
 
         {tab === 'share' && (
           <div className="card forge-stack">
-            <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+            <div className="forge-row wrap">
               <button type="button" className="btn btn-primary" onClick={downloadActiveCharacter}>
                 Download {activeCharacter.name} (.json)
               </button>

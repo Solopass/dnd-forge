@@ -287,7 +287,7 @@ export function SkillWheel({
                   fontSize="8.5"
                   fontWeight={isHighlighted ? '700' : '600'}
                   fill="var(--text-primary)"
-                  style={{ pointerEvents: 'none' }}
+                  className="no-pointer"
                 >
                   {item.shortLabel}
                 </text>
@@ -354,7 +354,7 @@ export function SkillWheel({
                 fontSize="9.5"
                 fontWeight="800"
                 fill="var(--text-primary)"
-                style={{ pointerEvents: 'none' }}
+                className="no-pointer"
               >
                 {arc.ability.toUpperCase()}
               </text>

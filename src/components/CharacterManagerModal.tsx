@@ -73,8 +73,8 @@ export const CharacterManagerModal: React.FC<CharacterManagerModalProps> = ({
       title={`Character Manager (${characters.length})`}
     >
       <div className="forge-stack">
-        <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 8 }}>
-          <div className="forge-row" style={{ flexWrap: 'wrap', gap: 6 }}>
+        <div className="forge-row-between wrap gap-3">
+          <div className="forge-row wrap gap-2">
             <button
               type="button"
               className="btn btn-primary"
@@ -103,7 +103,7 @@ export const CharacterManagerModal: React.FC<CharacterManagerModalProps> = ({
               ref={pdfInputRef}
               type="file"
               accept="application/pdf,.pdf"
-              style={{ display: 'none' }}
+              className="is-hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) void onImportDdbPdf(file);
@@ -114,7 +114,7 @@ export const CharacterManagerModal: React.FC<CharacterManagerModalProps> = ({
               ref={jsonInputRef}
               type="file"
               accept="application/json,.json"
-              style={{ display: 'none' }}
+              className="is-hidden"
               onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
@@ -132,7 +132,7 @@ export const CharacterManagerModal: React.FC<CharacterManagerModalProps> = ({
           </div>
         </div>
 
-        <div className="forge-row" style={{ flexWrap: 'wrap', gap: 6 }}>
+        <div className="forge-row wrap gap-2">
           <input
             type="text"
             className="forge-input"
@@ -155,7 +155,7 @@ export const CharacterManagerModal: React.FC<CharacterManagerModalProps> = ({
 
         <div className="forge-stack" style={{ maxHeight: 420, overflowY: 'auto', gap: 8 }}>
           {filtered.length === 0 ? (
-            <div className="forge-muted" style={{ fontSize: 12 }}>
+            <div className="forge-muted text-md">
               No matching characters found.
             </div>
           ) : (
@@ -174,8 +174,8 @@ export const CharacterManagerModal: React.FC<CharacterManagerModalProps> = ({
                     borderColor: isActive ? 'var(--accent-blue)' : undefined,
                   }}
                 >
-                  <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 8 }}>
-                    <div className="forge-row" style={{ gap: 10 }}>
+                  <div className="forge-row-between wrap gap-3">
+                    <div className="forge-row gap-4">
                       {c.avatarUrl ? (
                         <img
                           src={c.avatarUrl}
@@ -206,18 +206,18 @@ export const CharacterManagerModal: React.FC<CharacterManagerModalProps> = ({
                         </div>
                       )}
                       <div>
-                        <div className="forge-row" style={{ gap: 6, flexWrap: 'wrap' }}>
+                        <div className="forge-row gap-2 wrap">
                           <strong>{c.name}</strong>
                           {isActive && <span className="badge" style={{ color: 'var(--accent-blue)' }}>ACTIVE</span>}
                           <span className="badge">{c.ruleset.toUpperCase()}</span>
                         </div>
-                        <div className="forge-muted" style={{ fontSize: 11 }}>
+                        <div className="forge-muted text-sm">
                           Lvl {totalLevel} • {c.species} • {classSummary} • HP {c.hp.current}/{c.hp.max}
                         </div>
                       </div>
                     </div>
 
-                    <div className="pill-row" style={{ gap: 4 }}>
+                    <div className="pill-row gap-1">
                       {!isActive && (
                         <button
                           type="button"

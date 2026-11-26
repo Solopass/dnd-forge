@@ -212,9 +212,9 @@ export function LevelUpModal({
   return (
     <ModalDialog isOpen={isOpen} onClose={onClose} title={`Level-Up Wizard — ${character.name}`}>
       <form onSubmit={handleSubmit} className="forge-stack">
-        <div className="forge-row-between" style={{ fontSize: 11 }}>
+        <div className="forge-row-between text-sm">
           <span className="badge">Ruleset: {character.ruleset.toUpperCase()}</span>
-          <label className="forge-row" style={{ gap: 6, cursor: 'pointer' }}>
+          <label className="forge-row gap-2 clickable">
             <input
               type="checkbox"
               checked={matchCharRulesetOnly}
@@ -248,7 +248,7 @@ export function LevelUpModal({
 
           <div className="forge-field">
             <span className="forge-label">HIT POINTS GAIN (+d{hitDie}, CON {conMod >= 0 ? `+${conMod}` : conMod})</span>
-            <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+            <div className="forge-row wrap">
               <button
                 type="button"
                 className={`pill ${hpMode === 'fixed' ? 'active' : ''}`}
@@ -382,7 +382,7 @@ export function LevelUpModal({
                   </label>
                 </div>
                 {asiPrimary === asiSecondary && (
-                  <span className="forge-muted" style={{ fontSize: 11 }}>
+                  <span className="forge-muted text-sm">
                     Same ability selected twice — applies +2 to {asiPrimary.toUpperCase()}.
                   </span>
                 )}
@@ -391,7 +391,7 @@ export function LevelUpModal({
 
             {asiMode === 'feat' && (
               <div className="forge-stack">
-                <div className="forge-row" style={{ gap: 8 }}>
+                <div className="forge-row gap-3">
                   <input
                     aria-label="Filter SRD feats"
                     type="text"
@@ -419,7 +419,7 @@ export function LevelUpModal({
                 {selectedFeat && (
                   <div className="subpanel forge-stack" style={{ padding: '8px 10px', gap: 4 }}>
                     <div className="forge-row-between">
-                      <strong style={{ fontSize: 12 }}>{selectedFeat.name}</strong>
+                      <strong className="text-md">{selectedFeat.name}</strong>
                       <span className="badge">{selectedFeat.ruleset.toUpperCase()}</span>
                     </div>
                     <p className="forge-muted" style={{ fontSize: 11, margin: 0, lineHeight: 1.45 }}>
@@ -435,10 +435,10 @@ export function LevelUpModal({
         {matchingClassFeatures.length > 0 && (
           <div className="card forge-stack">
             <div className="forge-row-between">
-              <span className="forge-section-label" style={{ marginBottom: 0 }}>
+              <span className="forge-section-label mb-0">
                 SRD {selectedClass.toUpperCase()} FEATURES
               </span>
-              <span className="forge-muted" style={{ fontSize: 11 }}>
+              <span className="forge-muted text-sm">
                 Optional — click to add to sheet
               </span>
             </div>
@@ -464,12 +464,12 @@ export function LevelUpModal({
         {maxNewSpellLevel > 0 && (
           <div className="card forge-stack">
             <div className="forge-row-between">
-              <span className="forge-section-label" style={{ marginBottom: 0 }}>
+              <span className="forge-section-label mb-0">
                 LEARN NEW SPELLS (UP TO LEVEL {maxNewSpellLevel})
               </span>
               <span className="forge-muted tabular">{selectedSpellIds.length} selected</span>
             </div>
-            <div className="forge-row" style={{ gap: 8 }}>
+            <div className="forge-row gap-3">
               <input
                 aria-label="Filter learnable spells"
                 type="text"

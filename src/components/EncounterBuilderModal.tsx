@@ -219,7 +219,7 @@ export function EncounterBuilderModal({
         {tab === 'builder' && (
           <div className="forge-stack">
             <div className="subpanel forge-row-between" style={{ padding: 10, flexWrap: 'wrap', gap: 8 }}>
-              <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+              <div className="forge-row wrap">
                 <span className="badge tabular">Easy {diff.thresholds.easy}</span>
                 <span className="badge tabular">Med {diff.thresholds.medium}</span>
                 <span className="badge tabular">Hard {diff.thresholds.hard}</span>
@@ -241,7 +241,7 @@ export function EncounterBuilderModal({
             </div>
 
             {staged.length > 0 && (
-              <div className="forge-stack" style={{ gap: 6 }}>
+              <div className="forge-stack gap-2">
                 <div className="pill-row">
                   {staged.map((s) => (
                     <button
@@ -261,7 +261,7 @@ export function EncounterBuilderModal({
                     </button>
                   ))}
                 </div>
-                <div className="forge-row" style={{ flexWrap: 'wrap', gap: 6 }}>
+                <div className="forge-row wrap gap-2">
                   <input
                     type="text"
                     className="input"
@@ -300,11 +300,11 @@ export function EncounterBuilderModal({
             )}
 
             {presets.length > 0 && (
-              <div className="forge-row" style={{ flexWrap: 'wrap', gap: 6 }}>
+              <div className="forge-row wrap gap-2">
                 <span className="muted-label">Saved Presets:</span>
                 {presets.map((pr) => (
                   <span key={pr.id} className="subpanel forge-row" style={{ padding: '3px 6px', gap: 4 }}>
-                    <strong style={{ fontSize: 11 }}>{pr.name}</strong>
+                    <strong className="text-sm">{pr.name}</strong>
                     <button
                       type="button"
                       className="pill"
@@ -350,7 +350,7 @@ export function EncounterBuilderModal({
               </div>
             )}
 
-            <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+            <div className="forge-row wrap">
               <input
                 type="text"
                 className="input"
@@ -412,7 +412,7 @@ export function EncounterBuilderModal({
                   {filteredMonsters.slice(0, 80).map((m) => (
                     <tr key={m.id}>
                       <th scope="row">
-                        <div className="forge-row" style={{ gap: 6 }}>
+                        <div className="forge-row gap-2">
                           {m.imageUrl && (
                             <img
                               src={m.imageUrl}
@@ -445,7 +445,7 @@ export function EncounterBuilderModal({
 
         {tab === 'forge' && (
           <div className="subpanel forge-stack" style={{ padding: 12 }}>
-            <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+            <div className="forge-row wrap">
               <input
                 type="text"
                 className="input"
@@ -476,7 +476,7 @@ export function EncounterBuilderModal({
                 <option value="gargantuan">Gargantuan</option>
               </select>
             </div>
-            <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+            <div className="forge-row wrap">
               <label className="forge-row">
                 <span className="muted-label">AC</span>
                 <input
@@ -516,7 +516,7 @@ export function EncounterBuilderModal({
                 onChange={(e) => setMSpeed(e.target.value)}
               />
             </div>
-            <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+            <div className="forge-row wrap">
               <input
                 type="text"
                 className="input"

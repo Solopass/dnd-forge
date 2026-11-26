@@ -27,8 +27,8 @@ export function MonsterStatblockModal({
   return (
     <ModalDialog isOpen={Boolean(combatant)} onClose={onClose} title={`Statblock — ${combatant.name}`}>
       <div className="forge-stack">
-        <div className="card forge-row-between" style={{ flexWrap: 'wrap', gap: 10 }}>
-          <div className="forge-row" style={{ gap: 10 }}>
+        <div className="card forge-row-between wrap gap-4">
+          <div className="forge-row gap-4">
             {combatant.portraitUrl && (
               <img
                 src={combatant.portraitUrl}
@@ -45,7 +45,7 @@ export function MonsterStatblockModal({
             )}
             <div>
               <strong>{combatant.name}</strong>
-              <div className="forge-muted" style={{ fontSize: 12 }}>
+              <div className="forge-muted text-md">
                 {(combatant.size ?? meta?.size ?? 'medium').toUpperCase()} • CR {combatant.cr ?? meta?.cr ?? '—'}
                 {meta?.speeds ? ` • Speed ${meta.speeds}` : ''}
               </div>
@@ -65,7 +65,7 @@ export function MonsterStatblockModal({
         </div>
 
         {!hideStats && meta && (meta.saves || meta.skills || meta.senses || meta.resistances?.length || meta.immunities?.length) && (
-          <div className="card forge-stack" style={{ fontSize: 12 }}>
+          <div className="card forge-stack text-md">
             {meta.saves && <div><strong>Saving Throws:</strong> {meta.saves}</div>}
             {meta.skills && <div><strong>Skills:</strong> {meta.skills}</div>}
             {meta.senses && <div><strong>Senses:</strong> {meta.senses}</div>}
@@ -82,7 +82,7 @@ export function MonsterStatblockModal({
         )}
 
         {combatant.notes && (
-          <div className="card" style={{ fontSize: 12 }}>
+          <div className="card text-md">
             <div className="forge-section-label">TRAITS &amp; NOTES</div>
             <div>{combatant.notes}</div>
           </div>
@@ -92,7 +92,7 @@ export function MonsterStatblockModal({
           <div className="card forge-row-between">
             <div>
               <strong>Legendary Actions</strong>
-              <div className="forge-muted tabular" style={{ fontSize: 11 }}>
+              <div className="forge-muted tabular text-sm">
                 Remaining: {combatant.legendaryActions.current} / {combatant.legendaryActions.max} (Resets at start of turn)
               </div>
             </div>
@@ -123,7 +123,7 @@ export function MonsterStatblockModal({
               <div key={rec.name} className="forge-row-between">
                 <span>
                   {rec.name}{' '}
-                  <span className="forge-muted" style={{ fontSize: 11 }}>
+                  <span className="forge-muted text-sm">
                     ({rec.available ? 'Ready' : `Needs ${rec.minRoll}+ on 1d6`})
                   </span>
                 </span>
@@ -146,7 +146,7 @@ export function MonsterStatblockModal({
               <div key={act.id} className="forge-list-row">
                 <div>
                   <strong>{act.name}</strong>{' '}
-                  <span className="forge-muted" style={{ fontSize: 11 }}>
+                  <span className="forge-muted text-sm">
                     {act.attackBonusFormula ? `${act.attackBonusFormula} to hit` : ''}
                     {act.saveDcFormula ? `DC ${act.saveDcFormula} ${act.saveAbility?.toUpperCase()}` : ''}
                     {act.damageFormula ? ` • ${act.damageFormula} ${act.damageType ?? ''}` : ''}

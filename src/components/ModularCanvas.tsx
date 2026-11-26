@@ -233,7 +233,7 @@ export function ModularCanvas({
           .join('')
       : '';
     return (
-      <div key={act.id} className="forge-list-row" style={{ gap: 6 }}>
+      <div key={act.id} className="forge-list-row gap-2">
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ fontWeight: 600, fontSize: 12 }}>
             {act.name}{' '}
@@ -249,7 +249,7 @@ export function ModularCanvas({
             </div>
           )}
         </div>
-        <div className="forge-row" style={{ gap: 4 }}>
+        <div className="forge-row gap-1">
           <button
             type="button"
             className="btn"
@@ -280,7 +280,7 @@ export function ModularCanvas({
             <div className="forge-row-between">
               <div>
                 <div style={{ fontWeight: 800, fontSize: 15 }}>{sheet.name}</div>
-                <div className="forge-muted" style={{ fontSize: 11 }}>
+                <div className="forge-muted text-sm">
                   Lvl {sheet.totalLevel} • {sheet.ruleset.toUpperCase()} • Prof +{sheet.proficiencyBonus.final}
                 </div>
               </div>
@@ -301,7 +301,7 @@ export function ModularCanvas({
                 <span className="forge-muted"> / {sheet.hp.max} HP</span>
                 {sheet.hp.temp > 0 && <span className="badge" style={{ marginLeft: 6 }}>+{sheet.hp.temp} Temp</span>}
               </div>
-              <div className="forge-row" style={{ gap: 4 }}>
+              <div className="forge-row gap-1">
                 <input
                   aria-label="HP amount"
                   type="number"
@@ -343,7 +343,7 @@ export function ModularCanvas({
               const full = ab.toUpperCase();
               return (
                 <div key={ab} className="ability-matrix-row" role="row">
-                  <strong role="rowheader" style={{ fontSize: 12 }}>
+                  <strong role="rowheader" className="text-md">
                     {full}
                   </strong>
                   <span role="cell" className="badge tabular" style={{ justifySelf: 'center', padding: '1px 6px' }}>
@@ -379,7 +379,7 @@ export function ModularCanvas({
       case 'skills':
         return (
           <div className="forge-stack">
-            <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 4 }}>
+            <div className="forge-row-between wrap gap-1">
               <div className="pill-row tabular">
                 <span className="badge">PP {sheet.passivePerception}</span>
                 <span className="badge">PI {sheet.passiveInvestigation}</span>
@@ -415,7 +415,7 @@ export function ModularCanvas({
                   const val = sheet.skills[sk].final;
                   return (
                     <div key={sk} className="forge-list-row">
-                      <span style={{ fontSize: 12 }}>
+                      <span className="text-md">
                         {sk} <span className="forge-muted">({SKILL_ABILITY_MAP[sk].toUpperCase()})</span>
                       </span>
                       <button
@@ -437,11 +437,10 @@ export function ModularCanvas({
         const autoCond = resolveConditionRollMode(sheet.conditions, 'attack', undefined, rollMode);
         return (
           <div className="forge-stack">
-            <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+            <div className="forge-row wrap">
               <select
                 aria-label="Condition selector"
-                className="forge-input"
-                style={{ flex: 1 }}
+                className="forge-input flex-1"
                 value={condSelect}
                 onChange={(e) => setCondSelect(e.target.value)}
               >
@@ -480,7 +479,7 @@ export function ModularCanvas({
             </div>
             <div className="pill-row">
               {sheet.conditions.length === 0 ? (
-                <span className="forge-muted" style={{ fontSize: 12 }}>No active conditions.</span>
+                <span className="forge-muted text-md">No active conditions.</span>
               ) : (
                 sheet.conditions.map((c) => (
                   <button key={c} type="button" className="pill active" onClick={() => onToggleCondition(c)}>
@@ -561,7 +560,7 @@ export function ModularCanvas({
                 const chosen = available.includes(smiteLevel) ? smiteLevel : available[0]!;
                 const diceCount = Math.min(6, chosen + 1);
                 return (
-                  <div className="forge-row" style={{ gap: 4 }}>
+                  <div className="forge-row gap-1">
                     {available.length > 1 && (
                       <select
                         aria-label="Divine Smite slot level"
@@ -586,7 +585,7 @@ export function ModularCanvas({
             </div>
             <div className="forge-stack">
               {nonSpellActions.length === 0 ? (
-                <div className="forge-muted" style={{ fontSize: 12 }}>No weapon/class actions yet.</div>
+                <div className="forge-muted text-md">No weapon/class actions yet.</div>
               ) : (
                 nonSpellActions.map(renderActivityCompact)
               )}
@@ -598,7 +597,7 @@ export function ModularCanvas({
       case 'pinned_favorites': {
         const pinned = allActivities.filter((a) => pinnedIds.includes(a.id));
         return pinned.length === 0 ? (
-          <div className="forge-muted" style={{ fontSize: 12 }}>
+          <div className="forge-muted text-md">
             Click ☆ on any action or spell to pin your favorites here.
           </div>
         ) : (
@@ -616,7 +615,7 @@ export function ModularCanvas({
         const spellActs = allActivities.filter(isSpell);
         return (
           <div className="forge-stack">
-            <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+            <div className="forge-row-between wrap gap-2">
               <div className="pill-row tabular">
                 <span className="badge">Save DC {sheet.spellcasting.saveDc.final}</span>
                 <span className="badge">Atk +{sheet.spellcasting.attackBonus.final}</span>
@@ -633,7 +632,7 @@ export function ModularCanvas({
               )}
             </div>
             {slotPools.length > 0 && (
-              <div className="forge-row" style={{ flexWrap: 'wrap', gap: 8 }}>
+              <div className="forge-row wrap gap-3">
                 {slotPools.map(({ lvl, pool }) => (
                   <div key={pool.id} className="forge-row" style={{ gap: 3 }}>
                     <span className="muted-label tabular">L{lvl}</span>
@@ -657,7 +656,7 @@ export function ModularCanvas({
             )}
             <div className="forge-stack">
               {spellActs.length === 0 ? (
-                <div className="forge-muted" style={{ fontSize: 12 }}>No prepared spells.</div>
+                <div className="forge-muted text-md">No prepared spells.</div>
               ) : (
                 spellActs.map(renderActivityCompact)
               )}
@@ -711,11 +710,11 @@ export function ModularCanvas({
           <div className="forge-stack">
             {feats.map((f) => (
               <div key={f.id} className="subpanel" style={{ padding: '6px 8px' }}>
-                <strong style={{ fontSize: 12 }}>{f.name}</strong>
-                {f.entries[0] && <div className="forge-muted" style={{ fontSize: 11 }}>{f.entries[0]}</div>}
+                <strong className="text-md">{f.name}</strong>
+                {f.entries[0] && <div className="forge-muted text-sm">{f.entries[0]}</div>}
               </div>
             ))}
-            {rawChar.notes?.bio && <div className="forge-muted" style={{ fontSize: 11 }}>{rawChar.notes.bio}</div>}
+            {rawChar.notes?.bio && <div className="forge-muted text-sm">{rawChar.notes.bio}</div>}
           </div>
         );
       }
@@ -729,7 +728,7 @@ export function ModularCanvas({
       case 'dice_console':
         return (
           <div className="forge-stack">
-            <div className="forge-row" style={{ gap: 6, flexWrap: 'wrap' }}>
+            <div className="forge-row gap-2 wrap">
               {['1d20', '1d12', '1d10', '1d8', '1d6', '1d4'].map((expr) => (
                 <button
                   key={expr}
@@ -743,7 +742,7 @@ export function ModularCanvas({
             </div>
             <div className="forge-stack" style={{ maxHeight: 160, overflowY: 'auto' }}>
               {consoleLines.slice(-8).reverse().map((line) => (
-                <div key={line.id} className="forge-muted tabular" style={{ fontSize: 11 }}>
+                <div key={line.id} className="forge-muted tabular text-sm">
                   {line.text}
                 </div>
               ))}
@@ -753,11 +752,11 @@ export function ModularCanvas({
 
       case 'dm_notes':
         if (isPlayerRole || !campaign) {
-          return <div className="forge-muted" style={{ fontSize: 12 }}>DM-only widget.</div>;
+          return <div className="forge-muted text-md">DM-only widget.</div>;
         }
         return (
           <div className="forge-stack">
-            <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+            <div className="forge-row-between wrap gap-2">
               <strong className="tabular" style={{ fontSize: 13 }}>
                 {formatWorldClock(campaign.clock)}
               </strong>
@@ -777,7 +776,7 @@ export function ModularCanvas({
                   <div style={{ fontWeight: 600, fontSize: 12 }}>
                     {entry.title} <span className="badge">{entry.category.toUpperCase()}</span>
                   </div>
-                  {entry.summary && <div className="forge-muted" style={{ fontSize: 11 }}>{entry.summary}</div>}
+                  {entry.summary && <div className="forge-muted text-sm">{entry.summary}</div>}
                 </div>
               ))}
             </div>
@@ -786,11 +785,11 @@ export function ModularCanvas({
 
       case 'dm_loot':
         if (isPlayerRole || !campaign) {
-          return <div className="forge-muted" style={{ fontSize: 12 }}>DM-only widget.</div>;
+          return <div className="forge-muted text-md">DM-only widget.</div>;
         }
         return (
           <div className="forge-stack">
-            <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+            <div className="forge-row-between wrap gap-2">
               <span className="tabular">
                 Party Gold: <strong>{campaign.partyLootGp.toLocaleString()} GP</strong>
               </span>
@@ -821,11 +820,11 @@ export function ModularCanvas({
             )}
             <div className="forge-stack" style={{ maxHeight: 150, overflowY: 'auto' }}>
               {campaign.partyLootItems.length === 0 ? (
-                <div className="forge-muted" style={{ fontSize: 12 }}>No stash items.</div>
+                <div className="forge-muted text-md">No stash items.</div>
               ) : (
                 campaign.partyLootItems.map((itemName, idx) => (
                   <div key={`${itemName}-${idx}`} className="forge-list-row">
-                    <span style={{ fontSize: 12 }}>{itemName}</span>
+                    <span className="text-md">{itemName}</span>
                     {onAssignLootToCharacter && characterList.length > 0 && (
                       <button
                         type="button"
@@ -863,7 +862,7 @@ export function ModularCanvas({
         )}
       {isEditing && (
         <div className="modular-edit-bar" role="region" aria-label="Layout editor toolbar">
-          <div className="forge-row" style={{ flexWrap: 'wrap', gap: 8 }}>
+          <div className="forge-row wrap gap-3">
             <strong>Customize Blocks</strong>
             <select
               aria-label="Load layout preset"
@@ -916,7 +915,7 @@ export function ModularCanvas({
               Theme &amp; Share...
             </button>
           </div>
-          <div className="forge-row" style={{ flexWrap: 'wrap', gap: 6 }}>
+          <div className="forge-row wrap gap-2">
             <button
               type="button"
               className="btn"
@@ -990,7 +989,7 @@ export function ModularCanvas({
                   <span>{w.label.toUpperCase()}</span>
                 </div>
                 {isEditing && (
-                  <div className="forge-row" style={{ flexWrap: 'wrap', gap: 4 }}>
+                  <div className="forge-row wrap gap-1">
                     <button
                       type="button"
                       className="btn"

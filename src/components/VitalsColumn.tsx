@@ -128,15 +128,15 @@ export function VitalsColumn({
   return (
     <aside className={`pane ${isUnified ? 'unified-vitals-pane' : ''}`} aria-label="Character Vitals">
       <div className="card">
-        <div className="forge-row-between" style={{ gap: 6, flexWrap: 'wrap' }}>
+        <div className="forge-row-between gap-2 wrap">
           <div>
             <strong>{sheet.name}</strong>
-            <div className="forge-muted" style={{ fontSize: 11 }}>
+            <div className="forge-muted text-sm">
               Lvl {sheet.totalLevel} • {sheet.ruleset.toUpperCase()} • Prof +{sheet.proficiencyBonus.final}
               {sheet.critThreshold < 20 ? ` • Crit ${sheet.critThreshold}–20` : ''}
             </div>
           </div>
-          <div className="forge-row" style={{ gap: 4 }}>
+          <div className="forge-row gap-1">
             {layoutVariant === 'classic' && (
               <button
                 type="button"
@@ -156,7 +156,7 @@ export function VitalsColumn({
             >
               {sheet.inspiration ? '★ Insp' : '☆ Insp'}
             </button>
-            <span className="forge-muted" style={{ fontSize: 11 }}>Exh</span>
+            <span className="forge-muted text-sm">Exh</span>
             <button
               type="button"
               className="btn"
@@ -223,11 +223,11 @@ export function VitalsColumn({
 
         {inspectAc && (
           <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}>
-            <div className="forge-muted" style={{ fontSize: 11 }}>
+            <div className="forge-muted text-sm">
               Formula: {sheet.ac.activeFormulaSource} ({sheet.ac.base})
               {sheet.ac.modifiers.map((m) => ` + ${m.value} (${m.source})`).join('')}
             </div>
-            <div className="forge-row" style={{ marginTop: 6 }}>
+            <div className="forge-row mt-2">
               <input
                 aria-label="Override AC"
                 type="number"
@@ -264,7 +264,7 @@ export function VitalsColumn({
           sheet.senses.truesight > 0 ||
           onUpdateSenses ||
           onUpdateSpeeds) && (
-          <div className="pill-row" style={{ marginTop: 6 }}>
+          <div className="pill-row mt-2">
             {sheet.speeds.fly > 0 && <span className="badge tabular">Fly {sheet.speeds.fly}ft</span>}
             {sheet.speeds.swim > 0 && <span className="badge tabular">Swim {sheet.speeds.swim}ft</span>}
             {sheet.speeds.climb > 0 && <span className="badge tabular">Climb {sheet.speeds.climb}ft</span>}
@@ -288,11 +288,11 @@ export function VitalsColumn({
 
         {inspectSenses && (onUpdateSenses || onUpdateSpeeds) && (
           <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}>
-            <div className="forge-stack" style={{ gap: 6 }}>
+            <div className="forge-stack gap-2">
               {onUpdateSpeeds && (
-                <div className="forge-row" style={{ flexWrap: 'wrap', gap: 6 }}>
+                <div className="forge-row wrap gap-2">
                   {(['walk', 'fly', 'swim', 'climb', 'burrow'] as const).map((k) => (
-                    <label key={k} className="forge-row" style={{ gap: 4, fontSize: 11 }}>
+                    <label key={k} className="forge-row gap-1 text-sm">
                       <span className="forge-muted" style={{ textTransform: 'capitalize' }}>{k}</span>
                       <input
                         type="number"
@@ -310,9 +310,9 @@ export function VitalsColumn({
                 </div>
               )}
               {onUpdateSenses && (
-                <div className="forge-row" style={{ flexWrap: 'wrap', gap: 6 }}>
+                <div className="forge-row wrap gap-2">
                   {(['darkvision', 'blindsight', 'tremorsense', 'truesight'] as const).map((k) => (
-                    <label key={k} className="forge-row" style={{ gap: 4, fontSize: 11 }}>
+                    <label key={k} className="forge-row gap-1 text-sm">
                       <span className="forge-muted" style={{ textTransform: 'capitalize' }}>{k}</span>
                       <input
                         type="number"
@@ -338,7 +338,7 @@ export function VitalsColumn({
             HP <strong>{sheet.hp.current}</strong> / {sheet.hp.max}
             {sheet.hp.temp > 0 ? ` (+${sheet.hp.temp} tmp)` : ''}
           </span>
-          <div className="forge-row" style={{ gap: 4 }}>
+          <div className="forge-row gap-1">
             <button type="button" className="btn" aria-label="Damage 5 HP" onClick={() => onAdjustHp(-5)}>-5</button>
             <button type="button" className="btn" aria-label="Damage 1 HP" onClick={() => onAdjustHp(-1)}>-1</button>
             <button type="button" className="btn" aria-label="Heal 1 HP" onClick={() => onAdjustHp(1)}>+1</button>
@@ -394,7 +394,7 @@ export function VitalsColumn({
         )}
 
         {showHpExtras && (
-          <div className="forge-row" style={{ marginTop: 6, flexWrap: 'wrap' }}>
+          <div className="forge-row mt-2 wrap">
             {isUnified && (
               <>
                 <input
@@ -469,7 +469,7 @@ export function VitalsColumn({
                 Roll Death Save
               </button>
             </div>
-            <div className="forge-row-between" style={{ fontSize: 12 }}>
+            <div className="forge-row-between text-md">
               <span>
                 Succ: {sheet.deathSaves.successes}/3{' '}
                 <button
@@ -498,16 +498,15 @@ export function VitalsColumn({
           <div className="forge-row" style={{ marginTop: 8 }}>
             <button
               type="button"
-              className="btn"
-              style={{ flex: 1 }}
+              className="btn flex-1"
               onClick={() => (onOpenShortRest ? onOpenShortRest() : onTakeRest('short_rest'))}
             >
               Short Rest
             </button>
-            <button type="button" className="btn" style={{ flex: 1 }} onClick={onSpendHitDie}>
+            <button type="button" className="btn flex-1" onClick={onSpendHitDie}>
               Spend Hit Die
             </button>
-            <button type="button" className="btn" style={{ flex: 1 }} onClick={() => onTakeRest('long_rest')}>
+            <button type="button" className="btn flex-1" onClick={() => onTakeRest('long_rest')}>
               Long Rest
             </button>
           </div>
@@ -566,14 +565,14 @@ export function VitalsColumn({
                 Revert Form
               </button>
             </div>
-            <div className="forge-muted" style={{ fontSize: 11 }}>
+            <div className="forge-muted text-sm">
               AC {sheet.wildShapeForm.ac} • Speed {sheet.wildShapeForm.speed} ft • Damage hits beast HP first
             </div>
           </div>
         )}
 
         {(showWildShapePicker || (isDruid && !sheet.wildShapeForm && showWildShapePicker)) && (
-          <div className="forge-row" style={{ marginTop: 6, flexWrap: 'wrap' }}>
+          <div className="forge-row mt-2 wrap">
             <select
               aria-label="Wild Shape beast form"
               className="forge-input"
@@ -606,7 +605,7 @@ export function VitalsColumn({
         {(sheet.defenses.resistances.length > 0 ||
           sheet.defenses.immunities.length > 0 ||
           sheet.defenses.vulnerabilities.length > 0) && (
-          <div className="pill-row" style={{ marginTop: 6 }}>
+          <div className="pill-row mt-2">
             {sheet.defenses.resistances.map((d) => (
               <button
                 key={`res-${d}`}
@@ -644,7 +643,7 @@ export function VitalsColumn({
         )}
 
         {showDefenseEditor && (
-          <div className="forge-row" style={{ marginTop: 6, flexWrap: 'wrap' }}>
+          <div className="forge-row mt-2 wrap">
             <select
               aria-label="Defense category"
               className="forge-input"
@@ -682,7 +681,7 @@ export function VitalsColumn({
         )}
 
         {sheet.conditions.length > 0 && (
-          <div className="pill-row" style={{ marginTop: 6 }}>
+          <div className="pill-row mt-2">
             {sheet.conditions.map((cond) => (
               <button
                 key={cond}
@@ -711,8 +710,8 @@ export function VitalsColumn({
           const reasons = Array.from(new Set([...atkMode.reasons, ...checkMode.reasons]));
           if (reasons.length === 0) return null;
           return (
-            <div className="forge-row-between" style={{ marginTop: 6 }}>
-              <span className="forge-muted" style={{ fontSize: 10 }}>Auto Roll Effect</span>
+            <div className="forge-row-between mt-2">
+              <span className="forge-muted text-xs">Auto Roll Effect</span>
               <span className="badge" style={{ color: 'var(--accent-amber)' }}>
                 {reasons[0]}
               </span>
@@ -798,7 +797,7 @@ export function VitalsColumn({
               (p) => !/^spell_slot_\d+$/.test(p.id) && p.id !== 'pact_slot'
             );
             return (
-              <div className="forge-stack" style={{ gap: 6 }}>
+              <div className="forge-stack gap-2">
                 {spellSlots.length > 0 && (
                   <div className="resource-slot-grid" role="group" aria-label="Spell slots">
                     {spellSlots.map((pool) => {
@@ -826,7 +825,7 @@ export function VitalsColumn({
                               );
                             })}
                           </div>
-                          <span className="tabular forge-muted" style={{ fontSize: 10 }}>
+                          <span className="tabular forge-muted text-xs">
                             {pool.current}/{pool.max}
                           </span>
                         </div>
@@ -916,7 +915,7 @@ export function VitalsColumn({
           ))
         )}
         {(!isUnified || showAddPool) && (
-          <div className="forge-row" style={{ marginTop: 6 }}>
+          <div className="forge-row mt-2">
             <input
               aria-label="Custom resource pool name"
               type="text"
@@ -956,7 +955,7 @@ export function VitalsColumn({
           <span className="forge-label tabular">
             PASSIVE: PERC {sheet.passivePerception} • INV {sheet.passiveInvestigation} • INS {sheet.passiveInsight}
           </span>
-          <div className="forge-row" style={{ gap: 4 }}>
+          <div className="forge-row gap-1">
             {isUnified && (
               <div className="pill-row" role="group" aria-label="Skills display mode">
                 <button

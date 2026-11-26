@@ -190,7 +190,7 @@ export function ActionEconomyBoard({
           ) : (
             <strong>{act.name}</strong>
           )}{' '}
-          <span className="forge-muted" style={{ fontSize: 11 }}>
+          <span className="forge-muted text-sm">
             ({act.parentItemName})
           </span>
           {act.concentration && <span className="conc-badge">CONC</span>}
@@ -210,7 +210,7 @@ export function ActionEconomyBoard({
             </span>
           )}
           {act.spellMeta && (
-            <div className="forge-muted" style={{ fontSize: 10 }}>
+            <div className="forge-muted text-xs">
               {[act.spellMeta.castingTime, act.spellMeta.range, act.spellMeta.duration, act.spellMeta.components]
                 .filter(Boolean)
                 .join(' • ')}
@@ -353,7 +353,7 @@ export function ActionEconomyBoard({
 
       {(layoutVariant === 'unified' || beyondTab === 'actions' || beyondTab === 'spells') && (
         <div className="card forge-stack">
-          <div className="forge-row-between" style={{ flexWrap: 'wrap' }}>
+          <div className="forge-row-between wrap">
             <div className="pill-row">
               {(['all', 'attack', 'save', 'heal', 'summon', 'concentration'] as const).map((pill) => (
                 <button
@@ -390,9 +390,9 @@ export function ActionEconomyBoard({
             onChange={(e) => setSearch(e.target.value)}
           />
 
-          <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+          <div className="forge-row-between wrap gap-2">
             {layoutVariant === 'unified' && onOpenCompendium && (
-              <div className="forge-row" style={{ gap: 6 }}>
+              <div className="forge-row gap-2">
                 <button
                   type="button"
                   className="btn btn-primary"
@@ -477,7 +477,7 @@ export function ActionEconomyBoard({
                     : availableSmiteLevels[0]!;
                   const diceCount = Math.min(6, chosen + 1);
                   return (
-                    <div className="forge-row" style={{ gap: 4 }}>
+                    <div className="forge-row gap-1">
                       {availableSmiteLevels.length > 1 && (
                         <select
                           aria-label="Divine Smite slot level"
@@ -594,7 +594,7 @@ export function ActionEconomyBoard({
             {(spellSlotPools.length > 0 || pactPool) && (
               <div className="subpanel forge-row" style={{ padding: '6px 8px', flexWrap: 'wrap', gap: 10 }}>
                 {spellSlotPools.map(({ lvl, pool }) => (
-                  <div key={pool.id} className="forge-row" style={{ gap: 4 }}>
+                  <div key={pool.id} className="forge-row gap-1">
                     <span className="muted-label tabular">L{lvl}</span>
                     {Array.from({ length: pool.max }).map((_, idx) => {
                       const filled = idx < pool.current;
@@ -658,15 +658,15 @@ export function ActionEconomyBoard({
                 .sort((a, b) => (a.spellLevel ?? 0) - (b.spellLevel ?? 0) || a.name.localeCompare(b.name));
               if (allSpells.length === 0) {
                 return (
-                  <div className="forge-muted" style={{ fontSize: 12 }}>
+                  <div className="forge-muted text-md">
                     No spells on your sheet yet. Click <strong>+ Add Spell</strong> above to browse 650+ spells.
                   </div>
                 );
               }
               return (
                 <div className="forge-stack" style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-subtle)', gap: 4 }}>
-                  <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
-                    <div className="forge-section-label" style={{ marginBottom: 0 }}>
+                  <div className="forge-row-between wrap gap-2">
+                    <div className="forge-section-label mb-0">
                       SPELLBOOK &amp; PREPARATION ({allSpells.length})
                     </div>
                     <div className="pill-row">
@@ -688,8 +688,8 @@ export function ActionEconomyBoard({
                   </div>
                   {allSpells.map((sp) => (
                     <div key={sp.id} className="forge-list-row" style={{ padding: '4px 6px' }}>
-                      <div className="forge-row" style={{ gap: 6, flexWrap: 'wrap' }}>
-                        <span className="badge tabular" style={{ fontSize: 10 }}>
+                      <div className="forge-row gap-2 wrap">
+                        <span className="badge tabular text-xs">
                           {(sp.spellLevel ?? 0) === 0 ? 'Cantrip' : `L${sp.spellLevel}`}
                         </span>
                         {onInspectItem ? (
@@ -725,7 +725,7 @@ export function ActionEconomyBoard({
                           {sp.prepared ? 'Prepared ★' : 'Prepare'}
                         </button>
                       ) : (
-                        <span className="badge" style={{ fontSize: 10 }}>
+                        <span className="badge text-xs">
                           {sp.alwaysPrepared ? 'Always Prep' : 'Ready'}
                         </span>
                       )}
@@ -795,24 +795,24 @@ export function ActionEconomyBoard({
               <div className="subpanel forge-stack" style={{ padding: 8, gap: 6 }}>
                 <div className="forge-section-label">PROFICIENCIES &amp; LANGUAGES</div>
                 {rawChar.structuredProficiencies.armor.length > 0 && (
-                  <div className="forge-row" style={{ flexWrap: 'wrap', gap: 4 }}>
-                    <span className="forge-muted" style={{ fontSize: 11 }}>Armor:</span>
+                  <div className="forge-row wrap gap-1">
+                    <span className="forge-muted text-sm">Armor:</span>
                     {rawChar.structuredProficiencies.armor.map((a) => (
                       <span key={a} className="badge">{a}</span>
                     ))}
                   </div>
                 )}
                 {rawChar.structuredProficiencies.weapons.length > 0 && (
-                  <div className="forge-row" style={{ flexWrap: 'wrap', gap: 4 }}>
-                    <span className="forge-muted" style={{ fontSize: 11 }}>Weapons:</span>
+                  <div className="forge-row wrap gap-1">
+                    <span className="forge-muted text-sm">Weapons:</span>
                     {rawChar.structuredProficiencies.weapons.map((w) => (
                       <span key={w} className="badge">{w}</span>
                     ))}
                   </div>
                 )}
                 {rawChar.structuredProficiencies.tools.length > 0 && (
-                  <div className="forge-row" style={{ flexWrap: 'wrap', gap: 4 }}>
-                    <span className="forge-muted" style={{ fontSize: 11 }}>Tools:</span>
+                  <div className="forge-row wrap gap-1">
+                    <span className="forge-muted text-sm">Tools:</span>
                     {rawChar.structuredProficiencies.tools.map((t) => (
                       <button
                         key={t}
@@ -829,8 +829,8 @@ export function ActionEconomyBoard({
                   </div>
                 )}
                 {rawChar.structuredProficiencies.languages.length > 0 && (
-                  <div className="forge-row" style={{ flexWrap: 'wrap', gap: 4 }}>
-                    <span className="forge-muted" style={{ fontSize: 11 }}>Languages:</span>
+                  <div className="forge-row wrap gap-1">
+                    <span className="forge-muted text-sm">Languages:</span>
                     {rawChar.structuredProficiencies.languages.map((l) => (
                       <span key={l} className="badge">{l}</span>
                     ))}
@@ -842,7 +842,7 @@ export function ActionEconomyBoard({
               Object.values(rawChar.details).some((v) => Boolean(v && v.trim())) && (
                 <div className="subpanel forge-stack" style={{ padding: 8, gap: 4 }}>
                   <div className="forge-section-label">CHARACTER DETAILS</div>
-                  <div className="pill-row" style={{ fontSize: 11 }}>
+                  <div className="pill-row text-sm">
                     {rawChar.details.age && <span className="badge">Age: {rawChar.details.age}</span>}
                     {rawChar.details.height && <span className="badge">Height: {rawChar.details.height}</span>}
                     {rawChar.details.weight && <span className="badge">Weight: {rawChar.details.weight}</span>}
@@ -850,12 +850,12 @@ export function ActionEconomyBoard({
                     {rawChar.details.skin && <span className="badge">Skin: {rawChar.details.skin}</span>}
                     {rawChar.details.hair && <span className="badge">Hair: {rawChar.details.hair}</span>}
                   </div>
-                  {rawChar.details.traits && <div style={{ fontSize: 12 }}><strong>Traits:</strong> {rawChar.details.traits}</div>}
-                  {rawChar.details.ideals && <div style={{ fontSize: 12 }}><strong>Ideals:</strong> {rawChar.details.ideals}</div>}
-                  {rawChar.details.bonds && <div style={{ fontSize: 12 }}><strong>Bonds:</strong> {rawChar.details.bonds}</div>}
-                  {rawChar.details.flaws && <div style={{ fontSize: 12 }}><strong>Flaws:</strong> {rawChar.details.flaws}</div>}
-                  {rawChar.details.allies && <div style={{ fontSize: 12 }}><strong>Allies:</strong> {rawChar.details.allies}</div>}
-                  {rawChar.details.backstory && <div style={{ fontSize: 12, whiteSpace: 'pre-wrap' }}><strong>Backstory:</strong> {rawChar.details.backstory}</div>}
+                  {rawChar.details.traits && <div className="text-md"><strong>Traits:</strong> {rawChar.details.traits}</div>}
+                  {rawChar.details.ideals && <div className="text-md"><strong>Ideals:</strong> {rawChar.details.ideals}</div>}
+                  {rawChar.details.bonds && <div className="text-md"><strong>Bonds:</strong> {rawChar.details.bonds}</div>}
+                  {rawChar.details.flaws && <div className="text-md"><strong>Flaws:</strong> {rawChar.details.flaws}</div>}
+                  {rawChar.details.allies && <div className="text-md"><strong>Allies:</strong> {rawChar.details.allies}</div>}
+                  {rawChar.details.backstory && <div className="text-md pre-wrap"><strong>Backstory:</strong> {rawChar.details.backstory}</div>}
                 </div>
               )}
             {featItems.length === 0 ? (
@@ -888,10 +888,10 @@ export function ActionEconomyBoard({
                       <strong>{feat.name}</strong>
                     )}{' '}
                     <span className="badge">{feat.category.toUpperCase()}</span>
-                    {feat.source && <span className="forge-muted" style={{ fontSize: 11 }}> • {feat.source}</span>}
+                    {feat.source && <span className="forge-muted text-sm"> • {feat.source}</span>}
                   </div>
                   {feat.entries.length > 0 && (
-                    <div className="forge-muted" style={{ fontSize: 12 }}>
+                    <div className="forge-muted text-md">
                       {renderTaggedDescription(feat.name, feat.entries[0] ?? '')}
                     </div>
                   )}
@@ -902,15 +902,15 @@ export function ActionEconomyBoard({
               <div className="subpanel forge-stack" style={{ padding: 8 }}>
                 <div className="forge-section-label">PROFICIENCIES &amp; NOTES</div>
                 {rawChar.notes.proficiencies && (
-                  <div style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>
+                  <div className="pre-wrap text-md">
                     <strong>Proficiencies:</strong> {rawChar.notes.proficiencies}
                   </div>
                 )}
                 {rawChar.notes.bio && (
-                  <div style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>{rawChar.notes.bio}</div>
+                  <div className="pre-wrap text-md">{rawChar.notes.bio}</div>
                 )}
                 {rawChar.notes.campaign && (
-                  <div style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>{rawChar.notes.campaign}</div>
+                  <div className="pre-wrap text-md">{rawChar.notes.campaign}</div>
                 )}
               </div>
             )}

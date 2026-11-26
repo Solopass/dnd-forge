@@ -167,7 +167,7 @@ export function SettingsModal({
               <div className="forge-section-label">THEME STUDIO &amp; MODULAR LAYOUTS</div>
               <span className="badge">{activeThemeName ?? 'Obsidian Forge'}</span>
             </div>
-            <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 8 }}>
+            <div className="forge-row-between wrap gap-3">
               <div className="forge-muted" style={{ flex: 1, minWidth: 220 }}>
                 Choose from 8 built-in themes, build custom colors/fonts/surfaces with live WCAG contrast checks, or share your Theme + Layout setup.
               </div>
@@ -191,7 +191,7 @@ export function SettingsModal({
               <div className="forge-section-label">RULESET &amp; HOUSE RULES</div>
               <span className="badge">{rulesetPresetLabel ?? '2024 Revised'}</span>
             </div>
-            <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 8 }}>
+            <div className="forge-row-between wrap gap-3">
               <div className="forge-muted" style={{ flex: 1, minWidth: 220 }}>
                 Compare 2014 vs 2024 rules (Exhaustion, Healing Potions, Weapon Mastery, Surprise, Flanking, Crits) or mix &amp; match your own custom ruleset.
               </div>
@@ -275,7 +275,7 @@ export function SettingsModal({
           <div className="card-header">
             <div className="forge-section-label">PRINT &amp; DATA EXPORT</div>
           </div>
-          <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+          <div className="forge-row wrap">
             <button
               type="button"
               className="btn btn-primary"
@@ -301,12 +301,12 @@ export function SettingsModal({
               Export Full Backup (.json)
             </button>
             {onImportBackup && (
-              <label className="btn" style={{ cursor: 'pointer' }}>
+              <label className="btn clickable">
                 Restore Backup (.json)
                 <input
                   type="file"
                   accept=".json,application/json"
-                  style={{ display: 'none' }}
+                  className="is-hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) void onImportBackup(file);
@@ -325,10 +325,10 @@ export function SettingsModal({
           <div className="card-header">
             <div className="forge-section-label">INITIATIVE ALERT SOUND (OPTIONAL)</div>
           </div>
-          <div className="forge-muted" style={{ fontSize: 12 }}>
+          <div className="forge-muted text-md">
             Optional audio URL (<code>.mp3</code>, <code>.wav</code>, <code>.ogg</code>) played on all connected players&apos; browsers when the DM clicks <strong>Start! (Roll Init)</strong>. Leave blank to use the built-in horn fanfare.
           </div>
-          <div className="forge-row" style={{ gap: 6, flexWrap: 'wrap' }}>
+          <div className="forge-row gap-2 wrap">
             <input
               type="text"
               className="forge-input"
@@ -364,14 +364,13 @@ export function SettingsModal({
           <div className="card-header">
             <div className="forge-section-label">GITHUB CAMPAIGN REPO SYNC (OPTIONAL)</div>
           </div>
-          <div className="forge-muted" style={{ fontSize: 12 }}>
+          <div className="forge-muted text-md">
             Optional fine-grained Personal Access Token (Contents: Read &amp; Write) for syncing private campaign repos or pushing characters directly from GitHub Pages. Stored <strong>only</strong> in this browser&apos;s <code>localStorage</code>.
           </div>
-          <div className="forge-row" style={{ gap: 6 }}>
+          <div className="forge-row gap-2">
             <input
               type="password"
-              className="forge-input"
-              style={{ flex: 1 }}
+              className="forge-input flex-1"
               placeholder="github_pat_..."
               value={githubPat}
               onChange={(e) => {

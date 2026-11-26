@@ -53,13 +53,13 @@ export function DmLayout({ store, ui, panels }: AppLayoutProps) {
           const resolved = computeCharacterSheet(pc);
           return (
             <div key={pc.id} className="dm-party-mini-card">
-              <div className="forge-row-between" style={{ gap: 4 }}>
+              <div className="forge-row-between gap-1">
                 <strong style={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {pc.name}
                 </strong>
                 <span className="badge tabular">AC {resolved.ac.final}</span>
               </div>
-              <div className="forge-row-between tabular forge-muted" style={{ fontSize: 11 }}>
+              <div className="forge-row-between tabular forge-muted text-sm">
                 <span>HP {resolved.hp.current}/{resolved.hp.max}</span>
                 <span>PP {resolved.passivePerception}</span>
               </div>

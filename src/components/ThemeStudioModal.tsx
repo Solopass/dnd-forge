@@ -134,7 +134,7 @@ export function ThemeStudioModal({
   return (
     <ModalDialog isOpen={isOpen} onClose={onClose} title="Theme Studio, Layouts & Setup Sharing" wide>
       <div className="forge-stack">
-        <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 8 }}>
+        <div className="forge-row-between wrap gap-3">
           <div className="pill-row">
             <button
               type="button"
@@ -221,7 +221,7 @@ export function ThemeStudioModal({
                         />
                       ))}
                     </div>
-                    <div className="forge-row" style={{ flexWrap: 'wrap', gap: 6 }}>
+                    <div className="forge-row wrap gap-2">
                       <button
                         type="button"
                         className={`btn ${isActive ? 'btn-primary' : ''}`}
@@ -271,7 +271,7 @@ export function ThemeStudioModal({
         {tab === 'editor' && (
           <div className="forge-stack">
             <div className="subpanel forge-row-between" style={{ padding: '8px 12px', flexWrap: 'wrap', gap: 8 }}>
-              <div className="forge-row" style={{ gap: 8, flexWrap: 'wrap' }}>
+              <div className="forge-row gap-3 wrap">
                 <span className="forge-section-label">LIVE CONTRAST CHECK</span>
                 <span
                   className="badge tabular"
@@ -330,7 +330,7 @@ export function ThemeStudioModal({
               >
                 {COLOR_FIELDS.map(({ key, label }) => (
                   <label key={key} className="forge-row-between subpanel" style={{ padding: '5px 8px' }}>
-                    <span style={{ fontSize: 12 }}>{label}</span>
+                    <span className="text-md">{label}</span>
                     <input
                       type="color"
                       aria-label={label}
@@ -513,7 +513,7 @@ export function ThemeStudioModal({
               </div>
             </div>
 
-            <div className="card forge-row" style={{ flexWrap: 'wrap' }}>
+            <div className="card forge-row wrap">
               <input
                 aria-label="Custom theme name"
                 type="text"
@@ -551,10 +551,10 @@ export function ThemeStudioModal({
         {tab === 'share' && (
           <div className="forge-stack">
             <div className="card forge-stack">
-              <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 8 }}>
+              <div className="forge-row-between wrap gap-3">
                 <div>
                   <div className="forge-section-label">MODULAR BLOCK LAYOUT PRESETS</div>
-                  <div className="forge-muted" style={{ fontSize: 12 }}>
+                  <div className="forge-muted text-md">
                     Active Layout: <strong>{activeLayout.name}</strong>
                   </div>
                 </div>
@@ -588,7 +588,7 @@ export function ThemeStudioModal({
 
             <div className="card forge-stack">
               <div className="forge-section-label">SHARE OR IMPORT SETUP (THEME + LAYOUT)</div>
-              <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+              <div className="forge-row wrap">
                 <button type="button" className="btn btn-primary" onClick={() => void handleCopyShareCode()}>
                   Copy Share Code (FORGE-UI:...)
                 </button>
@@ -608,16 +608,16 @@ export function ThemeStudioModal({
                 value={shareCodeInput}
                 onChange={(e) => setShareCodeInput(e.target.value)}
               />
-              <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+              <div className="forge-row wrap">
                 <button type="button" className="btn" onClick={handlePreviewShareInput}>
                   Preview Shared Setup
                 </button>
-                <label className="btn" style={{ cursor: 'pointer' }}>
+                <label className="btn clickable">
                   Load Setup .json File
                   <input
                     type="file"
                     accept=".json,application/json"
-                    style={{ display: 'none' }}
+                    className="is-hidden"
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
@@ -643,7 +643,7 @@ export function ThemeStudioModal({
                     <span className="badge">Theme: {decodedPreview.theme.name}</span>{' '}
                     <span className="badge">Layout: {decodedPreview.layout.name}</span>
                   </div>
-                  <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+                  <div className="forge-row wrap">
                     <button
                       type="button"
                       className="btn btn-primary"

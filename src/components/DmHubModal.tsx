@@ -265,8 +265,8 @@ export function DmHubModal({
 
   // The app header already has the campaign picker, so the embedded DM Studio bar omits it.
   const renderCampaignBar = (showPicker: boolean) => (
-    <div className="card forge-row-between" style={{ flexWrap: 'wrap', gap: 8 }}>
-      <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+    <div className="card forge-row-between wrap gap-3">
+      <div className="forge-row wrap">
         {showPicker && (
           <select
             aria-label="Active campaign"
@@ -312,8 +312,8 @@ export function DmHubModal({
           </button>
         )}
       </div>
-      <div className="forge-row" style={{ flexWrap: 'wrap' }}>
-        <span className="tabular forge-muted" style={{ fontSize: 12 }}>
+      <div className="forge-row wrap">
+        <span className="tabular forge-muted text-md">
           {formatWorldClock(campaign.clock)} • {campaign.clock.weather}
         </span>
         <button
@@ -362,16 +362,16 @@ export function DmHubModal({
         {tab === 'party' && (
           <div className="forge-stack">
             <div className="card forge-stack">
-              <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
-                <span className="forge-section-label" style={{ marginBottom: 0 }}>
+              <div className="forge-row-between wrap gap-2">
+                <span className="forge-section-label mb-0">
                   PARTY CHEAT SHEET ({characterList.length} PCs)
                 </span>
-                <span className="forge-muted" style={{ fontSize: 11 }}>
+                <span className="forge-muted text-sm">
                   Passive Perception, Insight, AC, HP &amp; Spell Save DC at a glance
                 </span>
               </div>
               {characterList.length === 0 ? (
-                <div className="forge-muted" style={{ fontSize: 12 }}>No player characters saved yet.</div>
+                <div className="forge-muted text-md">No player characters saved yet.</div>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
@@ -393,7 +393,7 @@ export function DmHubModal({
                           <tr key={pc.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                             <td style={{ padding: '5px 6px' }}>
                               <strong>{pc.name}</strong>{' '}
-                              <span className="forge-muted" style={{ fontSize: 11 }}>
+                              <span className="forge-muted text-sm">
                                 ({pc.classes.map((c) => `${c.className} ${c.level}`).join('/')})
                               </span>
                             </td>
@@ -426,11 +426,11 @@ export function DmHubModal({
 
             {onPromptPartyRoll && (
               <div className="card forge-stack">
-                <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
-                  <span className="forge-section-label" style={{ marginBottom: 0 }}>
+                <div className="forge-row-between wrap gap-2">
+                  <span className="forge-section-label mb-0">
                     ONE-CLICK LIVE TABLE ROLL PROMPTS
                   </span>
-                  <label className="forge-row" style={{ gap: 6, fontSize: 11 }}>
+                  <label className="forge-row gap-2 text-sm">
                     <span className="forge-muted">DC:</span>
                     <input
                       type="number"
@@ -478,8 +478,8 @@ export function DmHubModal({
 
             {onSyncCampaignRepo && (
               <div className="card forge-stack">
-                <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
-                  <span className="forge-section-label" style={{ marginBottom: 0 }}>
+                <div className="forge-row-between wrap gap-2">
+                  <span className="forge-section-label mb-0">
                     EXTERNAL GITHUB REPO (<code>campaign-pack.json</code>)
                   </span>
                   {campaign.externalRepo?.lastSyncedAt && (
@@ -488,13 +488,12 @@ export function DmHubModal({
                     </span>
                   )}
                 </div>
-                <div className="forge-muted" style={{ fontSize: 12 }}>
+                <div className="forge-muted text-md">
                   Link a GitHub repo (<code>owner/repo</code>) for this campaign&apos;s binder entries, custom DLC, and characters. Use Pack Path to keep multiple campaigns in one shared repo.
                 </div>
                 <form
                   key={`${campaign.id}-${campaign.externalRepo?.lastSyncedAt ?? 'unsynced'}`}
-                  className="forge-row"
-                  style={{ flexWrap: 'wrap', gap: 6 }}
+                  className="forge-row wrap gap-2"
                   onSubmit={(e) => {
                     e.preventDefault();
                     const fd = new FormData(e.currentTarget);
@@ -633,7 +632,7 @@ export function DmHubModal({
                       <summary>
                         <span>
                           [{entry.category.toUpperCase()}] <strong>{entry.title}</strong>{' '}
-                          <span className="forge-muted" style={{ fontSize: 11 }}>
+                          <span className="forge-muted text-sm">
                             — {entry.summary}
                           </span>
                         </span>
@@ -646,10 +645,10 @@ export function DmHubModal({
                             style={{ maxWidth: '100%', maxHeight: 160, objectFit: 'contain', borderRadius: 6 }}
                           />
                         )}
-                        <div style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>
+                        <div className="pre-wrap text-md">
                           {entry.body || entry.summary}
                         </div>
-                        <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+                        <div className="forge-row wrap">
                           {onShareHandout && (
                             <button
                               type="button"
@@ -753,13 +752,13 @@ export function DmHubModal({
                   placeholder="Motivations, clues, secret doors, box text..."
                 />
               </label>
-              <div className="forge-row" style={{ flexWrap: 'wrap' }}>
-                <label className="btn" style={{ cursor: 'pointer' }}>
+              <div className="forge-row wrap">
+                <label className="btn clickable">
                   Attach Handout / Portrait Image
                   <input
                     type="file"
                     accept="image/*"
-                    style={{ display: 'none' }}
+                    className="is-hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
@@ -854,11 +853,10 @@ export function DmHubModal({
                 <input
                   aria-label="Custom timer name"
                   type="text"
-                  className="forge-input"
+                  className="forge-input flex-1"
                   value={timerLabel}
                   onChange={(e) => setTimerLabel(e.target.value)}
                   placeholder="Timer name (e.g. Potion Effect)"
-                  style={{ flex: 1 }}
                 />
                 <input
                   aria-label="Timer minutes"
@@ -894,7 +892,7 @@ export function DmHubModal({
           </div>
 
             <div className="card forge-stack">
-              <div className="forge-row-between" style={{ flexWrap: 'wrap' }}>
+              <div className="forge-row-between wrap">
                 <div className="forge-section-label">DOWNTIME, CRAFTING &amp; BASTIONS</div>
                 {onAdvanceDowntime && (
                   <button
@@ -908,7 +906,7 @@ export function DmHubModal({
               </div>
 
               {onUpsertDowntime && (
-                <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+                <div className="forge-row wrap">
                   <input
                     aria-label="Downtime owner"
                     type="text"
@@ -990,7 +988,7 @@ export function DmHubModal({
                               </span>
                             )}
                           </div>
-                          <div className="forge-muted" style={{ fontSize: 11 }}>
+                          <div className="forge-muted text-sm">
                             Owner: {proj.ownerName} • {proj.daysDone} / {proj.daysTotal} days ({pct}%)
                           </div>
                         </div>
@@ -1013,7 +1011,7 @@ export function DmHubModal({
             <div className="forge-grid-2" style={{ alignItems: 'start' }}>
               <div className="card forge-stack">
                 <div className="forge-section-label">SRD TREASURE &amp; HOARD ROLLER</div>
-                <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+                <div className="forge-row wrap">
                   <select
                     aria-label="Challenge tier"
                     className="forge-input"
@@ -1061,7 +1059,7 @@ export function DmHubModal({
                         Magic Items: {lastTreasure.magicItems.join(', ')}
                       </div>
                     )}
-                    <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+                    <div className="forge-row wrap">
                       <button
                         type="button"
                         className="btn btn-primary"
@@ -1100,8 +1098,8 @@ export function DmHubModal({
                     Distribute All GP
                   </button>
                 </div>
-                <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
-                  <div className="forge-muted" style={{ fontSize: 12 }}>
+                <div className="forge-row-between wrap gap-2">
+                  <div className="forge-muted text-md">
                     Stash Items ({campaign.partyLootItems.length})
                   </div>
                   {onAssignLootToCharacter && characterList.length > 0 && campaign.partyLootItems.length > 0 && (
@@ -1121,12 +1119,12 @@ export function DmHubModal({
                   )}
                 </div>
                 {campaign.partyLootItems.length === 0 ? (
-                  <div className="forge-muted" style={{ fontSize: 12 }}>No items in Party Stash yet.</div>
+                  <div className="forge-muted text-md">No items in Party Stash yet.</div>
                 ) : (
                   <div className="forge-stack" style={{ maxHeight: 170, overflowY: 'auto' }}>
                     {campaign.partyLootItems.map((itemName, idx) => (
                       <div key={`${itemName}-${idx}`} className="forge-list-row">
-                        <span style={{ fontSize: 12 }}>{itemName}</span>
+                        <span className="text-md">{itemName}</span>
                         {onAssignLootToCharacter && characterList.length > 0 && (
                           <button
                             type="button"
@@ -1149,8 +1147,8 @@ export function DmHubModal({
             </div>
 
             <div className="card forge-stack">
-              <div className="forge-row-between" style={{ flexWrap: 'wrap' }}>
-                <span className="forge-section-label" style={{ marginBottom: 0 }}>
+              <div className="forge-row-between wrap">
+                <span className="forge-section-label mb-0">
                   MERCHANT SHOP GENERATOR
                 </span>
                 <div className="pill-row">
@@ -1288,7 +1286,7 @@ export function DmHubModal({
                 <div className="forge-muted tabular">
                   Current Encounter Total: <strong>{encDiff.rawXp.toLocaleString()} XP</strong> ({Math.floor(encDiff.rawXp / Math.max(1, characterList.length)).toLocaleString()} XP per PC) • Campaign XP Earned: {campaign.partyXpTotal.toLocaleString()}
                 </div>
-                <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+                <div className="forge-row wrap">
                   <input
                     aria-label="XP amount to award party"
                     type="number"
@@ -1328,7 +1326,7 @@ export function DmHubModal({
                     Milestone Level-Up (+1 All PCs)
                   </button>
                 ) : (
-                  <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+                  <div className="forge-row wrap">
                     <button
                       type="button"
                       className="btn btn-primary"
@@ -1392,7 +1390,7 @@ export function DmHubModal({
           <div className="forge-grid-2" style={{ alignItems: 'start' }}>
             <div className="card forge-stack">
               <div className="forge-section-label">ONE-CLICK NPC &amp; TAVERN GENERATORS</div>
-              <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+              <div className="forge-row wrap">
                 <button
                   type="button"
                   className="btn btn-primary"
@@ -1412,7 +1410,7 @@ export function DmHubModal({
                 <div className="subpanel forge-stack" style={{ padding: 10 }}>
                   <strong>{previewNpc.title}</strong>
                   <span className="muted-label">{previewNpc.summary}</span>
-                  <div style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>{previewNpc.body}</div>
+                  <div className="pre-wrap text-md">{previewNpc.body}</div>
                   <button
                     type="button"
                     className="btn"
@@ -1429,7 +1427,7 @@ export function DmHubModal({
                 <div className="subpanel forge-stack" style={{ padding: 10 }}>
                   <strong>{previewTavern.title}</strong>
                   <span className="muted-label">{previewTavern.summary}</span>
-                  <div style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>{previewTavern.body}</div>
+                  <div className="pre-wrap text-md">{previewTavern.body}</div>
                   <button
                     type="button"
                     className="btn"
@@ -1446,7 +1444,7 @@ export function DmHubModal({
 
             <div className="card forge-stack">
               <div className="forge-section-label">RANDOM ENCOUNTER GENERATOR</div>
-              <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+              <div className="forge-row wrap">
                 <select
                   aria-label="Encounter environment"
                   className="forge-input"
@@ -1481,7 +1479,7 @@ export function DmHubModal({
                       {previewEnc.difficulty} ({previewEnc.adjustedXp} XP)
                     </span>
                   </div>
-                  <div style={{ fontSize: 12 }}>{previewEnc.hook}</div>
+                  <div className="text-md">{previewEnc.hook}</div>
                   {onSpawnImprovEncounter && (
                     <button
                       type="button"
@@ -1499,14 +1497,14 @@ export function DmHubModal({
 
         {tab === 'worldmap' && (
           <div className="forge-stack">
-            <div className="card forge-row-between" style={{ flexWrap: 'wrap', gap: 8 }}>
-              <div className="forge-row" style={{ flexWrap: 'wrap' }}>
-                <label className="btn" style={{ cursor: 'pointer' }}>
+            <div className="card forge-row-between wrap gap-3">
+              <div className="forge-row wrap">
+                <label className="btn clickable">
                   Upload World / Region Map
                   <input
                     type="file"
                     accept="image/*"
-                    style={{ display: 'none' }}
+                    className="is-hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
@@ -1525,7 +1523,7 @@ export function DmHubModal({
                   </button>
                 )}
               </div>
-              <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+              <div className="forge-row wrap">
                 <input
                   type="text"
                   className="forge-input"
@@ -1645,7 +1643,7 @@ export function DmHubModal({
                 ? campaign.entries.find((e) => e.id === activePin.entryId)
                 : undefined;
               return (
-                <div className="card forge-row-between" style={{ flexWrap: 'wrap', gap: 8 }}>
+                <div className="card forge-row-between wrap gap-3">
                   <div>
                     <strong>{activePin.label}</strong>{' '}
                     <span className="badge">{activePin.kind.toUpperCase()}</span>
@@ -1747,13 +1745,13 @@ export function DmHubModal({
                   </button>
                 ))}
               </div>
-              <div className="forge-row" style={{ flexWrap: 'wrap' }}>
-                <label className="btn" style={{ cursor: 'pointer' }}>
+              <div className="forge-row wrap">
+                <label className="btn clickable">
                   Load Local Audio Track (MP3/WAV/OGG)
                   <input
                     type="file"
                     accept="audio/*"
-                    style={{ display: 'none' }}
+                    className="is-hidden"
                     onChange={(e) => {
                       const f = e.target.files?.[0];
                       if (!f) return;

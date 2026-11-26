@@ -37,7 +37,7 @@ export function AppBanners({ store, ui }: AppSectionProps) {
               <input
                 type="file"
                 accept="image/*"
-                style={{ display: 'none' }}
+                className="is-hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
@@ -54,12 +54,12 @@ export function AppBanners({ store, ui }: AppSectionProps) {
               <div style={{ fontWeight: 800, fontSize: 15, lineHeight: 1.15 }}>
                 {store.rawChar.name}
               </div>
-              <div className="forge-muted" style={{ fontSize: 11 }}>
+              <div className="forge-muted text-sm">
                 {store.rawChar.species} • {classSummary} • Level {charLevel}
               </div>
             </div>
           </div>
-          <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+          <div className="forge-row wrap">
             <button type="button" className="btn" onClick={() => setShortRestOpen(true)}>
               Short Rest
             </button>
@@ -138,7 +138,7 @@ export function AppBanners({ store, ui }: AppSectionProps) {
               </span>
               <span className="stat-tile-val tabular">{store.resolvedSheet.ac.final}</span>
             </div>
-            <button type="button" className="beyond-stat-box" onClick={store.rollCharacterInitiative} style={{ cursor: 'pointer' }}>
+            <button type="button" className="beyond-stat-box clickable" onClick={store.rollCharacterInitiative}>
               <span className="stat-tile-label">INIT</span>
               <span className="stat-tile-val tabular">
                 {store.resolvedSheet.initiative.final >= 0 ? `+${store.resolvedSheet.initiative.final}` : store.resolvedSheet.initiative.final}
@@ -205,7 +205,7 @@ export function AppBanners({ store, ui }: AppSectionProps) {
             {store.initiativeAlert.senderName} started{' '}
             <strong>{store.initiativeAlert.encounterName}</strong>
           </span>
-          <div className="forge-row" style={{ gap: 6 }}>
+          <div className="forge-row gap-2">
             <button
               type="button"
               className="btn btn-primary tabular"
@@ -241,7 +241,7 @@ export function AppBanners({ store, ui }: AppSectionProps) {
             flexShrink: 0,
           }}
         >
-          <div className="forge-row" style={{ gap: 8 }}>
+          <div className="forge-row gap-3">
             <span className="badge" style={{ color: 'var(--accent-red)', borderColor: 'var(--accent-red)' }}>
               CONCENTRATION CHECK
             </span>
@@ -249,7 +249,7 @@ export function AppBanners({ store, ui }: AppSectionProps) {
               Roll Constitution saving throw vs <strong className="tabular">DC {store.pendingConcDc}</strong>
             </span>
           </div>
-          <div className="forge-row" style={{ gap: 6 }}>
+          <div className="forge-row gap-2">
             <button
               type="button"
               className="btn btn-primary"
@@ -277,7 +277,7 @@ export function AppBanners({ store, ui }: AppSectionProps) {
             gap: 8,
           }}
         >
-          <div className="forge-row" style={{ gap: 8, flexWrap: 'wrap' }}>
+          <div className="forge-row gap-3 wrap">
             <span className="badge" style={{ color: 'var(--accent-amber)', borderColor: 'rgba(245, 158, 11, 0.5)' }}>
               DM ROLL REQUEST
             </span>
@@ -287,7 +287,7 @@ export function AppBanners({ store, ui }: AppSectionProps) {
               <span className="badge tabular">DC {store.pendingRollRequest.dc}</span>
             )}
           </div>
-          <div className="forge-row" style={{ gap: 6 }}>
+          <div className="forge-row gap-2">
             <button
               type="button"
               className="btn btn-primary"

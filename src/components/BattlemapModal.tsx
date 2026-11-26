@@ -423,7 +423,7 @@ export function BattlemapModal({
                 ? 'rgba(210, 153, 34, 0.35)'
                 : 'rgba(88, 166, 255, 0.35)';
           return (
-            <g key={`ter-${cell.x}-${cell.y}`} style={{ pointerEvents: 'none' }}>
+            <g key={`ter-${cell.x}-${cell.y}`} className="no-pointer">
               <rect
                 x={cell.x * CELL_PX + 1}
                 y={cell.y * CELL_PX + 1}
@@ -527,15 +527,15 @@ export function BattlemapModal({
           const cy = hoverCell.y * CELL_PX + CELL_PX / 2;
           const pxSize = (radiusFeet / gridFeet) * CELL_PX;
           if (mode === 'sphere') {
-            return <circle cx={cx} cy={cy} r={pxSize} fill="rgba(248, 81, 73, 0.14)" stroke="#f85149" strokeWidth={1.5} strokeDasharray="5 4" style={{ pointerEvents: 'none' }} />;
+            return <circle cx={cx} cy={cy} r={pxSize} fill="rgba(248, 81, 73, 0.14)" stroke="#f85149" strokeWidth={1.5} strokeDasharray="5 4" className="no-pointer" />;
           }
           if (mode === 'cone') {
-            return <polygon points={`${cx},${cy} ${cx + pxSize},${cy - pxSize * 0.55} ${cx + pxSize},${cy + pxSize * 0.55}`} fill="rgba(210, 153, 34, 0.14)" stroke="#d29922" strokeWidth={1.5} strokeDasharray="5 4" style={{ pointerEvents: 'none' }} />;
+            return <polygon points={`${cx},${cy} ${cx + pxSize},${cy - pxSize * 0.55} ${cx + pxSize},${cy + pxSize * 0.55}`} fill="rgba(210, 153, 34, 0.14)" stroke="#d29922" strokeWidth={1.5} strokeDasharray="5 4" className="no-pointer" />;
           }
           if (mode === 'line') {
-            return <rect x={cx} y={cy - CELL_PX * 0.4} width={pxSize} height={CELL_PX * 0.8} fill="rgba(88, 166, 255, 0.14)" stroke="#58a6ff" strokeWidth={1.5} strokeDasharray="5 4" style={{ pointerEvents: 'none' }} />;
+            return <rect x={cx} y={cy - CELL_PX * 0.4} width={pxSize} height={CELL_PX * 0.8} fill="rgba(88, 166, 255, 0.14)" stroke="#58a6ff" strokeWidth={1.5} strokeDasharray="5 4" className="no-pointer" />;
           }
-          return <rect x={hoverCell.x * CELL_PX} y={hoverCell.y * CELL_PX} width={pxSize} height={pxSize} fill="rgba(188, 140, 255, 0.14)" stroke="#bc8cff" strokeWidth={1.5} strokeDasharray="5 4" style={{ pointerEvents: 'none' }} />;
+          return <rect x={hoverCell.x * CELL_PX} y={hoverCell.y * CELL_PX} width={pxSize} height={pxSize} fill="rgba(188, 140, 255, 0.14)" stroke="#bc8cff" strokeWidth={1.5} strokeDasharray="5 4" className="no-pointer" />;
         })()}
 
         {/* Freehand Sketches */}
@@ -548,7 +548,7 @@ export function BattlemapModal({
             strokeLinecap="round"
             strokeLinejoin="round"
             points={stroke.points.map((p) => `${p.x},${p.y}`).join(' ')}
-            style={{ pointerEvents: 'none' }}
+            className="no-pointer"
           />
         ))}
 
@@ -690,7 +690,7 @@ export function BattlemapModal({
                   width={CELL_PX}
                   height={CELL_PX}
                   fill={playerView ? 'rgba(4, 7, 12, 0.9)' : 'rgba(4, 7, 12, 0.36)'}
-                  style={{ pointerEvents: 'none' }}
+                  className="no-pointer"
                 />
               );
             })
@@ -711,14 +711,14 @@ export function BattlemapModal({
               height={CELL_PX}
               fill={playerView ? '#05070b' : 'rgba(13, 17, 23, 0.56)'}
               stroke={playerView ? 'none' : 'rgba(139, 148, 158, 0.2)'}
-              style={{ pointerEvents: 'none' }}
+              className="no-pointer"
             />
           );
         })}
 
         {/* Live Map Pings */}
         {activePings.map((ping) => (
-          <g key={ping.id} style={{ pointerEvents: 'none' }}>
+          <g key={ping.id} className="no-pointer">
             <circle
               cx={ping.x * CELL_PX + CELL_PX / 2}
               cy={ping.y * CELL_PX + CELL_PX / 2}
@@ -742,7 +742,7 @@ export function BattlemapModal({
 
         {/* Measurement Ruler */}
         {measureStart && measureEnd && (
-          <g style={{ pointerEvents: 'none' }}>
+          <g className="no-pointer">
             <line
               x1={measureStart.x * CELL_PX + CELL_PX / 2}
               y1={measureStart.y * CELL_PX + CELL_PX / 2}
@@ -783,7 +783,7 @@ export function BattlemapModal({
 
   const fullVttContent = (
     <div className="forge-stack">
-      <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+      <div className="forge-row-between wrap gap-2">
         <div className="toolbar-group">
           {(
             [
@@ -871,7 +871,7 @@ export function BattlemapModal({
         </button>
       </div>
 
-      <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+      <div className="forge-row-between wrap gap-2">
         <div className="toolbar-group">
           <button
             type="button"
@@ -957,8 +957,8 @@ export function BattlemapModal({
 
       {showCalibrate && (
         <div className="subpanel forge-stack" style={{ padding: 10 }}>
-          <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
-            <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+          <div className="forge-row-between wrap gap-2">
+            <div className="forge-row wrap">
               <select
                 aria-label="Load preset battlemap"
                 className="forge-input"
@@ -974,12 +974,12 @@ export function BattlemapModal({
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
-              <label className="btn" style={{ cursor: 'pointer' }}>
+              <label className="btn clickable">
                 Upload Map
                 <input
                   type="file"
                   accept="image/*"
-                  style={{ display: 'none' }}
+                  className="is-hidden"
                   onChange={(e) => {
                     handleFileDataUrl(e.target.files?.[0], (url) => onSetMapImage(url));
                     e.target.value = '';
@@ -993,7 +993,7 @@ export function BattlemapModal({
               )}
             </div>
             {onSaveScene && (
-              <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+              <div className="forge-row wrap">
                 <input
                   type="text"
                   className="input"
@@ -1059,7 +1059,7 @@ export function BattlemapModal({
         {/* Selected Token Quick Actions, Portrait & Vision Editor */}
         {selectedToken && !playerView && (
           <div className="subpanel forge-row-between" style={{ padding: '6px 10px', flexWrap: 'wrap', gap: 6 }}>
-            <div className="forge-row" style={{ flexWrap: 'wrap', gap: 6 }}>
+            <div className="forge-row wrap gap-2">
               <span className="badge tabular">
                 Token: <strong>{selectedToken.name}</strong> • HP {selectedToken.hp.current}/{selectedToken.hp.max} • AC {selectedToken.ac}
               </span>
@@ -1098,21 +1098,20 @@ export function BattlemapModal({
               {onInspectToken && (
                 <button
                   type="button"
-                  className="btn"
-                  style={{ fontSize: 11 }}
+                  className="btn text-sm"
                   onClick={() => onInspectToken(selectedToken.id)}
                 >
                   Inspect
                 </button>
               )}
             </div>
-            <div className="forge-row" style={{ flexWrap: 'wrap' }}>
-              <label className="btn" style={{ cursor: 'pointer' }}>
+            <div className="forge-row wrap">
+              <label className="btn clickable">
                 Upload Portrait
                 <input
                   type="file"
                   accept="image/*"
-                  style={{ display: 'none' }}
+                  className="is-hidden"
                   onChange={(e) => {
                     handleFileDataUrl(e.target.files?.[0], (url) =>
                       onSetTokenPortrait?.(selectedToken.id, url)

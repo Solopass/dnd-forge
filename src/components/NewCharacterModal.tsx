@@ -289,7 +289,7 @@ export function NewCharacterModal({ isOpen, onClose, compendiumEntities = [], on
               </label>
             </div>
 
-            <div className="card forge-stack" style={{ gap: 6 }}>
+            <div className="card forge-stack gap-2">
               <label className="forge-field">
                 <span className="forge-label">AVATAR / TOKEN PORTRAIT URL (OPTIONAL)</span>
                 <input
@@ -300,7 +300,7 @@ export function NewCharacterModal({ isOpen, onClose, compendiumEntities = [], on
                   placeholder="./images/portraits/hero.webp or https://..."
                 />
               </label>
-              <div className="forge-muted" style={{ fontSize: 11 }}>
+              <div className="forge-muted text-sm">
                 <strong>Species:</strong> {selectedSpecies.traits.join(', ')} • <strong>Background Skills:</strong>{' '}
                 {selectedBackground.skills.join(', ')}
               </div>
@@ -310,7 +310,7 @@ export function NewCharacterModal({ isOpen, onClose, compendiumEntities = [], on
 
         {step === 'abilities' && (
           <div className="card forge-stack">
-            <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+            <div className="forge-row-between wrap gap-2">
               <span className="forge-section-label">BASE ABILITY SCORES</span>
               <div className="pill-row">
                 <button
@@ -390,7 +390,7 @@ export function NewCharacterModal({ isOpen, onClose, compendiumEntities = [], on
                         +
                       </button>
                     </div>
-                    <span className="forge-muted tabular" style={{ fontSize: 10 }}>
+                    <span className="forge-muted tabular text-xs">
                       {spBonus > 0 ? `+${spBonus} → ` : ''}{total} ({mod >= 0 ? `+${mod}` : mod})
                     </span>
                   </div>
@@ -409,7 +409,7 @@ export function NewCharacterModal({ isOpen, onClose, compendiumEntities = [], on
                       }}
                       className="forge-input tabular"
                     />
-                    <span className="forge-muted tabular" style={{ fontSize: 10 }}>
+                    <span className="forge-muted tabular text-xs">
                       {spBonus > 0 ? `+${spBonus} → ` : ''}{total} ({mod >= 0 ? `+${mod}` : mod})
                     </span>
                   </label>
@@ -417,7 +417,7 @@ export function NewCharacterModal({ isOpen, onClose, compendiumEntities = [], on
               })}
             </div>
 
-            <div className="forge-muted" style={{ fontSize: 11 }}>
+            <div className="forge-muted text-sm">
               Auto-grants <strong>{selectedClass.saveProficiencies.map((s) => s.toUpperCase()).join(' / ')}</strong> saves,
               starting gear &amp; spells, class resource pools, and{' '}
               {selectedClass.unarmoredDefense ? selectedClass.unarmoredDefense.label : `d${selectedClass.hitDie} Hit Dice`}.
@@ -427,7 +427,7 @@ export function NewCharacterModal({ isOpen, onClose, compendiumEntities = [], on
 
         {step === 'gear' && (
           <div className="card forge-stack">
-            <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 6 }}>
+            <div className="forge-row-between wrap gap-2">
               <span className="forge-section-label">ADD STARTING SPELLS, GEAR &amp; FEATS ({ruleset})</span>
               <span className="badge tabular">{extraEntityIds.length} added</span>
             </div>
@@ -460,7 +460,7 @@ export function NewCharacterModal({ isOpen, onClose, compendiumEntities = [], on
                   <div key={item.id} className="forge-list-row">
                     <div>
                       <strong>{item.name}</strong>{' '}
-                      <span className="forge-muted" style={{ fontSize: 11 }}>
+                      <span className="forge-muted text-sm">
                         {item.category === 'spell' && item.spellLevel !== undefined
                           ? item.spellLevel === 0
                             ? 'Cantrip'

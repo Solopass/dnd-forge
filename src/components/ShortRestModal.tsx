@@ -75,7 +75,7 @@ export const ShortRestModal: React.FC<ShortRestModalProps> = ({
           </div>
         </div>
 
-        <div className="forge-stack" style={{ gap: 6 }}>
+        <div className="forge-stack gap-2">
           <div className="forge-row-between">
             <span className="forge-label">HIT DICE TO SPEND</span>
             <span className="badge tabular">
@@ -98,7 +98,7 @@ export const ShortRestModal: React.FC<ShortRestModalProps> = ({
             </div>
           )}
 
-          <div className="forge-row" style={{ gap: 8 }}>
+          <div className="forge-row gap-3">
             <button
               type="button"
               className="btn"
@@ -142,7 +142,7 @@ export const ShortRestModal: React.FC<ShortRestModalProps> = ({
           </div>
         </div>
 
-        <div className="forge-muted" style={{ fontSize: 11 }}>
+        <div className="forge-muted text-sm">
           Completing a Short Rest also restores Warlock Pact Magic slots and Short-Rest resource pools.
         </div>
 

@@ -21,7 +21,7 @@ export function PrintPacket({ store, ui }: AppSectionProps) {
         {store.resolvedSheet.senses.darkvision > 0 ? ` • Darkvision ${store.resolvedSheet.senses.darkvision}ft` : ''}
       </p>
       {store.rawChar.structuredProficiencies && (
-        <p style={{ fontSize: 12 }}>
+        <p className="text-md">
           <strong>Proficiencies:</strong>{' '}
           {[
             store.rawChar.structuredProficiencies.armor.length ? `Armor (${store.rawChar.structuredProficiencies.armor.join(', ')})` : '',
@@ -34,7 +34,7 @@ export function PrintPacket({ store, ui }: AppSectionProps) {
         </p>
       )}
       {store.rawChar.details && (
-        <p style={{ fontSize: 12 }}>
+        <p className="text-md">
           {[
             store.rawChar.details.alignment,
             store.rawChar.details.traits ? `Traits: ${store.rawChar.details.traits}` : '',
@@ -53,7 +53,7 @@ export function PrintPacket({ store, ui }: AppSectionProps) {
             [{entry.category.toUpperCase()}] {entry.title}
           </strong>{' '}
           — {entry.summary}
-          <div style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>{entry.body}</div>
+          <div className="pre-wrap text-md">{entry.body}</div>
         </div>
       ))}
       <h2>Active Encounter: {store.encounter.name} (Round {store.encounter.round})</h2>

@@ -218,8 +218,8 @@ export function SummonCombatDrawer({
         </div>
         )}
 
-        <div className="forge-row-between" style={{ flexWrap: 'wrap' }}>
-          <div className="tabular forge-muted" style={{ fontSize: 11 }}>
+        <div className="forge-row-between wrap">
+          <div className="tabular forge-muted text-sm">
             Round {encounter.round} • {encounter.combatants.length} Combatants
             {difficulty && (
               <span
@@ -238,7 +238,7 @@ export function SummonCombatDrawer({
               </span>
             )}
           </div>
-          <div className="forge-row" style={{ flexWrap: 'wrap' }}>
+          <div className="forge-row wrap">
             {!isPlayerRole && (
               <>
                 {onStartEncounterAlert && (
@@ -378,7 +378,7 @@ export function SummonCombatDrawer({
               +Spawn
             </button>
           </div>
-          <div className="forge-stack" style={{ gap: 6 }}>
+          <div className="forge-stack gap-2">
             <input
               aria-label="Enemy or NPC name"
               type="text"
@@ -486,8 +486,7 @@ export function SummonCombatDrawer({
         {encounter.activeEffects.map((eff) => (
           <div
             key={eff.id}
-            className="forge-row-between"
-            style={{ fontSize: 12, flexWrap: 'wrap' }}
+            className="forge-row-between text-md wrap"
           >
             <span>
               • {eff.name}
@@ -556,7 +555,7 @@ export function SummonCombatDrawer({
           className="subpanel forge-row-between"
           style={{ padding: '6px 10px', gap: 6, flexWrap: 'wrap', borderColor: 'var(--accent-red)' }}
         >
-          <span style={{ fontSize: 11 }}>
+          <span className="text-sm">
             <strong>Targets ({selectedTargetIds.length}):</strong>{' '}
             {encounter.combatants
               .filter((c) => selectedTargetIds.includes(c.id))
@@ -584,7 +583,7 @@ export function SummonCombatDrawer({
               opacity: isDown ? 0.56 : node.hidden ? 0.72 : 1,
             }}
           >
-            <div className="forge-row-between" style={{ flexWrap: 'wrap', gap: 4 }}>
+            <div className="forge-row-between wrap gap-1">
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
                 <input
                   aria-label={`${node.name} initiative`}
@@ -604,11 +603,11 @@ export function SummonCombatDrawer({
                 {isActive && <span className="turn-badge">TURN</span>}
                 {isDown && <span className="conc-badge" style={{ borderColor: 'var(--accent-red)', color: 'var(--accent-red)' }}>0 HP</span>}
                 {node.hidden && <span className="conc-badge">HIDDEN</span>}
-                <span className="tabular forge-muted" style={{ fontSize: 11 }}>
+                <span className="tabular forge-muted text-sm">
                   AC {hideHp ? '?' : node.ac}
                 </span>
               </span>
-              <div className="forge-row" style={{ flexWrap: 'wrap', gap: 4 }}>
+              <div className="forge-row wrap gap-1">
                 {!playerView && (
                   <button
                     type="button"
@@ -640,18 +639,18 @@ export function SummonCombatDrawer({
               </div>
             </div>
 
-            <div className="forge-row-between" style={{ marginTop: 6, gap: 6, flexWrap: 'wrap' }}>
+            <div className="forge-row-between mt-2 gap-2 wrap">
               {hideHp ? (
-                <span style={{ fontSize: 12 }}>
+                <span className="text-md">
                   Status: <strong>{getQualitativeHealthLabel(node.hp.current, node.hp.max)}</strong>
                 </span>
               ) : (
                 <>
-                  <span className="tabular" style={{ fontSize: 12 }}>
+                  <span className="tabular text-md">
                     HP <strong>{node.hp.current}</strong> / {node.hp.max}
                     {node.hp.temp > 0 ? ` (+${node.hp.temp})` : ''}
                   </span>
-                  <div className="forge-row" style={{ gap: 4 }}>
+                  <div className="forge-row gap-1">
                     <div className="econ-pill-row" role="group" aria-label={`${node.name} turn economy`}>
                       {([
                         { key: 'action', label: 'A', title: 'Action' },
@@ -709,7 +708,7 @@ export function SummonCombatDrawer({
             {isExpanded && (
               <div className="forge-stack" style={{ marginTop: 6, paddingTop: 6, borderTop: '1px solid var(--border-subtle)', gap: 6 }}>
                 {!playerView && (
-                  <div className="forge-row" style={{ flexWrap: 'wrap', gap: 4 }}>
+                  <div className="forge-row wrap gap-1">
                     {!isPlayerRole && onMoveCombatantOrder && (
                       <>
                         <button
@@ -772,9 +771,9 @@ export function SummonCombatDrawer({
                 )}
 
                 {!playerView && (node.legendaryActions || (node.rechargeStates && node.rechargeStates.length > 0)) && (
-                  <div className="forge-row" style={{ flexWrap: 'wrap', gap: 6 }}>
+                  <div className="forge-row wrap gap-2">
                     {node.legendaryActions && (
-                      <div className="forge-row" style={{ fontSize: 11 }}>
+                      <div className="forge-row text-sm">
                         <span className="forge-muted tabular">
                           LA: {node.legendaryActions.current}/{node.legendaryActions.max}
                         </span>
@@ -811,7 +810,7 @@ export function SummonCombatDrawer({
                 )}
 
                 {!hideHp && (
-                  <div className="forge-row" style={{ gap: 4 }}>
+                  <div className="forge-row gap-1">
                     <input
                       aria-label={`${node.name} HP delta`}
                       type="number"
@@ -858,7 +857,7 @@ export function SummonCombatDrawer({
                 {!hideHp && node.actions && node.actions.length > 0 && (
                   <div className="pill-row">
                     {node.actions.map((act) => (
-                      <span key={act.id} className="forge-row" style={{ gap: 4 }}>
+                      <span key={act.id} className="forge-row gap-1">
                         <button
                           type="button"
                           className="btn btn-primary tabular"
@@ -1207,7 +1206,7 @@ export function CommandPalette({
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div className="forge-row-between" style={{ fontSize: 12, color: 'var(--text-secondary)', flexWrap: 'wrap', gap: 6 }}>
               <span>All built-in SRD 5.1 / 2024 SRD 5.2 &amp; Repo content packs are automatically pre-installed.</span>
-              <div className="forge-row" style={{ gap: 6, flexWrap: 'wrap' }}>
+              <div className="forge-row gap-2 wrap">
                 {free5eCount > 0 && (
                   <span className="badge tabular">Free5e: {free5eCount} items ✓</span>
                 )}

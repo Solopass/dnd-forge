@@ -47,6 +47,7 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
     setCampaign,
     setScenes,
     compendium,
+    effectiveCompendium,
     characterList,
     setPendingConcDc,
     pushToast,
@@ -101,7 +102,7 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
       }
 
       persistCharacter((prev) => {
-        const { alsoIn: _alsoIn, ...plain } = entity;
+        const { alsoIn: _alsoIn, fixedBy: _fixedBy, ...plain } = entity;
         const clone: CompendiumEntity = {
           ...structuredClone(plain),
           id: `${entity.id}-${Date.now().toString(36)}`,
@@ -319,8 +320,8 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
 
   // Search shows one entry per name (SRD copy wins over Free5e/duplicate pack copies); nothing is deleted.
   const searchableCompendium = useMemo(
-    () => applyDuplicateDecisions(foldMagicVariants(dedupeCompendium(compendium, sourcePriority)), dupDecisions),
-    [compendium, sourcePriority, dupDecisions]
+    () => applyDuplicateDecisions(foldMagicVariants(dedupeCompendium(effectiveCompendium, sourcePriority)), dupDecisions),
+    [effectiveCompendium, sourcePriority, dupDecisions]
   );
 
   const resolveDuplicateGroup = useCallback(

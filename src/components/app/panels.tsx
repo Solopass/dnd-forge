@@ -162,7 +162,7 @@ export function buildAppPanels(store: SheetStore, ui: AppUi) {
       onTargetSave={store.targetSaveCombatants}
       onOpenEncounterBuilder={() => setEncounterBuilderOpen(true)}
       onStartEncounterAlert={store.startEncounterAlert}
-      compendiumMonsters={store.compendium.filter((e) => e.category === 'monster' && Boolean(e.monsterMeta))}
+      compendiumMonsters={store.effectiveCompendium.filter((e) => e.category === 'monster' && Boolean(e.monsterMeta))}
       hideBattlemapButton={uiMode === 'unified' && unifiedView === 'vtt'}
       onAddMonster={store.addMonsterToEncounter}
     />

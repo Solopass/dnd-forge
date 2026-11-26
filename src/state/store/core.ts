@@ -4,6 +4,8 @@ import { RawCharacterState, ResolvedCharacterSheet } from '../../types/character
 import { BattlemapScene, CombatEncounterState, MapPingEvent } from '../../types/combat';
 import { CompendiumEntity } from '../../types/compendium';
 import type { DuplicateDecision, SourceTier } from '../../engine/compendium-dedupe';
+import type { ContentFix } from '../../types/content-fix';
+import { applyFixesToList } from '../../engine/content-fixes';
 import type { ImportPlan } from '../../engine/import-preview';
 import { ActiveBuffState, RollMode } from '../../types/core';
 import { computeCharacterSheet, syncSpellSlotPools } from '../../engine/rules-math';
@@ -86,6 +88,9 @@ export function useStoreCore(initialCharacter: RawCharacterState, initialEncount
     saveSourcePriority(next);
   }, []);
   const [dupDecisions, setDupDecisions] = useState<DuplicateDecision[]>([]);
+  const [contentFixes, setContentFixes] = useState<ContentFix[]>([]);
+  /** The compendium with approved content fixes applied (fixes are a separate layer; `compendium` stays the stored data). */
+  const effectiveCompendium = useMemo(() => applyFixesToList(compendium, contentFixes), [compendium, contentFixes]);
   const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
 
   const [pendingConcDc, setPendingConcDc] = useState<number | null>(null);
@@ -255,6 +260,8 @@ export function useStoreCore(initialCharacter: RawCharacterState, initialEncount
         }
         const savedDecisions = await db.dupDecisions.toArray();
         if (active) setDupDecisions(savedDecisions);
+        const savedFixes = await db.contentFixes.toArray();
+        if (active) setContentFixes(savedFixes);
         const basePackEntities = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities);
         const customRepoEntities = await loadCustomRepoEntities();
         const combinedEntities = [...basePackEntities, ...customRepoEntities];
@@ -489,6 +496,9 @@ export function useStoreCore(initialCharacter: RawCharacterState, initialEncount
     updateSourcePriority,
     dupDecisions,
     setDupDecisions,
+    contentFixes,
+    setContentFixes,
+    effectiveCompendium,
     pendingImport,
     setPendingImport,
     pendingConcDc,

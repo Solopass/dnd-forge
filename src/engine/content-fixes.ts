@@ -207,7 +207,10 @@ export function newFixId(now = Date.now(), rand = Math.random()): string {
 }
 
 export interface CreateFixInput {
+  /** The stored entry: its id and hash identify what the fix was made against. */
   base: CompendiumEntity;
+  /** What the editor showed (the entry with approved fixes applied). Defaults to `base`. The patch holds the changes against this. */
+  shown?: CompendiumEntity;
   /** The entry as the editor left it (prefilled from the effective entry, then edited). */
   edited: CompendiumEntity;
   note: string;
@@ -219,7 +222,7 @@ export interface CreateFixInput {
 export function createFix(input: CreateFixInput): { fix: ContentFix } | { error: string } {
   const note = input.note.trim();
   if (!note) return { error: 'Add a note saying what is wrong.' };
-  const patch = buildPatch(input.base, input.edited);
+  const patch = buildPatch(input.shown ?? input.base, input.edited);
   if (Object.keys(patch).length === 0) return { error: 'Nothing was changed.' };
   const now = input.now ?? new Date();
   return {

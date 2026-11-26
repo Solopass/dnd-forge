@@ -182,7 +182,7 @@ export function AppModals({ store, ui, panels }: AppLayoutProps) {
         <NewCharacterModal
           isOpen={newCharOpen}
           onClose={() => setNewCharOpen(false)}
-          compendiumEntities={store.compendium}
+          compendiumEntities={store.effectiveCompendium}
           onCreate={store.createCharacterFromPreset}
         />
       </Suspense>
@@ -247,7 +247,7 @@ export function AppModals({ store, ui, panels }: AppLayoutProps) {
         <LevelUpModal
           isOpen={levelUpOpen}
           character={store.rawChar}
-          compendiumEntities={store.compendium}
+          compendiumEntities={store.effectiveCompendium}
           onClose={() => setLevelUpOpen(false)}
           onApplyLevelUp={store.applyLevelUpPlan}
         />
@@ -331,7 +331,7 @@ export function AppModals({ store, ui, panels }: AppLayoutProps) {
           isOpen={encounterBuilderOpen}
           onClose={() => setEncounterBuilderOpen(false)}
           partyLevels={store.characterList.map((c) => c.classes.reduce((s, cl) => s + cl.level, 0))}
-          compendiumMonsters={store.compendium.filter((e) => e.category === 'monster')}
+          compendiumMonsters={store.effectiveCompendium.filter((e) => e.category === 'monster')}
           onSpawnMonsters={(monsters) => {
             for (const m of monsters) {
               if (!m.monsterMeta) continue;

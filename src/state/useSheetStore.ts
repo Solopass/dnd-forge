@@ -5,6 +5,7 @@ import { useCharacterActions } from './store/character';
 import { useActivitiesActions } from './store/activities';
 import { useCombatActions } from './store/combat';
 import { useContentImportActions } from './store/content-import';
+import { useContentFixActions } from './store/content-fixes';
 import { useLiveTableActions } from './store/live-table';
 import { useBattlemapActions } from './store/battlemap';
 import { useCampaignActions } from './store/campaign';
@@ -17,6 +18,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   const activities = useActivitiesActions(core);
   const combat = useCombatActions(core, { adjustHp: character.adjustHp, toggleCondition: character.toggleCondition });
   const contentImport = useContentImportActions(core, { addMonsterToEncounter: combat.addMonsterToEncounter });
+  const contentFixActions = useContentFixActions(core);
   const liveTable = useLiveTableActions(core, { importSingleCharacter: contentImport.importSingleCharacter, targetAttackCombatants: combat.targetAttackCombatants, targetSaveCombatants: combat.targetSaveCombatants });
   const battlemap = useBattlemapActions(core);
   const campaign = useCampaignActions(core);
@@ -198,6 +200,15 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     sourcePriority: core.sourcePriority,
     updateSourcePriority: core.updateSourcePriority,
     dupDecisions: core.dupDecisions,
+    contentFixes: core.contentFixes,
+    effectiveCompendium: core.effectiveCompendium,
+    proposeContentFix: contentFixActions.proposeContentFix,
+    reviewContentFix: contentFixActions.reviewContentFix,
+    deleteContentFix: contentFixActions.deleteContentFix,
+    exportContentFixes: contentFixActions.exportContentFixes,
+    importContentFixes: contentFixActions.importContentFixes,
+    patchAgainstOriginal: contentFixActions.patchAgainstOriginal,
+    previewFix: contentFixActions.previewFix,
     searchCompendium: contentImport.searchCompendium,
   };
 }

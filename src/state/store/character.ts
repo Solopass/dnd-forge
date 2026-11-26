@@ -21,7 +21,7 @@ export function useCharacterActions(core: StoreCore) {
     setPendingConcDc,
     appendLog,
     setCharacterList,
-    compendium,
+    effectiveCompendium,
     rawChar,
     persistCharacter,
     encounter,
@@ -58,7 +58,7 @@ export function useCharacterActions(core: StoreCore) {
   const createCharacterFromPreset = useCallback(
     async (input: Omit<NewCharacterPresetInput, 'id'>) => {
       const id = `char-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 5)}`;
-      const fresh = buildCharacterFromPreset({ ...input, id }, compendium);
+      const fresh = buildCharacterFromPreset({ ...input, id }, effectiveCompendium);
       await saveCharacter(fresh);
       setCharacterList((prev) => [...prev, fresh]);
       setRawChar(fresh);
@@ -68,7 +68,7 @@ export function useCharacterActions(core: StoreCore) {
         'info'
       );
     },
-    [appendLog]
+    [appendLog, effectiveCompendium]
   );
 
   const duplicateCharacter = useCallback(async (targetId?: string) => {
@@ -797,7 +797,7 @@ export function useCharacterActions(core: StoreCore) {
   const applyLevelUpPlan = useCallback(
     (input: LevelUpPlanInput) => {
       const allPackEntities = new Map<string, CompendiumEntity>(
-        [...BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities), ...compendium].map((e) => [e.id, e])
+        [...BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities), ...effectiveCompendium].map((e) => [e.id, e])
       );
 
       persistCharacter((prev) => {
@@ -879,7 +879,7 @@ export function useCharacterActions(core: StoreCore) {
       appendLog(`Leveled up ${input.className} (+${Math.max(1, Math.round(input.hpGain))} HP).`, 'info');
       pushToast(`${rawChar.name}: ${input.className} level up (+${Math.max(1, Math.round(input.hpGain))} HP)!`, 'info');
     },
-    [rawChar.name, persistCharacter, appendLog, pushToast]
+    [rawChar.name, persistCharacter, appendLog, pushToast, effectiveCompendium]
   );
 
   const setCharacterAvatar = useCallback(

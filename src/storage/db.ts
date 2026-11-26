@@ -4,8 +4,9 @@ import { RawCharacterState } from '../types/character';
 import { CompendiumEntity } from '../types/compendium';
 import { BattlemapScene, CombatEncounterState } from '../types/combat';
 import type { DuplicateDecision } from '../engine/compendium-dedupe';
+import type { ContentFix } from '../types/content-fix';
 
-export const CURRENT_SCHEMA_VERSION = 4;
+export const CURRENT_SCHEMA_VERSION = 5;
 
 export interface IndexedCompendiumRecord extends CompendiumEntity {
   searchTokens: string;
@@ -21,6 +22,7 @@ export interface BackupBundle {
   campaigns?: CampaignRecord[];
   scenes?: BattlemapScene[];
   dupDecisions?: DuplicateDecision[];
+  contentFixes?: ContentFix[];
 }
 
 export function normalizeSearchQuery(raw: string): string {
@@ -45,6 +47,7 @@ export class DndForgeDatabase extends Dexie {
   campaigns!: Table<CampaignRecord, string>;
   scenes!: Table<BattlemapScene, string>;
   dupDecisions!: Table<DuplicateDecision, string>;
+  contentFixes!: Table<ContentFix, string>;
 
   constructor() {
     super('dnd-forge-local-db');
@@ -71,6 +74,17 @@ export class DndForgeDatabase extends Dexie {
     });
 
     // v4: the Duplicates review decisions. Existing tables are untouched, so no data migration is needed.
+    this.version(4).stores({
+      characters: 'id, name, ruleset',
+      compendium: 'id, name, category, source, ruleset, searchTokens',
+      encounters: 'id, name',
+      campaigns: 'id, name',
+      scenes: 'id, name',
+      dupDecisions: 'id',
+    });
+
+    // v5: content fixes (reviewable corrections to compendium entries), a separate layer so that
+    // re-imports and resyncs never touch them. Only a new table; every existing record is kept.
     this.version(CURRENT_SCHEMA_VERSION).stores({
       characters: 'id, name, ruleset',
       compendium: 'id, name, category, source, ruleset, searchTokens',
@@ -78,6 +92,7 @@ export class DndForgeDatabase extends Dexie {
       campaigns: 'id, name',
       scenes: 'id, name',
       dupDecisions: 'id',
+      contentFixes: 'id, entityId, status',
     });
 
     this.on('versionchange', () => {
@@ -116,6 +131,18 @@ export async function deleteDuplicateDecision(id: string): Promise<void> {
   await db.dupDecisions.delete(id);
 }
 
+export async function saveContentFix(fix: ContentFix): Promise<void> {
+  await db.contentFixes.put(structuredClone(fix));
+}
+
+export async function saveContentFixes(fixes: ContentFix[]): Promise<void> {
+  if (fixes.length > 0) await db.contentFixes.bulkPut(structuredClone(fixes));
+}
+
+export async function deleteContentFix(id: string): Promise<void> {
+  await db.contentFixes.delete(id);
+}
+
 export async function deleteSceneRecord(sceneId: string): Promise<void> {
   await db.scenes.delete(sceneId);
 }
@@ -142,13 +169,14 @@ export async function removeFree5eIndexJunk(): Promise<number> {
 }
 
 export async function exportFullBundle(): Promise<BackupBundle> {
-  const [characters, compendiumRecords, encounters, campaigns, scenes, dupDecisions] = await Promise.all([
+  const [characters, compendiumRecords, encounters, campaigns, scenes, dupDecisions, contentFixes] = await Promise.all([
     db.characters.toArray(),
     db.compendium.toArray(),
     db.encounters.toArray(),
     db.campaigns.toArray(),
     db.scenes.toArray(),
     db.dupDecisions.toArray(),
+    db.contentFixes.toArray(),
   ]);
 
   const compendium: CompendiumEntity[] = compendiumRecords.map(({ searchTokens: _omit, ...rest }) => rest);
@@ -163,6 +191,7 @@ export async function exportFullBundle(): Promise<BackupBundle> {
     campaigns,
     scenes,
     dupDecisions,
+    contentFixes,
   };
 }
 
@@ -219,11 +248,18 @@ export async function importBackupBundle(
       )
     : [];
 
+  const validFixes = Array.isArray(candidate.contentFixes)
+    ? candidate.contentFixes.filter(
+        (f): f is ContentFix =>
+          typeof f === 'object' && f !== null && typeof f.id === 'string' && typeof f.entityId === 'string' && typeof f.patch === 'object'
+      )
+    : [];
+
   if (Array.isArray(candidate.characters) && validCharacters.length < candidate.characters.length) {
     warnings.push(`Skipped ${candidate.characters.length - validCharacters.length} malformed character record(s).`);
   }
 
-  await db.transaction('rw', [db.characters, db.compendium, db.encounters, db.campaigns, db.scenes, db.dupDecisions], async () => {
+  await db.transaction('rw', [db.characters, db.compendium, db.encounters, db.campaigns, db.scenes, db.dupDecisions, db.contentFixes], async () => {
     if (mode === 'replace') {
       await db.characters.clear();
       await db.compendium.clear();
@@ -231,6 +267,7 @@ export async function importBackupBundle(
       await db.campaigns.clear();
       await db.scenes.clear();
       await db.dupDecisions.clear();
+      await db.contentFixes.clear();
     }
     if (validCharacters.length > 0) {
       await db.characters.bulkPut(structuredClone(validCharacters));
@@ -249,6 +286,9 @@ export async function importBackupBundle(
     }
     if (validDecisions.length > 0) {
       await db.dupDecisions.bulkPut(structuredClone(validDecisions));
+    }
+    if (validFixes.length > 0) {
+      await db.contentFixes.bulkPut(structuredClone(validFixes));
     }
   });
 

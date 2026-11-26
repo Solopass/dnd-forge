@@ -106,4 +106,6 @@ export interface CompendiumEntity {
   entries: string[];
   /** Derived by the duplicate folding (never stored): the other sources that carry this same entry. */
   alsoIn?: string[];
+  /** Derived (never stored): ids of the approved content fixes applied to this entry. */
+  fixedBy?: string[];
 }

@@ -5,9 +5,9 @@ import { describe, expect, it } from 'vitest';
 import { DndForgeDatabase, CURRENT_SCHEMA_VERSION } from '../db';
 import { moveSourceTier, readStoredSourcePriority, saveSourcePriority } from '../source-priority';
 
-describe('Dexie v3 -> v4 (Duplicates decisions table)', () => {
+describe('Dexie v3 -> v5 (Duplicates decisions + content fixes tables)', () => {
   it('keeps every existing record and adds an empty dupDecisions table', async () => {
-    expect(CURRENT_SCHEMA_VERSION).toBe(4);
+    expect(CURRENT_SCHEMA_VERSION).toBe(5);
     const name = 'dnd-forge-local-db';
     await Dexie.delete(name);
     // an old install: schema version 3, with data
@@ -26,12 +26,50 @@ describe('Dexie v3 -> v4 (Duplicates decisions table)', () => {
 
     const db = new DndForgeDatabase();
     await db.open();
-    expect(db.verno).toBe(4);
+    expect(db.verno).toBe(5);
     expect((await db.characters.get('c1'))?.name).toBe('Old Hero');
     expect((await db.compendium.get('e1'))?.name).toBe('Old Spell');
     expect(await db.dupDecisions.count()).toBe(0);
     await db.dupDecisions.put({ id: 'a|b', memberIds: ['a', 'b'], action: 'keep-both', decidedAt: 'now' });
     expect((await db.dupDecisions.get('a|b'))?.action).toBe('keep-both');
+    db.close();
+    await Dexie.delete(name);
+  });
+});
+
+describe('Dexie v4 -> v5 (content fixes table)', () => {
+  it('keeps every existing record (including duplicate decisions) and adds an empty contentFixes table', async () => {
+    const name = 'dnd-forge-local-db';
+    await Dexie.delete(name);
+    const old = new Dexie(name);
+    old.version(4).stores({
+      characters: 'id, name, ruleset',
+      compendium: 'id, name, category, source, ruleset, searchTokens',
+      encounters: 'id, name',
+      campaigns: 'id, name',
+      scenes: 'id, name',
+      dupDecisions: 'id',
+    });
+    await old.open();
+    await old.table('characters').put({ id: 'c1', name: 'Old Hero', ruleset: '2014', items: [{ id: 'i1', name: '+1 Longsword' }] });
+    await old.table('compendium').put({ id: 'e1', name: 'Old Spell', category: 'spell', source: 'Mine', ruleset: '2014', searchTokens: 'old spell' });
+    await old.table('dupDecisions').put({ id: 'a|b', memberIds: ['a', 'b'], action: 'keep-both', decidedAt: 'then' });
+    old.close();
+
+    const db = new DndForgeDatabase();
+    await db.open();
+    expect(db.verno).toBe(5);
+    expect((await db.characters.get('c1'))?.name).toBe('Old Hero');
+    expect(((await db.characters.get('c1')) as unknown as { items: Array<{ name: string }> }).items[0]!.name).toBe('+1 Longsword');
+    expect((await db.compendium.get('e1'))?.name).toBe('Old Spell');
+    expect((await db.dupDecisions.get('a|b'))?.action).toBe('keep-both');
+    expect(await db.contentFixes.count()).toBe(0);
+    await db.contentFixes.put({
+      id: 'fix-1', entityId: 'e1', baseSnapshotHash: 'h', patch: { range: '60 feet' }, note: 'typo', author: 'Player',
+      status: 'proposed', createdAt: 'now', reviewedAt: null,
+    });
+    expect((await db.contentFixes.where('entityId').equals('e1').toArray()).length).toBe(1);
+    expect((await db.contentFixes.where('status').equals('proposed').toArray()).length).toBe(1);
     db.close();
     await Dexie.delete(name);
   });

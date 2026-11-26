@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { crToXp, evaluateEncounterDifficulty } from '../engine/encounter-math';
+import { crToXp, evaluateEncounterDifficulty, normalizeCr } from '../engine/encounter-math';
 import { dedupeCompendium } from '../engine/compendium-dedupe';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
 import { CompendiumEntity, CreatureSize } from '../types/compendium';
@@ -241,65 +241,6 @@ export function EncounterBuilderModal({
               </div>
             </div>
 
-            {staged.length > 0 && (
-              <div className="forge-stack gap-2">
-                <div className="pill-row">
-                  {staged.map((s) => (
-                    <button
-                      key={s.entity.id}
-                      type="button"
-                      className="pill active"
-                      title="Click to remove one"
-                      onClick={() =>
-                        setStaged((prev) =>
-                          prev
-                            .map((p) => (p.entity.id === s.entity.id ? { ...p, count: p.count - 1 } : p))
-                            .filter((p) => p.count > 0)
-                        )
-                      }
-                    >
-                      {s.count}× {s.entity.name} (CR {s.entity.monsterMeta?.cr ?? '?'}) ×
-                    </button>
-                  ))}
-                </div>
-                <div className="forge-row wrap gap-2">
-                  <input
-                    type="text"
-                    className="input"
-                    style={{ flex: '1 1 160px' }}
-                    placeholder="Preset name (e.g. Goblin Ambush)..."
-                    value={presetName}
-                    onChange={(e) => setPresetName(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    className="btn"
-                    disabled={!presetName.trim()}
-                    onClick={handleSavePreset}
-                  >
-                    Save Preset
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={() => handleSpawnStaged(false)}
-                  >
-                    Spawn ({staged.reduce((s, x) => s + x.count, 0)})
-                  </button>
-                  {onLaunchAndStart && (
-                    <button
-                      type="button"
-                      className="btn btn-danger"
-                      onClick={() => handleSpawnStaged(true)}
-                      title="Spawn monsters and immediately flash Roll Initiative!"
-                    >
-                      Launch &amp; Start!
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
             {presets.length > 0 && (
               <div className="forge-row wrap gap-2">
                 <span className="muted-label">Saved Presets:</span>
@@ -426,7 +367,7 @@ export function EncounterBuilderModal({
                           <span className="badge" style={{ fontSize: 9 }}>{m.ruleset}</span>
                         </div>
                       </th>
-                      <td data-label="CR" className="tabular">{m.monsterMeta?.cr ?? '1'}</td>
+                      <td data-label="CR" className="tabular">{normalizeCr(m.monsterMeta?.cr ?? '1')}</td>
                       <td data-label="Size">{m.monsterMeta?.size ?? 'medium'}</td>
                       <td data-label="AC / HP" className="tabular">
                         AC {m.monsterMeta?.ac ?? 12} • {m.monsterMeta?.hp ?? 10} HP
@@ -441,6 +382,67 @@ export function EncounterBuilderModal({
                 </tbody>
               </table>
             </div>
+
+            {/* Below the table on purpose: staging must not push the rows under the cursor (audit D4) */}
+            {staged.length > 0 && (
+              <div className="forge-stack gap-2">
+                <div className="pill-row">
+                  {staged.map((s) => (
+                    <button
+                      key={s.entity.id}
+                      type="button"
+                      className="pill active"
+                      title="Click to remove one"
+                      onClick={() =>
+                        setStaged((prev) =>
+                          prev
+                            .map((p) => (p.entity.id === s.entity.id ? { ...p, count: p.count - 1 } : p))
+                            .filter((p) => p.count > 0)
+                        )
+                      }
+                    >
+                      {s.count}× {s.entity.name} (CR {s.entity.monsterMeta?.cr ?? '?'}) ×
+                    </button>
+                  ))}
+                </div>
+                <div className="forge-row wrap gap-2">
+                  <input
+                    type="text"
+                    className="input"
+                    style={{ flex: '1 1 160px' }}
+                    placeholder="Preset name (e.g. Goblin Ambush)..."
+                    value={presetName}
+                    onChange={(e) => setPresetName(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={!presetName.trim()}
+                    onClick={handleSavePreset}
+                  >
+                    Save Preset
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => handleSpawnStaged(false)}
+                  >
+                    Spawn ({staged.reduce((s, x) => s + x.count, 0)})
+                  </button>
+                  {onLaunchAndStart && (
+                    <button
+                      type="button"
+                      className="btn btn-danger"
+                      onClick={() => handleSpawnStaged(true)}
+                      title="Spawn monsters and immediately flash Roll Initiative!"
+                    >
+                      Launch &amp; Start!
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
           </div>
         )}
 

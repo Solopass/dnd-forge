@@ -271,14 +271,14 @@ export function AppBanners({ store, ui }: AppSectionProps) {
           style={{
             padding: '10px 16px',
             margin: '8px 16px 0',
-            borderColor: 'rgba(245, 158, 11, 0.55)',
-            background: 'rgba(245, 158, 11, 0.08)',
+            borderColor: 'var(--accent-amber-border)',
+            background: 'var(--accent-amber-soft)',
             flexWrap: 'wrap',
             gap: 8,
           }}
         >
           <div className="forge-row gap-3 wrap">
-            <span className="badge" style={{ color: 'var(--accent-amber)', borderColor: 'rgba(245, 158, 11, 0.5)' }}>
+            <span className="badge" style={{ color: 'var(--accent-amber)', borderColor: 'var(--accent-amber-border)' }}>
               DM ROLL REQUEST
             </span>
             <strong>{store.pendingRollRequest.senderName}</strong> requests{' '}

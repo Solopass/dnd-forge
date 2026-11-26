@@ -500,9 +500,9 @@ export function ActionEconomyBoard({
                   style={{
                     borderColor:
                       autoCond.mode === 'disadvantage'
-                        ? 'rgba(239, 68, 68, 0.5)'
+                        ? 'var(--accent-red-border)'
                         : autoCond.mode === 'advantage'
-                          ? 'rgba(16, 185, 129, 0.5)'
+                          ? 'var(--accent-green-border)'
                           : 'var(--border-subtle)',
                     color:
                       autoCond.mode === 'disadvantage'
@@ -546,7 +546,7 @@ export function ActionEconomyBoard({
                   style={
                     sheet.spellcasting.maxPrepared !== null &&
                     sheet.spellcasting.preparedCount > sheet.spellcasting.maxPrepared
-                      ? { color: 'var(--accent-amber)', borderColor: 'rgba(245, 158, 11, 0.5)' }
+                      ? { color: 'var(--accent-amber)', borderColor: 'var(--accent-amber-border)' }
                       : undefined
                   }
                   title={
@@ -608,7 +608,7 @@ export function ActionEconomyBoard({
                           key={idx}
                           type="button"
                           className={`pill ${filled ? 'active' : ''}`}
-                          style={{ minWidth: 22, padding: '1px 5px', fontSize: 11, borderColor: 'rgba(245, 158, 11, 0.45)' }}
+                          style={{ minWidth: 22, padding: '1px 5px', fontSize: 11, borderColor: 'var(--accent-amber-border)' }}
                           aria-label={`Pact Magic slot ${idx + 1} (${filled ? 'available' : 'spent'})`}
                           title={filled ? 'Spend Pact Magic slot (Short Rest)' : 'Restore Pact Magic slot'}
                           onClick={() => onAdjustResource?.(pactPool.id, filled ? -1 : 1)}

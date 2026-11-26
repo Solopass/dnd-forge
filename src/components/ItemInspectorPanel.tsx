@@ -117,7 +117,7 @@ export const ItemInspectorPanel: React.FC<ItemInspectorPanelProps> = ({
             {item.weaponMastery && (
               <span
                 className="badge"
-                style={{ borderColor: 'rgba(245, 158, 11, 0.45)', color: 'var(--accent-amber)' }}
+                style={{ borderColor: 'var(--accent-amber-border)', color: 'var(--accent-amber)' }}
               >
                 Mastery: {item.weaponMastery}
               </span>

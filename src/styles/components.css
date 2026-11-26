@@ -27,7 +27,7 @@
 :root .dm-hub__input-9 { width: 115px; }
 :root .dm-hub__subpanel-2 { padding: 8px 10px; flex-wrap: wrap; gap: 8px; }
 :root .dm-hub__div-2 { font-weight: 600; }
-:root .dm-hub__badge { color: var(--accent-green); border-color: rgba(16,185,129,0.5); }
+:root .dm-hub__badge { color: var(--accent-green); border-color: var(--accent-green-border); }
 :root .dm-hub__card { background: var(--bg-base); }
 :root .dm-hub__div-3 { color: var(--accent-blue); }
 :root .dm-hub__btn { margin-left: 8px; }
@@ -37,10 +37,10 @@
 :root .dm-hub__input-11 { width: 100px; }
 :root .dm-hub__subpanel-3 { padding: 10px; }
 :root .dm-hub__input-12 { width: 150px; }
-:root .dm-hub__card-3 { position: relative; min-height: 320px; background: #0b0e14; overflow: hidden; cursor: crosshair; }
+:root .dm-hub__card-3 { position: relative; min-height: 320px; background: var(--bg-map); overflow: hidden; cursor: crosshair; }
 :root .dm-hub__img-2 { width: 100%; max-height: 52vh; object-fit: contain; display: block; }
 :root .dm-hub__muted { padding: 40px; text-align: center; }
-:root .dm-hub__button { position: absolute; transform: translate(-50%, -50%); color: #0d1117; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 700; cursor: pointer; }
+:root .dm-hub__button { position: absolute; transform: translate(-50%, -50%); color: var(--bg-base-dark); border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 700; cursor: pointer; }
 :root .dm-hub__audio { width: 100%; }
 
 /* SummonCombatDrawer */
@@ -80,7 +80,7 @@
 :root .combat-drawer__card { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 :root .combat-drawer__span-4 { font-size: 11px; color: var(--accent-blue); }
 :root .combat-drawer__div-7 { font-size: 12px; color: var(--text-secondary); }
-:root .combat-drawer__badge { color: var(--accent-green); border-color: rgba(63,185,80,0.4); }
+:root .combat-drawer__badge { color: var(--accent-green); border-color: var(--accent-green-border); }
 :root .combat-drawer__input-13 { color: var(--text-primary); }
 :root .combat-drawer__textarea { width: 100%; background: var(--bg-base); color: var(--text-primary); border: 1px solid var(--border-subtle); font-family: var(--font-mono); padding: 8px; }
 :root .combat-drawer__div-8 { display: flex; justify-content: flex-end; margin-top: 8px; }
@@ -99,7 +99,7 @@
 :root .vitals__input-3 { width: 64px; padding: 3px 6px; }
 :root .vitals__input-4 { width: 56px; padding: 3px 6px; }
 :root .vitals__input-5 { width: 60px; padding: 3px 6px; }
-:root .vitals__div-2 { margin-top: 8px; padding: 6px; background: rgba(248, 81, 73, 0.12); border-radius: 4px; }
+:root .vitals__div-2 { margin-top: 8px; padding: 6px; background: var(--accent-red-soft); border-radius: 4px; }
 :root .vitals__row-between-2 { margin-bottom: 4px; }
 :root .vitals__span { font-size: 11px; color: var(--accent-red); font-weight: 700; }
 :root .vitals__row-2 { margin-top: 8px; }
@@ -150,14 +150,14 @@
 
 /* ActionEconomyBoard */
 :root .action-economy__button { background: none; border: none; padding: 0; color: inherit; font: inherit; cursor: pointer; text-align: left; text-decoration: underline; text-decoration-color: var(--border-subtle); text-underline-offset: 2px; }
-:root .action-economy__badge { margin-left: 4px; border-color: rgba(245, 158, 11, 0.4); color: var(--accent-amber); }
+:root .action-economy__badge { margin-left: 4px; border-color: var(--accent-amber-border); color: var(--accent-amber); }
 :root .action-economy__btn { padding: 2px 6px; font-size: 11px; }
 :root .action-economy__input { padding: 3px 4px; font-size: 11px; }
 :root .action-economy__span { color: var(--accent-purple); font-weight: 600; }
 :root .action-economy__span-2 { text-decoration: underline dotted; color: var(--text-primary); }
 :root .action-economy__btn-2 { font-size: 11px; padding: 2px 8px; }
 :root .action-economy__input-2 { padding: 2px 4px; font-size: 11px; width: 52px; }
-:root .action-economy__pill { border-color: rgba(245, 158, 11, 0.45); color: var(--accent-amber); }
+:root .action-economy__pill { border-color: var(--accent-amber-border); color: var(--accent-amber); }
 :root .action-economy__subpanel { padding: 6px 8px; flex-wrap: wrap; gap: 10px; }
 :root .action-economy__row { gap: 4px; }
 :root .action-economy__muted-label { color: var(--accent-amber); }
@@ -168,11 +168,11 @@
 :root .action-economy__subpanel-3 { padding: 8px; gap: 4px; }
 :root .action-economy__list-row-2 { flex-direction: column; align-items: flex-start; gap: 2px; }
 :root .action-economy__subpanel-4 { padding: 8px; }
-:root .action-economy__card { border-color: rgba(245, 158, 11, 0.35); }
+:root .action-economy__card { border-color: var(--accent-amber-border); }
 :root .action-economy__div { color: var(--text-muted); font-size: 12px; }
 
 /* BattlemapModal */
-:root .battlemap__svg { display: block; background: #0b0e14; user-select: none; touch-action: none; }
+:root .battlemap__svg { display: block; background: var(--bg-map); user-select: none; touch-action: none; }
 :root .battlemap__input { padding: 3px 6px; font-size: 11px; }
 :root .battlemap__btn { min-width: 26px; padding: 2px 6px; }
 :root .battlemap__subpanel { padding: 10px; }

@@ -131,6 +131,15 @@
 
   --accent-brand: var(--accent-blue);
   --accent-gold: var(--accent-amber);
+
+  /* Tints of the accents for borders and soft fills; --bg-map is the always-dark battlemap canvas */
+  --accent-amber-border: color-mix(in srgb, var(--accent-amber) 50%, transparent);
+  --accent-amber-soft: color-mix(in srgb, var(--accent-amber) 8%, transparent);
+  --accent-red-border: color-mix(in srgb, var(--accent-red) 50%, transparent);
+  --accent-red-soft: color-mix(in srgb, var(--accent-red) 12%, transparent);
+  --accent-green-border: color-mix(in srgb, var(--accent-green) 50%, transparent);
+  --accent-blue-border: color-mix(in srgb, var(--accent-blue) 50%, transparent);
+  --bg-map: #0b0e14;
   --bg-card-header: color-mix(in oklab, var(--accent-brand) 6%, transparent);
   --bg-rail: light-dark(#eaeef2, #0b0e14);
 

@@ -71,10 +71,10 @@ const SKETCH_COLORS = ['#f85149', '#58a6ff', '#3fb950', '#f59e0b', '#f0f6fc'] as
 
 function getTokenColor(node: CombatantNode): string {
   if (node.tokenColor) return node.tokenColor;
-  if (node.kind === 'pc') return '#58a6ff';
-  if (node.kind === 'summon') return '#bc8cff';
-  if (node.kind === 'npc') return '#d29922';
-  return '#f85149';
+  if (node.kind === 'pc') return 'var(--accent-blue-dark)';
+  if (node.kind === 'summon') return 'var(--accent-purple-dark)';
+  if (node.kind === 'npc') return 'var(--accent-amber-dark)';
+  return 'var(--accent-red-dark)';
 }
 
 function getInitials(name: string): string {
@@ -411,10 +411,10 @@ export function BattlemapModal({
         {terrainCells.map((cell) => {
           const fill =
             cell.kind === 'wall'
-              ? 'rgba(139, 148, 158, 0.72)'
+              ? 'color-mix(in srgb, var(--text-secondary-dark) 72%, transparent)'
               : cell.kind === 'difficult'
-                ? 'rgba(210, 153, 34, 0.35)'
-                : 'rgba(88, 166, 255, 0.35)';
+                ? 'color-mix(in srgb, var(--accent-amber-dark) 35%, transparent)'
+                : 'color-mix(in srgb, var(--accent-blue-dark) 35%, transparent)';
           return (
             <g key={`ter-${cell.x}-${cell.y}`} className="no-pointer">
               <rect
@@ -424,7 +424,7 @@ export function BattlemapModal({
                 height={CELL_PX - 2}
                 rx={3}
                 fill={fill}
-                stroke={cell.kind === 'wall' ? '#8b949e' : '#d29922'}
+                stroke={cell.kind === 'wall' ? 'var(--text-secondary-dark)' : 'var(--accent-amber-dark)'}
                 strokeWidth={cell.kind === 'wall' ? 1.5 : 1}
                 strokeDasharray={cell.kind === 'difficult' ? '4 2' : undefined}
               />
@@ -440,7 +440,7 @@ export function BattlemapModal({
             y1={0}
             x2={i * CELL_PX}
             y2={rows * CELL_PX}
-            stroke={`rgba(139, 148, 158, ${gridOpacity})`}
+            stroke="var(--text-secondary-dark)" strokeOpacity={gridOpacity}
             strokeWidth={1}
           />
         ))}
@@ -451,7 +451,7 @@ export function BattlemapModal({
             y1={j * CELL_PX}
             x2={cols * CELL_PX}
             y2={j * CELL_PX}
-            stroke={`rgba(139, 148, 158, ${gridOpacity})`}
+            stroke="var(--text-secondary-dark)" strokeOpacity={gridOpacity}
             strokeWidth={1}
           />
         ))}
@@ -469,7 +469,7 @@ export function BattlemapModal({
                 cy={cy}
                 r={pxSize}
                 fill={tpl.color}
-                stroke="#f85149"
+                stroke="var(--accent-red-dark)"
                 strokeWidth={2}
               />
             );
@@ -480,7 +480,7 @@ export function BattlemapModal({
                 key={tpl.id}
                 points={`${cx},${cy} ${cx + pxSize},${cy - pxSize * 0.55} ${cx + pxSize},${cy + pxSize * 0.55}`}
                 fill={tpl.color}
-                stroke="#d29922"
+                stroke="var(--accent-amber-dark)"
                 strokeWidth={2}
               />
             );
@@ -494,7 +494,7 @@ export function BattlemapModal({
                 width={pxSize}
                 height={CELL_PX * 0.8}
                 fill={tpl.color}
-                stroke="#58a6ff"
+                stroke="var(--accent-blue-dark)"
                 strokeWidth={2}
               />
             );
@@ -507,7 +507,7 @@ export function BattlemapModal({
               width={pxSize}
               height={pxSize}
               fill={tpl.color}
-              stroke="#bc8cff"
+              stroke="var(--accent-purple-dark)"
               strokeWidth={2}
             />
           );
@@ -520,15 +520,15 @@ export function BattlemapModal({
           const cy = hoverCell.y * CELL_PX + CELL_PX / 2;
           const pxSize = (radiusFeet / gridFeet) * CELL_PX;
           if (mode === 'sphere') {
-            return <circle cx={cx} cy={cy} r={pxSize} fill="rgba(248, 81, 73, 0.14)" stroke="#f85149" strokeWidth={1.5} strokeDasharray="5 4" className="no-pointer" />;
+            return <circle cx={cx} cy={cy} r={pxSize} fill="var(--accent-red-dark)" fillOpacity={0.14} stroke="var(--accent-red-dark)" strokeWidth={1.5} strokeDasharray="5 4" className="no-pointer" />;
           }
           if (mode === 'cone') {
-            return <polygon points={`${cx},${cy} ${cx + pxSize},${cy - pxSize * 0.55} ${cx + pxSize},${cy + pxSize * 0.55}`} fill="rgba(210, 153, 34, 0.14)" stroke="#d29922" strokeWidth={1.5} strokeDasharray="5 4" className="no-pointer" />;
+            return <polygon points={`${cx},${cy} ${cx + pxSize},${cy - pxSize * 0.55} ${cx + pxSize},${cy + pxSize * 0.55}`} fill="var(--accent-amber-dark)" fillOpacity={0.14} stroke="var(--accent-amber-dark)" strokeWidth={1.5} strokeDasharray="5 4" className="no-pointer" />;
           }
           if (mode === 'line') {
-            return <rect x={cx} y={cy - CELL_PX * 0.4} width={pxSize} height={CELL_PX * 0.8} fill="rgba(88, 166, 255, 0.14)" stroke="#58a6ff" strokeWidth={1.5} strokeDasharray="5 4" className="no-pointer" />;
+            return <rect x={cx} y={cy - CELL_PX * 0.4} width={pxSize} height={CELL_PX * 0.8} fill="var(--accent-blue-dark)" fillOpacity={0.14} stroke="var(--accent-blue-dark)" strokeWidth={1.5} strokeDasharray="5 4" className="no-pointer" />;
           }
-          return <rect x={hoverCell.x * CELL_PX} y={hoverCell.y * CELL_PX} width={pxSize} height={pxSize} fill="rgba(188, 140, 255, 0.14)" stroke="#bc8cff" strokeWidth={1.5} strokeDasharray="5 4" className="no-pointer" />;
+          return <rect x={hoverCell.x * CELL_PX} y={hoverCell.y * CELL_PX} width={pxSize} height={pxSize} fill="var(--accent-purple-dark)" fillOpacity={0.14} stroke="var(--accent-purple-dark)" strokeWidth={1.5} strokeDasharray="5 4" className="no-pointer" />;
         })()}
 
         {/* Freehand Sketches */}
@@ -603,7 +603,7 @@ export function BattlemapModal({
                   cy={cy}
                   r={r + 4}
                   fill="none"
-                  stroke="#f0f6fc"
+                  stroke="var(--text-primary-dark)"
                   strokeWidth={2.5}
                   strokeDasharray="4 2"
                 />
@@ -614,7 +614,7 @@ export function BattlemapModal({
                   cy={cy}
                   r={r + 7}
                   fill="none"
-                  stroke="#f85149"
+                  stroke="var(--accent-red-dark)"
                   strokeWidth={2}
                 />
               )}
@@ -624,11 +624,11 @@ export function BattlemapModal({
                   cy={cy}
                   r={r + 6}
                   fill="none"
-                  stroke="#58a6ff"
+                  stroke="var(--accent-blue-dark)"
                   strokeWidth={1.5}
                 />
               )}
-              <circle cx={cx} cy={cy} r={r} fill={fill} opacity={0.92} stroke="#0d1117" strokeWidth={2} />
+              <circle cx={cx} cy={cy} r={r} fill={fill} opacity={0.92} stroke="var(--bg-base-dark)" strokeWidth={2} />
               {node.portraitUrl ? (
                 <image
                   href={node.portraitUrl}
@@ -644,7 +644,7 @@ export function BattlemapModal({
                   x={cx}
                   y={cy + 4}
                   textAnchor="middle"
-                  fill="#0d1117"
+                  fill="var(--bg-base-dark)"
                   fontSize={span > 1 ? 15 : 12}
                   fontWeight={800}
                 >
@@ -654,14 +654,14 @@ export function BattlemapModal({
               )}
               {!hideNumeric && (
                 <>
-                  <rect x={cx - r * 0.8} y={cy + r - 4} width={r * 1.6} height={4} rx={2} fill="#0d1117" />
+                  <rect x={cx - r * 0.8} y={cy + r - 4} width={r * 1.6} height={4} rx={2} fill="var(--bg-base-dark)" />
                   <rect
                     x={cx - r * 0.8}
                     y={cy + r - 4}
                     width={r * 1.6 * hpPct}
                     height={4}
                     rx={2}
-                    fill={hpPct > 0.5 ? '#3fb950' : hpPct > 0.25 ? '#d29922' : '#f85149'}
+                    fill={hpPct > 0.5 ? 'var(--accent-green-dark)' : hpPct > 0.25 ? 'var(--accent-amber-dark)' : 'var(--accent-red-dark)'}
                   />
                 </>
               )}
@@ -702,8 +702,8 @@ export function BattlemapModal({
               y={fy * CELL_PX}
               width={CELL_PX}
               height={CELL_PX}
-              fill={playerView ? '#05070b' : 'rgba(13, 17, 23, 0.56)'}
-              stroke={playerView ? 'none' : 'rgba(139, 148, 158, 0.2)'}
+              fill={playerView ? '#05070b' : 'color-mix(in srgb, var(--bg-base-dark) 56%, transparent)'}
+              stroke={playerView ? 'none' : 'color-mix(in srgb, var(--text-secondary-dark) 20%, transparent)'}
               className="no-pointer"
             />
           );
@@ -741,7 +741,7 @@ export function BattlemapModal({
               y1={measureStart.y * CELL_PX + CELL_PX / 2}
               x2={measureEnd.x * CELL_PX + CELL_PX / 2}
               y2={measureEnd.y * CELL_PX + CELL_PX / 2}
-              stroke="#58a6ff"
+              stroke="var(--accent-blue-dark)"
               strokeWidth={3}
               strokeDasharray="6 4"
             />
@@ -751,14 +751,14 @@ export function BattlemapModal({
               width={48}
               height={20}
               rx={4}
-              fill="#0d1117"
-              stroke="#58a6ff"
+              fill="var(--bg-base-dark)"
+              stroke="var(--accent-blue-dark)"
             />
             <text
               x={measureEnd.x * CELL_PX + 30}
               y={Math.max(18, measureEnd.y * CELL_PX)}
               textAnchor="middle"
-              fill="#f0f6fc"
+              fill="var(--text-primary-dark)"
               fontSize={11}
               fontWeight={700}
             >
@@ -933,7 +933,7 @@ export function BattlemapModal({
                 type="button"
                 aria-label={`Sketch color ${col}`}
                 className="btn battlemap__btn"
-                style={{ background: col, border: sketchColor === col ? '2px solid #f0f6fc' : '1px solid #30363d' }}
+                style={{ background: col, border: sketchColor === col ? '2px solid var(--text-primary-dark)' : '1px solid var(--border-subtle-dark)' }}
                 onClick={() => setSketchColor(col)}
               />
             ))}

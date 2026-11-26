@@ -33,7 +33,7 @@ export function RulesetModal({
                 className="badge"
                 style={{
                   color: preset === 'custom' ? 'var(--accent-amber)' : 'var(--accent-blue)',
-                  borderColor: preset === 'custom' ? 'rgba(245,158,11,0.5)' : 'rgba(59,130,246,0.5)',
+                  borderColor: preset === 'custom' ? 'var(--accent-amber-border)' : 'var(--accent-blue-border)',
                 }}
               >
                 {preset === '2014' ? '5e (2014 Classic)' : preset === '2024' ? '5e (2024 Revised)' : 'Custom Mix'}

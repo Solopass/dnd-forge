@@ -1579,17 +1579,17 @@ export function DmHubModal({
               {(campaign.worldMapPins ?? []).map((pin) => {
                 const bg =
                   pin.kind === 'danger'
-                    ? '#f85149'
+                    ? 'var(--accent-red-dark)'
                     : pin.kind === 'quest'
-                      ? '#d29922'
+                      ? 'var(--accent-amber-dark)'
                       : pin.kind === 'npc'
-                        ? '#bc8cff'
-                        : '#58a6ff';
+                        ? 'var(--accent-purple-dark)'
+                        : 'var(--accent-blue-dark)';
                 return (
                   <button
                     key={pin.id}
                     type="button"
-                    className="dm-hub__button" style={{ left: `${pin.xPct}%`, top: `${pin.yPct}%`, background: bg, border: selectedPinId === pin.id ? '2px solid #f0f6fc' : '1px solid #0d1117' }}
+                    className="dm-hub__button" style={{ left: `${pin.xPct}%`, top: `${pin.yPct}%`, background: bg, border: selectedPinId === pin.id ? '2px solid var(--text-primary-dark)' : '1px solid var(--bg-base-dark)' }}
                     onClick={(ev) => {
                       ev.stopPropagation();
                       setSelectedPinId(pin.id);

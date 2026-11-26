@@ -1,0 +1,24 @@
+/*
+ * Small single-purpose classes that replace the most common inline styles.
+ * Loaded after layout.css. They use !important on purpose: the inline styles
+ * they replaced beat every stylesheet rule, so these must too.
+ * Only add a class here when it is used; values come from tokens.css.
+ */
+.text-xs { font-size: var(--fs-xs) !important; }
+.text-sm { font-size: var(--fs-sm) !important; }
+.text-md { font-size: var(--fs-md) !important; }
+
+.wrap { flex-wrap: wrap !important; }
+.gap-1 { gap: var(--space-1) !important; }
+.gap-2 { gap: var(--space-2) !important; }
+.gap-3 { gap: var(--space-3) !important; }
+.gap-4 { gap: var(--space-4) !important; }
+.flex-1 { flex: 1 !important; }
+
+.mb-0 { margin-bottom: 0 !important; }
+.mt-2 { margin-top: var(--space-2) !important; }
+
+.no-pointer { pointer-events: none !important; }
+.is-hidden { display: none !important; }
+.clickable { cursor: pointer !important; }
+.pre-wrap { white-space: pre-wrap !important; }

@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { RawCharacterState } from '../types/character';
 import { Ruleset } from '../types/core';
+import { parseCharacterJson } from '../engine/character-json';
 import { ModalDialog } from './ModalDialog';
 
 interface CharacterManagerModalProps {
@@ -15,6 +16,8 @@ interface CharacterManagerModalProps {
   onDeleteCharacter: (id: string) => Promise<void>;
   onImportDdbPdf: (file: File) => Promise<void>;
   onImportCharacterJson: (char: RawCharacterState) => Promise<void>;
+  /** Called with a human-readable reason when a picked JSON file is rejected. */
+  onImportRejected?: (message: string) => void;
   onExportMarkdown?: (char: RawCharacterState) => void;
   onPushToCampaignRepo?: (char: RawCharacterState) => Promise<void>;
   campaignRepoLabel?: string;
@@ -32,6 +35,7 @@ export const CharacterManagerModal: React.FC<CharacterManagerModalProps> = ({
   onDeleteCharacter,
   onImportDdbPdf,
   onImportCharacterJson,
+  onImportRejected,
   onExportMarkdown,
   onPushToCampaignRepo,
   campaignRepoLabel,
@@ -118,13 +122,11 @@ export const CharacterManagerModal: React.FC<CharacterManagerModalProps> = ({
               onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
-                try {
-                  const parsed = JSON.parse(await file.text()) as RawCharacterState;
-                  if (parsed?.name && Array.isArray(parsed?.classes)) {
-                    await onImportCharacterJson(parsed);
-                  }
-                } catch {
-                  // ignore malformed file
+                const result = parseCharacterJson(await file.text());
+                if (result.ok) {
+                  await onImportCharacterJson(result.character);
+                } else {
+                  onImportRejected?.(`Could not import ${file.name}: ${result.reason}.`);
                 }
                 e.target.value = '';
               }}

@@ -188,6 +188,10 @@ export function AppModals({ store, ui, panels }: AppLayoutProps) {
           onDeleteCharacter={store.deleteCharacter}
           onImportDdbPdf={store.importDdbPdfFile}
           onImportCharacterJson={store.importSingleCharacter}
+          onImportRejected={(msg) => {
+            store.appendLog(msg, 'warn');
+            store.pushToast(msg, 'warn');
+          }}
           onExportMarkdown={(c) => {
             const lines = [
               `# ${c.name}`,

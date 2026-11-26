@@ -59,13 +59,13 @@ Checked working: action filters (ALL/ATTACK/SAVE/HEAL/SUMMON/CONC), adding a spe
 ## Width & phone
 
 - [ ] **U1 broken (phone) — the HP / rest strip runs off the right edge** at 375 px, and the header takes about a third of the screen (five rows of buttons).
-- [ ] **U2 confusing — 55 of 118 buttons are smaller than 32 px** at phone width; many are also small at laptop width.
+- [ ] **U2 confusing — 55 of 118 buttons are smaller than 32 px** at phone width; many are also small at laptop width. Partly addressed in phase 4: `.btn` keeps its 28 px minimum, new `.btn-icon` (Undo, Redo, +/-) and `.btn-sm` (dense pin/stepper buttons); both grow to 36 px on touch or at 820 px and below. Phone-width recount still to do (phase 6).
 - [ ] **U3 not checked yet** — 1024 px and 1280 px laptop widths (phase 6).
 
 ## Code structure (drives phases 2–4)
 
 - ~~`src/App.tsx` is 1,989 lines mixing 3 layouts × DM/Player × views.~~ Split 2026-11-25: App.tsx is 43 lines; see `src/components/app/`.
-- 748 inline `style={{…}}` objects across `App.tsx` and components; buttons and spacing differ panel to panel.
+- ~~748 inline `style={{…}}` objects across `App.tsx` and components.~~ Phase 4 (2026-11-25): down to 210. Static values moved to `src/styles/utilities.css` and `components.css`, type/spacing scale in `tokens.css`, hex/rgba literals replaced by tokens. What is left is computed (positions, widths from data, state colors) plus 2 `--label-N` custom properties. `src/styles/__tests__/inline-style-budget.test.ts` fails if the count grows.
 - Silent `catch { /* ignore */ }` blocks in 15 places; the ones around user actions (C5, `SettingsModal`, `ModularCanvas`) should report to the status console.
 
 ## Dev environment

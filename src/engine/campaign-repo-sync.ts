@@ -5,6 +5,32 @@ import { normalizeCustomCharacter, normalizeCustomEntity } from './custom-conten
 import { parseFree5eMarkdownBatch } from './free5e-parser';
 
 const PAT_STORAGE_KEY = 'sidereroll-github-pat';
+const NO_PACK_PREFIX = 'sidereroll-no-pack:';
+const NO_PACK_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** The requested file does not exist in the repo (HTTP 404): "no pack", not a failure. */
+class RepoFileNotFoundError extends Error {}
+
+function noPackKey(config: ExternalRepoConfig, packPath: string): string {
+  return `${NO_PACK_PREFIX}${config.owner}/${config.repo}@${config.branch?.trim() || 'main'}:${packPath}`;
+}
+
+function isKnownNoPack(key: string): boolean {
+  try {
+    const at = Number(localStorage.getItem(key));
+    return Number.isFinite(at) && at > 0 && Date.now() - at < NO_PACK_TTL_MS;
+  } catch {
+    return false;
+  }
+}
+
+function rememberNoPack(key: string): void {
+  try {
+    localStorage.setItem(key, String(Date.now()));
+  } catch {
+    // best effort: without storage we just ask again next time
+  }
+}
 
 export interface CampaignPackManifest {
   name?: string;
@@ -85,6 +111,7 @@ async function fetchRepoText(
         Accept: 'application/vnd.github.raw+json',
       },
     });
+    if (res.status === 404) throw new RepoFileNotFoundError(`Not found: ${cleanPath}`);
     if (!res.ok) {
       throw new Error(`GitHub API ${res.status} for ${cleanPath}`);
     }
@@ -93,6 +120,7 @@ async function fetchRepoText(
 
   const rawUrl = `https://raw.githubusercontent.com/${config.owner}/${config.repo}/${branch}/${cleanPath}`;
   const res = await fetch(rawUrl);
+  if (res.status === 404) throw new RepoFileNotFoundError(`Not found: ${cleanPath}`);
   if (!res.ok) {
     throw new Error(`HTTP ${res.status} fetching ${cleanPath}`);
   }
@@ -256,9 +284,16 @@ export async function fetchCampaignPackFromGitHub(
 ): Promise<SyncedCampaignPackResult> {
   const packPath = config.packPath?.trim() || 'campaign-pack.json';
   let rawManifest: CampaignPackManifest;
+  const missingKey = noPackKey(config, packPath);
+  if (isKnownNoPack(missingKey)) {
+    // this repo had no pack file the last time we looked: skip the request that would 404 again
+    const known = await fetchFree5eTreeFromGitHub(config, token);
+    if (known) return known;
+  }
   try {
     rawManifest = (await fetchRepoJson(config, packPath, token)) as CampaignPackManifest;
   } catch (err) {
+    if (err instanceof RepoFileNotFoundError) rememberNoPack(missingKey);
     const treeFallback = await fetchFree5eTreeFromGitHub(config, token);
     if (treeFallback) return treeFallback;
     throw err;

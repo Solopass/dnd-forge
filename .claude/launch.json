@@ -5,13 +5,15 @@
       "name": "dnd-forge",
       "runtimeExecutable": "bun",
       "runtimeArgs": ["run", "dev", "--", "--port", "5198", "--strictPort"],
-      "port": 5198
+      "port": 5198,
+      "url": "http://127.0.0.1:5198"
     },
     {
       "name": "content-gui",
       "runtimeExecutable": "bun",
       "runtimeArgs": ["run", "content:gui"],
-      "port": 4179
+      "port": 4179,
+      "url": "http://127.0.0.1:4179"
     }
   ]
 }

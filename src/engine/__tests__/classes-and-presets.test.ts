@@ -3,6 +3,8 @@ import {
   buildCharacterFromPreset,
   CLASS_DEFINITIONS,
   computeFixedMaxHp,
+  extractSrdSpellcasterClasses,
+  spellOnClassList,
   syncClassResourcePools,
 } from '../classes';
 import { computeCharacterSheet, syncSpellSlotPools } from '../rules-math';
@@ -201,5 +203,25 @@ describe('D&D Forge Class Definitions & Character Presets', () => {
     const wizSlotSync = syncSpellSlotPools(wizard.classes, wizClassSync);
     expect(wizSlotSync.find((r) => r.id === 'spell_slot_1')?.current).toBe(2);
     expect(wizSlotSync.find((r) => r.id === 'spell_slot_1')?.max).toBe(4);
+  });
+});
+
+describe('spell class lists (audit C4)', () => {
+  it('filters strictly by class and drops spells with no class info', () => {
+    const wizard = extractSrdSpellcasterClasses(['Wizard (Evocation)']);
+    expect(spellOnClassList({ classes: ['Wizard', 'Sorcerer'] }, wizard)).toBe(true);
+    expect(spellOnClassList({ classes: ['Warlock'] }, wizard)).toBe(false);
+    expect(spellOnClassList({}, wizard)).toBe(false);
+    expect(spellOnClassList({ classes: [] }, wizard)).toBe(false);
+  });
+
+  it('treats Artificer as its own list instead of "show everything"', () => {
+    const art = extractSrdSpellcasterClasses(['Artificer']);
+    expect(art.has('artificer')).toBe(true);
+    expect(spellOnClassList({ classes: ['Warlock'] }, art)).toBe(false);
+  });
+
+  it('an empty class set (no known spell list) matches any spell', () => {
+    expect(spellOnClassList({}, new Set())).toBe(true);
   });
 });

@@ -3,7 +3,7 @@ import { CombatEncounterState } from '../types/combat';
 import { Activity, CompendiumEntity, CreatureSize, MonsterStatMeta } from '../types/compendium';
 import { ActionEconomy, STANDARD_CONDITIONS } from '../types/core';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
-import { extractSrdSpellcasterClasses } from '../engine/classes';
+import { extractSrdSpellcasterClasses, spellOnClassList } from '../engine/classes';
 import { CONDITION_RULES } from '../engine/conditions';
 import { getQualitativeHealthLabel } from '../engine/dm-tools';
 import { evaluateEncounterDifficulty } from '../engine/encounter-math';
@@ -961,10 +961,7 @@ export function CommandPalette({
         (categoryFilter !== 'spell' || spellLevelFilter === 'all' || (item.spellLevel ?? 0) === spellLevelFilter) &&
         (categoryFilter !== 'spell' ||
           !classCastableOnly ||
-          ((item.spellLevel ?? 0) <= maxCastableSpellLevel &&
-            (!item.classes?.length ||
-              charClassSet.size === 0 ||
-              item.classes.some((c) => charClassSet.has(c.toLowerCase()))))) &&
+          ((item.spellLevel ?? 0) <= maxCastableSpellLevel && spellOnClassList(item, charClassSet))) &&
         (categoryFilter !== 'spell' ||
           spellTagFilter === 'all' ||
           (spellTagFilter === 'conc' && Boolean(item.concentration)) ||

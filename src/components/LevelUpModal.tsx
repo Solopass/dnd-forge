@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { CLASS_DEFINITIONS, extractSrdSpellcasterClasses, getClassDefinition, getSubclassPresets } from '../engine/classes';
+import { CLASS_DEFINITIONS, extractSrdSpellcasterClasses, getClassDefinition, getSubclassPresets, spellOnClassList } from '../engine/classes';
 import { evaluateDiceExpression } from '../engine/dice';
 import { computeAbilityModifier, computeEffectiveCasterLevel } from '../engine/rules-math';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
@@ -139,10 +139,7 @@ export function LevelUpModal({
           !ownedIds.has(e.id) &&
           (e.spellLevel ?? 0) <= maxNewSpellLevel &&
           (!matchCharRulesetOnly || e.ruleset === character.ruleset || e.ruleset === 'homebrew') &&
-          (showAllClassSpells ||
-            classSet.size === 0 ||
-            !e.classes?.length ||
-            e.classes.some((c) => classSet.has(c.toLowerCase())))
+          (showAllClassSpells || spellOnClassList(e, classSet))
       )
       .filter((e) => !q || e.name.toLowerCase().includes(q))
       .sort((a, b) => (a.spellLevel ?? 0) - (b.spellLevel ?? 0) || a.name.localeCompare(b.name));

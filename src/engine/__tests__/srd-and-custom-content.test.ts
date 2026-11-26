@@ -301,7 +301,8 @@ describe('Custom Content Templates & JSON Loader', () => {
   it('normalizes spellcasting class names including subclasses and non-SRD classes', () => {
     expect(Array.from(extractSrdSpellcasterClasses(['Wizard (Evocation)']))).toEqual(['wizard']);
     expect(Array.from(extractSrdSpellcasterClasses(['Eldritch Knight']))).toEqual(['wizard']);
-    expect(Array.from(extractSrdSpellcasterClasses(['Artificer']))).toEqual([]);
+    expect(Array.from(extractSrdSpellcasterClasses(['Artificer']))).toEqual(['artificer']);
+    expect(Array.from(extractSrdSpellcasterClasses(['Homebrew Mystic']))).toEqual([]);
   });
 
   it('parses native Free5e Markdown spells and feats without modifying source files', () => {

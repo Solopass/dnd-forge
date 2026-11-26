@@ -28,6 +28,7 @@ export interface ClassDefinition {
 export const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8] as const;
 
 const SRD_SPELL_LIST_CLASSES = [
+  'artificer',
   'bard',
   'cleric',
   'druid',
@@ -40,8 +41,9 @@ const SRD_SPELL_LIST_CLASSES = [
 
 /**
  * Extracts normalized SRD spell-list class names (e.g. "Wizard (Evocation)" -> "wizard",
- * "Eldritch Knight" / "Arcane Trickster" -> "wizard"). Returns an empty set for classes without
- * an SRD spell list (like Artificer) so callers can fall back to showing all level-eligible spells.
+ * "Eldritch Knight" / "Arcane Trickster" -> "wizard"). Returns an empty set for classes that have
+ * no known spell list, so callers can fall back to showing all level-eligible spells. Artificer is
+ * listed even though the SRD has no Artificer spells, so it is filtered instead of shown everything.
  */
 export function extractSrdSpellcasterClasses(classNames: string[]): Set<string> {
   const out = new Set<string>();
@@ -55,6 +57,16 @@ export function extractSrdSpellcasterClasses(classNames: string[]): Set<string> 
     }
   }
   return out;
+}
+
+/**
+ * True when a spell may be offered to a character whose classes map to `classSet`
+ * (see extractSrdSpellcasterClasses). A spell with no class info never matches a non-empty class
+ * set; an empty set (no known spell list) matches everything.
+ */
+export function spellOnClassList(spell: { classes?: string[] }, classSet: Set<string>): boolean {
+  if (classSet.size === 0) return true;
+  return Boolean(spell.classes?.some((c) => classSet.has(c.toLowerCase())));
 }
 
 export const CLASS_DEFINITIONS: ClassDefinition[] = [

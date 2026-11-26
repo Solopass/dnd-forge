@@ -246,7 +246,7 @@ export function TopBar({ store, ui }: AppSectionProps) {
         </button>
         <button
           type="button"
-          className="btn"
+          className="btn btn-icon"
           disabled={!store.canUndo}
           onClick={store.undo}
           title="Undo (Ctrl+Z)"
@@ -256,7 +256,7 @@ export function TopBar({ store, ui }: AppSectionProps) {
         </button>
         <button
           type="button"
-          className="btn"
+          className="btn btn-icon"
           disabled={!store.canRedo}
           onClick={store.redo}
           title="Redo (Ctrl+Y)"

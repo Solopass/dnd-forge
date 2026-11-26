@@ -594,6 +594,23 @@
   cursor: not-allowed;
 }
 
+/* Compact button for dense rows (pins, +/- steppers, table actions) */
+.btn-sm {
+  min-block-size: 24px;
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+/* Square button for icon-only controls (Undo, Redo, + / -) */
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 28px;
+  block-size: 28px;
+  padding: 0;
+}
+
 .btn-primary {
   background: #2563eb;
   border-color: #60a5fa;
@@ -2041,5 +2058,19 @@ button.stat-tile:hover {
     grid-template-columns: 1fr;
     overflow-y: auto;
     height: auto;
+  }
+}
+
+/* Touch and phone widths keep the larger hit area for the compact variants */
+@media (pointer: coarse), (max-width: 820px) {
+  .btn-sm {
+    min-block-size: 36px;
+    padding: 6px 10px;
+  }
+
+  .btn-icon {
+    inline-size: 36px;
+    block-size: 36px;
+    padding: 0;
   }
 }

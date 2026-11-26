@@ -932,7 +932,7 @@ export function BattlemapModal({
                 key={col}
                 type="button"
                 aria-label={`Sketch color ${col}`}
-                className="btn battlemap__btn"
+                className="btn btn-sm battlemap__btn"
                 style={{ background: col, border: sketchColor === col ? '2px solid var(--text-primary-dark)' : '1px solid var(--border-subtle-dark)' }}
                 onClick={() => setSketchColor(col)}
               />
@@ -1053,7 +1053,7 @@ export function BattlemapModal({
                     <button
                       key={delta}
                       type="button"
-                      className="btn battlemap__btn-2"
+                      className="btn btn-sm battlemap__btn-2"
                       onClick={() => onAdjustTokenHp(selectedToken.id, delta)}
                     >
                       {delta > 0 ? `+${delta}` : delta}

@@ -878,11 +878,11 @@ export function VitalsColumn({
               <div className="forge-row-between">
                 <span>{pool.name}</span>
                 <div className="forge-row">
-                  <button type="button" className="btn" onClick={() => onAdjustResource(pool.id, -1)}>-</button>
+                  <button type="button" className="btn btn-icon" onClick={() => onAdjustResource(pool.id, -1)}>-</button>
                   <span className="tabular vitals__tabular-3">
                     {pool.current}/{pool.max}
                   </span>
-                  <button type="button" className="btn" onClick={() => onAdjustResource(pool.id, 1)}>+</button>
+                  <button type="button" className="btn btn-icon" onClick={() => onAdjustResource(pool.id, 1)}>+</button>
                 </div>
               </div>
               {pool.max > 0 && pool.max <= 10 && (

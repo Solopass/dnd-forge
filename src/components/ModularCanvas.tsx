@@ -252,7 +252,7 @@ export function ModularCanvas({
         <div className="forge-row gap-1">
           <button
             type="button"
-            className="btn modular-canvas__btn"
+            className="btn btn-sm modular-canvas__btn"
             style={{ color: pinnedIds.includes(act.id) ? 'var(--accent-gold)' : 'var(--text-muted)' }}
             onClick={() => togglePin(act.id)}
             aria-label={pinnedIds.includes(act.id) ? `Unpin ${act.name}` : `Pin ${act.name}`}
@@ -621,7 +621,7 @@ export function ModularCanvas({
               {onOpenCompendium && (
                 <button
                   type="button"
-                  className="btn btn-primary modular-canvas__btn-2"
+                  className="btn btn-sm btn-primary modular-canvas__btn-2"
                   onClick={() => onOpenCompendium('spell')}
                 >
                   + Add Spell

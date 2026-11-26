@@ -214,7 +214,7 @@ export function ActionEconomyBoard({
         <div className="forge-row">
           <button
             type="button"
-            className="btn action-economy__btn"
+            className="btn btn-sm action-economy__btn"
             style={{ color: pinnedIds.includes(act.id) ? 'var(--accent-amber)' : 'var(--text-muted)' }}
             title={pinnedIds.includes(act.id) ? 'Unpin from favorites' : 'Pin to favorites'}
             aria-label={pinnedIds.includes(act.id) ? `Unpin ${act.name}` : `Pin ${act.name}`}
@@ -382,14 +382,14 @@ export function ActionEconomyBoard({
               <div className="forge-row gap-2">
                 <button
                   type="button"
-                  className="btn btn-primary action-economy__btn-2"
+                  className="btn btn-sm btn-primary action-economy__btn-2"
                   onClick={() => onOpenCompendium('spell')}
                 >
                   + Add Spell
                 </button>
                 <button
                   type="button"
-                  className="btn action-economy__btn-2"
+                  className="btn btn-sm action-economy__btn-2"
                   onClick={() => onOpenCompendium('gear')}
                 >
                   + Add Gear
@@ -565,7 +565,7 @@ export function ActionEconomyBoard({
                 {onOpenCompendium && (
                   <button
                     type="button"
-                    className="btn btn-primary action-economy__btn-2"
+                    className="btn btn-sm btn-primary action-economy__btn-2"
                     onClick={() => onOpenCompendium('spell')}
                   >
                     + Add Spell

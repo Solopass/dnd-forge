@@ -49,7 +49,23 @@ describe('pack doctor (analyzePackFiles)', () => {
     const a = await analyzePackFiles({ 'one.json': JSON.stringify([lamp, hero]), 'two.json': JSON.stringify([lamp]) }, 'folder');
     expect(a.report.characters).toBe(1);
     expect(a.report.accepted).toBe(1);
-    expect(a.report.rejected).toEqual([expect.objectContaining({ kind: 'duplicate' })]);
+    // an identical copy is merged silently and counted, not listed as rejected
+    expect(a.report.rejected).toEqual([]);
+    expect(a.report.identicalMerged).toBe(1);
+    expect(formatPackDoctor(a.report).join(String.fromCharCode(10))).toContain('1 identical copy merged');
+    expect(formatPackDoctor(a.report).join(String.fromCharCode(10))).not.toContain('Rejected:');
+  });
+
+  it('merges identical entries without ids (a batch file plus individual files) and keeps different ones with the same name', async () => {
+    const rope = { name: 'Twin Rope', category: 'gear', entries: ['Fifty feet.'] };
+    const a = await analyzePackFiles(
+      { 'all.json': JSON.stringify([rope, { name: 'Twin Lamp', category: 'gear', entries: ['Bright.'] }]), 'items/rope.json': JSON.stringify([rope]), 'items/rope-b.json': JSON.stringify([{ ...rope, entries: ['Sixty feet.'] }]) },
+      'folder'
+    );
+    expect(a.report.rejected).toEqual([]);
+    expect(a.report.identicalMerged).toBe(1);
+    expect(a.report.accepted).toBe(3);
+    expect(formatPackDoctor(a.report).join(String.fromCharCode(10))).toContain('1 identical copy merged');
   });
 
   it('reads an old campaign-pack.json and a folder with no manifest at all', async () => {

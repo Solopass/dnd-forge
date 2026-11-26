@@ -656,7 +656,7 @@ function sameContent(a: CompendiumEntity, b: CompendiumEntity): boolean {
 }
 
 /**
- * Makes ids unique inside one import. A second entry with the same explicit id is dropped when it is
+ * Makes ids unique inside one import. A second entry with the same id is dropped (merged, counted) when it is
  * identical to the first and renamed ("id-2", with a note) when it differs; made-up ids are numbered
  * quietly. Mutates `items` (in place) and appends to `rejected`.
  */
@@ -670,7 +670,7 @@ export function dedupeProcessedIds(items: ProcessedEntity[], rejected: Rejection
       kept.push(item);
       continue;
     }
-    if (item.explicitId && first.explicitId && sameContent(item.entity, first.entity)) {
+    if (sameContent(item.entity, first.entity)) {
       rejected.push({ source: item.entity.name, reason: `exact duplicate of an earlier entry (id "${item.entity.id}")`, kind: 'duplicate' });
       continue;
     }

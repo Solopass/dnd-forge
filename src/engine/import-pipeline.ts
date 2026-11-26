@@ -74,6 +74,8 @@ export interface PipelineResult {
   /** The part of `accepted` that needed an auto-fix, with what was changed. */
   repaired: RepairedEntity[];
   rejected: Rejection[];
+  /** Identical copies of an entry already taken (same id and content): merged silently, never listed as rejected. */
+  identicalMerged: number;
   warnings: string[];
   characters: RawCharacterState[];
   /** The same entities with their notes and whether the id came from the file (internal bookkeeping). */
@@ -90,13 +92,17 @@ function makeResult(
   rejected: Rejection[],
   warnings: string[],
   characters: RawCharacterState[] = [],
-  bundle?: unknown
+  bundle?: unknown,
+  priorMerged = 0
 ): PipelineResult {
+  const identical = rejected.filter((r) => r.kind === 'duplicate').length;
+  rejected = rejected.filter((r) => r.kind !== 'duplicate');
   return {
     format,
     accepted: items.map((i) => i.entity),
     repaired: items.filter((i) => i.notes.length > 0).map((i) => ({ entity: i.entity, notes: i.notes })),
     rejected,
+    identicalMerged: priorMerged + identical,
     warnings,
     characters,
     items,
@@ -502,7 +508,7 @@ function finalize(result: PipelineResult, opts: PipelineOptions): PipelineResult
     const mapped = opts.mapEntity ? opts.mapEntity(i.entity) : i.entity;
     return { ...i, entity: opts.packFile ? { ...mapped, packFile: opts.packFile } : mapped };
   });
-  return makeResult(result.format, items, result.rejected, result.warnings, result.characters, result.bundle);
+  return makeResult(result.format, items, result.rejected, result.warnings, result.characters, result.bundle, result.identicalMerged);
 }
 
 /** Detects the format of `rawText`, parses it with the matching adapter and cleans every entity. Never throws. */
@@ -616,7 +622,9 @@ export function mergePipelineResults(results: readonly PipelineResult[], format:
     items,
     rejected,
     results.flatMap((r) => r.warnings),
-    results.flatMap((r) => r.characters)
+    results.flatMap((r) => r.characters),
+    undefined,
+    results.reduce((n, r) => n + r.identicalMerged, 0)
   );
 }
 
@@ -626,6 +634,8 @@ export interface ImportReport {
   accepted: number;
   repaired: Array<{ name: string; category: string; notes: string[] }>;
   rejected: Rejection[];
+  /** Identical copies inside the same import / pack (e.g. a batch file plus single files), merged silently. */
+  identicalMerged?: number;
   warnings: string[];
   /** Pack files that could not be read; their existing entries are kept on an update. */
   unreadable: string[];
@@ -652,6 +662,7 @@ export function buildImportReport(result: PipelineResult, extra: { files?: numbe
     accepted: result.accepted.length,
     repaired: result.repaired.map((r) => ({ name: r.entity.name, category: r.entity.category, notes: r.notes })),
     rejected: result.rejected,
+    ...(result.identicalMerged > 0 ? { identicalMerged: result.identicalMerged } : {}),
     warnings: result.warnings,
     unreadable: extra.unreadable ?? [],
     characters: result.characters.length,
@@ -662,6 +673,7 @@ export function buildImportReport(result: PipelineResult, extra: { files?: numbe
 /** "12 accepted (3 repaired), 2 rejected" */
 export function summarizeReport(report: ImportReport): string {
   const parts = [`${report.accepted} accepted${report.repaired.length > 0 ? ` (${report.repaired.length} repaired)` : ''}`, `${report.rejected.length} rejected`];
+  if (report.identicalMerged) parts.push(`${report.identicalMerged} identical cop${report.identicalMerged === 1 ? 'y' : 'ies'} merged`);
   if (report.unreadable.length > 0) parts.push(`${report.unreadable.length} file${report.unreadable.length === 1 ? '' : 's'} unreadable`);
   if (report.keptEntries) parts.push(`${report.keptEntries} unreadable — kept`);
   if (report.adopted) parts.push(`${report.adopted} existing adopted`);

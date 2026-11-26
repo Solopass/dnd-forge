@@ -280,7 +280,7 @@ export async function runPackDoctor(dir: string): Promise<{ code: number; lines:
   lines.push(...formatPackDoctor(analysis.report));
   for (const w of analysis.warnings.slice(0, 15)) lines.push(`Warning: ${w}`);
   if (analysis.warnings.length > 15) lines.push(`... and ${analysis.warnings.length - 15} more warnings`);
-  const realRejects = analysis.report.rejected.filter((r) => r.kind !== 'duplicate').length;
+  const realRejects = analysis.report.rejected.length;
   const bad = analysis.manifestProblems.length + realRejects + analysis.report.unreadable.length;
   lines.push(
     bad > 0

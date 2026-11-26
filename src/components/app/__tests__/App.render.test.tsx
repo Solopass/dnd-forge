@@ -24,7 +24,10 @@ function normalize(html: string): string {
     .replace(/\[\d{1,2}:\d{2}:\d{2}(?:\s?[AP]M)?\]/g, '[TIME]')
     // the topbar shows APP_VERSION, which `bun run version:bump` changes before every push;
     // without this every bump would fail all snapshots (and tempt a blind `vitest -u`)
-    .replace(new RegExp(`>${APP_VERSION.replace('.', '\\.')}<`, 'g'), '>[VERSION]<');
+    .replace(new RegExp(`>${APP_VERSION.replace('.', '\\.')}<`, 'g'), '>[VERSION]<')
+    // SVG coordinates from Math.sin/cos (SkillWheel) differ in the last digits between
+    // Windows and the Linux CI runner (52.15051733833046 vs 52.150517338330474), so round them
+    .replace(/(\d+\.\d{4})\d+/g, '$1');
   // React useId() values ("_r_1o_") come from a counter shared by every render in the
   // process, so renumber them by order of first appearance (keeps which elements share an id)
   const seen = new Map<string, string>();

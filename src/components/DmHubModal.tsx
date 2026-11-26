@@ -1,4 +1,5 @@
 import { FormEvent, useState } from 'react';
+import { CampaignPacksPanel, type CampaignPacksApi } from './CampaignPacksPanel';
 import {
   DM_SCREEN_SECTIONS,
   exportCampaignToMarkdown,
@@ -44,6 +45,7 @@ export type DmHubTab =
   | 'soundboard';
 
 interface DmHubModalProps {
+  campaignPacksApi?: CampaignPacksApi;
   activeTab?: DmHubTab;
   onTabChange?: (tab: DmHubTab) => void;
   onOpenCharacterSheet?: (characterId: string) => void;
@@ -94,6 +96,7 @@ const CATEGORIES: Array<{ key: 'all' | CampaignCategory; label: string }> = [
 ];
 
 export function DmHubModal({
+  campaignPacksApi,
   activeTab: activeTabProp,
   onTabChange,
   onOpenCharacterSheet,
@@ -438,6 +441,8 @@ export function DmHubModal({
                 </div>
               </div>
             )}
+
+            {campaignPacksApi && <CampaignPacksPanel api={campaignPacksApi} />}
 
             {onSyncCampaignRepo && (
               <div className="card forge-stack">

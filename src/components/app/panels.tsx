@@ -275,6 +275,15 @@ export function buildAppPanels(store: SheetStore, ui: AppUi) {
   };
 
   const sharedDmHubProps = {
+    campaignPacksApi: {
+      campaignPacks: store.campaign.packs ?? [],
+      installedPacks: store.packs,
+      link: store.linkCampaignPack,
+      linkInstalled: store.linkInstalledPack,
+      update: store.updateCampaignPack,
+      setEnabled: store.setCampaignPackOn,
+      remove: store.removeCampaignPackLink,
+    },
     campaign: store.campaign,
     campaignList: store.campaignList,
     characterList: store.characterList,

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { InstalledPack } from '../types/pack';
+import { failureMessage, type TablePackSyncState } from '../engine/campaign-packs';
 
 export type PackOutcome = { ok: true } | { ok: false; error: string };
 export type PackUpdateState = 'current' | 'available' | 'unknown';
@@ -11,6 +12,9 @@ export interface PackApi {
   update: (packId: string) => Promise<PackOutcome>;
   uninstall: (packId: string) => Promise<PackOutcome>;
   checkUpdate: (packId: string) => Promise<PackUpdateState>;
+  /** Outcome of the last campaign pack sync from a Live Table host (players). */
+  tableSync?: TablePackSyncState | null;
+  retryTableSync?: () => Promise<void>;
 }
 
 /** "owner/repo", "owner/repo@ref" or a github.com URL (optionally with /tree/<ref>). */
@@ -44,6 +48,8 @@ export function PacksPanel({ api }: { api: PackApi }) {
   const [message, setMessage] = useState('');
   const [updates, setUpdates] = useState<Record<string, PackUpdateState>>({});
   const [confirming, setConfirming] = useState<string | null>(null);
+
+  const failedTable = (api.tableSync?.results ?? []).filter((r) => r.status === 'needs-access' || r.status === 'network' || r.status === 'error');
 
   const run = async (key: string, job: () => Promise<PackOutcome>, okMessage: string) => {
     setBusy(key);
@@ -81,6 +87,7 @@ export function PacksPanel({ api }: { api: PackApi }) {
                   <strong>{p.name}</strong>
                   <span className="badge tabular">v{p.version}</span>
                   {p.sha && <span className="badge tabular" title={p.sha}>{p.sha.slice(0, 7)}</span>}
+                  {p.managedByCampaign && <span className="badge" title="Installed by your DM's table; synced to their commit">Campaign</span>}
                   {typeof p.entityCount === 'number' && <span className="badge tabular">{p.entityCount} items</span>}
                   {state && (
                     <span className={`badge packs-panel__state packs-panel__state--${state}`}>{UPDATE_LABEL[state]}</span>
@@ -148,6 +155,38 @@ export function PacksPanel({ api }: { api: PackApi }) {
             );
           })}
         </ul>
+      )}
+
+      {failedTable.length > 0 && (
+        <div className="packs-panel__item card" role="alert">
+          <strong>Campaign packs that did not sync</strong>
+          <ul className="packs-panel__list">
+            {failedTable.map((r) => (
+              <li key={`${r.owner}/${r.repo}`} className="packs-panel__meta">
+                {failureMessage(r)}
+              </li>
+            ))}
+          </ul>
+          {api.retryTableSync && (
+            <div className="forge-row gap-2 wrap">
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={busy !== null}
+                onClick={async () => {
+                  setBusy('retry');
+                  try {
+                    await api.retryTableSync?.();
+                  } finally {
+                    setBusy(null);
+                  }
+                }}
+              >
+                {busy === 'retry' ? 'Retrying...' : 'Retry'}
+              </button>
+            </div>
+          )}
+        </div>
       )}
 
       <form

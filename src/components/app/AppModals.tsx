@@ -112,6 +112,8 @@ export function AppModals({ store, ui, panels }: AppLayoutProps) {
     update: store.updatePack,
     uninstall: store.uninstallPack,
     checkUpdate: store.checkPackUpdate,
+    tableSync: store.tablePackSync,
+    retryTableSync: store.retryTablePackSync,
   };
   return (
     <>

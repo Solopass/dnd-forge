@@ -58,9 +58,17 @@ export const PARTY_XP_THRESHOLDS: Record<number, readonly [number, number, numbe
   20: [2800, 5700, 8500, 12700],
 };
 
+const DECIMAL_CR: Record<string, string> = { '0.125': '1/8', '0.25': '1/4', '0.5': '1/2' };
+
+/** The SRD JSON stores fractional CRs as decimals ("0.25"); the XP table and UI use "1/4". */
+export function normalizeCr(cr: string): string {
+  const t = cr.trim();
+  return DECIMAL_CR[t] ?? t;
+}
+
 export function crToXp(cr?: string): number {
   if (!cr) return 0;
-  return CR_XP_TABLE[cr.trim()] ?? 0;
+  return CR_XP_TABLE[normalizeCr(cr)] ?? 0;
 }
 
 export function getEncounterMultiplier(monsterCount: number): number {

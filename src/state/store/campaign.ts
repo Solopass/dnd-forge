@@ -196,7 +196,7 @@ export function useCampaignActions(core: StoreCore) {
       const currentGp = rawChar.currency?.gp ?? 0;
       if (chargeGold && currentGp < item.priceGp) {
         appendLog(
-          `Insufficient GP for ${item.name} (costs ${item.priceGp} GP, have ${currentGp} GP).`,
+          `Insufficient GP for ${item.name}: ${rawChar.name}'s purse has ${currentGp} GP, it costs ${item.priceGp} GP (the party stash is separate).`,
           'warn'
         );
         return false;

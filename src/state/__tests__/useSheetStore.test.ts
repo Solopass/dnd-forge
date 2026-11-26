@@ -350,6 +350,27 @@ describe('useSheetStore characterization', () => {
     expect(h.result.current.encounter.combatants).toHaveLength(2);
   });
 
+  it('addMonsterToEncounter stores a decimal CR as a fraction so the monster counts XP (audit D3)', async () => {
+    const h = await setup();
+    act(() => h.result.current.addMonsterToEncounter('Goblin', 15, 7, 2, [], '0.25'));
+    const goblin = h.result.current.encounter.combatants.find((c) => c.name === 'Goblin');
+    expect(goblin?.cr).toBe('1/4');
+  });
+
+  it('a failed shop purchase names whose purse was short (audit D1)', async () => {
+    const h = await setup();
+    act(() => h.result.current.updateCurrency('gp', 0));
+    const item = { id: 'shop-x', name: 'Longsword', category: 'Weapon', rarity: 'Common' as const, priceGp: 15, notes: '' };
+    let ok = true;
+    act(() => {
+      ok = h.result.current.buyShopItemForActiveCharacter(item, true);
+    });
+    expect(ok).toBe(false);
+    const line = logTexts(h).find((t) => t.includes('Insufficient GP'));
+    expect(line).toContain(h.result.current.rawChar.name);
+    expect(line).toMatch(/purse/);
+  });
+
   it('stepCombatTurn advances the active turn and wraps into a new round', async () => {
     const h = await setup();
     act(() => h.result.current.addMonsterToEncounter('Goblin', 15, 7, 0));

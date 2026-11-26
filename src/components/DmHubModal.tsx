@@ -200,7 +200,8 @@ export function DmHubModal({
   const [dmScreenFilter, setDmScreenFilter] = useState('');
 
   // XP & Milestones
-  const [customXp, setCustomXp] = useState('450');
+  // null = not edited: the amount follows the current encounter's total XP
+  const [customXp, setCustomXp] = useState<string | null>(null);
   const [confirmMilestone, setConfirmMilestone] = useState(false);
 
   const monsterCrs = encounter.combatants
@@ -208,6 +209,9 @@ export function DmHubModal({
     .map((c) => c.cr ?? '1');
   const partyLevels = characterList.map((c) => c.classes.reduce((s, cl) => s + cl.level, 0));
   const encDiff = evaluateEncounterDifficulty(partyLevels, monsterCrs);
+  const xpAmountText = customXp ?? String(encDiff.rawXp);
+  const xpAmount = Math.max(0, Number.parseInt(xpAmountText, 10) || 0);
+  const xpPerPc = Math.floor(xpAmount / Math.max(1, characterList.length));
 
   const filteredEntries = campaign.entries.filter((e) => {
     if (catFilter !== 'all' && e.category !== catFilter) return false;
@@ -1076,7 +1080,7 @@ export function DmHubModal({
               <div className="card forge-stack">
                 <div className="forge-section-label">PARTY TREASURY &amp; SHARED STASH</div>
                 <div className="tabular">
-                  Shared Gold: <strong>{campaign.partyLootGp.toLocaleString()} GP</strong>{' '}
+                  Party stash: <strong>{campaign.partyLootGp.toLocaleString()} GP</strong>{' '}
                   <button
                     type="button"
                     className="btn dm-hub__btn"
@@ -1127,8 +1131,8 @@ export function DmHubModal({
                     ))}
                   </div>
                 )}
-                <div className="forge-muted tabular">
-                  Active Buyer: <strong>{activeCharacterName}</strong> ({activeCharacterGp} GP in purse)
+                <div className="forge-muted text-md">
+                  The stash is shared by the party. Shop purchases are paid from the active character&apos;s own purse (see Merchant Shop below).
                 </div>
               </div>
             </div>
@@ -1137,6 +1141,9 @@ export function DmHubModal({
               <div className="forge-row-between wrap">
                 <span className="forge-section-label mb-0">
                   MERCHANT SHOP GENERATOR
+                </span>
+                <span className="badge tabular" data-testid="shop-purse">
+                  {activeCharacterName}&apos;s purse: {activeCharacterGp.toLocaleString()} GP
                 </span>
                 <div className="pill-row">
                   {(['village', 'town', 'city'] as const).map((tier) => (
@@ -1274,28 +1281,28 @@ export function DmHubModal({
                   Current Encounter Total: <strong>{encDiff.rawXp.toLocaleString()} XP</strong> ({Math.floor(encDiff.rawXp / Math.max(1, characterList.length)).toLocaleString()} XP per PC) • Campaign XP Earned: {campaign.partyXpTotal.toLocaleString()}
                 </div>
                 <div className="forge-row wrap">
+                  <label className="forge-muted" htmlFor="dm-xp-amount">
+                    XP to award (starts at the encounter total; edit it for a custom amount)
+                  </label>
                   <input
-                    aria-label="XP amount to award party"
+                    id="dm-xp-amount"
                     type="number"
                     min={0}
                     className="forge-input tabular dm-hub__input-11"
-                    value={customXp}
+                    value={xpAmountText}
                     onChange={(e) => setCustomXp(e.target.value)}
                   />
                   <button
                     type="button"
                     className="btn btn-primary"
-                    onClick={() => void onAwardXp(Number.parseInt(customXp, 10) || 0)}
+                    disabled={xpAmount <= 0}
+                    onClick={() => void onAwardXp(xpAmount)}
                   >
-                    Award Total XP (Split)
+                    Award {xpAmount.toLocaleString()} XP to the party ({xpPerPc.toLocaleString()} each)
                   </button>
-                  {encDiff.rawXp > 0 && (
-                    <button
-                      type="button"
-                      className="btn"
-                      onClick={() => void onAwardXp(encDiff.rawXp)}
-                    >
-                      Award Encounter XP ({encDiff.rawXp})
+                  {customXp !== null && (
+                    <button type="button" className="btn" onClick={() => setCustomXp(null)}>
+                      Use encounter total ({encDiff.rawXp.toLocaleString()})
                     </button>
                   )}
                 </div>

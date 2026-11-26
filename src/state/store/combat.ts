@@ -5,6 +5,7 @@ import { Activity, CreatureSize, MonsterStatMeta } from '../../types/compendium'
 import { ActionEconomy, RollMode, WeaponMastery } from '../../types/core';
 import { computeCharacterSheet } from '../../engine/rules-math';
 import { evaluateDiceExpression } from '../../engine/dice';
+import { normalizeCr } from '../../engine/encounter-math';
 import { advanceTurn, dropConcentrationForCombatant, rollAllInitiativeOrder, sortInitiativeOrder } from '../../engine/combat-machine';
 import { getCustomInitiativeSoundUrl, tabletopSoundboard } from '../../engine/soundboard';
 import { db, saveEncounter } from '../../storage/db';
@@ -57,7 +58,7 @@ export function useCombatActions(core: StoreCore, deps: CombatDeps) {
               id: `mob-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
               name,
               kind: 'monster',
-              cr,
+              cr: cr ? normalizeCr(cr) : cr,
               size: extraMeta?.size ?? 'medium',
               portraitUrl,
               x: 12 + (mobCount % 6),

@@ -132,3 +132,18 @@ describe('source priority setting', () => {
     expect(moveSourceTier(['mine', 'srd2024'], 'mine', -1)).toEqual(['mine', 'srd2024']);
   });
 });
+
+describe('backup bundle includes packs', () => {
+  it('exports installed packs and restores them (replace mode)', async () => {
+    const { db, exportFullBundle, importBackupBundle, savePack } = await import('../db');
+    await db.delete();
+    await db.open();
+    await savePack({ id: 'p1', name: 'Pack One', version: '1.0.0', repo: 'Someone/p1', ref: '', installedAt: 'now' });
+    const bundle = await exportFullBundle();
+    expect(bundle.packs?.map((p) => p.id)).toEqual(['p1']);
+    await db.packs.clear();
+    await importBackupBundle(JSON.parse(JSON.stringify(bundle)), 'replace');
+    expect((await db.packs.get('p1'))?.name).toBe('Pack One');
+    await db.delete();
+  });
+});

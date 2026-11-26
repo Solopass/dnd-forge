@@ -17,20 +17,28 @@ import { foldMagicVariants } from '../../engine/magic-variants';
 import { planEntityImport } from '../../engine/import-preview';
 import { parseCustomContentJson } from '../../engine/custom-content-loader';
 import { getClassDefinition } from '../../engine/classes';
-import { buildCampaignPackExport, fetchCampaignPackFromGitHub, getStoredGithubPat, pushFileToGitHubRepo, tryFetchExistingManifest } from '../../engine/campaign-repo-sync';
+import { buildCampaignPackExport, fetchPackFromGitHub, getStoredGithubPat, pushFileToGitHubRepo, resolveCommitSha, toInstalledPack, tryFetchExistingManifest } from '../../engine/campaign-repo-sync';
+import { diffPackEntities } from '../../engine/pack-manifest';
+import type { InstalledPack } from '../../types/pack';
 import { ExternalRepoConfig } from '../../types/campaign';
 import {
   buildSearchTokens,
   db,
   deleteDuplicateDecision,
   importBackupBundle,
+  markOrphans,
   normalizeSearchQuery,
+  removePackFromDb,
   saveCharacter,
   saveDuplicateDecision,
+  savePack,
   upsertCompendiumEntities,
 } from '../../storage/db';
 import type { StoreCore } from './core';
 import type { useCombatActions } from './combat';
+
+export type PackActionResult = { ok: true } | { ok: false; error: string };
+export type PackUpdateStatus = 'current' | 'available' | 'unknown';
 
 export type ContentImportDeps = Pick<ReturnType<typeof useCombatActions>, 'addMonsterToEncounter'>;
 
@@ -59,13 +67,24 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
     setDupDecisions,
     setPendingImport,
     pendingImport,
+    packs,
+    setPacks,
+    setContentFixes,
   } = core;
   const { addMonsterToEncounter } = deps;
 
   /** Shows the "N new, M exact duplicates, K possible duplicates" preview; `commit` only runs on Import. */
   const stageImport = useCallback(
-    (label: string, entities: CompendiumEntity[], characters: number, commit: () => Promise<void>) => {
-      const plan = planEntityImport(entities, compendium, sourcePriority, characters);
+    (
+      label: string,
+      entities: CompendiumEntity[],
+      characters: number,
+      commit: () => Promise<void>,
+      opts: { replacePackId?: string } = {}
+    ) => {
+      // updating a pack: its current copies are about to be replaced, so they are not "duplicates" of the new ones
+      const existing = opts.replacePackId ? compendium.filter((e) => e.packId !== opts.replacePackId) : compendium;
+      const plan = planEntityImport(entities, existing, sourcePriority, characters);
       setPendingImport({ label, plan, commit });
       appendLog(`Import preview for ${label}: ${plan.summary}.`, 'info');
     },
@@ -248,6 +267,7 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
           );
           const refreshedDecisions = await db.dupDecisions.toArray();
           setDupDecisions(refreshedDecisions);
+          setPacks(await db.packs.toArray());
           });
           return;
         }
@@ -297,7 +317,7 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
         appendLog(`JSON import failed: ${String(err)}`, 'warn');
       }
     },
-    [appendLog, stageImport, setDupDecisions, compendium]
+    [appendLog, stageImport, setDupDecisions, setPacks, compendium]
   );
 
   const createHomebrewEntity = useCallback(
@@ -320,7 +340,10 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
 
   // Search shows one entry per name (SRD copy wins over Free5e/duplicate pack copies); nothing is deleted.
   const searchableCompendium = useMemo(
-    () => applyDuplicateDecisions(foldMagicVariants(dedupeCompendium(effectiveCompendium, sourcePriority)), dupDecisions),
+    () => applyDuplicateDecisions(
+        foldMagicVariants(dedupeCompendium(effectiveCompendium, sourcePriority)),
+        dupDecisions.filter((d) => !d.orphaned)
+      ),
     [effectiveCompendium, sourcePriority, dupDecisions]
   );
 
@@ -380,6 +403,176 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
     [characterList, appendLog, pushToast]
   );
 
+  /**
+   * Reads a GitHub repo as a pack and stages it behind the import preview. Used by installPack, updatePack
+   * and the campaign repo sync. Nothing is written until the preview is confirmed.
+   */
+  const stagePackFromRepo = useCallback(
+    async (
+      cfg: ExternalRepoConfig,
+      kind: 'install' | 'update' | 'sync',
+      persistAsCampaignRepo = false
+    ): Promise<PackActionResult> => {
+      const token = getStoredGithubPat();
+      try {
+        const fetched = await fetchPackFromGitHub(cfg, token || undefined, { fresh: true });
+        const packId = fetched.manifest.id;
+        const repoName = `${cfg.owner}/${cfg.repo}`;
+        const existing = packs.find((p) => p.id === packId);
+        if (existing && existing.repo.toLowerCase() !== repoName.toLowerCase()) {
+          throw new Error(`A pack with the id "${packId}" is already installed from ${existing.repo}. Uninstall it first.`);
+        }
+        const missing = fetched.manifest.requires.filter((r) => !packs.some((p) => p.id === r));
+        if (missing.length > 0) {
+          appendLog(`Pack "${fetched.manifest.name}" builds on ${missing.join(', ')}, which ${missing.length === 1 ? 'is' : 'are'} not installed.`, 'warn');
+        }
+        fetched.warnings.forEach((w) => appendLog(`  ${repoName}: ${w}`, 'warn'));
+
+        const previous = compendium.filter((e) => e.packId === packId);
+        const diff = diffPackEntities(previous, fetched.entities);
+        const shortRef = fetched.sha ? fetched.sha.slice(0, 7) : cfg.branch?.trim() || 'main';
+        const label =
+          kind === 'sync'
+            ? repoName
+            : existing
+              ? `${fetched.manifest.name} update to ${fetched.manifest.version} @ ${shortRef} (${diff.added.length} new, ${diff.changed.length} changed, ${diff.removed.length} removed)`
+              : `${fetched.manifest.name} ${fetched.manifest.version} (${repoName} @ ${shortRef})`;
+
+        stageImport(
+          label,
+          fetched.entities,
+          fetched.characters.length,
+          async () => {
+            const keep = new Set(fetched.entities.map((e) => e.id));
+            const stale = previous.filter((e) => !keep.has(e.id)).map((e) => e.id);
+            if (stale.length > 0) {
+              await db.compendium.bulkDelete(stale);
+              await markOrphans(new Set(stale), true);
+            }
+            if (fetched.entities.length > 0) {
+              await upsertCompendiumEntities(fetched.entities);
+              await markOrphans(keep, false);
+            }
+            for (const ch of fetched.characters) await saveCharacter(ch);
+            const record: InstalledPack = {
+              ...toInstalledPack(fetched, cfg),
+              ...(existing ? { installedAt: existing.installedAt } : {}),
+            };
+            await savePack(record);
+
+            const staleSet = new Set(stale);
+            setCompendium((prev) => {
+              const map = new Map(prev.filter((e) => !staleSet.has(e.id)).map((e) => [e.id, e]));
+              for (const e of fetched.entities) map.set(e.id, e);
+              return Array.from(map.values());
+            });
+            if (fetched.characters.length > 0) {
+              setCharacterList((prev) => {
+                const map = new Map(prev.map((c) => [c.id, c]));
+                for (const ch of fetched.characters) map.set(ch.id, ch);
+                return Array.from(map.values());
+              });
+            }
+            setPacks((prev) => [...prev.filter((p) => p.id !== record.id), record]);
+            setContentFixes(await db.contentFixes.toArray());
+            setDupDecisions(await db.dupDecisions.toArray());
+            if (persistAsCampaignRepo) {
+              persistCampaign((prev) => {
+                const existingEntryIds = new Set(prev.entries.map((e) => e.id));
+                const newEntries = fetched.entries.filter((e) => !existingEntryIds.has(e.id));
+                return {
+                  ...prev,
+                  externalRepo: { ...cfg, lastSyncedAt: fetched.syncedAt },
+                  entries: newEntries.length > 0 ? [...newEntries, ...prev.entries] : prev.entries,
+                };
+              });
+            }
+            if (kind === 'sync') {
+              appendLog(
+                `Synced ${repoName}: ${fetched.entities.length} entities, ${fetched.characters.length} characters, ${fetched.entries.length} binder entries.`,
+                'info'
+              );
+              pushToast(`Synced ${repoName} (${fetched.entities.length} items, ${fetched.characters.length} PCs)`, 'info');
+            } else {
+              const verb = existing ? 'Updated' : 'Installed';
+              appendLog(
+                `${verb} pack "${record.name}" ${record.version} from ${repoName}: ${fetched.entities.length} entities${stale.length > 0 ? `, ${stale.length} removed` : ''}.`,
+                'info'
+              );
+              pushToast(`${verb} pack ${record.name}`, 'info');
+            }
+          },
+          { replacePackId: packId }
+        );
+        return { ok: true };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        appendLog(kind === 'sync' ? `Campaign repo sync failed: ${msg}` : `Pack ${kind} failed: ${msg}`, 'warn');
+        pushToast(kind === 'sync' ? `Sync failed: ${msg}` : `Pack ${kind} failed: ${msg.split('\n')[0]}`, 'warn');
+        return { ok: false, error: msg };
+      }
+    },
+    [packs, compendium, stageImport, appendLog, pushToast, persistCampaign, setCompendium, setCharacterList, setPacks, setContentFixes, setDupDecisions]
+  );
+
+  const installPack = useCallback(
+    async (spec: { owner: string; repo: string; ref?: string }): Promise<PackActionResult> => {
+      const owner = spec.owner.trim();
+      const repo = spec.repo.trim();
+      if (!owner || !repo) return { ok: false, error: 'Enter a repo as owner/repo (optionally owner/repo@ref).' };
+      return stagePackFromRepo({ owner, repo, ...(spec.ref?.trim() ? { branch: spec.ref.trim() } : {}) }, 'install');
+    },
+    [stagePackFromRepo]
+  );
+
+  const updatePack = useCallback(
+    async (packId: string): Promise<PackActionResult> => {
+      const pack = packs.find((p) => p.id === packId);
+      if (!pack) return { ok: false, error: 'That pack is not installed.' };
+      const [owner, repo] = pack.repo.split('/');
+      if (!owner || !repo) return { ok: false, error: `Bad repo name "${pack.repo}".` };
+      return stagePackFromRepo({ owner, repo, ...(pack.ref ? { branch: pack.ref } : {}) }, 'update');
+    },
+    [packs, stagePackFromRepo]
+  );
+
+  /** Compares the installed commit with the repo's current one. Writes nothing. */
+  const checkPackUpdate = useCallback(
+    async (packId: string): Promise<PackUpdateStatus> => {
+      const pack = packs.find((p) => p.id === packId);
+      if (!pack) return 'unknown';
+      const [owner, repo] = pack.repo.split('/');
+      if (!owner || !repo) return 'unknown';
+      const sha = await resolveCommitSha({ owner, repo, ...(pack.ref ? { branch: pack.ref } : {}) }, getStoredGithubPat() || undefined);
+      if (!sha) return 'unknown';
+      return pack.sha === sha ? 'current' : 'available';
+    },
+    [packs]
+  );
+
+  /** Removes exactly this pack's entries. Fixes and duplicate decisions pointing at them stay, marked orphaned. */
+  const uninstallPack = useCallback(
+    async (packId: string): Promise<PackActionResult> => {
+      const pack = packs.find((p) => p.id === packId);
+      if (!pack) return { ok: false, error: 'That pack is not installed.' };
+      try {
+        const removed = await removePackFromDb(packId);
+        setCompendium((prev) => prev.filter((e) => e.packId !== packId));
+        setPacks((prev) => prev.filter((p) => p.id !== packId));
+        setContentFixes(await db.contentFixes.toArray());
+        setDupDecisions(await db.dupDecisions.toArray());
+        appendLog(`Uninstalled pack "${pack.name}" (${removed.length} entries removed).`, 'info');
+        pushToast(`Uninstalled ${pack.name}`, 'info');
+        return { ok: true };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        appendLog(`Uninstall failed: ${msg}`, 'warn');
+        return { ok: false, error: msg };
+      }
+    },
+    [packs, appendLog, pushToast, setCompendium, setPacks, setContentFixes, setDupDecisions]
+  );
+
   const syncCampaignExternalRepo = useCallback(
     async (repoConfig?: ExternalRepoConfig, persistAsCampaignRepo = true) => {
       const cfg = repoConfig ?? campaign.externalRepo;
@@ -387,52 +580,9 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
         appendLog('Set an owner/repo (e.g. Solopass/my-campaign) before syncing.', 'warn');
         return;
       }
-      const token = getStoredGithubPat();
-      try {
-        const result = await fetchCampaignPackFromGitHub(cfg, token || undefined);
-        stageImport(`${cfg.owner}/${cfg.repo}`, result.entities, result.characters.length, async () => {
-        if (result.entities.length > 0) {
-          await upsertCompendiumEntities(result.entities);
-          setCompendium((prev) => {
-            const map = new Map(prev.map((e) => [e.id, e]));
-            for (const e of result.entities) map.set(e.id, e);
-            return Array.from(map.values());
-          });
-        }
-        if (result.characters.length > 0) {
-          for (const ch of result.characters) {
-            await saveCharacter(ch);
-          }
-          setCharacterList((prev) => {
-            const map = new Map(prev.map((c) => [c.id, c]));
-            for (const ch of result.characters) map.set(ch.id, ch);
-            return Array.from(map.values());
-          });
-        }
-        if (persistAsCampaignRepo) {
-          persistCampaign((prev) => {
-            const existingEntryIds = new Set(prev.entries.map((e) => e.id));
-            const newEntries = result.entries.filter((e) => !existingEntryIds.has(e.id));
-            return {
-              ...prev,
-              externalRepo: { ...cfg, lastSyncedAt: result.syncedAt },
-              entries: newEntries.length > 0 ? [...newEntries, ...prev.entries] : prev.entries,
-            };
-          });
-        }
-        appendLog(
-          `Synced ${cfg.owner}/${cfg.repo}: ${result.entities.length} entities, ${result.characters.length} characters, ${result.entries.length} binder entries.`,
-          'info'
-        );
-        pushToast(`Synced ${cfg.owner}/${cfg.repo} (${result.entities.length} items, ${result.characters.length} PCs)`, 'info');
-        });
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        appendLog(`Campaign repo sync failed: ${msg}`, 'warn');
-        pushToast(`Sync failed: ${msg}`, 'warn');
-      }
+      await stagePackFromRepo(cfg, 'sync', persistAsCampaignRepo);
     },
-    [campaign.externalRepo, persistCampaign, appendLog, pushToast, stageImport]
+    [campaign.externalRepo, appendLog, stagePackFromRepo]
   );
 
   const syncFree5ePack = useCallback(async () => {
@@ -547,6 +697,10 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
     searchCompendium,
     importSingleCharacter,
     syncCampaignExternalRepo,
+    installPack,
+    updatePack,
+    uninstallPack,
+    checkPackUpdate,
     syncFree5ePack,
     pushCharacterToCampaignRepo,
     pushCampaignToRepo,

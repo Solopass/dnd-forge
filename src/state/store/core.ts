@@ -11,7 +11,8 @@ import { ActiveBuffState, RollMode } from '../../types/core';
 import { computeCharacterSheet, syncSpellSlotPools } from '../../engine/rules-math';
 import { BUILTIN_CONTENT_PACKS } from '../../engine/srd-packs';
 import { CUSTOM_REPO_CHARACTERS, loadCustomRepoEntities } from '../../engine/custom-content-loader';
-import { fetchCampaignPackFromGitHub } from '../../engine/campaign-repo-sync';
+import { fetchCampaignPackFromGitHub, toInstalledPack } from '../../engine/campaign-repo-sync';
+import type { InstalledPack } from '../../types/pack';
 import { HouseRulesConfig, readStoredHouseRules, saveHouseRules } from '../../engine/ruleset-config';
 import { syncClassResourcePools } from '../../engine/classes';
 import { createDefaultCampaign } from '../../engine/dm-tools';
@@ -24,6 +25,7 @@ import {
   saveCampaign,
   saveCharacter,
   saveEncounter,
+  savePack,
   upsertCompendiumEntities,
 } from '../../storage/db';
 import { readStoredSourcePriority, saveSourcePriority } from '../../storage/source-priority';
@@ -89,6 +91,7 @@ export function useStoreCore(initialCharacter: RawCharacterState, initialEncount
   }, []);
   const [dupDecisions, setDupDecisions] = useState<DuplicateDecision[]>([]);
   const [contentFixes, setContentFixes] = useState<ContentFix[]>([]);
+  const [packs, setPacks] = useState<InstalledPack[]>([]);
   /** The compendium with approved content fixes applied (fixes are a separate layer; `compendium` stays the stored data). */
   const effectiveCompendium = useMemo(() => applyFixesToList(compendium, contentFixes), [compendium, contentFixes]);
   const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
@@ -262,6 +265,8 @@ export function useStoreCore(initialCharacter: RawCharacterState, initialEncount
         if (active) setDupDecisions(savedDecisions);
         const savedFixes = await db.contentFixes.toArray();
         if (active) setContentFixes(savedFixes);
+        const savedPacks = await db.packs.toArray();
+        if (active) setPacks(savedPacks);
         const basePackEntities = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities);
         const customRepoEntities = await loadCustomRepoEntities();
         const combinedEntities = [...basePackEntities, ...customRepoEntities];
@@ -284,6 +289,9 @@ export function useStoreCore(initialCharacter: RawCharacterState, initialEncount
             .then(async (res) => {
               if (!active || res.entities.length === 0) return;
               await upsertCompendiumEntities(res.entities);
+              const packRecord = toInstalledPack(res, { owner: 'Solopass', repo: 'free5e', branch: 'main' });
+              await savePack(packRecord);
+              setPacks((prev) => [...prev.filter((p) => p.id !== packRecord.id), packRecord]);
               setCompendium((prev) => {
                 const map = new Map(prev.map((e) => [e.id, e]));
                 for (const e of res.entities) map.set(e.id, e);
@@ -498,6 +506,8 @@ export function useStoreCore(initialCharacter: RawCharacterState, initialEncount
     setDupDecisions,
     contentFixes,
     setContentFixes,
+    packs,
+    setPacks,
     effectiveCompendium,
     pendingImport,
     setPendingImport,

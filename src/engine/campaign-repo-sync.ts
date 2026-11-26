@@ -3,6 +3,22 @@ import { RawCharacterState } from '../types/character';
 import { CompendiumEntity, ItemCategory } from '../types/compendium';
 import { normalizeCustomCharacter, normalizeCustomEntity } from './custom-content-loader';
 import { parseFree5eMarkdownBatch } from './free5e-parser';
+import { adapt5eToolsPayload } from './five-tools-adapter';
+import { PACK_FORMAT_V1, type InstalledPack, type PackManifest } from '../types/pack';
+import {
+  FREE5E_PACK_ID,
+  assignPackIdentity,
+  convertLegacyManifest,
+  expandGlobs,
+  free5eTargetsFromTree,
+  guessCategoryFromPath,
+  isFree5eRepo,
+  isGlob,
+  parsePackManifest,
+  slugifyPackText,
+  type LegacyConversion,
+  type PackIdentity,
+} from './pack-manifest';
 
 const PAT_STORAGE_KEY = 'sidereroll-github-pat';
 const NO_PACK_PREFIX = 'sidereroll-no-pack:';
@@ -201,56 +217,72 @@ async function discoverFree5ePathsViaRaw(
   return targets;
 }
 
-async function fetchFree5eTreeFromGitHub(
-  config: ExternalRepoConfig,
-  token?: string
-): Promise<SyncedCampaignPackResult | null> {
+export interface FetchedPack extends SyncedCampaignPackResult {
+  manifest: PackManifest;
+  /** Which kind of repo this was: a v1 `pack.json`, a v0 `campaign-pack.json`, or the built-in tree adapter. */
+  format: 'v1' | 'v0' | 'tree-adapter';
+  /** Commit the files were read from (when GitHub could tell us). */
+  sha?: string;
+  warnings: string[];
+}
+
+export interface FetchPackOptions {
+  /** Ignore the "this repo has no pack file" memory (an explicit install / update always looks again). */
+  fresh?: boolean;
+}
+
+function authHeaders(token: string | undefined, accept: string): Record<string, string> {
+  const headers: Record<string, string> = { Accept: accept };
+  if (token?.trim()) headers.Authorization = `Bearer ${token.trim()}`;
+  return headers;
+}
+
+/** Resolves a branch / tag / sha to a full commit sha. Undefined when GitHub can't say (offline, rate limit, private). */
+export async function resolveCommitSha(config: ExternalRepoConfig, token?: string): Promise<string | undefined> {
+  const ref = config.branch?.trim() || 'main';
+  const url = `https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/commits/${encodeURIComponent(ref)}`;
+  const res = await fetch(url, { headers: authHeaders(token, 'application/vnd.github.sha') }).catch(() => null);
+  if (!res?.ok) return undefined;
+  const text = (await res.text().catch(() => '')).trim();
+  return /^[0-9a-f]{40}$/i.test(text) ? text.toLowerCase() : undefined;
+}
+
+/** Every file path in the repo at `config.branch`, or null when the tree can't be listed. */
+async function fetchRepoTreePaths(config: ExternalRepoConfig, token?: string): Promise<string[] | null> {
   const branch = config.branch?.trim() || 'main';
   const treeUrl = `https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/git/trees/${encodeURIComponent(branch)}?recursive=1`;
-  const headers: Record<string, string> = { Accept: 'application/vnd.github+json' };
-  if (token?.trim()) headers.Authorization = `Bearer ${token.trim()}`;
+  const res = await fetch(treeUrl, { headers: authHeaders(token, 'application/vnd.github+json') }).catch(() => null);
+  if (!res?.ok) return null;
+  const data = (await res.json().catch(() => null)) as { tree?: Array<{ path?: string; type?: string }> } | null;
+  if (!data) return null;
+  return (data.tree ?? []).filter((n) => n.type === 'blob' && typeof n.path === 'string').map((n) => n.path as string);
+}
 
+function packIdForRepo(config: ExternalRepoConfig): string {
+  return isFree5eRepo(config.owner, config.repo) ? FREE5E_PACK_ID : slugifyPackText(config.repo) || 'pack';
+}
+
+/**
+ * Built-in adapter for Free5e-shaped repos (no pack.json needed). Installs as pack `free5e` for
+ * Solopass/free5e and as `<repo>` for any other repo that happens to follow the same folder layout.
+ */
+async function fetchFree5eTreeFromGitHub(
+  config: ExternalRepoConfig,
+  token: string | undefined,
+  sha: string | undefined
+): Promise<FetchedPack | null> {
   let targets: Array<{ path: string; category: ItemCategory }> = [];
-  const treeRes = await fetch(treeUrl, { headers }).catch(() => null);
-  if (treeRes?.ok) {
-    const treeData = (await treeRes.json()) as {
-      tree?: Array<{ path?: string; type?: string }>;
-    };
-    const files = (treeData.tree ?? [])
-      .filter((n) => n.type === 'blob' && typeof n.path === 'string' && n.path.endsWith('.md'))
-      .map((n) => n.path as string);
-
-    for (const p of files) {
-      // `_A.md`-style files are alphabetical index pages, not content
-      if ((p.split('/').pop() ?? '').startsWith('_')) continue;
-      if (
-        p.startsWith('en-US/Characters_Codex/06_Spellcasting/Spell_Descriptions/') &&
-        !p.endsWith('/Spell_Descriptions.md')
-      ) {
-        targets.push({ path: p, category: 'spell' });
-      } else if (p.startsWith('en-US/Characters_Codex/03_Creating_a_Character/Feats/Feats/')) {
-        targets.push({ path: p, category: 'feat' });
-      } else if (p === 'en-US/Characters_Codex/03_Creating_a_Character/Equipment/Weapons_table.md') {
-        targets.push({ path: p, category: 'weapon' });
-      } else if (p === 'en-US/Characters_Codex/03_Creating_a_Character/Equipment/Armor_table.md') {
-        targets.push({ path: p, category: 'armor' });
-      } else if (
-        p === 'en-US/Characters_Codex/03_Creating_a_Character/Equipment/Adventuring_Gear.md' ||
-        p === 'en-US/Characters_Codex/03_Creating_a_Character/Equipment/Tools.md'
-      ) {
-        targets.push({ path: p, category: 'gear' });
-      } else if (p.startsWith('en-US/Monstrous_Manuscript/02_Monsters_A-Z/Monsters/')) {
-        targets.push({ path: p, category: 'monster' });
-      }
-    }
+  const files = await fetchRepoTreePaths(config, token);
+  if (files) {
+    targets = free5eTargetsFromTree(files);
   } else {
     targets = await discoverFree5ePathsViaRaw(config, token);
   }
-
   if (targets.length === 0) return null;
 
+  const isFree5e = isFree5eRepo(config.owner, config.repo);
   const sourceLabel = `Free5e (${config.owner}/${config.repo})`;
-  const entities: CompendiumEntity[] = [];
+  const parsed: CompendiumEntity[] = [];
   const BATCH = 24;
   for (let i = 0; i < targets.length; i += BATCH) {
     const slice = targets.slice(i, i + BATCH);
@@ -264,120 +296,265 @@ async function fetchFree5eTreeFromGitHub(
         }
       })
     );
-    for (const batch of results) {
-      entities.push(...batch);
-    }
+    for (const batch of results) parsed.push(...batch);
   }
 
+  const ref = sha ?? (config.branch?.trim() || 'main');
+  const manifest: PackManifest = {
+    format: PACK_FORMAT_V1,
+    id: packIdForRepo(config),
+    name: isFree5e ? 'Free5e' : config.repo,
+    version: sha ? sha.slice(0, 7) : ref,
+    ...(isFree5e ? { license: 'CC-BY-4.0' } : {}),
+    requires: [],
+    content: [],
+    characters: [],
+  };
+  // the parser's own ids (free5e-spl-alarm ...) are stable, so they are kept; only provenance is added
+  const entities = assignPackIdentity(
+    parsed.map((entity) => ({ entity, hadId: true })),
+    { packId: manifest.id, packVersion: manifest.version, packRef: ref }
+  );
   return {
-    manifestName: 'Free5e (CC-BY-4.0)',
+    manifest,
+    format: 'tree-adapter',
+    ...(sha ? { sha } : {}),
+    manifestName: isFree5e ? 'Free5e (CC-BY-4.0)' : manifest.name,
     entities,
     characters: [],
     entries: [],
+    warnings: [],
     syncedAt: new Date().toISOString(),
   };
 }
 
-export async function fetchCampaignPackFromGitHub(
-  config: ExternalRepoConfig,
-  token?: string
-): Promise<SyncedCampaignPackResult> {
-  const packPath = config.packPath?.trim() || 'campaign-pack.json';
-  let rawManifest: CampaignPackManifest;
-  const missingKey = noPackKey(config, packPath);
-  if (isKnownNoPack(missingKey)) {
-    // this repo had no pack file the last time we looked: skip the request that would 404 again
-    const known = await fetchFree5eTreeFromGitHub(config, token);
-    if (known) return known;
-  }
-  try {
-    rawManifest = (await fetchRepoJson(config, packPath, token)) as CampaignPackManifest;
-  } catch (err) {
-    if (err instanceof RepoFileNotFoundError) rememberNoPack(missingKey);
-    const treeFallback = await fetchFree5eTreeFromGitHub(config, token);
-    if (treeFallback) return treeFallback;
-    throw err;
-  }
-  const entities: CompendiumEntity[] = [];
-  const characters: RawCharacterState[] = [];
-  const sourceLabel =
-    rawManifest.source?.trim() || rawManifest.name?.trim() || `${config.owner}/${config.repo}`;
+interface MaterializeInput {
+  manifest: PackManifest;
+  /** Repo config pinned to the commit sha when known: every file is read from the same commit. */
+  pinned: ExternalRepoConfig;
+  token?: string;
+  sha?: string;
+  legacy?: LegacyConversion;
+}
 
-  const pushNormalizedEntity = (item: Record<string, unknown>, fallbackCat: ItemCategory) => {
-    const norm = normalizeCustomEntity(item, fallbackCat);
-    if (!norm) return;
-    if (norm.imageUrl) norm.imageUrl = resolveRepoAssetUrl(norm.imageUrl, config);
-    if (!norm.source || norm.source === 'Custom' || norm.source === 'Homebrew') {
-      norm.source = sourceLabel;
+const DEFAULT_SOURCE_LABELS = new Set(['Custom', 'Homebrew', 'Custom Repo']);
+
+/** Fetches and parses every file a (v1 or converted v0) manifest lists into entities / characters / entries. */
+async function materializePack(input: MaterializeInput): Promise<FetchedPack> {
+  const { manifest, pinned, token, sha, legacy } = input;
+  const warnings: string[] = [];
+  const ref = sha ?? (pinned.branch?.trim() || 'main');
+  const sourceLabel = legacy?.sourceLabel || manifest.name;
+  const identity: PackIdentity = { packId: manifest.id, packVersion: manifest.version, packRef: ref };
+  const defaultRuleset = !legacy && (manifest.ruleset === '2014' || manifest.ruleset === '2024') ? manifest.ruleset : undefined;
+
+  let repoFiles: string[] = [];
+  const needsTree = [...manifest.content, ...manifest.characters].some(isGlob);
+  if (needsTree) {
+    const tree = await fetchRepoTreePaths(pinned, token);
+    if (!tree) {
+      throw new Error(
+        `Could not list the files of ${pinned.owner}/${pinned.repo} (GitHub API unreachable or rate-limited), so the patterns in the pack manifest cannot be expanded. Try again later or add a GitHub token in Settings.`
+      );
     }
-    entities.push(norm);
+    repoFiles = tree;
+  }
+  const expand = (patterns: string[], field: string): string[] => {
+    const out: string[] = [];
+    for (const pattern of patterns) {
+      const hits = expandGlobs([pattern], repoFiles).filter((f) => f !== 'pack.json' && f !== 'campaign-pack.json');
+      if (isGlob(pattern) && hits.length === 0) warnings.push(`"${field}" pattern "${pattern}" matched no files.`);
+      for (const h of hits) if (!out.includes(h)) out.push(h);
+    }
+    return out;
   };
 
-  for (const entrySpec of rawManifest.entities ?? []) {
-    const specObj =
-      typeof entrySpec === 'object' && entrySpec !== null
-        ? (entrySpec as { path?: unknown; category?: ItemCategory })
-        : null;
-    if (specObj && typeof specObj.path !== 'string') {
-      const cat = typeof specObj.category === 'string' ? specObj.category : 'gear';
-      pushNormalizedEntity(entrySpec as Record<string, unknown>, cat);
-      continue;
-    }
-    const specPath = typeof entrySpec === 'string' ? entrySpec : typeof specObj?.path === 'string' ? specObj.path : '';
-    if (!specPath) continue;
-    const fallbackCat: ItemCategory =
-      specObj?.category ||
-      (specPath.includes('spell')
-        ? 'spell'
-        : specPath.includes('monster')
-          ? 'monster'
-          : specPath.includes('feat')
-            ? 'feat'
-            : 'gear');
-    if (specPath.toLowerCase().endsWith('.md')) {
-      const mdText = await fetchRepoText(config, specPath, token);
-      for (const parsed of parseFree5eMarkdownBatch(mdText, fallbackCat, sourceLabel)) {
-        if (parsed.imageUrl) parsed.imageUrl = resolveRepoAssetUrl(parsed.imageUrl, config);
-        entities.push(parsed);
+  const items: Array<{ entity: CompendiumEntity; hadId: boolean }> = [];
+  const pushRaw = (raw: Record<string, unknown>, fallbackCat: ItemCategory) => {
+    const hadId = typeof raw.id === 'string' && raw.id.trim().length > 0;
+    const norm = normalizeCustomEntity(
+      defaultRuleset && raw.ruleset === undefined ? { ...raw, ruleset: defaultRuleset } : raw,
+      fallbackCat
+    );
+    if (!norm) return;
+    if (norm.imageUrl) norm.imageUrl = resolveRepoAssetUrl(norm.imageUrl, pinned);
+    if (!norm.source || DEFAULT_SOURCE_LABELS.has(norm.source)) norm.source = sourceLabel;
+    items.push({ entity: norm, hadId });
+  };
+
+  for (const raw of legacy?.inlineEntities ?? []) {
+    pushRaw(raw, typeof raw.category === 'string' ? (raw.category as ItemCategory) : 'gear');
+  }
+
+  for (const path of expand(manifest.content, 'content')) {
+    const hint = legacy?.categoryHints[path] ?? guessCategoryFromPath(path);
+    const lower = path.toLowerCase();
+    if (lower.endsWith('.md')) {
+      const md = await fetchRepoText(pinned, path, token);
+      for (const parsed of parseFree5eMarkdownBatch(md, hint, sourceLabel)) {
+        if (parsed.imageUrl) parsed.imageUrl = resolveRepoAssetUrl(parsed.imageUrl, pinned);
+        items.push({ entity: parsed, hadId: manifest.id === FREE5E_PACK_ID });
       }
-      continue;
-    }
-    const payload = await fetchRepoJson(config, specPath, token);
-    const arr = Array.isArray(payload) ? payload : [payload];
-    for (const item of arr) {
-      if (!item || typeof item !== 'object') continue;
-      pushNormalizedEntity(item as Record<string, unknown>, fallbackCat);
+    } else if (lower.endsWith('.json') || legacy) {
+      const text = await fetchRepoText(pinned, path, token);
+      let payload: unknown;
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        warnings.push(`${path}: not valid JSON, skipped.`);
+        continue;
+      }
+      const adapted = adapt5eToolsPayload(payload);
+      if (adapted.entities.length > 0) {
+        for (const entity of adapted.entities) items.push({ entity, hadId: true });
+        continue;
+      }
+      const list = Array.isArray(payload)
+        ? payload
+        : payload && typeof payload === 'object' && Array.isArray((payload as { entities?: unknown }).entities)
+          ? ((payload as { entities: unknown[] }).entities)
+          : [payload];
+      let taken = 0;
+      for (const item of list) {
+        if (!item || typeof item !== 'object') continue;
+        const before = items.length;
+        pushRaw(item as Record<string, unknown>, hint);
+        taken += items.length - before;
+      }
+      if (taken === 0) warnings.push(`${path}: no entries found.`);
+    } else {
+      warnings.push(`${path}: unsupported file type, skipped.`);
     }
   }
 
-  for (const charSpec of rawManifest.characters ?? []) {
-    if (typeof charSpec === 'object' && charSpec !== null) {
-      const norm = normalizeCustomCharacter(charSpec);
-      if (norm) {
-        if (norm.avatarUrl) norm.avatarUrl = resolveRepoAssetUrl(norm.avatarUrl, config);
-        characters.push(norm);
+  const characters: RawCharacterState[] = [];
+  const pushChar = (raw: unknown) => {
+    if (!raw || typeof raw !== 'object') return;
+    const norm = normalizeCustomCharacter(raw as Record<string, unknown>);
+    if (!norm) return;
+    if (norm.avatarUrl) norm.avatarUrl = resolveRepoAssetUrl(norm.avatarUrl, pinned);
+    characters.push(norm);
+  };
+  for (const raw of legacy?.inlineCharacters ?? []) pushChar(raw);
+  for (const path of expand(manifest.characters, 'characters')) {
+    let payload: unknown;
+    try {
+      payload = JSON.parse(await fetchRepoText(pinned, path, token));
+    } catch (err) {
+      if (err instanceof SyntaxError) {
+        warnings.push(`${path}: not valid JSON, skipped.`);
+        continue;
       }
-      continue;
+      throw err;
     }
-    const payload = await fetchRepoJson(config, charSpec, token);
-    const arr = Array.isArray(payload) ? payload : [payload];
-    for (const rawChar of arr) {
-      if (!rawChar || typeof rawChar !== 'object') continue;
-      const norm = normalizeCustomCharacter(rawChar as Record<string, unknown>);
-      if (norm) {
-        if (norm.avatarUrl) norm.avatarUrl = resolveRepoAssetUrl(norm.avatarUrl, config);
-        characters.push(norm);
+    for (const raw of Array.isArray(payload) ? payload : [payload]) pushChar(raw);
+  }
+
+  let entries: CampaignEntry[] = legacy ? (legacy.entries as CampaignEntry[]) : [];
+  if (manifest.campaign) {
+    try {
+      const payload = JSON.parse(await fetchRepoText(pinned, manifest.campaign, token)) as unknown;
+      const list = Array.isArray(payload) ? payload : (payload as { entries?: unknown })?.entries;
+      if (Array.isArray(list)) entries = list as CampaignEntry[];
+    } catch (err) {
+      if (err instanceof RepoFileNotFoundError || err instanceof SyntaxError) {
+        warnings.push(`${manifest.campaign}: could not be read, skipped.`);
+      } else {
+        throw err;
       }
     }
   }
 
   return {
-    manifestName: rawManifest.name,
-    entities,
+    manifest,
+    format: legacy ? 'v0' : 'v1',
+    ...(sha ? { sha } : {}),
+    manifestName: manifest.name,
+    entities: assignPackIdentity(items, identity),
     characters,
-    entries: Array.isArray(rawManifest.entries) ? rawManifest.entries : [],
+    entries,
+    warnings,
     syncedAt: new Date().toISOString(),
   };
+}
+
+/**
+ * Reads a GitHub repo as a pack: `pack.json` (v1), else the old `campaign-pack.json` (v0), else the
+ * built-in Free5e tree adapter. Every file is read from one commit (the sha the ref points to).
+ */
+export async function fetchPackFromGitHub(
+  config: ExternalRepoConfig,
+  token?: string,
+  opts: FetchPackOptions = {}
+): Promise<FetchedPack> {
+  const sha = await resolveCommitSha(config, token);
+  const pinned: ExternalRepoConfig = sha ? { ...config, branch: sha } : config;
+  const skipCache = opts.fresh === true;
+
+  const v1Key = noPackKey(config, 'pack.json');
+  if (skipCache || !isKnownNoPack(v1Key)) {
+    let v1Raw: unknown;
+    let found = false;
+    try {
+      v1Raw = await fetchRepoJson(pinned, 'pack.json', token);
+      found = true;
+    } catch (err) {
+      if (err instanceof RepoFileNotFoundError) rememberNoPack(v1Key);
+      else if (err instanceof SyntaxError) throw new Error(`pack.json in ${config.owner}/${config.repo} is not valid JSON.`);
+      // any other failure (network, 5xx): try the older formats / adapter below
+    }
+    if (found) {
+      const parsed = parsePackManifest(v1Raw);
+      if (!parsed.ok) {
+        throw new Error(`pack.json in ${config.owner}/${config.repo} is not a valid pack:\n- ${parsed.errors.join('\n- ')}`);
+      }
+      return materializePack({ manifest: parsed.manifest, pinned, token, sha });
+    }
+  }
+
+  const packPath = config.packPath?.trim() || 'campaign-pack.json';
+  const missingKey = noPackKey(config, packPath);
+  if (!skipCache && isKnownNoPack(missingKey)) {
+    // this repo had no pack file the last time we looked: skip the request that would 404 again
+    const known = await fetchFree5eTreeFromGitHub(pinned, token, sha);
+    if (known) return known;
+  }
+  let rawManifest: unknown;
+  try {
+    rawManifest = await fetchRepoJson(pinned, packPath, token);
+  } catch (err) {
+    if (err instanceof RepoFileNotFoundError) rememberNoPack(missingKey);
+    const treeFallback = await fetchFree5eTreeFromGitHub(pinned, token, sha);
+    if (treeFallback) return treeFallback;
+    throw err;
+  }
+  const legacy = convertLegacyManifest(rawManifest, { owner: config.owner, repo: config.repo });
+  return materializePack({ manifest: legacy.manifest, pinned, token, sha, legacy });
+}
+
+/** The record kept in the `packs` table for a fetched pack. */
+export function toInstalledPack(fetched: FetchedPack, config: ExternalRepoConfig): InstalledPack {
+  const m = fetched.manifest;
+  return {
+    id: m.id,
+    name: m.name,
+    version: m.version,
+    repo: `${config.owner}/${config.repo}`,
+    ref: config.branch?.trim() ?? '',
+    ...(fetched.sha ? { sha: fetched.sha } : {}),
+    ...(m.license ? { license: m.license } : {}),
+    ...(m.requires.length > 0 ? { requires: m.requires } : {}),
+    entityCount: fetched.entities.length,
+    installedAt: new Date().toISOString(),
+  };
+}
+
+/** The original entry point (startup Free5e auto-sync, tests): same as `fetchPackFromGitHub`. */
+export async function fetchCampaignPackFromGitHub(
+  config: ExternalRepoConfig,
+  token?: string
+): Promise<FetchedPack> {
+  return fetchPackFromGitHub(config, token);
 }
 
 export async function tryFetchExistingManifest(

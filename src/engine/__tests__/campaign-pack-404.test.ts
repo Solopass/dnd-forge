@@ -12,7 +12,7 @@ function stubFetch() {
       const tree = [{ path: 'en-US/Characters_Codex/03_Creating_a_Character/Feats/Feats/Alert.md', type: 'blob' }];
       return new Response(JSON.stringify({ tree }), { status: 200 });
     }
-    if (url.endsWith('campaign-pack.json')) return new Response('Not Found', { status: 404 });
+    if (url.endsWith('campaign-pack.json') || url.endsWith('/pack.json')) return new Response('Not Found', { status: 404 });
     return new Response('#### Alert\n\nYou are always on the lookout for danger.', { status: 200 });
   });
   return urls;

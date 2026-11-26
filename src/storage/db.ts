@@ -205,6 +205,51 @@ export async function removePackFromDb(packId: string): Promise<string[]> {
   return removed;
 }
 
+/**
+ * Re-points everything that referred to an entry by its old id at its new id (a legacy repo entry that
+ * a pack adopted): content fixes, duplicate decisions and the copies on character sheets (whose ids are
+ * the entry id plus a "-<time>" suffix). `map` is old id -> new id.
+ */
+export async function adoptEntityIds(map: ReadonlyMap<string, string>): Promise<{ fixes: number; decisions: number; characterItems: number }> {
+  const done = { fixes: 0, decisions: 0, characterItems: 0 };
+  if (map.size === 0) return done;
+  const prefixes = [...map.keys()].sort((a, b) => b.length - a.length);
+  const remap = (id: string): string => {
+    const direct = map.get(id);
+    if (direct) return direct;
+    const hit = prefixes.find((old) => id.startsWith(`${old}-`));
+    return hit ? `${map.get(hit)!}${id.slice(hit.length)}` : id;
+  };
+  await db.transaction('rw', [db.contentFixes, db.dupDecisions, db.characters], async () => {
+    const fixes = (await db.contentFixes.toArray()).filter((f) => map.has(f.entityId));
+    for (const f of fixes) f.entityId = map.get(f.entityId)!;
+    if (fixes.length > 0) await db.contentFixes.bulkPut(fixes);
+    done.fixes = fixes.length;
+    const decisions = (await db.dupDecisions.toArray()).filter((d) => d.memberIds.some((m) => map.has(m)) || (d.keepId !== undefined && map.has(d.keepId)));
+    for (const d of decisions) {
+      d.memberIds = d.memberIds.map((m) => map.get(m) ?? m);
+      if (d.keepId !== undefined && map.has(d.keepId)) d.keepId = map.get(d.keepId)!;
+    }
+    if (decisions.length > 0) await db.dupDecisions.bulkPut(decisions);
+    done.decisions = decisions.length;
+    const characters = await db.characters.toArray();
+    const changed: RawCharacterState[] = [];
+    for (const ch of characters) {
+      let touched = false;
+      const items = ch.items.map((it) => {
+        const next = remap(it.id);
+        if (next === it.id) return it;
+        touched = true;
+        done.characterItems++;
+        return { ...it, id: next };
+      });
+      if (touched) changed.push({ ...ch, items });
+    }
+    if (changed.length > 0) await db.characters.bulkPut(changed);
+  });
+  return done;
+}
+
 /** Sets or clears `orphaned` on fixes / duplicate decisions that point at the given entity ids. */
 export async function markOrphans(entityIds: ReadonlySet<string>, orphaned: boolean): Promise<void> {
   const fixes = (await db.contentFixes.toArray()).filter((f) => entityIds.has(f.entityId) && !!f.orphaned !== orphaned);

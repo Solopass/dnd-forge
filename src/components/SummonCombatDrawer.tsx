@@ -933,7 +933,7 @@ interface CommandPaletteProps {
   /** Opens the dialog straight on the fix editor for this entry (from the item inspector). */
   initialFixEntityId?: string | null;
   onImportHomebrew: (rawMarkdown: string) => Promise<void>;
-  onImportJsonText: (rawJson: string) => Promise<void>;
+  onImportJsonText: (rawJson: string, fileName?: string) => Promise<void>;
 }
 
 export function CommandPalette({
@@ -1384,18 +1384,18 @@ Claws. +7 to hit, 2d8 + 5 slashing damage`}
           <div>
             <input
               type="file"
-              accept=".json"
+              accept=".json,.csv,.tsv,.md,.markdown,.txt"
               onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
                 const text = await file.text();
-                await onImportJsonText(text);
+                await onImportJsonText(text, file.name);
                 onClose();
               }}
               className="combat-drawer__input-13"
             />
             <div className="combat-drawer__div-9">
-              Supports both Sidereroll full backup bundles and 5e.tools JSON datasets (<code>spell</code>, <code>item</code>, <code>feat</code>, <code>monster</code>) for importing expansion books and DLC content.
+              Supports Sidereroll backup bundles, batch JSON, 5e.tools JSON datasets (<code>spell</code>, <code>item</code>, <code>feat</code>, <code>monster</code>), Markdown pages and simple CSV tables (gear, weapons, armor, spells). Anything auto-fixed or rejected is listed before you confirm.
             </div>
           </div>
         )}

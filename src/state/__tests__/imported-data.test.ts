@@ -91,7 +91,7 @@ Club. Melee Weapon Attack: +5 to hit, reach 5 ft., one target. Hit: 8 (1d8 + 4) 
     expect(brute).toMatchObject({ kind: 'monster', ac: 11, cr: '2' });
     expect(crToXp(brute.cr)).toBe(450);
     const club = brute.actions?.find((a) => a.name === 'Club');
-    expect(club).toMatchObject({ type: 'attack', damageFormula: '1d8 + 4' });
+    expect(club).toMatchObject({ type: 'attack', damageFormula: '1d8+4' });
     // the monster attacks the player character: nat 20 always hits
     const pc = h.result.current.encounter.combatants.find((c) => c.kind !== 'monster')!;
     const hpBefore = pc.hp.current;

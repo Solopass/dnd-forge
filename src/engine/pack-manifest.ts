@@ -371,3 +371,40 @@ export function diffPackEntities(
   const removed = previous.filter((e) => !seen.has(e.id)).map((e) => e.id);
   return { added, changed, removed, unchanged };
 }
+
+/** The key two entries share when they are "the same thing": category + name without case, spacing or punctuation. */
+export function adoptionKey(e: Pick<CompendiumEntity, 'category' | 'name'>): string {
+  return `${e.category}|${e.name.toLowerCase().replace(/[^a-z0-9]+/g, '')}`;
+}
+
+/**
+ * Entries that an older repo sync left behind (`custom-*` ids, no pack provenance) and that the pack
+ * being installed now carries again: matched by (category, normalized name). Returns old id -> new id.
+ * Only entries whose source is one the pack uses (or the old default "Custom Repo") are considered, and
+ * a name that is ambiguous on either side is skipped, so a hand-made entry is never swallowed by accident.
+ */
+export function planLegacyAdoption(
+  existing: readonly CompendiumEntity[],
+  incoming: readonly CompendiumEntity[],
+  packSourceLabels: readonly string[]
+): Map<string, string> {
+  const labels = new Set([...packSourceLabels, ...incoming.map((e) => e.source), 'Custom Repo'].map((l) => l.toLowerCase()));
+  const byKey = new Map<string, CompendiumEntity[]>();
+  for (const e of incoming) (byKey.get(adoptionKey(e)) ?? byKey.set(adoptionKey(e), []).get(adoptionKey(e))!).push(e);
+  const legacyByKey = new Map<string, CompendiumEntity[]>();
+  for (const e of existing) {
+    if (e.packId || !e.id.startsWith('custom-') || !labels.has(e.source.toLowerCase())) continue;
+    (legacyByKey.get(adoptionKey(e)) ?? legacyByKey.set(adoptionKey(e), []).get(adoptionKey(e))!).push(e);
+  }
+  const existingIds = new Set(existing.map((e) => e.id));
+  const plan = new Map<string, string>();
+  for (const [key, olds] of legacyByKey) {
+    const news = byKey.get(key);
+    if (!news || news.length !== 1 || olds.length !== 1) continue;
+    const [old] = olds;
+    const [next] = news;
+    if (!old || !next || old.id === next.id || existingIds.has(next.id)) continue;
+    plan.set(old.id, next.id);
+  }
+  return plan;
+}

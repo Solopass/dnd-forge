@@ -1,9 +1,15 @@
 import { useCallback, useMemo } from 'react';
 import { RawCharacterState } from '../../types/character';
 import { CompendiumEntity } from '../../types/compendium';
-import { parseHomebrewMarkdownBlock } from '../../engine/statblock-parser';
-import { parseFree5eMarkdownAuto } from '../../engine/free5e-parser';
-import { adapt5eToolsPayload } from '../../engine/five-tools-adapter';
+import {
+  buildImportReport,
+  resultFromCharacter,
+  runImportPipeline,
+  runImportPipelineOnEntities,
+  summarizeReport,
+  type ImportReport,
+  type PipelineResult,
+} from '../../engine/import-pipeline';
 import { parseDndBeyondPdfBuffer } from '../../engine/ddb-pdf-importer';
 import { BUILTIN_CONTENT_PACKS } from '../../engine/srd-packs';
 import {
@@ -15,13 +21,13 @@ import {
 } from '../../engine/compendium-dedupe';
 import { foldMagicVariants } from '../../engine/magic-variants';
 import { planEntityImport } from '../../engine/import-preview';
-import { parseCustomContentJson } from '../../engine/custom-content-loader';
 import { getClassDefinition } from '../../engine/classes';
 import { buildCampaignPackExport, fetchPackFromGitHub, getStoredGithubPat, pushFileToGitHubRepo, resolveCommitSha, toInstalledPack, tryFetchExistingManifest } from '../../engine/campaign-repo-sync';
-import { diffPackEntities } from '../../engine/pack-manifest';
+import { diffPackEntities, planLegacyAdoption } from '../../engine/pack-manifest';
 import type { InstalledPack } from '../../types/pack';
 import { ExternalRepoConfig } from '../../types/campaign';
 import {
+  adoptEntityIds,
   buildSearchTokens,
   db,
   deleteDuplicateDecision,
@@ -80,15 +86,44 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
       entities: CompendiumEntity[],
       characters: number,
       commit: () => Promise<void>,
-      opts: { replacePackId?: string } = {}
+      opts: { replacePackId?: string; report?: ImportReport; excludeIds?: ReadonlySet<string> } = {}
     ) => {
       // updating a pack: its current copies are about to be replaced, so they are not "duplicates" of the new ones
-      const existing = opts.replacePackId ? compendium.filter((e) => e.packId !== opts.replacePackId) : compendium;
+      const existing = compendium.filter(
+        (e) => !(opts.replacePackId && e.packId === opts.replacePackId) && !opts.excludeIds?.has(e.id)
+      );
       const plan = planEntityImport(entities, existing, sourcePriority, characters);
-      setPendingImport({ label, plan, commit });
-      appendLog(`Import preview for ${label}: ${plan.summary}.`, 'info');
+      setPendingImport({ label, plan, ...(opts.report ? { report: opts.report } : {}), commit });
+      appendLog(`Import preview for ${label}: ${plan.summary}${opts.report ? ` (${summarizeReport(opts.report)})` : ''}.`, 'info');
     },
     [compendium, sourcePriority, appendLog]
+  );
+
+  /** One line per rejected entry and per warning, so nothing the pipeline dropped is silent. */
+  const logPipelineIssues = useCallback(
+    (result: PipelineResult) => {
+      result.rejected.slice(0, 25).forEach((r) => appendLog(`  Not imported: "${r.source}": ${r.reason}.`, 'warn'));
+      if (result.rejected.length > 25) appendLog(`  ... and ${result.rejected.length - 25} more not imported.`, 'warn');
+      result.warnings.forEach((w) => appendLog(`  ${w}`, 'warn'));
+    },
+    [appendLog]
+  );
+
+  /** Adds already-cleaned entities (and characters) to the compendium and the open character list. */
+  const commitPipelineResult = useCallback(
+    async (piped: PipelineResult) => {
+      if (piped.accepted.length > 0) {
+        await upsertCompendiumEntities(piped.accepted);
+        const ids = new Set(piped.accepted.map((e) => e.id));
+        setCompendium((prev) => [...piped.accepted, ...prev.filter((e) => !ids.has(e.id))]);
+      }
+      for (const ch of piped.characters) {
+        await saveCharacter(ch);
+        setCharacterList((prev) => (prev.some((p) => p.id === ch.id) ? prev : [...prev, ch]));
+        setRawChar(ch);
+      }
+    },
+    []
   );
 
   const confirmPendingImport = useCallback(async () => {
@@ -135,16 +170,19 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
     [persistCharacter, addMonsterToEncounter, appendLog]
   );
 
+  /** Built-in packs: no preview, but the same cleaning as every other import. */
   const installContentPack = useCallback(
     async (packId: string) => {
       const pack = BUILTIN_CONTENT_PACKS.find((p) => p.id === packId);
       if (!pack) return;
-      await upsertCompendiumEntities(pack.entities);
+      const piped = runImportPipelineOnEntities(pack.entities, { name: pack.name, explicitIds: true });
+      await upsertCompendiumEntities(piped.accepted);
       const refreshed = await db.compendium.toArray();
       setCompendium(refreshed);
-      appendLog(`Installed "${pack.name}" (${pack.entities.length} entries added to local Compendium).`, 'info');
+      logPipelineIssues(piped);
+      appendLog(`Installed "${pack.name}" (${piped.accepted.length} entries added to local Compendium; ${summarizeReport(buildImportReport(piped))}).`, 'info');
     },
-    [appendLog]
+    [appendLog, logPipelineIssues]
   );
 
   const importDdbPdfFile = useCallback(
@@ -152,176 +190,151 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
       try {
         const buffer = await file.arrayBuffer();
         const result = await parseDndBeyondPdfBuffer(buffer, file.name);
-        stageImport(`D&D Beyond PDF "${result.character.name}"`, result.character.items, 1, async () => {
-          await saveCharacter(result.character);
-          if (result.character.items.length > 0) {
-            await upsertCompendiumEntities(result.character.items);
+        const piped = resultFromCharacter(result.character, result.warnings);
+        const character = piped.characters[0] ?? result.character;
+        logPipelineIssues({ ...piped, warnings: [] });
+        stageImport(`D&D Beyond PDF "${character.name}"`, character.items, 1, async () => {
+          await saveCharacter(character);
+          if (character.items.length > 0) {
+            await upsertCompendiumEntities(character.items);
             const refreshed = await db.compendium.toArray();
             setCompendium(refreshed);
           }
-          setCharacterList((prev) => [...prev, result.character]);
-          setRawChar(result.character);
+          setCharacterList((prev) => [...prev, character]);
+          setRawChar(character);
           appendLog(
-            `Imported D&D Beyond PDF "${result.character.name}" (${result.extractedFieldsCount} PDF form fields read, ${result.character.items.length} weapons/spells).`,
+            `Imported D&D Beyond PDF "${character.name}" (${result.extractedFieldsCount} PDF form fields read, ${character.items.length} weapons/spells).`,
             result.warnings.length > 0 ? 'warn' : 'info'
           );
           result.warnings.forEach((w) => appendLog(`  PDF Warning: ${w}`, 'warn'));
-        });
+        }, { report: buildImportReport(piped) });
       } catch (err) {
         appendLog(`PDF import failed: ${String(err)}`, 'warn');
       }
     },
-    [appendLog, stageImport]
+    [appendLog, stageImport, logPipelineIssues]
   );
 
+  /** Pasted text of any kind (Markdown statblock, Free5e page, JSON, CSV): the pipeline works out what it is. */
   const importMarkdownHomebrew = useCallback(
     async (rawMarkdown: string) => {
-      const free5e = /\[_metadata_:spell_name\]:-/i.test(rawMarkdown)
-        ? parseFree5eMarkdownAuto(rawMarkdown, 'spell')
-        : null;
-      if (free5e) {
-        stageImport(`Free5e "${free5e.name}" (Markdown)`, [free5e], 0, async () => {
-          await upsertCompendiumEntities([free5e]);
-          setCompendium((prev) => [free5e, ...prev]);
-          persistCharacter((prev) => ({
-            ...prev,
-            items: [free5e, ...prev.items],
-          }));
-          appendLog(`Imported Free5e "${free5e.name}" (${free5e.category}) from Markdown.`, 'info');
-        });
+      const byId = new Map(compendium.map((e) => [e.id, e]));
+      const piped = runImportPipeline(rawMarkdown, { name: 'pasted text', resolveEntity: (id) => byId.get(id), classLookup: getClassDefinition });
+      logPipelineIssues(piped);
+      if (piped.accepted.length === 0 && piped.characters.length === 0) {
+        appendLog(`Nothing was imported from the pasted text (${piped.rejected[0]?.reason ?? 'no entries found'}).`, 'warn');
         return;
       }
-
-      const result = parseHomebrewMarkdownBlock(rawMarkdown);
-      stageImport(`"${result.data.name}" (Markdown)`, [result.data], 0, async () => {
-      await upsertCompendiumEntities([result.data]);
-      setCompendium((prev) => [result.data, ...prev]);
-
-      if (result.data.category === 'monster' && result.data.monsterMeta) {
-        addMonsterToEncounter(
-          result.data.name,
-          result.data.monsterMeta.ac,
-          result.data.monsterMeta.hp,
-          result.data.monsterMeta.dexModifier,
-          result.data.activities,
-          result.data.monsterMeta.cr,
-          result.data.monsterMeta,
-          result.data.entries.join(' '),
-          result.data.imageUrl
+      const single = piped.accepted.length === 1 && piped.characters.length === 0 ? piped.accepted[0]! : null;
+      const label = single ? `"${single.name}" (${piped.format === 'free5e-markdown' ? 'Free5e Markdown' : 'pasted text'})` : `${piped.accepted.length} entries (pasted text)`;
+      stageImport(label, piped.accepted, piped.characters.length, async () => {
+        await commitPipelineResult(piped);
+        if (single && single.category === 'monster' && single.monsterMeta) {
+          addMonsterToEncounter(
+            single.name,
+            single.monsterMeta.ac,
+            single.monsterMeta.hp,
+            single.monsterMeta.dexModifier,
+            single.activities,
+            single.monsterMeta.cr,
+            single.monsterMeta,
+            single.entries.join(' '),
+            single.imageUrl
+          );
+        } else if (single) {
+          persistCharacter((prev) => ({ ...prev, items: [single, ...prev.items] }));
+        }
+        appendLog(
+          single
+            ? `Imported "${single.name}" (${single.category}${piped.repaired.length > 0 ? `, repaired: ${piped.repaired[0]!.notes.join('; ')}` : ''}).`
+            : `Imported ${piped.accepted.length} entities and ${piped.characters.length} character(s) from pasted text (${summarizeReport(buildImportReport(piped))}).`,
+          piped.repaired.length > 0 ? 'warn' : 'info'
         );
-      } else {
-        persistCharacter((prev) => ({
-          ...prev,
-          items: [result.data, ...prev.items],
-        }));
-      }
-
-      appendLog(
-        `Imported "${result.data.name}" (${result.data.category}, ${result.confidence} confidence, ${result.warnings.length} warning(s)).`,
-        result.warnings.length > 0 ? 'warn' : 'info'
-      );
-      result.warnings.forEach((w) =>
-        appendLog(`  Line ${w.line}: ${w.reason} ("${w.raw}")`, 'warn')
-      );
-      });
+      }, { report: buildImportReport(piped) });
     },
-    [persistCharacter, addMonsterToEncounter, appendLog, stageImport]
+    [compendium, persistCharacter, addMonsterToEncounter, appendLog, stageImport, logPipelineIssues, commitPipelineResult]
   );
 
+  /** A file's text (JSON, 5e.tools, backup bundle, Markdown, CSV). Pass the file name when there is one: it hints the category. */
   const importJsonFilePayload = useCallback(
-    async (rawText: string) => {
+    async (rawText: string, fileName?: string) => {
       try {
-        const parsed: unknown = JSON.parse(rawText);
-        if (typeof parsed === 'object' && parsed !== null && (parsed as { app?: string }).app === 'dnd-forge') {
-          const bundle = parsed as { compendium?: unknown; characters?: unknown };
-          const bundleEntities = Array.isArray(bundle.compendium)
-            ? (bundle.compendium as CompendiumEntity[]).filter((e) => e && typeof e.id === 'string' && typeof e.name === 'string')
-            : [];
-          const bundleChars = Array.isArray(bundle.characters) ? bundle.characters.length : 0;
-          stageImport('backup bundle', bundleEntities, bundleChars, async () => {
-          const summary = await importBackupBundle(parsed, 'merge');
-          const [refreshedChars, refreshedCompendium, refreshedEncounters, refreshedCampaigns, refreshedScenes] = await Promise.all([
-            db.characters.toArray(),
-            db.compendium.toArray(),
-            db.encounters.toArray(),
-            db.campaigns.toArray(),
-            db.scenes.toArray(),
-          ]);
-          if (refreshedChars.length > 0) {
-            setCharacterList(refreshedChars);
-            setRawChar(refreshedChars[0]!);
-          }
-          setCompendium(refreshedCompendium);
-          if (refreshedEncounters.length > 0) {
-            setEncounterList(refreshedEncounters);
-            setEncounter(refreshedEncounters[0]!);
-          }
-          if (refreshedCampaigns.length > 0) {
-            setCampaignList(refreshedCampaigns);
-            setCampaign(refreshedCampaigns[0]!);
-          }
-          setScenes(refreshedScenes);
-          appendLog(
-            `Merged backup bundle: ${summary.importedCharacters} character(s), ${summary.importedEntities} compendium item(s), ${summary.importedEncounters} encounter(s).`,
-            'info'
-          );
-          const refreshedDecisions = await db.dupDecisions.toArray();
-          setDupDecisions(refreshedDecisions);
-          setPacks(await db.packs.toArray());
-          });
-          return;
-        }
-
-        const adapted = adapt5eToolsPayload(parsed);
-        if (adapted.entities.length > 0) {
-          stageImport(`5e.tools JSON (${adapted.skipped} skipped)`, adapted.entities, 0, async () => {
-            await upsertCompendiumEntities(adapted.entities);
-            setCompendium((prev) => [...adapted.entities, ...prev]);
-            appendLog(
-              `Imported ${adapted.entities.length} 5e.tools entities (${adapted.skipped} skipped).`,
-              'info'
-            );
-          });
-          return;
-        }
-
         const byId = new Map(compendium.map((e) => [e.id, e]));
-        const customParsed = parseCustomContentJson(rawText, (id) => byId.get(id), getClassDefinition);
-        customParsed.rejected.forEach((r) => appendLog(`  Not imported: "${r.name}": ${r.reason}.`, 'warn'));
-        customParsed.warnings.forEach((w) => appendLog(`  ${w}`, 'warn'));
-        if (customParsed.entities.length > 0 || customParsed.characters.length > 0) {
-          stageImport('custom content JSON', customParsed.entities, customParsed.characters.length, async () => {
-            if (customParsed.entities.length > 0) {
-              await upsertCompendiumEntities(customParsed.entities);
-              setCompendium((prev) => [...customParsed.entities, ...prev]);
+        const piped = runImportPipeline(rawText, { ...(fileName ? { name: fileName } : {}), resolveEntity: (id) => byId.get(id), classLookup: getClassDefinition });
+        logPipelineIssues(piped);
+        const report = buildImportReport(piped);
+
+        if (piped.format === 'app-bundle' && piped.bundle !== undefined) {
+          stageImport('backup bundle', piped.accepted, piped.characters.length, async () => {
+            const summary = await importBackupBundle(piped.bundle, 'merge');
+            const [refreshedChars, refreshedCompendium, refreshedEncounters, refreshedCampaigns, refreshedScenes] = await Promise.all([
+              db.characters.toArray(),
+              db.compendium.toArray(),
+              db.encounters.toArray(),
+              db.campaigns.toArray(),
+              db.scenes.toArray(),
+            ]);
+            if (refreshedChars.length > 0) {
+              setCharacterList(refreshedChars);
+              setRawChar(refreshedChars[0]!);
             }
-            for (const ch of customParsed.characters) {
-              await saveCharacter(ch);
-              setCharacterList((prev) => (prev.some((p) => p.id === ch.id) ? prev : [...prev, ch]));
-              setRawChar(ch);
+            setCompendium(refreshedCompendium);
+            if (refreshedEncounters.length > 0) {
+              setEncounterList(refreshedEncounters);
+              setEncounter(refreshedEncounters[0]!);
             }
+            if (refreshedCampaigns.length > 0) {
+              setCampaignList(refreshedCampaigns);
+              setCampaign(refreshedCampaigns[0]!);
+            }
+            setScenes(refreshedScenes);
             appendLog(
-              `Imported ${customParsed.entities.length} custom entity(s) and ${customParsed.characters.length} character(s)${customParsed.rejected.length > 0 ? `; ${customParsed.rejected.length} rejected` : ''}.`,
+              `Merged backup bundle: ${summary.importedCharacters} character(s), ${summary.importedEntities} compendium item(s), ${summary.importedEncounters} encounter(s).`,
               'info'
             );
-          });
+            const refreshedDecisions = await db.dupDecisions.toArray();
+            setDupDecisions(refreshedDecisions);
+            setPacks(await db.packs.toArray());
+          }, { report });
+          return;
+        }
+
+        if (piped.accepted.length > 0 || piped.characters.length > 0) {
+          const label = piped.format === 'five-tools' ? '5e.tools JSON' : piped.format === 'csv' ? 'CSV table' : piped.format === 'entity-json' ? 'custom content JSON' : 'file';
+          stageImport(label, piped.accepted, piped.characters.length, async () => {
+            await commitPipelineResult(piped);
+            appendLog(
+              `Imported ${piped.accepted.length} ${piped.format === 'five-tools' ? '5e.tools ' : 'custom '}entity(s) and ${piped.characters.length} character(s) (${summarizeReport(report)}).`,
+              'info'
+            );
+          }, { report });
         } else {
           appendLog(
-            customParsed.rejected.length > 0
-              ? `JSON recognized, but all ${customParsed.rejected.length} entries were rejected (see above).`
-              : 'JSON recognized, but no Sidereroll entities, characters, or 5e.tools arrays were found.',
+            piped.rejected.length === 1
+              ? `Nothing imported: ${piped.rejected[0]!.reason}.`
+              : piped.rejected.length > 1
+              ? `Recognized as ${piped.format}, but all ${piped.rejected.length} entries were rejected (see above).`
+              : `Nothing to import: ${piped.rejected[0]?.reason ?? 'no entries found'}.`,
             'warn'
           );
         }
       } catch (err) {
-        appendLog(`JSON import failed: ${String(err)}`, 'warn');
+        appendLog(`Import failed: ${String(err)}`, 'warn');
       }
     },
-    [appendLog, stageImport, setDupDecisions, setPacks, compendium]
+    [appendLog, stageImport, setDupDecisions, setPacks, compendium, logPipelineIssues, commitPipelineResult]
   );
 
   const createHomebrewEntity = useCallback(
-    async (entity: CompendiumEntity, addToSheet: boolean) => {
+    async (rawEntity: CompendiumEntity, addToSheet: boolean) => {
+      const piped = runImportPipelineOnEntities([rawEntity], { name: rawEntity.name, explicitIds: true });
+      const entity = piped.accepted[0];
+      if (!entity) {
+        const reason = piped.rejected[0]?.reason ?? 'it could not be read';
+        appendLog(`Homebrew "${rawEntity.name}" was not created: ${reason}.`, 'warn');
+        pushToast(`Not created: ${reason}`, 'warn');
+        return;
+      }
       await upsertCompendiumEntities([entity]);
       setCompendium((prev) => [entity, ...prev.filter((i) => i.id !== entity.id)]);
       if (addToSheet && entity.category !== 'monster') {
@@ -333,9 +346,9 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
           ],
         }));
       }
-      appendLog(`Created homebrew "${entity.name}" (${entity.category}).`, 'info');
+      appendLog(`Created homebrew "${entity.name}" (${entity.category}${piped.repaired.length > 0 ? `; repaired: ${piped.repaired[0]!.notes.join('; ')}` : ''}).`, 'info');
     },
-    [persistCharacter, appendLog]
+    [persistCharacter, appendLog, pushToast]
   );
 
   // Search shows one entry per name (SRD copy wins over Free5e/duplicate pack copies); nothing is deleted.
@@ -429,14 +442,32 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
         fetched.warnings.forEach((w) => appendLog(`  ${repoName}: ${w}`, 'warn'));
 
         const previous = compendium.filter((e) => e.packId === packId);
+        const incomingIds = new Set(fetched.entities.map((e) => e.id));
+        // a file that could not be read this time says nothing about its entries: they stay, marked "unreadable - kept"
+        const unreadableFiles = new Set(fetched.unreadable);
+        const keptUnreadable =
+          unreadableFiles.size > 0
+            ? previous.filter((e) => !incomingIds.has(e.id) && (e.packFile === undefined || unreadableFiles.has(e.packFile)))
+            : [];
+        const keptIds = new Set(keptUnreadable.map((e) => e.id));
         const diff = diffPackEntities(previous, fetched.entities);
+        const removedIds = diff.removed.filter((id) => !keptIds.has(id));
+        // entries an older repo sync left behind (custom-* ids, no provenance) that this pack carries again
+        const adoption = planLegacyAdoption(compendium, fetched.entities, [fetched.manifest.name, repoName]);
+        const adoptedOldIds = new Set(adoption.keys());
+        const report: ImportReport = {
+          ...fetched.report,
+          ...(keptUnreadable.length > 0 ? { keptEntries: keptUnreadable.length } : {}),
+          ...(adoption.size > 0 ? { adopted: adoption.size } : {}),
+        };
         const shortRef = fetched.sha ? fetched.sha.slice(0, 7) : cfg.branch?.trim() || 'main';
+        const extras = `${keptUnreadable.length > 0 ? `, ${keptUnreadable.length} unreadable — kept` : ''}${adoption.size > 0 ? `, ${adoption.size} existing adopted` : ''}`;
         const label =
           kind === 'sync'
             ? repoName
             : existing
-              ? `${fetched.manifest.name} update to ${fetched.manifest.version} @ ${shortRef} (${diff.added.length} new, ${diff.changed.length} changed, ${diff.removed.length} removed)`
-              : `${fetched.manifest.name} ${fetched.manifest.version} (${repoName} @ ${shortRef})`;
+              ? `${fetched.manifest.name} update to ${fetched.manifest.version} @ ${shortRef} (${diff.added.length} new, ${diff.changed.length} changed, ${removedIds.length} removed${extras})`
+              : `${fetched.manifest.name} ${fetched.manifest.version} (${repoName} @ ${shortRef}${extras})`;
 
         stageImport(
           label,
@@ -444,14 +475,20 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
           fetched.characters.length,
           async () => {
             const keep = new Set(fetched.entities.map((e) => e.id));
-            const stale = previous.filter((e) => !keep.has(e.id)).map((e) => e.id);
-            if (stale.length > 0) {
-              await db.compendium.bulkDelete(stale);
-              await markOrphans(new Set(stale), true);
+            const stale = previous.filter((e) => !keep.has(e.id) && !keptIds.has(e.id)).map((e) => e.id);
+            if (adoption.size > 0) {
+              // references first (they point at the old ids), then the old copies go
+              const moved = await adoptEntityIds(adoption);
+              appendLog(`Adopted ${adoption.size} existing entries into ${fetched.manifest.name} (${moved.fixes} fix(es), ${moved.decisions} duplicate decision(s), ${moved.characterItems} sheet item(s) re-pointed).`, 'info');
+            }
+            const toDelete = [...stale, ...adoptedOldIds];
+            if (toDelete.length > 0) {
+              await db.compendium.bulkDelete(toDelete);
+              if (stale.length > 0) await markOrphans(new Set(stale), true);
             }
             if (fetched.entities.length > 0) {
               await upsertCompendiumEntities(fetched.entities);
-              await markOrphans(keep, false);
+              await markOrphans(new Set([...keep, ...keptIds]), false);
             }
             for (const ch of fetched.characters) await saveCharacter(ch);
             const record: InstalledPack = {
@@ -460,7 +497,7 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
             };
             await savePack(record);
 
-            const staleSet = new Set(stale);
+            const staleSet = new Set(toDelete);
             setCompendium((prev) => {
               const map = new Map(prev.filter((e) => !staleSet.has(e.id)).map((e) => [e.id, e]));
               for (const e of fetched.entities) map.set(e.id, e);
@@ -476,6 +513,11 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
             setPacks((prev) => [...prev.filter((p) => p.id !== record.id), record]);
             setContentFixes(await db.contentFixes.toArray());
             setDupDecisions(await db.dupDecisions.toArray());
+            if (adoption.size > 0) {
+              const allChars = await db.characters.toArray();
+              setCharacterList(allChars);
+              setRawChar((prev) => allChars.find((ch) => ch.id === prev.id) ?? prev);
+            }
             if (persistAsCampaignRepo) {
               persistCampaign((prev) => {
                 const existingEntryIds = new Set(prev.entries.map((e) => e.id));
@@ -496,13 +538,13 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
             } else {
               const verb = existing ? 'Updated' : 'Installed';
               appendLog(
-                `${verb} pack "${record.name}" ${record.version} from ${repoName}: ${fetched.entities.length} entities${stale.length > 0 ? `, ${stale.length} removed` : ''}.`,
+                `${verb} pack "${record.name}" ${record.version} from ${repoName}: ${fetched.entities.length} entities${stale.length > 0 ? `, ${stale.length} removed` : ''}${keptUnreadable.length > 0 ? `, ${keptUnreadable.length} unreadable — kept` : ''} (${summarizeReport(fetched.report)}).`,
                 'info'
               );
               pushToast(`${verb} pack ${record.name}`, 'info');
             }
           },
-          { replacePackId: packId }
+          { replacePackId: packId, report, excludeIds: adoptedOldIds }
         );
         return { ok: true };
       } catch (err) {

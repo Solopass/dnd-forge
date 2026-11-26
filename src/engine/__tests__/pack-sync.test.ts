@@ -45,7 +45,7 @@ describe('fetchPackFromGitHub (mocked GitHub)', () => {
           'pack.json': manifestJson(),
           'monsters/ghoul.json': JSON.stringify([
             { name: 'Synthetic Ghoul', category: 'monster', imageUrl: './img/ghoul.png', monsterMeta: { ac: 12, hp: 20, dexModifier: 1 } },
-            { id: 'keep-this-id', name: 'Keeper Beast', category: 'monster' },
+            { id: 'keep-this-id', name: 'Keeper Beast', category: 'monster', monsterMeta: { ac: 10, hp: 5, dexModifier: 0 } },
           ]),
           'monsters/readme.txt': 'ignored (not matched by *.json)',
           'spells/evocation/spark.md': SPELL_MD,

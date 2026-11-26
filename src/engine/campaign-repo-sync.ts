@@ -1,9 +1,14 @@
 import { CampaignEntry, CampaignRecord, ExternalRepoConfig } from '../types/campaign';
 import { RawCharacterState } from '../types/character';
 import { CompendiumEntity, ItemCategory } from '../types/compendium';
-import { normalizeCustomCharacter, normalizeCustomEntity } from './custom-content-loader';
-import { parseFree5eMarkdownBatch } from './free5e-parser';
-import { adapt5eToolsPayload } from './five-tools-adapter';
+import {
+  buildImportReport,
+  mergePipelineResults,
+  runImportPipeline,
+  runImportPipelineOnEntities,
+  type ImportReport,
+  type PipelineResult,
+} from './import-pipeline';
 import { PACK_FORMAT_V1, type InstalledPack, type PackManifest } from '../types/pack';
 import {
   FREE5E_PACK_ID,
@@ -224,6 +229,10 @@ export interface FetchedPack extends SyncedCampaignPackResult {
   /** Commit the files were read from (when GitHub could tell us). */
   sha?: string;
   warnings: string[];
+  /** What the import pipeline did with the files: counts, repairs (with notes), rejections (with reasons). */
+  report: ImportReport;
+  /** Pack files that could not be read this time (kept as they were on an update, never "removed"). */
+  unreadable: string[];
 }
 
 export interface FetchPackOptions {
@@ -282,22 +291,27 @@ async function fetchFree5eTreeFromGitHub(
 
   const isFree5e = isFree5eRepo(config.owner, config.repo);
   const sourceLabel = `Free5e (${config.owner}/${config.repo})`;
-  const parsed: CompendiumEntity[] = [];
+  const results: PipelineResult[] = [];
+  const unreadable: string[] = [];
   const BATCH = 24;
   for (let i = 0; i < targets.length; i += BATCH) {
     const slice = targets.slice(i, i + BATCH);
-    const results = await Promise.all(
-      slice.map(async (t) => {
+    const batches = await Promise.all(
+      slice.map(async (t): Promise<PipelineResult | null> => {
         try {
           const md = await fetchRepoText(config, t.path, token);
-          return parseFree5eMarkdownBatch(md, t.category, sourceLabel);
+          return runImportPipeline(md, { name: t.path, categoryHint: t.category, sourceLabel, stableIds: true, packFile: t.path });
         } catch {
-          return [];
+          unreadable.push(t.path);
+          return null;
         }
       })
     );
-    for (const batch of results) parsed.push(...batch);
+    for (const r of batches) if (r) results.push(r);
   }
+  // a tree where nothing could be fetched is "no pack", not an empty one
+  if (results.length === 0) return null;
+  const merged = mergePipelineResults(results, 'free5e-markdown');
 
   const ref = sha ?? (config.branch?.trim() || 'main');
   const manifest: PackManifest = {
@@ -312,7 +326,7 @@ async function fetchFree5eTreeFromGitHub(
   };
   // the parser's own ids (free5e-spl-alarm ...) are stable, so they are kept; only provenance is added
   const entities = assignPackIdentity(
-    parsed.map((entity) => ({ entity, hadId: true })),
+    merged.items.map((i) => ({ entity: i.entity, hadId: true })),
     { packId: manifest.id, packVersion: manifest.version, packRef: ref }
   );
   return {
@@ -323,7 +337,9 @@ async function fetchFree5eTreeFromGitHub(
     entities,
     characters: [],
     entries: [],
-    warnings: [],
+    warnings: unreadable.map((p) => `${p}: could not be read.`),
+    report: buildImportReport(merged, { files: results.length, unreadable, format: 'pack' }),
+    unreadable,
     syncedAt: new Date().toISOString(),
   };
 }
@@ -369,85 +385,82 @@ async function materializePack(input: MaterializeInput): Promise<FetchedPack> {
     return out;
   };
 
-  const items: Array<{ entity: CompendiumEntity; hadId: boolean }> = [];
-  const pushRaw = (raw: Record<string, unknown>, fallbackCat: ItemCategory) => {
-    const hadId = typeof raw.id === 'string' && raw.id.trim().length > 0;
-    const norm = normalizeCustomEntity(
-      defaultRuleset && raw.ruleset === undefined ? { ...raw, ruleset: defaultRuleset } : raw,
-      fallbackCat
-    );
-    if (!norm) return;
-    if (norm.imageUrl) norm.imageUrl = resolveRepoAssetUrl(norm.imageUrl, pinned);
-    if (!norm.source || DEFAULT_SOURCE_LABELS.has(norm.source)) norm.source = sourceLabel;
-    items.push({ entity: norm, hadId });
+  const results: PipelineResult[] = [];
+  const unreadable: string[] = [];
+  let filesRead = 0;
+  const mapEntity = (entity: CompendiumEntity): CompendiumEntity => {
+    const imageUrl = entity.imageUrl ? resolveRepoAssetUrl(entity.imageUrl, pinned) : undefined;
+    const source = !entity.source || DEFAULT_SOURCE_LABELS.has(entity.source) ? sourceLabel : entity.source;
+    return { ...entity, source, ...(imageUrl ? { imageUrl } : {}) };
   };
+  const stableIds = manifest.id === FREE5E_PACK_ID;
+  const shared = { sourceLabel, ...(defaultRuleset ? { defaultRuleset } : {}), mapEntity };
+  const prefixed = (path: string, r: PipelineResult): PipelineResult => ({
+    ...r,
+    rejected: r.rejected.map((x) => ({ source: `${path}: ${x.source}`, reason: x.reason })),
+  });
 
-  for (const raw of legacy?.inlineEntities ?? []) {
-    pushRaw(raw, typeof raw.category === 'string' ? (raw.category as ItemCategory) : 'gear');
+  if (legacy && legacy.inlineEntities.length > 0) {
+    results.push(runImportPipelineOnEntities(legacy.inlineEntities, { ...shared, categoryHint: 'gear', name: 'campaign-pack.json' }));
   }
 
+  const SKIPPED_NAMES = /(^|\/)(readme|license|licence|changelog|contributing|code_of_conduct)(\.[a-z]+)?$/i;
+  const NOT_CONTENT = /\.(png|jpe?g|gif|webp|svg|ico|pdf|zip|woff2?|ttf|mp3|ogg|wav|mp4)$/i;
   for (const path of expand(manifest.content, 'content')) {
-    const hint = legacy?.categoryHints[path] ?? guessCategoryFromPath(path);
-    const lower = path.toLowerCase();
-    if (lower.endsWith('.md')) {
-      const md = await fetchRepoText(pinned, path, token);
-      for (const parsed of parseFree5eMarkdownBatch(md, hint, sourceLabel)) {
-        if (parsed.imageUrl) parsed.imageUrl = resolveRepoAssetUrl(parsed.imageUrl, pinned);
-        items.push({ entity: parsed, hadId: manifest.id === FREE5E_PACK_ID });
-      }
-    } else if (lower.endsWith('.json') || legacy) {
-      const text = await fetchRepoText(pinned, path, token);
-      let payload: unknown;
-      try {
-        payload = JSON.parse(text);
-      } catch {
-        warnings.push(`${path}: not valid JSON, skipped.`);
-        continue;
-      }
-      const adapted = adapt5eToolsPayload(payload);
-      if (adapted.entities.length > 0) {
-        for (const entity of adapted.entities) items.push({ entity, hadId: true });
-        continue;
-      }
-      const list = Array.isArray(payload)
-        ? payload
-        : payload && typeof payload === 'object' && Array.isArray((payload as { entities?: unknown }).entities)
-          ? ((payload as { entities: unknown[] }).entities)
-          : [payload];
-      let taken = 0;
-      for (const item of list) {
-        if (!item || typeof item !== 'object') continue;
-        const before = items.length;
-        pushRaw(item as Record<string, unknown>, hint);
-        taken += items.length - before;
-      }
-      if (taken === 0) warnings.push(`${path}: no entries found.`);
-    } else {
-      warnings.push(`${path}: unsupported file type, skipped.`);
+    if (NOT_CONTENT.test(path)) {
+      warnings.push(`${path}: not a content file (image or binary), skipped.`);
+      continue;
     }
+    if (SKIPPED_NAMES.test(path)) continue;
+    const hint = legacy?.categoryHints[path] ?? guessCategoryFromPath(path);
+    let text: string;
+    try {
+      text = await fetchRepoText(pinned, path, token);
+    } catch (err) {
+      unreadable.push(path);
+      warnings.push(`${path}: could not be read (${err instanceof Error ? err.message : String(err)}).`);
+      continue;
+    }
+    filesRead++;
+    const result = prefixed(path, runImportPipeline(text, { ...shared, name: path, categoryHint: hint, stableIds, packFile: path }));
+    if (result.format === 'invalid-json' || result.format === 'binary' || result.format === 'unknown') {
+      unreadable.push(path);
+      warnings.push(result.format === 'invalid-json' ? `${path}: not valid JSON, skipped.` : `${path}: ${result.rejected[0]?.reason ?? 'could not be read'}; skipped.`);
+      continue;
+    }
+    if (result.accepted.length === 0 && result.rejected.length === 0 && result.warnings.length === 0) warnings.push(`${path}: no entries found.`);
+    results.push(result);
+  }
+  // when every listed file failed there is nothing to install: say so instead of installing an empty pack
+  if (unreadable.length > 0 && filesRead === 0 && results.length === 0) {
+    throw new Error(`None of the pack files could be read (${unreadable.slice(0, 3).join(', ')}${unreadable.length > 3 ? ', ...' : ''}). Try again later.`);
   }
 
   const characters: RawCharacterState[] = [];
-  const pushChar = (raw: unknown) => {
-    if (!raw || typeof raw !== 'object') return;
-    const norm = normalizeCustomCharacter(raw as Record<string, unknown>);
-    if (!norm) return;
-    if (norm.avatarUrl) norm.avatarUrl = resolveRepoAssetUrl(norm.avatarUrl, pinned);
-    characters.push(norm);
-  };
-  for (const raw of legacy?.inlineCharacters ?? []) pushChar(raw);
-  for (const path of expand(manifest.characters, 'characters')) {
-    let payload: unknown;
-    try {
-      payload = JSON.parse(await fetchRepoText(pinned, path, token));
-    } catch (err) {
-      if (err instanceof SyntaxError) {
-        warnings.push(`${path}: not valid JSON, skipped.`);
-        continue;
-      }
-      throw err;
+  const charResults: PipelineResult[] = [];
+  const takeCharacters = (r: PipelineResult) => {
+    for (const ch of r.characters) {
+      characters.push(ch.avatarUrl ? { ...ch, avatarUrl: resolveRepoAssetUrl(ch.avatarUrl, pinned) ?? ch.avatarUrl } : ch);
     }
-    for (const raw of Array.isArray(payload) ? payload : [payload]) pushChar(raw);
+    charResults.push(r);
+  };
+  if (legacy && legacy.inlineCharacters.length > 0) takeCharacters(runImportPipeline(JSON.stringify(legacy.inlineCharacters), { name: 'campaign-pack.json (characters)' }));
+  for (const path of expand(manifest.characters, 'characters')) {
+    let text: string;
+    try {
+      text = await fetchRepoText(pinned, path, token);
+    } catch (err) {
+      unreadable.push(path);
+      warnings.push(`${path}: could not be read (${err instanceof Error ? err.message : String(err)}).`);
+      continue;
+    }
+    const r = prefixed(path, runImportPipeline(text, { name: path }));
+    if (r.format === 'invalid-json' || r.format === 'binary' || r.format === 'unknown') {
+      unreadable.push(path);
+      warnings.push(`${path}: ${r.rejected[0]?.reason ?? 'could not be read'}; skipped.`);
+      continue;
+    }
+    takeCharacters(r);
   }
 
   let entries: CampaignEntry[] = legacy ? (legacy.entries as CampaignEntry[]) : [];
@@ -465,15 +478,22 @@ async function materializePack(input: MaterializeInput): Promise<FetchedPack> {
     }
   }
 
+  const merged = mergePipelineResults([...results, ...charResults.map((r) => ({ ...r, items: [] }))]);
+  const entities = assignPackIdentity(
+    merged.items.map((i) => ({ entity: i.entity, hadId: i.explicitId })),
+    identity
+  );
   return {
     manifest,
     format: legacy ? 'v0' : 'v1',
     ...(sha ? { sha } : {}),
     manifestName: manifest.name,
-    entities: assignPackIdentity(items, identity),
+    entities,
     characters,
     entries,
-    warnings,
+    warnings: [...warnings, ...merged.warnings],
+    report: buildImportReport(merged, { files: filesRead + characters.length, unreadable, format: 'pack' }),
+    unreadable,
     syncedAt: new Date().toISOString(),
   };
 }

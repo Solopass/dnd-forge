@@ -498,7 +498,7 @@ Claws. +7 to hit, 2d8 + 5 slashing damage`;
     await act(async () => {
       await h.result.current.importJsonFilePayload('{not json');
     });
-    expect(logTexts(h)[0]).toContain('JSON import failed');
+    expect(logTexts(h)[0]).toContain('not valid JSON');
   });
 
   it('upsertCampaignEntry inserts then updates an entry', async () => {

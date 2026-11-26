@@ -7,6 +7,7 @@ import type { DuplicateDecision, SourceTier } from '../../engine/compendium-dedu
 import type { ContentFix } from '../../types/content-fix';
 import { applyFixesToList } from '../../engine/content-fixes';
 import type { ImportPlan } from '../../engine/import-preview';
+import { summarizeReport, type ImportReport } from '../../engine/import-pipeline';
 import { ActiveBuffState, RollMode } from '../../types/core';
 import { computeCharacterSheet, syncSpellSlotPools } from '../../engine/rules-math';
 import { BUILTIN_CONTENT_PACKS } from '../../engine/srd-packs';
@@ -302,7 +303,7 @@ export function useStoreCore(initialCharacter: RawCharacterState, initialEncount
               } catch {
                 // ignore
               }
-              appendLog(`Auto-synced ${res.entities.length} Free5e items from Solopass/free5e.`, 'info');
+              appendLog(`Auto-synced ${res.entities.length} Free5e items from Solopass/free5e (${summarizeReport(res.report)}).`, 'info');
             })
             .catch(() => {
               // manual sync button remains available in Packs / DM Hub
@@ -557,6 +558,8 @@ export function useStoreCore(initialCharacter: RawCharacterState, initialEncount
 export interface PendingImport {
   label: string;
   plan: ImportPlan;
+  /** What the import pipeline repaired / rejected (shown, expandable, in the preview). */
+  report?: ImportReport;
   commit: () => Promise<void>;
 }
 

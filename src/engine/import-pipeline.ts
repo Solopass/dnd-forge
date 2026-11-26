@@ -172,9 +172,9 @@ export function detectFormat(rawText: string, opts: Pick<PipelineOptions, 'assum
   if (/Armor\s*Class\b/i.test(text) && /Hit\s*Points\b/i.test(text)) return 'homebrew-markdown';
   if (looksLikeCsv(text)) return 'csv';
   if (/^\s*\|.+\|\s*$/m.test(text)) return 'free5e-markdown';
-  if (/^#{1,3}\s+\S/m.test(text) || /^\s*\*\*[^*\n]+\*\*/.test(text)) return 'homebrew-markdown';
+  if (/^#{1,6}\s+\S/m.test(text) || /^\s*\*\*[^*\n]+\*\*/.test(text)) return 'homebrew-markdown';
   if (/^\W*(type|category|level|casting time|range|duration|components|damage|armor class|hit points|challenge)\s*:/im.test(text)) return 'homebrew-markdown';
-  return 'unknown';
+  return /\.(md|markdown)$/i.test(opts.name ?? '') ? 'homebrew-markdown' : 'unknown';
 }
 
 // ---------------------------------------------------------------- CSV
@@ -249,9 +249,10 @@ function csvRowToRaw(row: Record<string, string>, category: ItemCategory): Recor
   const raw: Record<string, unknown> = { category };
   const name = row.name ?? '';
   raw.name = name;
-  for (const key of ['id', 'source', 'ruleset', 'castingTime', 'range', 'components', 'duration', 'concentration', 'ritual', 'classes', 'weight', 'quantity', 'imageUrl'] as const) {
+  for (const key of ['id', 'source', 'ruleset', 'castingTime', 'range', 'components', 'duration', 'concentration', 'ritual', 'weight', 'quantity', 'imageUrl'] as const) {
     if (row[key] !== undefined && row[key] !== '') raw[key] = row[key];
   }
+  if (row.classes) raw.classes = row.classes.split(/[,;/]/).map((c) => c.trim()).filter(Boolean);
   if (row.category) raw.category = row.category;
   else if (row.type) raw.category = category; // "type" is often "Martial Melee", not a category
   if (row.level !== undefined && row.level !== '') raw.spellLevel = row.level;
@@ -436,6 +437,10 @@ function parseFree5eMarkdown(text: string, ctx: Ctx): PipelineResult {
 }
 
 function parseHomebrewMarkdown(text: string, ctx: Ctx, format: DetectedFormat): PipelineResult {
+  const isStatblock = /Armor\s*Class/i.test(text) && /Hit\s*Points/i.test(text);
+  const hint = ctx.sanitize.fallbackCategory;
+  // a Free5e-style feat / spell page (the file's folder says what it is): the Free5e reader knows the layout
+  if (!isStatblock && (hint === 'feat' || hint === 'spell')) return parseFree5eMarkdown(text, ctx);
   const rejected: Rejection[] = [];
   const raws: Array<{ entity: CompendiumEntity; notes: string[] }> = [];
   const ruleset = ctx.opts.defaultRuleset ?? 'homebrew';
@@ -625,6 +630,10 @@ export interface ImportReport {
   /** Pack files that could not be read; their existing entries are kept on an update. */
   unreadable: string[];
   characters: number;
+  /** On a pack update: entries whose file could not be read this time and that were therefore kept. */
+  keptEntries?: number;
+  /** Older repo-synced entries (no provenance) that this pack took over instead of duplicating. */
+  adopted?: number;
   /** Most common problems (repairs and rejections) with counts, numbers and quoted names folded together. */
   topProblems: Array<{ text: string; count: number }>;
 }
@@ -654,6 +663,8 @@ export function buildImportReport(result: PipelineResult, extra: { files?: numbe
 export function summarizeReport(report: ImportReport): string {
   const parts = [`${report.accepted} accepted${report.repaired.length > 0 ? ` (${report.repaired.length} repaired)` : ''}`, `${report.rejected.length} rejected`];
   if (report.unreadable.length > 0) parts.push(`${report.unreadable.length} file${report.unreadable.length === 1 ? '' : 's'} unreadable`);
+  if (report.keptEntries) parts.push(`${report.keptEntries} unreadable — kept`);
+  if (report.adopted) parts.push(`${report.adopted} existing adopted`);
   return parts.join(', ');
 }
 

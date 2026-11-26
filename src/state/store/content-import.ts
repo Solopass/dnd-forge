@@ -22,7 +22,16 @@ import {
 import { foldMagicVariants } from '../../engine/magic-variants';
 import { planEntityImport } from '../../engine/import-preview';
 import { getClassDefinition } from '../../engine/classes';
-import { buildCampaignPackExport, fetchPackFromGitHub, getStoredGithubPat, pushFileToGitHubRepo, resolveCommitSha, toInstalledPack, tryFetchExistingManifest } from '../../engine/campaign-repo-sync';
+import { buildCampaignPackExport, fetchPackFromGitHub, getStoredGithubPat, probeRepoAccess, pushFileToGitHubRepo, resolveCommitSha, toInstalledPack, tryFetchExistingManifest } from '../../engine/campaign-repo-sync';
+import {
+  failureMessage,
+  isCurrentAt,
+  migrateCampaignPacks,
+  packKey,
+  syncSummary,
+  type TablePack,
+  type TablePackResult,
+} from '../../engine/campaign-packs';
 import { diffPackEntities, planLegacyAdoption } from '../../engine/pack-manifest';
 import type { InstalledPack } from '../../types/pack';
 import { ExternalRepoConfig } from '../../types/campaign';
@@ -43,7 +52,7 @@ import {
 import type { StoreCore } from './core';
 import type { useCombatActions } from './combat';
 
-export type PackActionResult = { ok: true } | { ok: false; error: string };
+export type PackActionResult = { ok: true; pack?: InstalledPack } | { ok: false; error: string };
 export type PackUpdateStatus = 'current' | 'available' | 'unknown';
 
 export type ContentImportDeps = Pick<ReturnType<typeof useCombatActions>, 'addMonsterToEncounter'>;
@@ -76,6 +85,9 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
     packs,
     setPacks,
     setContentFixes,
+    setTablePackSync,
+    tablePackRequestRef,
+    tablePackChainRef,
   } = core;
   const { addMonsterToEncounter } = deps;
 
@@ -86,13 +98,15 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
       entities: CompendiumEntity[],
       characters: number,
       commit: () => Promise<void>,
-      opts: { replacePackId?: string; report?: ImportReport; excludeIds?: ReadonlySet<string> } = {}
-    ) => {
+      opts: { replacePackId?: string; report?: ImportReport; excludeIds?: ReadonlySet<string>; silent?: boolean } = {}
+    ): Promise<void> | void => {
       // updating a pack: its current copies are about to be replaced, so they are not "duplicates" of the new ones
       const existing = compendium.filter(
         (e) => !(opts.replacePackId && e.packId === opts.replacePackId) && !opts.excludeIds?.has(e.id)
       );
       const plan = planEntityImport(entities, existing, sourcePriority, characters);
+      // a DM-linked pack synced at the Live Table is written straight away (no dialog)
+      if (opts.silent) return commit();
       setPendingImport({ label, plan, ...(opts.report ? { report: opts.report } : {}), commit });
       appendLog(`Import preview for ${label}: ${plan.summary}${opts.report ? ` (${summarizeReport(opts.report)})` : ''}.`, 'info');
     },
@@ -284,8 +298,10 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
               setEncounter(refreshedEncounters[0]!);
             }
             if (refreshedCampaigns.length > 0) {
-              setCampaignList(refreshedCampaigns);
-              setCampaign(refreshedCampaigns[0]!);
+              // an old backup has `externalRepo` and no `packs`
+              const migrated = refreshedCampaigns.map(migrateCampaignPacks);
+              setCampaignList(migrated);
+              setCampaign(migrated[0]!);
             }
             setScenes(refreshedScenes);
             appendLog(
@@ -424,9 +440,11 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
     async (
       cfg: ExternalRepoConfig,
       kind: 'install' | 'update' | 'sync',
-      persistAsCampaignRepo = false
+      persistAsCampaignRepo = false,
+      mode: { silent?: boolean; managed?: boolean } = {}
     ): Promise<PackActionResult> => {
       const token = getStoredGithubPat();
+      let installed: InstalledPack | undefined;
       try {
         const fetched = await fetchPackFromGitHub(cfg, token || undefined, { fresh: true });
         const packId = fetched.manifest.id;
@@ -469,7 +487,7 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
               ? `${fetched.manifest.name} update to ${fetched.manifest.version} @ ${shortRef} (${diff.added.length} new, ${diff.changed.length} changed, ${removedIds.length} removed${extras})`
               : `${fetched.manifest.name} ${fetched.manifest.version} (${repoName} @ ${shortRef}${extras})`;
 
-        stageImport(
+        await stageImport(
           label,
           fetched.entities,
           fetched.characters.length,
@@ -494,7 +512,10 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
             const record: InstalledPack = {
               ...toInstalledPack(fetched, cfg),
               ...(existing ? { installedAt: existing.installedAt } : {}),
+              // a personal pack the table later pins stays personal; one the table installed stays managed
+              ...((existing ? existing.managedByCampaign : mode.managed) ? { managedByCampaign: true } : {}),
             };
+            installed = record;
             await savePack(record);
 
             const staleSet = new Set(toDelete);
@@ -541,12 +562,12 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
                 `${verb} pack "${record.name}" ${record.version} from ${repoName}: ${fetched.entities.length} entities${stale.length > 0 ? `, ${stale.length} removed` : ''}${keptUnreadable.length > 0 ? `, ${keptUnreadable.length} unreadable — kept` : ''} (${summarizeReport(fetched.report)}).`,
                 'info'
               );
-              pushToast(`${verb} pack ${record.name}`, 'info');
+              if (!mode.silent) pushToast(`${verb} pack ${record.name}`, 'info');
             }
           },
-          { replacePackId: packId, report, excludeIds: adoptedOldIds }
+          { replacePackId: packId, report, excludeIds: adoptedOldIds, ...(mode.silent ? { silent: true } : {}) }
         );
-        return { ok: true };
+        return { ok: true, ...(installed ? { pack: installed } : {}) };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         appendLog(kind === 'sync' ? `Campaign repo sync failed: ${msg}` : `Pack ${kind} failed: ${msg}`, 'warn');
@@ -614,6 +635,64 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
     },
     [packs, appendLog, pushToast, setCompendium, setPacks, setContentFixes, setDupDecisions]
   );
+
+  /**
+   * Live Table: installs the host's campaign packs at exactly the pinned commits, with no preview dialog, and
+   * reports every pack (installed, already current, needs access, network, error). Personal packs are never touched.
+   */
+  const syncTablePacks = useCallback(
+    (wanted: TablePack[], campaignId: string): Promise<TablePackResult[]> => {
+      tablePackRequestRef.current = { wanted, campaignId };
+      const run = async (): Promise<TablePackResult[]> => {
+        const token = getStoredGithubPat() || undefined;
+        const results: TablePackResult[] = [];
+        for (const w of wanted) {
+          const existing = packs.find((p) => p.repo.toLowerCase() === packKey(w));
+          const base = { owner: w.owner, repo: w.repo, sha: w.sha };
+          if (isCurrentAt(existing, w.sha)) {
+            results.push({ ...base, status: 'current', ...(existing ? { name: existing.name, version: existing.version } : {}) });
+            continue;
+          }
+          const cfg = { owner: w.owner, repo: w.repo, branch: w.sha };
+          const access = await probeRepoAccess(cfg, token);
+          if (access !== 'ok') {
+            results.push({ ...base, status: access === 'network' ? 'network' : 'needs-access' });
+            continue;
+          }
+          const res = await stagePackFromRepo(cfg, existing ? 'update' : 'install', false, { silent: true, managed: true });
+          if (res.ok) {
+            results.push({ ...base, status: 'synced', ...(res.pack ? { name: res.pack.name, version: res.pack.version } : {}) });
+          } else {
+            const first = res.error.split(String.fromCharCode(10))[0] ?? res.error;
+            results.push({ ...base, status: /network|failed to fetch|fetch failed/i.test(first) ? 'network' : 'error', message: first });
+          }
+        }
+        setTablePackSync({ campaignId, at: new Date().toISOString(), results });
+        for (const r of results) {
+          if (r.status === 'needs-access' || r.status === 'network' || r.status === 'error') {
+            appendLog(`[LIVE] ${failureMessage(r)}`, 'warn');
+            pushToast(failureMessage(r), 'warn');
+          }
+        }
+        const summary = syncSummary(results);
+        if (summary) {
+          appendLog(`[LIVE] ${summary}`, 'info');
+          pushToast(summary, 'info');
+        }
+        return results;
+      };
+      const next = tablePackChainRef.current.then(run, run);
+      tablePackChainRef.current = next.catch(() => undefined);
+      return next;
+    },
+    [packs, stagePackFromRepo, appendLog, pushToast]
+  );
+
+  /** Runs the last table pack list again (the Retry button after a network error or a new token). */
+  const retryTablePackSync = useCallback(async (): Promise<void> => {
+    const last = tablePackRequestRef.current;
+    if (last) await syncTablePacks(last.wanted, last.campaignId);
+  }, [syncTablePacks]);
 
   const syncCampaignExternalRepo = useCallback(
     async (repoConfig?: ExternalRepoConfig, persistAsCampaignRepo = true) => {
@@ -743,6 +822,8 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
     updatePack,
     uninstallPack,
     checkPackUpdate,
+    syncTablePacks,
+    retryTablePackSync,
     syncFree5ePack,
     pushCharacterToCampaignRepo,
     pushCampaignToRepo,

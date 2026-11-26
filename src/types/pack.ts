@@ -36,4 +36,6 @@ export interface InstalledPack {
   requires?: string[];
   entityCount?: number;
   installedAt: string;
+  /** Installed for a campaign by the Live Table sync (pinned to the DM's commit); personal packs leave this unset. */
+  managedByCampaign?: boolean;
 }

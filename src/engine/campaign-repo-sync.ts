@@ -255,6 +255,25 @@ export async function resolveCommitSha(config: ExternalRepoConfig, token?: strin
   return /^[0-9a-f]{40}$/i.test(text) ? text.toLowerCase() : undefined;
 }
 
+/**
+ * Can this repo+ref be read with the given token (or none)? 'no-access' = GitHub answered 401/403/404 (private repo,
+ * missing token, or gone); 'network' = no answer or a server error (worth a retry).
+ */
+export async function probeRepoAccess(config: ExternalRepoConfig, token?: string): Promise<'ok' | 'no-access' | 'network'> {
+  const ref = config.branch?.trim() || 'main';
+  const url = `https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/commits/${encodeURIComponent(ref)}`;
+  let res: Response;
+  try {
+    res = await fetch(url, { headers: authHeaders(token, 'application/vnd.github.sha') });
+  } catch {
+    return 'network';
+  }
+  if (res.ok) return 'ok';
+  if (res.status === 403 && res.headers.get('x-ratelimit-remaining') === '0') return 'network'; // rate limited, not private
+  if (res.status === 401 || res.status === 403 || res.status === 404 || res.status === 422) return 'no-access';
+  return 'network';
+}
+
 /** Every file path in the repo at `config.branch`, or null when the tree can't be listed. */
 async function fetchRepoTreePaths(config: ExternalRepoConfig, token?: string): Promise<string[] | null> {
   const branch = config.branch?.trim() || 'main';

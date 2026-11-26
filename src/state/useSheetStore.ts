@@ -9,6 +9,7 @@ import { useContentFixActions } from './store/content-fixes';
 import { useLiveTableActions } from './store/live-table';
 import { useBattlemapActions } from './store/battlemap';
 import { useCampaignActions } from './store/campaign';
+import { useCampaignPackActions } from './store/campaign-packs';
 
 export type { ConsoleLine, ToastMessage, LevelUpPlanInput } from './store/types';
 
@@ -19,9 +20,10 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
   const combat = useCombatActions(core, { adjustHp: character.adjustHp, toggleCondition: character.toggleCondition });
   const contentImport = useContentImportActions(core, { addMonsterToEncounter: combat.addMonsterToEncounter });
   const contentFixActions = useContentFixActions(core);
-  const liveTable = useLiveTableActions(core, { importSingleCharacter: contentImport.importSingleCharacter, targetAttackCombatants: combat.targetAttackCombatants, targetSaveCombatants: combat.targetSaveCombatants });
+  const liveTable = useLiveTableActions(core, { importSingleCharacter: contentImport.importSingleCharacter, syncTablePacks: contentImport.syncTablePacks, targetAttackCombatants: combat.targetAttackCombatants, targetSaveCombatants: combat.targetSaveCombatants });
   const battlemap = useBattlemapActions(core);
   const campaign = useCampaignActions(core);
+  const campaignPacks = useCampaignPackActions(core, { updatePack: contentImport.updatePack });
 
   return {
     rawChar: core.rawChar,
@@ -168,6 +170,13 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     syncCampaignExternalRepo: contentImport.syncCampaignExternalRepo,
     installPack: contentImport.installPack,
     updatePack: contentImport.updatePack,
+    linkCampaignPack: campaignPacks.linkCampaignPack,
+    linkInstalledPack: campaignPacks.linkInstalledPack,
+    updateCampaignPack: campaignPacks.updateCampaignPack,
+    setCampaignPackOn: campaignPacks.setCampaignPackOn,
+    removeCampaignPackLink: campaignPacks.removeCampaignPackLink,
+    tablePackSync: core.tablePackSync,
+    retryTablePackSync: contentImport.retryTablePackSync,
     uninstallPack: contentImport.uninstallPack,
     checkPackUpdate: contentImport.checkPackUpdate,
     packs: core.packs,

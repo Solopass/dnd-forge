@@ -7,11 +7,12 @@ import { playTableSound } from '../../engine/sound';
 import { tabletopSoundboard } from '../../engine/soundboard';
 import { saveContentFix, saveEncounter } from '../../storage/db';
 import { parseFixesFile } from '../../engine/content-fixes';
+import { parseTablePacks, toTablePacks } from '../../engine/campaign-packs';
 import type { StoreCore } from './core';
 import type { useContentImportActions } from './content-import';
 import type { useCombatActions } from './combat';
 
-export type LiveTableDeps = Pick<ReturnType<typeof useContentImportActions>, 'importSingleCharacter'> & Pick<ReturnType<typeof useCombatActions>, 'targetAttackCombatants' | 'targetSaveCombatants'>;
+export type LiveTableDeps = Pick<ReturnType<typeof useContentImportActions>, 'importSingleCharacter' | 'syncTablePacks'> & Pick<ReturnType<typeof useCombatActions>, 'targetAttackCombatants' | 'targetSaveCombatants'>;
 
 export function useLiveTableActions(core: StoreCore, deps: LiveTableDeps) {
   const {
@@ -40,10 +41,35 @@ export function useLiveTableActions(core: StoreCore, deps: LiveTableDeps) {
     compendium,
     contentFixes,
     setContentFixes,
+    campaign,
   } = core;
-  const { importSingleCharacter, targetAttackCombatants, targetSaveCombatants } = deps;
+  const { importSingleCharacter, syncTablePacks, targetAttackCombatants, targetSaveCombatants } = deps;
+
+  /** Host: tells the table which packs (enabled and pinned only) this campaign uses. Players' own packs are never sent. */
+  const sendCampaignPacks = (onlyIfAny: boolean) => {
+    const session = liveSessionRef.current;
+    if (!session || liveStatus.role !== 'host') return;
+    const packs = toTablePacks(campaign.packs);
+    if (onlyIfAny && packs.length === 0) return;
+    session.broadcast({ type: 'campaign_packs', senderId: session.senderId, senderName: rawChar.name, campaignId: campaign.id, packs });
+  };
 
   onRemoteMessageRef.current = (msg: LiveTableMessage) => {
+    if (msg.type === 'hello') {
+      // a player joined: hand them the campaign's pack list
+      if (msg.role === 'player') sendCampaignPacks(true);
+      return;
+    }
+
+    if (msg.type === 'campaign_packs') {
+      if (liveStatus.role !== 'player') return;
+      const wanted = parseTablePacks(msg.packs);
+      if (wanted.length === 0) return;
+      appendLog(`[LIVE] ${msg.senderName} sent ${wanted.length} campaign pack${wanted.length === 1 ? '' : 's'}.`, 'info');
+      void syncTablePacks(wanted, String(msg.campaignId ?? ''));
+      return;
+    }
+
     if (msg.type === 'roll') {
       appendLog(`[LIVE • ${msg.senderName}] ${msg.text}`, msg.tone);
       if (msg.tone === 'roll' || msg.tone === 'crit') {
@@ -437,6 +463,14 @@ export function useLiveTableActions(core: StoreCore, deps: LiveTableDeps) {
       }
     }
   }, [liveStatus.role, encounter, rawChar, resolvedSheet.ac.final]);
+
+  // host: the DM changed the campaign's pack list (link, update, enable, remove) -> tell the table
+  const tablePacksDigest = JSON.stringify(toTablePacks(campaign.packs));
+  useEffect(() => {
+    if (liveStatus.role !== 'host') return;
+    sendCampaignPacks(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveStatus.role, tablePacksDigest]);
 
   const claimCombatantToken = useCallback(
     (combatantId: string) => {

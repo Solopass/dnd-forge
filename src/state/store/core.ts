@@ -17,6 +17,7 @@ import type { InstalledPack } from '../../types/pack';
 import { HouseRulesConfig, readStoredHouseRules, saveHouseRules } from '../../engine/ruleset-config';
 import { syncClassResourcePools } from '../../engine/classes';
 import { createDefaultCampaign } from '../../engine/dm-tools';
+import { migrateCampaignPacks, type TablePack, type TablePackSyncState } from '../../engine/campaign-packs';
 import { LivePeerInfo, LiveTableMessage, LiveTableRole, LiveTableSession } from '../../engine/live-sync';
 import { playTableSound } from '../../engine/sound';
 import { buildVariantBaseIndex, migrateCharacterVariants } from '../../engine/magic-variants';
@@ -93,6 +94,10 @@ export function useStoreCore(initialCharacter: RawCharacterState, initialEncount
   const [dupDecisions, setDupDecisions] = useState<DuplicateDecision[]>([]);
   const [contentFixes, setContentFixes] = useState<ContentFix[]>([]);
   const [packs, setPacks] = useState<InstalledPack[]>([]);
+  /** Outcome of the last "campaign packs" sync from a Live Table host (null until one ran). */
+  const [tablePackSync, setTablePackSync] = useState<TablePackSyncState | null>(null);
+  const tablePackRequestRef = useRef<{ wanted: TablePack[]; campaignId: string } | null>(null);
+  const tablePackChainRef = useRef<Promise<unknown>>(Promise.resolve());
   /** The compendium with approved content fixes applied (fixes are a separate layer; `compendium` stays the stored data). */
   const effectiveCompendium = useMemo(() => applyFixesToList(compendium, contentFixes), [compendium, contentFixes]);
   const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
@@ -253,8 +258,15 @@ export function useStoreCore(initialCharacter: RawCharacterState, initialEncount
           if (active) setEncounterList([initialEncounter]);
         }
         if (active && savedCampaigns.length > 0) {
-          setCampaignList(savedCampaigns);
-          setCampaign(savedCampaigns[0]!);
+          // older saves have one `externalRepo` and no `packs`: it becomes packs[0]
+          const campaigns: CampaignRecord[] = [];
+          for (const c of savedCampaigns) {
+            const m = migrateCampaignPacks(c);
+            if (m !== c) await saveCampaign(m);
+            campaigns.push(m);
+          }
+          setCampaignList(campaigns);
+          setCampaign(campaigns[0]!);
         } else {
           await saveCampaign(defaultCampaign);
           if (active) setCampaignList([defaultCampaign]);
@@ -509,6 +521,10 @@ export function useStoreCore(initialCharacter: RawCharacterState, initialEncount
     setContentFixes,
     packs,
     setPacks,
+    tablePackSync,
+    setTablePackSync,
+    tablePackRequestRef,
+    tablePackChainRef,
     effectiveCompendium,
     pendingImport,
     setPendingImport,

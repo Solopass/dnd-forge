@@ -65,6 +65,15 @@ export interface ExternalRepoConfig {
   lastSyncedAt?: string;
 }
 
+/** A pack the DM linked to this campaign. `sha` is the pinned commit players are synced to ("" = not pinned yet). */
+export interface CampaignPack {
+  owner: string;
+  repo: string;
+  ref: string;
+  sha: string;
+  enabled: boolean;
+}
+
 export interface CampaignRecord {
   id: string;
   name: string;
@@ -78,6 +87,9 @@ export interface CampaignRecord {
   worldMapImageDataUrl?: string;
   worldMapPins?: WorldMapPin[];
   downtimeProjects?: DowntimeProject[];
+  /** Packs linked to this campaign; the Live Table syncs the enabled, pinned ones to players. */
+  packs: CampaignPack[];
+  /** Older single-repo link (campaign-pack.json). Still read for old backups: it is migrated into `packs` on load. */
   externalRepo?: ExternalRepoConfig;
   createdAt: string;
 }

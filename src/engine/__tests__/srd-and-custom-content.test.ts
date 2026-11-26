@@ -256,6 +256,7 @@ describe('Custom Content Templates & JSON Loader', () => {
           partyXpTotal: 0,
           partyLootGp: 50,
           partyLootItems: [],
+          packs: [],
           entries: [
             {
               id: 'e1',

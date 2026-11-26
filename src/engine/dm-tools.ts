@@ -52,6 +52,7 @@ export function createDefaultCampaign(
     partyXpTotal: 0,
     partyLootGp: 120,
     partyLootItems: ['Map of Phandalin Ruins', 'Silvered Signet Ring'],
+    packs: [],
     createdAt: now,
     entries: [
       {

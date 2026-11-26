@@ -126,6 +126,14 @@ export type LiveTableMessage =
       fix: ContentFix;
     }
   | {
+      /** The host's campaign packs (enabled and pinned only): players install exactly these commits. */
+      type: 'campaign_packs';
+      senderId: string;
+      senderName: string;
+      campaignId: string;
+      packs: Array<{ owner: string; repo: string; sha: string }>;
+    }
+  | {
       type: 'claim_token';
       senderId: string;
       senderName: string;

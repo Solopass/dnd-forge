@@ -15,6 +15,7 @@ import { syncClassResourcePools } from '../../engine/classes';
 import { createDefaultCampaign } from '../../engine/dm-tools';
 import { LivePeerInfo, LiveTableMessage, LiveTableRole, LiveTableSession } from '../../engine/live-sync';
 import { playTableSound } from '../../engine/sound';
+import { buildVariantBaseIndex, migrateCharacterVariants } from '../../engine/magic-variants';
 import {
   db,
   removeFree5eIndexJunk,
@@ -213,7 +214,14 @@ export function useStoreCore(initialCharacter: RawCharacterState, initialEncount
           for (const rc of missingRepoChars) {
             await saveCharacter(rc);
           }
-          const combined = [...allSaved, ...missingRepoChars];
+          // Old saves hold "+1 Longsword" as its own item: turn it into the base item + magic bonus.
+          const variantIdx = buildVariantBaseIndex(BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities));
+          const combined: RawCharacterState[] = [];
+          for (const ch of [...allSaved, ...missingRepoChars]) {
+            const m = migrateCharacterVariants(ch, variantIdx);
+            if (m.changed) await saveCharacter(m.character);
+            combined.push(m.character);
+          }
           setCharacterList(combined);
           setRawChar(combined[0]!);
         } else {

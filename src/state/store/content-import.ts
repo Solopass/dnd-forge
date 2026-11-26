@@ -13,6 +13,7 @@ import {
   type DuplicateDecision,
   type NearDuplicateGroup,
 } from '../../engine/compendium-dedupe';
+import { foldMagicVariants } from '../../engine/magic-variants';
 import { planEntityImport } from '../../engine/import-preview';
 import { parseCustomContentJson } from '../../engine/custom-content-loader';
 import { getClassDefinition } from '../../engine/classes';
@@ -318,7 +319,7 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
 
   // Search shows one entry per name (SRD copy wins over Free5e/duplicate pack copies); nothing is deleted.
   const searchableCompendium = useMemo(
-    () => applyDuplicateDecisions(dedupeCompendium(compendium, sourcePriority), dupDecisions),
+    () => applyDuplicateDecisions(foldMagicVariants(dedupeCompendium(compendium, sourcePriority)), dupDecisions),
     [compendium, sourcePriority, dupDecisions]
   );
 

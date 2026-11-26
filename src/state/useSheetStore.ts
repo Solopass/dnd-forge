@@ -158,6 +158,7 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     updateStructuredProficiencies: character.updateStructuredProficiencies,
     updateDetails: character.updateDetails,
     updateItemContainer: character.updateItemContainer,
+    updateItemMagic: character.updateItemMagic,
     simplifyCurrency: character.simplifyCurrency,
     depositItemToPartyStash: campaign.depositItemToPartyStash,
     claimPartyStashItem: campaign.claimPartyStashItem,

@@ -93,6 +93,10 @@ export interface CompendiumEntity {
   acFormula?: AcFormulaRule;
   acFlatBonus?: number;
   quantity?: number;
+  /** Sheet items only (weapon, armor, shield): +0..+3 added by the player on top of the base item. */
+  magicBonus?: 0 | 1 | 2 | 3;
+  /** Sheet items only: a name the player gave this copy; shown instead of the base name. */
+  customName?: string;
   weight?: number;
   container?: string;
   weaponMastery?: WeaponMastery;

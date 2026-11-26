@@ -1,4 +1,5 @@
 import type { CompendiumEntity } from '../types/compendium';
+import { isVariantRelation } from './magic-variants';
 
 /**
  * Where an entry comes from, for the source-priority order. "mine" is everything that is not SRD or
@@ -218,6 +219,8 @@ function sameRulesetFamily(a: CompendiumEntity, b: CompendiumEntity): boolean {
 export function areNearDuplicates(a: CompendiumEntity, b: CompendiumEntity): boolean {
   if (a === b || a.category !== b.category || !sameRulesetFamily(a, b)) return false;
   if (a.ruleset === b.ruleset && normalizeEntityName(a.name) === normalizeEntityName(b.name)) return false;
+  // "+1 Longsword" / "Longsword +1" / "Longsword, +1" are variants of Longsword, not duplicates of it.
+  if (isVariantRelation(a.name, b.name)) return false;
   if (a.spellLevel !== undefined && b.spellLevel !== undefined && a.spellLevel !== b.spellLevel) return false;
   const ca = crValue(a);
   const cb = crValue(b);

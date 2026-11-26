@@ -225,6 +225,7 @@ describe('useSheetStore characterization', () => {
         "updateEncounterMapSettings",
         "updateHouseRules",
         "updateItemContainer",
+        "updateItemMagic",
         "updateItemQuantity",
         "updateSenses",
         "updateSourcePriority",

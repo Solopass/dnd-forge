@@ -214,6 +214,7 @@ export function buildAppPanels(store: SheetStore, ui: AppUi) {
               onUpdateQuantity={store.updateItemQuantity}
               onUpdateContainer={store.updateItemContainer}
               onDepositToPartyStash={store.depositItemToPartyStash}
+              onUpdateMagic={store.updateItemMagic}
               onRemoveItem={(id) => {
                 store.removeSheetItem(id);
                 setInspectedItemId(null);

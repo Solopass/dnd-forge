@@ -182,3 +182,9 @@
 :root .battlemap__btn-2 { padding: 1px 6px; font-size: 11px; }
 :root .battlemap__input-3 { width: 64px; }
 :root .battlemap__subpanel-3 { padding: 10px; flex-wrap: wrap; gap: 10px; }
+
+/* Item inspector: magic bonus select + custom name */
+.magic-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 8px; }
+.magic-row .forge-input { padding: 2px 6px; font-size: 11px; }
+.magic-row__bonus { width: 64px; }
+.magic-row__name { flex: 1 1 120px; min-width: 100px; }

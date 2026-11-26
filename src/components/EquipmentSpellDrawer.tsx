@@ -3,6 +3,7 @@ import { RawCharacterState } from '../types/character';
 import { Activity, CompendiumEntity, ItemCategory } from '../types/compendium';
 import { AbilityKey, ActionEconomy } from '../types/core';
 import { ModalDialog } from './ModalDialog';
+import { displayItemName } from '../engine/magic-variants';
 
 interface EquipmentSpellDrawerProps {
   isOpen: boolean;
@@ -189,7 +190,7 @@ export function EquipmentSpellDrawer({
             return (
               <div key={item.id} className="forge-list-row">
                 <div>
-                  <strong>{item.name}</strong>{' '}
+                  <strong>{displayItemName(item)}</strong>{' '}
                   <span className="forge-muted text-sm">
                     ({item.category.toUpperCase()})
                     {item.container ? ` • [${item.container}]` : ''}

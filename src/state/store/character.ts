@@ -8,6 +8,7 @@ import { evaluateDiceExpression } from '../../engine/dice';
 import { dropConcentrationForCombatant } from '../../engine/combat-machine';
 import { BUILTIN_CONTENT_PACKS } from '../../engine/srd-packs';
 import { buildCharacterFromPreset, buildSubclassGrantEntities, NewCharacterPresetInput } from '../../engine/classes';
+import { canHaveMagicBonus, clampMagicBonus, type MagicBonus } from '../../engine/magic-variants';
 import { playTableSound } from '../../engine/sound';
 import { db, saveCharacter } from '../../storage/db';
 import type { LevelUpPlanInput } from './types';
@@ -751,6 +752,30 @@ export function useCharacterActions(core: StoreCore) {
     [persistCharacter]
   );
 
+  const updateItemMagic = useCallback(
+    (itemId: string, patch: { magicBonus?: MagicBonus; customName?: string }) => {
+      persistCharacter((prev) => ({
+        ...prev,
+        items: prev.items.map((it) => {
+          if (it.id !== itemId || !canHaveMagicBonus(it)) return it;
+          const next: CompendiumEntity = { ...it };
+          if (patch.magicBonus !== undefined) {
+            const b = clampMagicBonus(patch.magicBonus);
+            if (b === 0) delete next.magicBonus;
+            else next.magicBonus = b;
+          }
+          if (patch.customName !== undefined) {
+            const n = patch.customName.trim();
+            if (n) next.customName = n;
+            else delete next.customName;
+          }
+          return next;
+        }),
+      }));
+    },
+    [persistCharacter]
+  );
+
   const simplifyCurrency = useCallback(() => {
     persistCharacter((prev) => {
       const c = prev.currency ?? { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
@@ -906,6 +931,7 @@ export function useCharacterActions(core: StoreCore) {
     updateStructuredProficiencies,
     updateDetails,
     updateItemContainer,
+    updateItemMagic,
     simplifyCurrency,
     applyLevelUpPlan,
     setCharacterAvatar,

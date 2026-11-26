@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CampaignRecord } from '../types/campaign';
 import { RawCharacterState } from '../types/character';
 import { CompendiumEntity, ItemCategory } from '../types/compendium';
+import { displayItemName } from '../engine/magic-variants';
 
 interface InventoryHubProps {
   mode: 'personal' | 'party' | 'both';
@@ -207,10 +208,10 @@ export const InventoryHub: React.FC<InventoryHubProps> = ({
                         }}
                         title="Open full details in right Inspector panel"
                       >
-                        <strong>{item.name}</strong>
+                        <strong>{displayItemName(item)}</strong>
                       </button>
                     ) : (
-                      <strong>{item.name}</strong>
+                      <strong>{displayItemName(item)}</strong>
                     )}{' '}
                     <span className="forge-muted text-xs">
                       {item.category.toUpperCase()}
@@ -340,7 +341,7 @@ export const InventoryHub: React.FC<InventoryHubProps> = ({
               partyStash.map((item) => (
                 <div key={item.id} className="forge-list-row">
                   <div>
-                    <strong>{item.name}</strong>{' '}
+                    <strong>{displayItemName(item)}</strong>{' '}
                     <span className="badge tabular">×{item.quantity ?? 1}</span>
                     {item.entries[0] && (
                       <div className="forge-muted text-xs">

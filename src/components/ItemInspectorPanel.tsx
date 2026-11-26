@@ -3,6 +3,7 @@ import { ResolvedActivity, ResolvedCharacterSheet } from '../types/character';
 import { CompendiumEntity } from '../types/compendium';
 import { parse5eToolsEntries } from '../engine/tags';
 import { scaleDiceForUpcast } from '../engine/dice';
+import { canHaveMagicBonus, clampMagicBonus, displayItemName } from '../engine/magic-variants';
 
 interface ItemInspectorPanelProps {
   item: CompendiumEntity | null;
@@ -16,6 +17,7 @@ interface ItemInspectorPanelProps {
   onUpdateContainer: (id: string, container: string) => void;
   onDepositToPartyStash: (id: string) => void;
   onRemoveItem: (id: string) => void;
+  onUpdateMagic?: (id: string, patch: { magicBonus?: 0 | 1 | 2 | 3; customName?: string }) => void;
   onBackToCombat?: () => void;
 }
 
@@ -31,6 +33,7 @@ export const ItemInspectorPanel: React.FC<ItemInspectorPanelProps> = ({
   onUpdateContainer,
   onDepositToPartyStash,
   onRemoveItem,
+  onUpdateMagic,
   onBackToCombat,
 }) => {
   const [upcastLevel, setUpcastLevel] = useState<number | null>(null);
@@ -102,7 +105,7 @@ export const ItemInspectorPanel: React.FC<ItemInspectorPanelProps> = ({
     <div className="card forge-stack gap-4">
       <div className="forge-row-between" style={{ alignItems: 'flex-start', gap: 8 }}>
         <div>
-          <div style={{ fontWeight: 800, fontSize: 16, lineHeight: 1.2 }}>{item.name}</div>
+          <div style={{ fontWeight: 800, fontSize: 16, lineHeight: 1.2 }}>{displayItemName(item)}</div>
           <div className="pill-row" style={{ marginTop: 4 }}>
             <span className="badge">{item.category.toUpperCase()}</span>
             {item.ruleset && <span className="badge">{item.ruleset}</span>}
@@ -221,6 +224,35 @@ export const ItemInspectorPanel: React.FC<ItemInspectorPanelProps> = ({
           >
             → Party
           </button>
+        </div>
+      )}
+
+      {isPhysical && canHaveMagicBonus(item) && onUpdateMagic && (
+        <div className="subpanel magic-row">
+          <label className="forge-muted text-sm" htmlFor={`magic-bonus-${item.id}`}>Magic bonus</label>
+          <select
+            id={`magic-bonus-${item.id}`}
+            aria-label="Magic bonus"
+            className="forge-input magic-row__bonus"
+            value={item.magicBonus ?? 0}
+            onChange={(e) => onUpdateMagic(item.id, { magicBonus: clampMagicBonus(Number(e.target.value)) })}
+          >
+            <option value={0}>+0</option>
+            <option value={1}>+1</option>
+            <option value={2}>+2</option>
+            <option value={3}>+3</option>
+          </select>
+          <input
+            type="text"
+            aria-label="Custom item name"
+            className="forge-input magic-row__name"
+            placeholder={`Name (default: ${item.name})`}
+            defaultValue={item.customName ?? ''}
+            key={`${item.id}-${item.customName ?? ''}`}
+            onBlur={(e) => {
+              if (e.target.value.trim() !== (item.customName ?? '')) onUpdateMagic(item.id, { customName: e.target.value });
+            }}
+          />
         </div>
       )}
 

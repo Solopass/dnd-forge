@@ -111,3 +111,13 @@ Classes, Hit Dice, Spellcasting Progression, and Subclass level-up auto-grants l
 - **Exact duplicates** share normalized name (lower-case, no diacritics, punctuation or spaces) + category + ruleset. The highest-priority copy is shown; the others are folded into it ("also in: ..."), and it takes any class list, description or image it lacks from them. Nothing is deleted.
 - **Possible duplicates** (same category; same name without a possessive prefix like "Melf's" or a trailing "(note)", or name similarity >= 0.85; same spell level / CR when both have one) are imported as they are and flagged in the Duplicates tab of the Packs/Compendium dialog, where you choose Keep one, Keep both or Merge. Decisions are saved and can be undone.
 
+
+---
+
+## 7. Magic variants (+1 / +2 / +3)
+
+- Weapons, armor and shields on a character sheet have a **Magic bonus** select (+0..+3) and a **Name** field in the item inspector. The bonus adds to attack and damage rolls (weapons) or to AC (armor, shields). The shown name is the custom name, else "+N <base name>". Both are optional fields on the sheet item (`magicBonus`, `customName`), so old saves load unchanged.
+- Compendium entries named "+N X", "X +N" or "X, +N" (e.g. "+1 Longsword", "+1 Shield (+3 AC)") are **folded into their base item** when the base exists (same category and ruleset, name equal after dropping the bonus and a trailing "(note)"): they are hidden from search and Add Gear but not deleted. Entries with no base item, "X, +1, +2, or +3" umbrella entries and gear-type items (ammunition, wands) stay visible.
+- The duplicate finder never flags "+N X" as a possible duplicate of "X" or of another "+M X".
+- Old saves: a sheet item that is a folded variant is migrated when the character loads to the base item + `magicBonus` (same item id; equipped, attuned, quantity and container are kept). Variants without a base are left alone.
+- For your own packs: ship the base item and let players set the bonus; add a separate "+N" entry only for items with extra effects (those are not folded unless a plain base of the same name exists).

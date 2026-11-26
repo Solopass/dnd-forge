@@ -5,6 +5,7 @@ import {
   SkillKey,
   StatModifier,
 } from '../types/core';
+import { displayItemName } from './magic-variants';
 import type { HouseRulesConfig } from './ruleset-config';
 import {
   AcFormulaRule,
@@ -383,7 +384,7 @@ export function computeCharacterSheet(
     const candidateAc = evaluateAcFormula(item.acFormula, abilityModifiers);
     if (candidateAc > bestFormulaAc) {
       bestFormulaAc = candidateAc;
-      bestFormulaSource = item.name;
+      bestFormulaSource = displayItemName(item);
     }
   }
 
@@ -433,6 +434,13 @@ export function computeCharacterSheet(
   }
 
   for (const item of activeItems) {
+    if (item.magicBonus && (item.category === 'armor' || item.category === 'shield')) {
+      acFlatModifiers.push({
+        id: `ac-magic-${item.id}`,
+        source: displayItemName(item),
+        value: item.magicBonus,
+      });
+    }
     if (item.acFlatBonus && item.acFlatBonus !== 0) {
       acFlatModifiers.push({
         id: `ac-flat-${item.id}`,
@@ -593,8 +601,9 @@ export function computeCharacterSheet(
             )
           )
         : null;
+      const magicWeaponBonus = isWeaponAttack ? item.magicBonus ?? 0 : 0;
       const weaponAttackBonus = isWeaponAttack
-        ? attackAllBonus + (isRanged ? attackRangedBonus : 0)
+        ? attackAllBonus + (isRanged ? attackRangedBonus : 0) + magicWeaponBonus
         : item.category === 'spell' && act.type === 'attack'
         ? spellAttackItemBonus
         : 0;
@@ -626,10 +635,12 @@ export function computeCharacterSheet(
             effectiveLevel
           )
         : null;
-      const resolvedDamage =
+      const meleeDamage =
         rawResolvedDamage && isMeleeOneHanded && damageMeleeBonus !== 0
           ? appendFlatBonus(rawResolvedDamage, damageMeleeBonus)
           : rawResolvedDamage;
+      const resolvedDamage =
+        meleeDamage && magicWeaponBonus !== 0 ? appendFlatBonus(meleeDamage, magicWeaponBonus) : meleeDamage;
 
       const resolvedDescription = act.description
         ? resolveFormulaVariables(
@@ -670,7 +681,7 @@ export function computeCharacterSheet(
         ...act,
         actionEconomy: targetEconomy,
         parentItemId: item.id,
-        parentItemName: item.name,
+        parentItemName: displayItemName(item),
         weaponMastery: effectiveWeaponMastery === 'enabled' ? item.weaponMastery : undefined,
         concentration: Boolean(item.concentration),
         ritual: Boolean(item.ritual),

@@ -5,6 +5,7 @@ import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { useSheetStore } from '../useSheetStore';
 import { SEED_CHARACTER, SEED_ENCOUNTER } from '../seed';
 import { db } from '../../storage/db';
+import { APP_VERSION } from '../../version';
 import { expectedCompendiumSize } from './compendiumReady';
 import type { ResolvedActivity } from '../../types/character';
 
@@ -357,6 +358,11 @@ describe('useSheetStore characterization', () => {
     const line = logTexts(h).find((t) => t.includes('Insufficient GP'));
     expect(line).toContain(h.result.current.rawChar.name);
     expect(line).toMatch(/purse/);
+  });
+
+  it('the startup log line names the real app version', async () => {
+    const h = await setup();
+    expect(logTexts(h).some((t) => t.startsWith(`Sidereroll ${APP_VERSION} ready`))).toBe(true);
   });
 
   it('stepCombatTurn advances the active turn and wraps into a new round', async () => {

@@ -9,7 +9,8 @@ export type MoreMenuItem = {
 
 /**
  * Small disclosure menu for the header: a button with aria-expanded and a list of buttons.
- * Closes on Escape (focus returns to the button), outside click, and after choosing an item.
+ * Closes on Escape (focus returns to the button), a pointer press outside, focus moving to an
+ * element outside the menu (Tab out), and after choosing an item.
  */
 export function MoreMenu({ items }: { items: MoreMenuItem[] }) {
   const [open, setOpen] = useState(false);
@@ -19,7 +20,7 @@ export function MoreMenu({ items }: { items: MoreMenuItem[] }) {
 
   useEffect(() => {
     if (!open) return;
-    const onPointerDown = (e: MouseEvent) => {
+    const onPointerDown = (e: Event) => {
       if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
     };
     const onKeyDown = (e: KeyboardEvent) => {
@@ -28,16 +29,25 @@ export function MoreMenu({ items }: { items: MoreMenuItem[] }) {
         buttonRef.current?.focus();
       }
     };
-    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('pointerdown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
     return () => {
-      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('pointerdown', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
     };
   }, [open]);
 
   return (
-    <div className="topbar-more" ref={rootRef}>
+    <div
+      className="topbar-more"
+      ref={rootRef}
+      onBlur={(e) => {
+        // relatedTarget is null when focus just leaves the window or a browser doesn't focus
+        // clicked buttons (Safari); only close when focus clearly moved to something outside.
+        const next = e.relatedTarget;
+        if (open && next instanceof Node && !e.currentTarget.contains(next)) setOpen(false);
+      }}
+    >
       <button
         ref={buttonRef}
         type="button"

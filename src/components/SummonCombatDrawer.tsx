@@ -126,7 +126,7 @@ export function SummonCombatDrawer({
   const [srdMobId, setSrdMobId] = useState('');
   const [effectNameInput, setEffectNameInput] = useState('');
   const [effectRoundsInput, setEffectRoundsInput] = useState('10');
-  const [mobCond, setMobCond] = useState<string>(STANDARD_CONDITIONS[10]);
+  const [mobCond, setMobCond] = useState<string>('');
   const [hpDeltas, setHpDeltas] = useState<Record<string, string>>({});
   const [expandedIds, setExpandedIds] = useState<Record<string, boolean>>({});
 
@@ -824,6 +824,7 @@ export function SummonCombatDrawer({
                       value={mobCond}
                       onChange={(e) => setMobCond(e.target.value)}
                     >
+                      <option value="">Add condition…</option>
                       {STANDARD_CONDITIONS.map((c) => (
                         <option key={c} value={c}>{c}</option>
                       ))}
@@ -831,6 +832,7 @@ export function SummonCombatDrawer({
                     <button
                       type="button"
                       className="btn"
+                      disabled={mobCond === ''}
                       onClick={() => onToggleCombatantCondition(node.id, mobCond)}
                     >
                       +Cond
@@ -947,6 +949,7 @@ export function CommandPalette({
       setSpellLevelFilter('all');
       setSpellTagFilter('all');
       setShowAllMatches(false);
+      setQuery('');
       setClassCastableOnly(initialCategory === 'spell' && maxCastableSpellLevel > 0);
     }
   }, [isOpen, initialCategory, initialRuleset, maxCastableSpellLevel]);

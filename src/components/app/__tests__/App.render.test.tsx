@@ -25,6 +25,8 @@ function normalize(html: string): string {
     // the topbar shows APP_VERSION, which `bun run version:bump` changes before every push;
     // without this every bump would fail all snapshots (and tempt a blind `vitest -u`)
     .replace(new RegExp(`>${APP_VERSION.replace('.', '\\.')}<`, 'g'), '>[VERSION]<')
+    // the console's startup line also names the version
+    .replace(new RegExp(`Sidereroll ${APP_VERSION.replace('.', '\\.')} ready`, 'g'), 'Sidereroll [VERSION] ready')
     // SVG coordinates from Math.sin/cos (SkillWheel) differ in the last digits between
     // Windows and the Linux CI runner (52.15051733833046 vs 52.150517338330474), so round them
     .replace(/(\d+\.\d{4})\d+/g, '$1');
@@ -220,6 +222,16 @@ describe('Player view hides DM detail', () => {
     expect(screen.getByRole('button', { name: 'Toggle Cond' }).hasAttribute('disabled')).toBe(true);
   });
 
+  it('the combat drawer per-combatant condition picker also starts on a placeholder', async () => {
+    await renderApp({ role: 'player', uiMode: 'classic' }, async () => {
+      await screen.findByText('Combat Rail ON');
+    });
+    const select = screen.getByLabelText(/ condition$/) as HTMLSelectElement;
+    expect(select.value).toBe('');
+    expect(select.options[0]?.textContent).toBe('Add condition…');
+    expect(screen.getByRole('button', { name: '+Cond' }).hasAttribute('disabled')).toBe(true);
+  });
+
   it('DM Studio side-nav buttons have names and mark the current section', async () => {
     await renderApp({ role: 'dm' }, async () => {
       await screen.findByLabelText('DM Studio navigation');
@@ -257,7 +269,7 @@ describe('Player view hides DM detail', () => {
     expect(within(header).queryByRole('button', { name: 'Settings' })).toBeNull();
     // outside click closes it too
     fireEvent.click(more);
-    fireEvent.mouseDown(document.body);
+    fireEvent.pointerDown(document.body);
     expect(more.getAttribute('aria-expanded')).toBe('false');
   });
 

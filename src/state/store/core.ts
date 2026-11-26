@@ -21,6 +21,7 @@ import {
   saveEncounter,
   upsertCompendiumEntities,
 } from '../../storage/db';
+import { APP_VERSION } from '../../version';
 import type { ConsoleLine, ToastMessage } from './types';
 
 export function useStoreCore(initialCharacter: RawCharacterState, initialEncounter: CombatEncounterState) {
@@ -98,7 +99,7 @@ export function useStoreCore(initialCharacter: RawCharacterState, initialEncount
     {
       id: 'init-1',
       timestamp: new Date().toLocaleTimeString(),
-      text: 'Sidereroll v0.7 ready. Press Ctrl+K for Compendium Packs, D&D Beyond PDF Import, or JSON/Markdown ingestion.',
+      text: `Sidereroll ${APP_VERSION} ready. Press Ctrl+K for Compendium Packs, D&D Beyond PDF Import, or JSON/Markdown ingestion.`,
       tone: 'info',
     },
   ]);

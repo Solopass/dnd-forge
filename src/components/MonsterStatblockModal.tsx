@@ -2,6 +2,7 @@ import { getQualitativeHealthLabel } from '../engine/dm-tools';
 import { CombatantNode } from '../types/combat';
 import { Activity } from '../types/compendium';
 import { ModalDialog } from './ModalDialog';
+import { EntityImage } from './EntityImage';
 
 interface MonsterStatblockModalProps {
   combatant: CombatantNode | null;
@@ -30,18 +31,7 @@ export function MonsterStatblockModal({
         <div className="card forge-row-between wrap gap-4">
           <div className="forge-row gap-4">
             {combatant.portraitUrl && (
-              <img
-                src={combatant.portraitUrl}
-                alt={combatant.name}
-                loading="lazy"
-                style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 'var(--radius-sm)',
-                  objectFit: 'cover',
-                  border: '1px solid var(--border-subtle)',
-                }}
-              />
+              <EntityImage src={combatant.portraitUrl} name={combatant.name} category={combatant.kind === 'pc' ? undefined : 'monster'} size="portrait" />
             )}
             <div>
               <strong>{combatant.name}</strong>

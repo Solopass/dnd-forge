@@ -41,6 +41,24 @@ Any spell, item, feat, or monster can include an optional `imageUrl` field:
   - **Monster Statblock Modal**: shown next to the monster's header.
   - **Battlemap Tokens**: monsters with `imageUrl` automatically spawn with their token art on the Battlemap.
 
+### Images: what is accepted
+
+Every importer (paste, file, pack, repo sync) runs `imageUrl` (also read from `image`, `img`, `portraitUrl`, `tokenUrl`) through one check. The first usable value is kept; the rest is dropped without an error:
+
+| Form | Accepted | Notes |
+|---|---|---|
+| `https://host/pic.png` | yes | any web host; sent without a referrer |
+| `http://localhost...`, `http://127.0.0.1...` | yes | development only; other `http://` is dropped |
+| `./images/pic.png` | yes | in a **pack** it is turned into the raw GitHub URL of the pack's repo at the pinned commit; `..` is refused |
+| `data:image/png`, `jpeg`, `webp`, `gif` or `svg+xml` with `;base64,` | yes | what uploads produce |
+| `javascript:`, `file:`, `//host/...`, `/api/images/...` and other root paths, bare file names | no | dropped (the entry imports without a picture) |
+
+- A picture that fails to load shows the entry's initials and a category symbol instead of a broken image.
+- Optional `"artCredit": "Art by Name, CC BY 4.0"` (one line, up to 200 characters) is kept and shown under the picture in the Inspector.
+- The built-in SRD data still carries about 1,000 `/api/images/...` paths that nothing serves; they are dropped when the SRD loads, so SRD entries have no picture.
+- Uploaded pictures (character avatar, token portrait, battlemap, world map, binder entry) are shrunk in the browser: at most 1600 px (512 px for avatars and tokens), WebP (JPEG if the browser cannot), aiming for 300 KB. SVG and GIF are stored unchanged. Pictures already stored are not touched.
+- Not built yet: keeping pack images offline, and exporting uploaded pictures into a pack.
+
 ---
 
 ## 3. Converting External Files (PDF, Markdown, TXT, CSV, JSON) with `content:convert`

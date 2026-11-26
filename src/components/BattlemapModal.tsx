@@ -11,6 +11,8 @@ import {
   MapSketchStroke,
 } from '../types/combat';
 import { ModalDialog } from './ModalDialog';
+import { TokenPortrait } from './EntityImage';
+import { pickImage, type UploadKind } from '../lib/image-upload';
 
 interface BattlemapModalProps {
   isOpen: boolean;
@@ -328,14 +330,7 @@ export function BattlemapModal({
     lastPaintedCellRef.current = '';
   };
 
-  const handleFileDataUrl = (file: File | undefined, cb: (url: string) => void) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') cb(reader.result);
-    };
-    reader.readAsDataURL(file);
-  };
+  const handleFileDataUrl = (file: File | undefined, kind: UploadKind, cb: (url: string) => void) => pickImage(file, kind, cb);
 
   const measureFeet =
     measureStart && measureEnd
@@ -629,29 +624,26 @@ export function BattlemapModal({
                 />
               )}
               <circle cx={cx} cy={cy} r={r} fill={fill} opacity={0.92} stroke="var(--bg-base-dark)" strokeWidth={2} />
-              {node.portraitUrl ? (
-                <image
-                  href={node.portraitUrl}
-                  x={cx - r}
-                  y={cy - r}
-                  width={r * 2}
-                  height={r * 2}
-                  preserveAspectRatio="xMidYMid slice"
-                  clipPath={`url(#token-clip-${node.id})`}
-                />
-              ) : (
-                <text
-                  x={cx}
-                  y={cy + 4}
-                  textAnchor="middle"
-                  fill="var(--bg-base-dark)"
-                  fontSize={span > 1 ? 15 : 12}
-                  fontWeight={800}
-                >
-                  {getInitials(node.name)}
-                  {span > 1 ? ` (${span}x)` : ''}
-                </text>
-              )}
+              <TokenPortrait
+                href={node.portraitUrl}
+                x={cx - r}
+                y={cy - r}
+                size={r * 2}
+                clipPath={`url(#token-clip-${node.id})`}
+                fallback={
+                  <text
+                    x={cx}
+                    y={cy + 4}
+                    textAnchor="middle"
+                    fill="var(--bg-base-dark)"
+                    fontSize={span > 1 ? 15 : 12}
+                    fontWeight={800}
+                  >
+                    {getInitials(node.name)}
+                    {span > 1 ? ` (${span}x)` : ''}
+                  </text>
+                }
+              />
               {!hideNumeric && (
                 <>
                   <rect x={cx - r * 0.8} y={cy + r - 4} width={r * 1.6} height={4} rx={2} fill="var(--bg-base-dark)" />
@@ -966,7 +958,7 @@ export function BattlemapModal({
                   accept="image/*"
                   className="is-hidden"
                   onChange={(e) => {
-                    handleFileDataUrl(e.target.files?.[0], (url) => onSetMapImage(url));
+                    handleFileDataUrl(e.target.files?.[0], 'map', (url) => onSetMapImage(url));
                     e.target.value = '';
                   }}
                 />
@@ -1096,7 +1088,7 @@ export function BattlemapModal({
                   accept="image/*"
                   className="is-hidden"
                   onChange={(e) => {
-                    handleFileDataUrl(e.target.files?.[0], (url) =>
+                    handleFileDataUrl(e.target.files?.[0], 'avatar', (url) =>
                       onSetTokenPortrait?.(selectedToken.id, url)
                     );
                     e.target.value = '';

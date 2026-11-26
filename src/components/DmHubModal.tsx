@@ -32,6 +32,7 @@ import {
 } from '../types/campaign';
 import { RawCharacterState } from '../types/character';
 import { CombatEncounterState } from '../types/combat';
+import { pickImage } from '../lib/image-upload';
 
 export type DmHubTab =
   | 'party'
@@ -727,11 +728,7 @@ export function DmHubModal({
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        if (typeof reader.result === 'string') setEntryImage(reader.result);
-                      };
-                      reader.readAsDataURL(file);
+                      pickImage(file, 'map', (url) => setEntryImage(url));
                       e.target.value = '';
                     }}
                   />
@@ -1468,11 +1465,7 @@ export function DmHubModal({
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        if (typeof reader.result === 'string') onSetWorldMapImage?.(reader.result);
-                      };
-                      reader.readAsDataURL(file);
+                      pickImage(file, 'map', (url) => onSetWorldMapImage?.(url));
                       e.target.value = '';
                     }}
                   />

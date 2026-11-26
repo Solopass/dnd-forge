@@ -4,6 +4,7 @@ import { CompendiumEntity } from '../types/compendium';
 import { parse5eToolsEntries } from '../engine/tags';
 import { scaleDiceForUpcast } from '../engine/dice';
 import { canHaveMagicBonus, clampMagicBonus, displayItemName } from '../engine/magic-variants';
+import { EntityImage } from './EntityImage';
 
 interface ItemInspectorPanelProps {
   item: CompendiumEntity | null;
@@ -150,29 +151,7 @@ export const ItemInspectorPanel: React.FC<ItemInspectorPanelProps> = ({
       </div>
 
       {item.imageUrl && (
-        <div
-          className="subpanel"
-          style={{
-            padding: 6,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            background: 'var(--bg-base)',
-          }}
-        >
-          <img
-            src={item.imageUrl}
-            alt={item.name}
-            loading="lazy"
-            style={{
-              maxWidth: '100%',
-              maxHeight: 180,
-              borderRadius: 'var(--radius-sm)',
-              objectFit: 'contain',
-              display: 'block',
-            }}
-          />
-        </div>
+        <EntityImage src={item.imageUrl} name={item.name} category={item.category} size="inspector" artCredit={item.artCredit} />
       )}
 
       {/* Quick State Controls */}

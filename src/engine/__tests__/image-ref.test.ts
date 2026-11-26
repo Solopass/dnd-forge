@@ -46,11 +46,15 @@ describe('sanitizeImageRef', () => {
 
 describe('importers apply the image rules', () => {
   it('normalizeEntity keeps a good image and artCredit, drops a bad one', () => {
-    const good = sanitizeEntity({ name: 'Orb', category: 'gear', image: 'https://a.com/o.png', artCredit: 'By Me' });
-    expect(good.ok && good.entity?.imageUrl).toBe('https://a.com/o.png');
-    expect(good.ok && good.entity?.artCredit).toBe('By Me');
-    const bad = sanitizeEntity({ name: 'Orb2', category: 'gear', imageUrl: 'javascript:alert(1)' });
-    expect(bad.entity?.imageUrl).toBeUndefined();
+    const ent = (raw: unknown) => {
+      const r = sanitizeEntity(raw);
+      if (r.ok === false) throw new Error(r.reason);
+      return r.entity;
+    };
+    const good = ent({ name: 'Orb', category: 'gear', image: 'https://a.com/o.png', artCredit: 'By Me' });
+    expect(good.imageUrl).toBe('https://a.com/o.png');
+    expect(good.artCredit).toBe('By Me');
+    expect(ent({ name: 'Orb2', category: 'gear', imageUrl: 'javascript:alert(1)' }).imageUrl).toBeUndefined();
   });
 
   it('bundled SRD content has no unserved /api image paths', async () => {

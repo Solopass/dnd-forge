@@ -5,6 +5,7 @@ import { readStoredSourcePriority } from '../storage/source-priority';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
 import { CompendiumEntity, CreatureSize } from '../types/compendium';
 import { ModalDialog } from './ModalDialog';
+import { EntityImage } from './EntityImage';
 
 interface EncounterPreset {
   id: string;
@@ -356,14 +357,7 @@ export function EncounterBuilderModal({
                     <tr key={m.id}>
                       <th scope="row">
                         <div className="forge-row gap-2">
-                          {m.imageUrl && (
-                            <img
-                              src={m.imageUrl}
-                              alt=""
-                              loading="lazy"
-                              style={{ width: 22, height: 22, borderRadius: 4, objectFit: 'cover' }}
-                            />
-                          )}
+                          {m.imageUrl && <EntityImage src={m.imageUrl} name={m.name} category="monster" size="thumb" />}
                           <span>{m.name}</span>
                           <span className="badge" style={{ fontSize: 9 }}>{m.ruleset}</span>
                         </div>

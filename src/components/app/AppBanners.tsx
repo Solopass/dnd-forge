@@ -1,6 +1,7 @@
 import { ShieldIcon } from '../Icons';
 import { evaluateDiceExpression } from '../../engine/dice';
 import type { AppSectionProps } from './types';
+import { pickImage } from '../../lib/image-upload';
 
 export function AppBanners({ store, ui }: AppSectionProps) {
   const {
@@ -41,11 +42,7 @@ export function AppBanners({ store, ui }: AppSectionProps) {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
-                  const reader = new FileReader();
-                  reader.onload = () => {
-                    if (typeof reader.result === 'string') store.setCharacterAvatar(reader.result);
-                  };
-                  reader.readAsDataURL(file);
+                  pickImage(file, 'avatar', (url) => store.setCharacterAvatar(url));
                   e.target.value = '';
                 }}
               />

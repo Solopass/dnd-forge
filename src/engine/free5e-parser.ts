@@ -74,17 +74,22 @@ export function parseFree5eSpellMarkdown(
   const dmgFormula = meta.damage_formula || undefined;
   const dmgType = meta.damage_type || undefined;
 
-  if (saveKey || dmgFormula) {
+  const bodyText = entries.join(' ');
+  const heals = !dmgFormula && /regains?[^.]*hit points/i.test(bodyText);
+  const healDice = heals ? bodyText.match(/(\d+d\d+(?:\s*[+-]\s*\d+)?)/)?.[1]?.replace(/\s+/g, '') : undefined;
+  const isAttack = /(ranged|melee) spell attack/i.test(bodyText);
+  if (saveKey || dmgFormula || heals || isAttack || safeLevel > 0) {
     activities.push({
       id: `act-f5e-${slugify(name)}`,
       name,
-      type: saveKey ? 'save' : 'attack',
-      actionEconomy: 'action',
+      type: heals ? 'heal' : saveKey ? 'save' : isAttack || dmgFormula ? 'attack' : 'utility',
+      actionEconomy: meta.casting_time_unit === 'bonus action' ? 'bonus_action' : meta.casting_time_unit === 'reaction' ? 'reaction' : 'action',
       saveAbility: saveKey,
-      saveDcFormula: saveKey ? '@spell_dc' : undefined,
-      attackBonusFormula: !saveKey && dmgFormula ? '@spell_atk' : undefined,
-      damageFormula: dmgFormula,
+      saveDcFormula: saveKey ? '8+@prof+@spell' : undefined,
+      attackBonusFormula: !saveKey && (isAttack || dmgFormula) && !heals ? '@prof+@spell' : undefined,
+      damageFormula: dmgFormula ?? healDice,
       damageType: dmgType,
+      ...(safeLevel > 0 ? { resourceCost: { poolId: `spell_slot_${safeLevel}`, amount: 1 } } : {}),
       description: entries[0] ?? name,
     });
   }

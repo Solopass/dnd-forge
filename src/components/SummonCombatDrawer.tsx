@@ -4,7 +4,16 @@ import { Activity, CompendiumEntity, CreatureSize, MonsterStatMeta } from '../ty
 import { ActionEconomy, STANDARD_CONDITIONS } from '../types/core';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
 import { extractSrdSpellcasterClasses, spellOnClassList } from '../engine/classes';
-import { dedupeCompendium } from '../engine/compendium-dedupe';
+import { DuplicatesReview } from './DuplicatesReview';
+import {
+  dedupeCompendium,
+  DEFAULT_SOURCE_PRIORITY,
+  type DuplicateAction,
+  type DuplicateDecision,
+  type NearDuplicateGroup,
+  type SourceTier,
+} from '../engine/compendium-dedupe';
+import { readStoredSourcePriority } from '../storage/source-priority';
 import { CONDITION_RULES } from '../engine/conditions';
 import { getQualitativeHealthLabel } from '../engine/dm-tools';
 import { evaluateEncounterDifficulty } from '../engine/encounter-math';
@@ -139,7 +148,8 @@ export function SummonCombatDrawer({
       ? compendiumMonsters
       : BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities).filter(
           (e) => e.category === 'monster' && e.monsterMeta
-        )
+        ),
+    readStoredSourcePriority()
   );
   const filteredSrdMonsters = srdMonsters
     .filter((m) => {
@@ -907,6 +917,12 @@ interface CommandPaletteProps {
   free5eSyncing?: boolean;
   free5eCount?: number;
   onImportDdbPdf: (file: File) => Promise<void>;
+  /** Raw compendium + the duplicate-review state for the Duplicates tab. */
+  allEntities?: readonly CompendiumEntity[];
+  sourcePriority?: readonly SourceTier[];
+  dupDecisions?: readonly DuplicateDecision[];
+  onResolveDuplicate?: (group: NearDuplicateGroup, action: DuplicateAction, keepId?: string) => void | Promise<void>;
+  onUndoDuplicate?: (groupId: string) => void | Promise<void>;
   onImportHomebrew: (rawMarkdown: string) => Promise<void>;
   onImportJsonText: (rawJson: string) => Promise<void>;
 }
@@ -927,10 +943,15 @@ export function CommandPalette({
   free5eSyncing = false,
   free5eCount = 0,
   onImportDdbPdf,
+  allEntities,
+  sourcePriority,
+  dupDecisions,
+  onResolveDuplicate,
+  onUndoDuplicate,
   onImportHomebrew,
   onImportJsonText,
 }: CommandPaletteProps) {
-  const [tab, setTab] = useState<'search' | 'packs' | 'pdf' | 'markdown' | 'json'>('search');
+  const [tab, setTab] = useState<'search' | 'packs' | 'pdf' | 'markdown' | 'json' | 'dupes'>('search');
   const [categoryFilter, setCategoryFilter] = useState<'all' | CompendiumEntity['category']>(initialCategory);
   const [rulesetFilter, setRulesetFilter] = useState<'all' | '2014' | '2024'>(initialRuleset);
   const [customOnly, setCustomOnly] = useState(false);
@@ -1021,6 +1042,15 @@ export function CommandPalette({
             >
               5e.tools / Backup JSON
             </button>
+            {allEntities && onResolveDuplicate && onUndoDuplicate && (
+              <button
+                type="button"
+                className={`pill ${tab === 'dupes' ? 'active' : ''}`}
+                onClick={() => setTab('dupes')}
+              >
+                Duplicates
+              </button>
+            )}
         </div>
 
         {tab === 'search' && (
@@ -1035,7 +1065,7 @@ export function CommandPalette({
               className="combat-drawer__input-12"
             />
             <div className="pill-row combat-drawer__pill-row-3">
-              {(['all', 'spell', 'monster', 'weapon', 'armor', 'gear', 'feat', 'feature'] as const).map((cat) => (
+              {(['all', 'spell', 'monster', 'weapon', 'armor', 'gear', 'feat', 'feature', 'background', 'species'] as const).map((cat) => (
                 <button
                   key={cat}
                   type="button"
@@ -1139,6 +1169,9 @@ export function CommandPalette({
                       {' • '}
                       {item.source} • {item.ruleset}]
                     </span>
+                    {item.alsoIn && item.alsoIn.length > 0 && (
+                      <span className="forge-muted text-sm"> also in: {item.alsoIn.join(', ')}</span>
+                    )}
                     {item.category === 'spell' && (
                       <div className="combat-drawer__div-5">
                         {[item.castingTime, item.range, item.concentration ? 'CONC' : '', item.ritual ? 'RITUAL' : '']
@@ -1231,6 +1264,16 @@ export function CommandPalette({
               </div>
             ))}
           </div>
+        )}
+
+        {tab === 'dupes' && allEntities && onResolveDuplicate && onUndoDuplicate && (
+          <DuplicatesReview
+            entities={allEntities}
+            priority={sourcePriority ?? DEFAULT_SOURCE_PRIORITY}
+            decisions={dupDecisions ?? []}
+            onResolve={onResolveDuplicate}
+            onUndo={onUndoDuplicate}
+          />
         )}
 
         {tab === 'pdf' && (

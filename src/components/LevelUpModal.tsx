@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { CLASS_DEFINITIONS, extractSrdSpellcasterClasses, getClassDefinition, getSubclassPresets, spellOnClassList } from '../engine/classes';
 import { dedupeCompendium, normalizeEntityName } from '../engine/compendium-dedupe';
+import { readStoredSourcePriority } from '../storage/source-priority';
 import { evaluateDiceExpression } from '../engine/dice';
 import { computeAbilityModifier, computeEffectiveCasterLevel } from '../engine/rules-math';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
@@ -93,7 +94,7 @@ export function LevelUpModal({
   const allPackEntities = useMemo(() => {
     const map = new Map(BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities).map((e) => [e.id, e]));
     for (const e of compendiumEntities) map.set(e.id, e);
-    return dedupeCompendium(Array.from(map.values()));
+    return dedupeCompendium(Array.from(map.values()), readStoredSourcePriority());
   }, [compendiumEntities]);
   const ownedIds = useMemo(() => new Set(character.items.map((i) => i.id)), [character.items]);
   // a spell owned under another source's id (SRD vs pack copy) must not be offered again

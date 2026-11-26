@@ -3,6 +3,8 @@ import { CampaignRecord, SharedHandoutPayload } from '../../types/campaign';
 import { RawCharacterState, ResolvedCharacterSheet } from '../../types/character';
 import { BattlemapScene, CombatEncounterState, MapPingEvent } from '../../types/combat';
 import { CompendiumEntity } from '../../types/compendium';
+import type { DuplicateDecision, SourceTier } from '../../engine/compendium-dedupe';
+import type { ImportPlan } from '../../engine/import-preview';
 import { ActiveBuffState, RollMode } from '../../types/core';
 import { computeCharacterSheet, syncSpellSlotPools } from '../../engine/rules-math';
 import { BUILTIN_CONTENT_PACKS } from '../../engine/srd-packs';
@@ -21,6 +23,7 @@ import {
   saveEncounter,
   upsertCompendiumEntities,
 } from '../../storage/db';
+import { readStoredSourcePriority, saveSourcePriority } from '../../storage/source-priority';
 import { APP_VERSION } from '../../version';
 import type { ConsoleLine, ToastMessage } from './types';
 
@@ -76,6 +79,13 @@ export function useStoreCore(initialCharacter: RawCharacterState, initialEncount
   const [rollMode, setRollMode] = useState<RollMode>('normal');
 
   const [free5eSyncing, setFree5eSyncing] = useState(false);
+  const [sourcePriority, setSourcePriority] = useState<SourceTier[]>(() => readStoredSourcePriority());
+  const updateSourcePriority = useCallback((next: SourceTier[]) => {
+    setSourcePriority(next);
+    saveSourcePriority(next);
+  }, []);
+  const [dupDecisions, setDupDecisions] = useState<DuplicateDecision[]>([]);
+  const [pendingImport, setPendingImport] = useState<PendingImport | null>(null);
 
   const [pendingConcDc, setPendingConcDc] = useState<number | null>(null);
 
@@ -235,6 +245,8 @@ export function useStoreCore(initialCharacter: RawCharacterState, initialEncount
         if (active && savedScenes.length > 0) {
           setScenes(savedScenes);
         }
+        const savedDecisions = await db.dupDecisions.toArray();
+        if (active) setDupDecisions(savedDecisions);
         const basePackEntities = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities);
         const customRepoEntities = await loadCustomRepoEntities();
         const combinedEntities = [...basePackEntities, ...customRepoEntities];
@@ -465,6 +477,12 @@ export function useStoreCore(initialCharacter: RawCharacterState, initialEncount
     setRollMode,
     free5eSyncing,
     setFree5eSyncing,
+    sourcePriority,
+    updateSourcePriority,
+    dupDecisions,
+    setDupDecisions,
+    pendingImport,
+    setPendingImport,
     pendingConcDc,
     setPendingConcDc,
     initiativeAlert,
@@ -505,6 +523,13 @@ export function useStoreCore(initialCharacter: RawCharacterState, initialEncount
     sharedHandoutRef,
     activePingsRef,
   };
+}
+
+/** An import waiting behind the preview dialog: nothing is written until `commit` runs. */
+export interface PendingImport {
+  label: string;
+  plan: ImportPlan;
+  commit: () => Promise<void>;
 }
 
 export type StoreCore = ReturnType<typeof useStoreCore>;

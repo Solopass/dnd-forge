@@ -107,6 +107,11 @@ export const ItemInspectorPanel: React.FC<ItemInspectorPanelProps> = ({
             <span className="badge">{item.category.toUpperCase()}</span>
             {item.ruleset && <span className="badge">{item.ruleset}</span>}
             {item.source && <span className="badge">{item.source}</span>}
+            {item.alsoIn && item.alsoIn.length > 0 && (
+              <span className="badge" title="Duplicate copies folded into this entry">
+                also in: {item.alsoIn.join(', ')}
+              </span>
+            )}
             {isSpell && item.spellLevel !== undefined && (
               <span className="badge tabular">
                 {item.spellLevel === 0 ? 'Cantrip' : `Level ${item.spellLevel}`}

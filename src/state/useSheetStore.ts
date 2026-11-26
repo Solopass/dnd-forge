@@ -189,6 +189,14 @@ export function useSheetStore(initialCharacter: RawCharacterState, initialEncoun
     addMonsterToEncounter: combat.addMonsterToEncounter,
     importMarkdownHomebrew: contentImport.importMarkdownHomebrew,
     importJsonFilePayload: contentImport.importJsonFilePayload,
+    confirmPendingImport: contentImport.confirmPendingImport,
+    cancelPendingImport: contentImport.cancelPendingImport,
+    resolveDuplicateGroup: contentImport.resolveDuplicateGroup,
+    undoDuplicateDecision: contentImport.undoDuplicateDecision,
+    pendingImport: core.pendingImport,
+    sourcePriority: core.sourcePriority,
+    updateSourcePriority: core.updateSourcePriority,
+    dupDecisions: core.dupDecisions,
     searchCompendium: contentImport.searchCompendium,
   };
 }

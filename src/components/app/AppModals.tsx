@@ -9,6 +9,7 @@ import {
   CharacterManagerModal,
   EncounterBuilderModal,
   EquipmentSpellDrawer,
+  ImportPreviewModal,
   LevelUpModal,
   LiveTableModal,
   MonsterStatblockModal,
@@ -133,6 +134,11 @@ export function AppModals({ store, ui, panels }: AppLayoutProps) {
         onImportDdbPdf={store.importDdbPdfFile}
         onImportHomebrew={store.importMarkdownHomebrew}
         onImportJsonText={store.importJsonFilePayload}
+        allEntities={store.compendium}
+        sourcePriority={store.sourcePriority}
+        dupDecisions={store.dupDecisions}
+        onResolveDuplicate={store.resolveDuplicateGroup}
+        onUndoDuplicate={store.undoDuplicateDecision}
       />
 
       <ModalDialog
@@ -146,6 +152,16 @@ export function AppModals({ store, ui, panels }: AppLayoutProps) {
           {actionBoardNode}
         </div>
       </ModalDialog>
+
+      {store.pendingImport && (
+        <Suspense fallback={null}>
+          <ImportPreviewModal
+            pending={store.pendingImport}
+            onImport={() => void store.confirmPendingImport()}
+            onCancel={store.cancelPendingImport}
+          />
+        </Suspense>
+      )}
 
       <Suspense fallback={null}>
         <CharacterBuilderDrawer
@@ -383,6 +399,8 @@ export function AppModals({ store, ui, panels }: AppLayoutProps) {
             await store.importJsonFilePayload(await file.text());
           }}
           onExportActiveCharacter={handleExportActiveCharacter}
+          sourcePriority={store.sourcePriority}
+          onChangeSourcePriority={store.updateSourcePriority}
         />
 
         <RulesetModal

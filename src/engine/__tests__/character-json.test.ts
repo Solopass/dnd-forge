@@ -2,9 +2,26 @@ import { describe, expect, it } from 'vitest';
 import { parseCharacterJson } from '../character-json';
 
 describe('parseCharacterJson (audit C5)', () => {
-  it('accepts an object with name and classes', () => {
-    const r = parseCharacterJson('{"name":"Ayla","classes":[]}');
+  it('accepts a complete character and fills the optional parts', () => {
+    const r = parseCharacterJson(
+      JSON.stringify({
+        name: 'Ayla',
+        classes: [{ className: 'Fighter', level: 3, hitDie: 10, casterProgression: 'none' }],
+        baseAbilities: { str: 16, dex: 12, con: 14, int: 10, wis: 10, cha: 8 },
+        hp: { current: 28, max: 28 },
+      })
+    );
     expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.character.id).toBe('custom-char-ayla');
+      expect(r.character.items).toEqual([]);
+      expect(r.character.hp.temp).toBe(0);
+    }
+  });
+  it('rejects a character that would crash the sheet (no abilities / hp / valid class)', () => {
+    const r = parseCharacterJson('{"name":"Ayla","classes":[{"className":"Fighter","level":99}]}');
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reason).toMatch(/missing abilities.*level from 1 to 20.*hp needs/);
   });
   it('explains malformed JSON', () => {
     const r = parseCharacterJson('{nope');

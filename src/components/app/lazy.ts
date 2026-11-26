@@ -25,6 +25,10 @@ export const EquipmentSpellDrawer = lazy(() =>
   import('../EquipmentSpellDrawer').then((m) => ({ default: m.EquipmentSpellDrawer }))
 );
 
+export const ImportPreviewModal = lazy(() =>
+  import('../ImportPreviewModal').then((m) => ({ default: m.ImportPreviewModal }))
+);
+
 export const ItemInspectorPanel = lazy(() =>
   import('../ItemInspectorPanel').then((m) => ({ default: m.ItemInspectorPanel }))
 );

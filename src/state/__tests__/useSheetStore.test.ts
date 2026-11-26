@@ -88,6 +88,7 @@ describe('useSheetStore characterization', () => {
         "campaignList",
         "canRedo",
         "canUndo",
+        "cancelPendingImport",
         "characterList",
         "claimCombatantToken",
         "claimPartyStashItem",
@@ -99,6 +100,7 @@ describe('useSheetStore characterization', () => {
         "clearTerrain",
         "compendium",
         "completeWebRtcLink",
+        "confirmPendingImport",
         "consoleLines",
         "createCampaign",
         "createCharacterFromPreset",
@@ -121,6 +123,7 @@ describe('useSheetStore characterization', () => {
         "distributeGoldToParty",
         "divineSmite",
         "dropConcentration",
+        "dupDecisions",
         "duplicateCharacter",
         "duplicateEncounter",
         "encounter",
@@ -143,6 +146,7 @@ describe('useSheetStore characterization', () => {
         "moveCombatantOrder",
         "moveCombatantToken",
         "pendingConcDc",
+        "pendingImport",
         "pendingRollRequest",
         "persistCharacter",
         "pushCampaignToRepo",
@@ -154,6 +158,7 @@ describe('useSheetStore characterization', () => {
         "removeCombatant",
         "removeSheetItem",
         "resetEncounter",
+        "resolveDuplicateGroup",
         "resolvedSheet",
         "revertWildShape",
         "rollAllInitiative",
@@ -182,6 +187,7 @@ describe('useSheetStore characterization', () => {
         "shareActiveCharacterToPeers",
         "shareHandoutToPlayers",
         "simplifyCurrency",
+        "sourcePriority",
         "spendHitDiceBulk",
         "spendHitDie",
         "startEncounterAlert",
@@ -211,6 +217,7 @@ describe('useSheetStore characterization', () => {
         "triggerCombatantActivity",
         "triggerPartyMilestoneLevelUp",
         "undo",
+        "undoDuplicateDecision",
         "updateCharacterNotes",
         "updateCurrency",
         "updateDeathSaves",
@@ -220,6 +227,7 @@ describe('useSheetStore characterization', () => {
         "updateItemContainer",
         "updateItemQuantity",
         "updateSenses",
+        "updateSourcePriority",
         "updateSpeeds",
         "updateStructuredProficiencies",
         "upsertCampaignEntry",
@@ -441,6 +449,12 @@ Claws. +7 to hit, 2d8 + 5 slashing damage`;
     await act(async () => {
       await h.result.current.importMarkdownHomebrew(md);
     });
+    // every import shows a preview first; nothing is written until it is confirmed
+    expect(h.result.current.pendingImport?.plan.summary).toBe('0 new, 0 exact duplicates, 1 possible duplicate (review)') // matches the SRD Owlbear (ruleset 'homebrew' is compared with every ruleset);
+    expect(h.result.current.encounter.combatants.some((c) => c.name === 'Owlbear')).toBe(false);
+    await act(async () => {
+      await h.result.current.confirmPendingImport();
+    });
     const mob = h.result.current.encounter.combatants.find((c) => c.name === 'Owlbear');
     expect(mob).toMatchObject({ kind: 'monster', ac: 13, hp: { current: 59, max: 59, temp: 0 }, dexModifier: 1 });
     expect(h.result.current.compendium.some((e) => e.name === 'Owlbear' && e.category === 'monster')).toBe(true);
@@ -460,6 +474,9 @@ Claws. +7 to hit, 2d8 + 5 slashing damage`;
     });
     await act(async () => {
       await h.result.current.importJsonFilePayload(payload);
+    });
+    await act(async () => {
+      await h.result.current.confirmPendingImport();
     });
     expect(h.result.current.compendium.some((e) => e.id === 'custom-test-trinket')).toBe(true);
     expect(logTexts(h).some((t) => t.startsWith('Imported 1 custom entity'))).toBe(true);

@@ -100,3 +100,14 @@ bun run build
 Classes, Hit Dice, Spellcasting Progression, and Subclass level-up auto-grants live in `src/engine/classes.ts` (`CLASS_DEFINITIONS`).
 1. Put the individual subclass feature/spell JSONs in `src/custom-content/features/` and `src/custom-content/spells/`.
 2. Add the subclass entry to `subclasses` in `src/engine/classes.ts` with its `grants` referencing those feature/spell IDs.
+
+---
+
+## 6. Import preview, duplicates and source priority
+
+- **Import preview.** Every in-app import (JSON / batch, Markdown paste, 5e.tools JSON, backup, D&D Beyond PDF, Free5e and repo sync) first shows "N new, M exact duplicates (will fold into X), K possible duplicates (review)". Nothing is written until you press Import. The Free5e auto-sync at startup skips the preview.
+- **Batch JSON** is one object or an array mixing entities and characters. Each entry is accepted or rejected with a reason in the console log (unknown category, monster without `monsterMeta`, a character without abilities/classes/hp). Characters may be in the app's own shape or the simple shape (`abilities`, `classes[].name` + `hitDie: "d8"`, `equipment` / `features` / `spells` as entity ids from the same file or the compendium, `resourcePools`, `savingThrows`, `skills`).
+- **Source priority** (Settings, default): Mine (homebrew / imported / custom) > SRD 2024 > SRD 2014 > Free5e.
+- **Exact duplicates** share normalized name (lower-case, no diacritics, punctuation or spaces) + category + ruleset. The highest-priority copy is shown; the others are folded into it ("also in: ..."), and it takes any class list, description or image it lacks from them. Nothing is deleted.
+- **Possible duplicates** (same category; same name without a possessive prefix like "Melf's" or a trailing "(note)", or name similarity >= 0.85; same spell level / CR when both have one) are imported as they are and flagged in the Duplicates tab of the Packs/Compendium dialog, where you choose Keep one, Keep both or Merge. Decisions are saved and can be undone.
+

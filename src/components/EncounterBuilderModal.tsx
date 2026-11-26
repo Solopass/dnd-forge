@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { crToXp, evaluateEncounterDifficulty, normalizeCr } from '../engine/encounter-math';
 import { dedupeCompendium } from '../engine/compendium-dedupe';
+import { readStoredSourcePriority } from '../storage/source-priority';
 import { BUILTIN_CONTENT_PACKS } from '../engine/srd-packs';
 import { CompendiumEntity, CreatureSize } from '../types/compendium';
 import { ModalDialog } from './ModalDialog';
@@ -82,7 +83,7 @@ export function EncounterBuilderModal({
     for (const m of compendiumMonsters) {
       if (m.category === 'monster') map.set(m.id, m);
     }
-    return dedupeCompendium(Array.from(map.values()));
+    return dedupeCompendium(Array.from(map.values()), readStoredSourcePriority());
   }, [compendiumMonsters]);
 
   const filteredMonsters = useMemo(() => {

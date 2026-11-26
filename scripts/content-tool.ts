@@ -7,6 +7,7 @@ import {
   convertMarkdownToSidererollList,
   convertRawEntityToSidereroll,
 } from '../src/engine/content-converter';
+import { extractStatblocksFromText, summarizeExtraction } from '../src/engine/statblock-extractor';
 import { buildCharacterFromDdbFields } from '../src/engine/ddb-pdf-importer';
 import { CompendiumEntity, ItemCategory } from '../src/types/compendium';
 import { Ruleset } from '../src/types/core';
@@ -317,12 +318,17 @@ async function runCli() {
         console.log(`Dumped extracted PDF text -> ${path.relative(repoRoot, txtOut)}`);
       }
 
-      const converted = convertMarkdownToSidererollList(
-        pagesText,
-        category as ItemCategory,
-        ruleset,
-        source
-      );
+      let converted: CompendiumEntity[];
+      if (category === 'monster') {
+        const found = extractStatblocksFromText(pagesText, { ruleset, source, idPrefix });
+        const sum = summarizeExtraction(found);
+        converted = found.flatMap((r) => (r.entity ? [r.entity] : []));
+        console.log(
+          `Statblocks: ${sum.found} found, ${sum.clean} parsed cleanly, ${sum.withEntity} usable; problems: ${sum.failureKinds.map((k) => `${k.kind} x${k.count}`).join('; ') || 'none'}`
+        );
+      } else {
+        converted = convertMarkdownToSidererollList(pagesText, category as ItemCategory, ruleset, source);
+      }
       const outPath = path.resolve(
         getFlag('--out') ??
           path.join(

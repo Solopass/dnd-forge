@@ -7,6 +7,8 @@ import {
 } from '../engine/soundboard';
 import { applyUiMode, readStoredUiMode, UiMode } from '../engine/ui-mode';
 import { getStoredGithubPat, setStoredGithubPat } from '../engine/campaign-repo-sync';
+import { DEFAULT_SOURCE_PRIORITY, SOURCE_TIER_LABELS, type SourceTier } from '../engine/compendium-dedupe';
+import { moveSourceTier } from '../storage/source-priority';
 import { ModalDialog } from './ModalDialog';
 
 type SchemeChoice = 'system' | 'light' | 'dark';
@@ -25,6 +27,9 @@ interface SettingsModalProps {
   onExportBackup: () => Promise<void>;
   onImportBackup?: (file: File) => Promise<void>;
   onExportActiveCharacter: () => void;
+  /** Which source's copy is shown when the same entry exists in several (first = shown). */
+  sourcePriority?: SourceTier[];
+  onChangeSourcePriority?: (next: SourceTier[]) => void;
 }
 
 function readStoredScheme(): SchemeChoice {
@@ -58,6 +63,8 @@ export function SettingsModal({
   onExportBackup,
   onImportBackup,
   onExportActiveCharacter,
+  sourcePriority,
+  onChangeSourcePriority,
 }: SettingsModalProps) {
   const [scheme, setScheme] = useState<SchemeChoice>(readStoredScheme);
   const [localUiMode, setLocalUiMode] = useState<UiMode>(readStoredUiMode);
@@ -160,6 +167,53 @@ export function SettingsModal({
             Classic mimics the familiar D&amp;D Beyond character sheet with modal DM/VTT tools. Unified embeds DM Studio &amp; Tactical VTT directly in the main canvas with a left workspace rail.
           </div>
         </div>
+
+        {sourcePriority && onChangeSourcePriority && (
+          <div className="card forge-stack">
+            <div className="card-header">
+              <div className="forge-section-label">DUPLICATE SOURCE PRIORITY</div>
+            </div>
+            <div className="forge-muted">
+              When the same spell, monster or item exists in several sources, the highest one here is shown and the others are folded into it (listed as &quot;also in&quot;).
+            </div>
+            <ol className="forge-stack" aria-label="Source priority, highest first">
+              {sourcePriority.map((tier, i) => (
+                <li key={tier} className="forge-row-between gap-2">
+                  <span>
+                    <span className="tabular">{i + 1}.</span> {SOURCE_TIER_LABELS[tier]}
+                  </span>
+                  <span className="forge-row gap-2">
+                    <button
+                      type="button"
+                      className="btn"
+                      aria-label={`Move ${SOURCE_TIER_LABELS[tier]} up`}
+                      disabled={i === 0}
+                      onClick={() => onChangeSourcePriority(moveSourceTier(sourcePriority, tier, -1))}
+                    >
+                      Up
+                    </button>
+                    <button
+                      type="button"
+                      className="btn"
+                      aria-label={`Move ${SOURCE_TIER_LABELS[tier]} down`}
+                      disabled={i === sourcePriority.length - 1}
+                      onClick={() => onChangeSourcePriority(moveSourceTier(sourcePriority, tier, 1))}
+                    >
+                      Down
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ol>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => onChangeSourcePriority([...DEFAULT_SOURCE_PRIORITY])}
+            >
+              Reset to default
+            </button>
+          </div>
+        )}
 
         {onOpenThemeStudio && (
           <div className="card forge-stack">

@@ -3,8 +3,9 @@ import { CampaignRecord } from '../types/campaign';
 import { RawCharacterState } from '../types/character';
 import { CompendiumEntity } from '../types/compendium';
 import { BattlemapScene, CombatEncounterState } from '../types/combat';
+import type { DuplicateDecision } from '../engine/compendium-dedupe';
 
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;
 
 export interface IndexedCompendiumRecord extends CompendiumEntity {
   searchTokens: string;
@@ -19,6 +20,7 @@ export interface BackupBundle {
   encounters: CombatEncounterState[];
   campaigns?: CampaignRecord[];
   scenes?: BattlemapScene[];
+  dupDecisions?: DuplicateDecision[];
 }
 
 export function normalizeSearchQuery(raw: string): string {
@@ -42,6 +44,7 @@ export class DndForgeDatabase extends Dexie {
   encounters!: Table<CombatEncounterState, string>;
   campaigns!: Table<CampaignRecord, string>;
   scenes!: Table<BattlemapScene, string>;
+  dupDecisions!: Table<DuplicateDecision, string>;
 
   constructor() {
     super('dnd-forge-local-db');
@@ -59,12 +62,22 @@ export class DndForgeDatabase extends Dexie {
       campaigns: 'id, name',
     });
 
+    this.version(3).stores({
+      characters: 'id, name, ruleset',
+      compendium: 'id, name, category, source, ruleset, searchTokens',
+      encounters: 'id, name',
+      campaigns: 'id, name',
+      scenes: 'id, name',
+    });
+
+    // v4: the Duplicates review decisions. Existing tables are untouched, so no data migration is needed.
     this.version(CURRENT_SCHEMA_VERSION).stores({
       characters: 'id, name, ruleset',
       compendium: 'id, name, category, source, ruleset, searchTokens',
       encounters: 'id, name',
       campaigns: 'id, name',
       scenes: 'id, name',
+      dupDecisions: 'id',
     });
 
     this.on('versionchange', () => {
@@ -95,6 +108,14 @@ export async function saveScene(scene: BattlemapScene): Promise<void> {
   await db.scenes.put(cleanPayload);
 }
 
+export async function saveDuplicateDecision(decision: DuplicateDecision): Promise<void> {
+  await db.dupDecisions.put(structuredClone(decision));
+}
+
+export async function deleteDuplicateDecision(id: string): Promise<void> {
+  await db.dupDecisions.delete(id);
+}
+
 export async function deleteSceneRecord(sceneId: string): Promise<void> {
   await db.scenes.delete(sceneId);
 }
@@ -121,12 +142,13 @@ export async function removeFree5eIndexJunk(): Promise<number> {
 }
 
 export async function exportFullBundle(): Promise<BackupBundle> {
-  const [characters, compendiumRecords, encounters, campaigns, scenes] = await Promise.all([
+  const [characters, compendiumRecords, encounters, campaigns, scenes, dupDecisions] = await Promise.all([
     db.characters.toArray(),
     db.compendium.toArray(),
     db.encounters.toArray(),
     db.campaigns.toArray(),
     db.scenes.toArray(),
+    db.dupDecisions.toArray(),
   ]);
 
   const compendium: CompendiumEntity[] = compendiumRecords.map(({ searchTokens: _omit, ...rest }) => rest);
@@ -140,6 +162,7 @@ export async function exportFullBundle(): Promise<BackupBundle> {
     encounters,
     campaigns,
     scenes,
+    dupDecisions,
   };
 }
 
@@ -189,17 +212,25 @@ export async function importBackupBundle(
       )
     : [];
 
+  const validDecisions = Array.isArray(candidate.dupDecisions)
+    ? candidate.dupDecisions.filter(
+        (d): d is DuplicateDecision =>
+          typeof d === 'object' && d !== null && typeof d.id === 'string' && Array.isArray(d.memberIds)
+      )
+    : [];
+
   if (Array.isArray(candidate.characters) && validCharacters.length < candidate.characters.length) {
     warnings.push(`Skipped ${candidate.characters.length - validCharacters.length} malformed character record(s).`);
   }
 
-  await db.transaction('rw', db.characters, db.compendium, db.encounters, db.campaigns, db.scenes, async () => {
+  await db.transaction('rw', [db.characters, db.compendium, db.encounters, db.campaigns, db.scenes, db.dupDecisions], async () => {
     if (mode === 'replace') {
       await db.characters.clear();
       await db.compendium.clear();
       await db.encounters.clear();
       await db.campaigns.clear();
       await db.scenes.clear();
+      await db.dupDecisions.clear();
     }
     if (validCharacters.length > 0) {
       await db.characters.bulkPut(structuredClone(validCharacters));
@@ -215,6 +246,9 @@ export async function importBackupBundle(
     }
     if (validScenes.length > 0) {
       await db.scenes.bulkPut(structuredClone(validScenes));
+    }
+    if (validDecisions.length > 0) {
+      await db.dupDecisions.bulkPut(structuredClone(validDecisions));
     }
   });
 

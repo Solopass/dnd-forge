@@ -56,7 +56,7 @@ describe('Character JSON import (audit C5)', () => {
 
   it('imports a valid character without reporting', async () => {
     const { input, onImportCharacterJson, onImportRejected } = mount();
-    pick(input, 'ok.json', JSON.stringify({ name: 'Ayla', classes: [] }));
+    pick(input, 'ok.json', JSON.stringify({ name: 'Ayla', classes: [{ className: 'Fighter', level: 1, hitDie: 10 }], baseAbilities: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 }, hp: { current: 10, max: 10 } }));
     await waitFor(() => expect(onImportCharacterJson).toHaveBeenCalled());
     expect(onImportRejected).not.toHaveBeenCalled();
   });

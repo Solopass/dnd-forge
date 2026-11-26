@@ -6,11 +6,28 @@ import { parseFree5eMarkdownAuto } from '../../engine/free5e-parser';
 import { adapt5eToolsPayload } from '../../engine/five-tools-adapter';
 import { parseDndBeyondPdfBuffer } from '../../engine/ddb-pdf-importer';
 import { BUILTIN_CONTENT_PACKS } from '../../engine/srd-packs';
-import { dedupeCompendium } from '../../engine/compendium-dedupe';
+import {
+  applyDuplicateDecisions,
+  dedupeCompendium,
+  type DuplicateAction,
+  type DuplicateDecision,
+  type NearDuplicateGroup,
+} from '../../engine/compendium-dedupe';
+import { planEntityImport } from '../../engine/import-preview';
 import { parseCustomContentJson } from '../../engine/custom-content-loader';
+import { getClassDefinition } from '../../engine/classes';
 import { buildCampaignPackExport, fetchCampaignPackFromGitHub, getStoredGithubPat, pushFileToGitHubRepo, tryFetchExistingManifest } from '../../engine/campaign-repo-sync';
 import { ExternalRepoConfig } from '../../types/campaign';
-import { buildSearchTokens, db, importBackupBundle, normalizeSearchQuery, saveCharacter, upsertCompendiumEntities } from '../../storage/db';
+import {
+  buildSearchTokens,
+  db,
+  deleteDuplicateDecision,
+  importBackupBundle,
+  normalizeSearchQuery,
+  saveCharacter,
+  saveDuplicateDecision,
+  upsertCompendiumEntities,
+} from '../../storage/db';
 import type { StoreCore } from './core';
 import type { useCombatActions } from './combat';
 
@@ -35,8 +52,35 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
     campaign,
     persistCampaign,
     setFree5eSyncing,
+    sourcePriority,
+    dupDecisions,
+    setDupDecisions,
+    setPendingImport,
+    pendingImport,
   } = core;
   const { addMonsterToEncounter } = deps;
+
+  /** Shows the "N new, M exact duplicates, K possible duplicates" preview; `commit` only runs on Import. */
+  const stageImport = useCallback(
+    (label: string, entities: CompendiumEntity[], characters: number, commit: () => Promise<void>) => {
+      const plan = planEntityImport(entities, compendium, sourcePriority, characters);
+      setPendingImport({ label, plan, commit });
+      appendLog(`Import preview for ${label}: ${plan.summary}.`, 'info');
+    },
+    [compendium, sourcePriority, appendLog]
+  );
+
+  const confirmPendingImport = useCallback(async () => {
+    const pending = pendingImport;
+    if (!pending) return;
+    setPendingImport(null);
+    await pending.commit();
+  }, [pendingImport]);
+
+  const cancelPendingImport = useCallback(() => {
+    if (pendingImport) appendLog(`Import of ${pendingImport.label} cancelled; nothing was written.`, 'info');
+    setPendingImport(null);
+  }, [pendingImport, appendLog]);
 
   const addCompendiumItemToSheet = useCallback(
     (entity: CompendiumEntity) => {
@@ -56,8 +100,9 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
       }
 
       persistCharacter((prev) => {
+        const { alsoIn: _alsoIn, ...plain } = entity;
         const clone: CompendiumEntity = {
-          ...structuredClone(entity),
+          ...structuredClone(plain),
           id: `${entity.id}-${Date.now().toString(36)}`,
           equipped: true,
           prepared: true,
@@ -86,24 +131,26 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
       try {
         const buffer = await file.arrayBuffer();
         const result = await parseDndBeyondPdfBuffer(buffer, file.name);
-        await saveCharacter(result.character);
-        if (result.character.items.length > 0) {
-          await upsertCompendiumEntities(result.character.items);
-          const refreshed = await db.compendium.toArray();
-          setCompendium(refreshed);
-        }
-        setCharacterList((prev) => [...prev, result.character]);
-        setRawChar(result.character);
-        appendLog(
-          `Imported D&D Beyond PDF "${result.character.name}" (${result.extractedFieldsCount} PDF form fields read, ${result.character.items.length} weapons/spells).`,
-          result.warnings.length > 0 ? 'warn' : 'info'
-        );
-        result.warnings.forEach((w) => appendLog(`  PDF Warning: ${w}`, 'warn'));
+        stageImport(`D&D Beyond PDF "${result.character.name}"`, result.character.items, 1, async () => {
+          await saveCharacter(result.character);
+          if (result.character.items.length > 0) {
+            await upsertCompendiumEntities(result.character.items);
+            const refreshed = await db.compendium.toArray();
+            setCompendium(refreshed);
+          }
+          setCharacterList((prev) => [...prev, result.character]);
+          setRawChar(result.character);
+          appendLog(
+            `Imported D&D Beyond PDF "${result.character.name}" (${result.extractedFieldsCount} PDF form fields read, ${result.character.items.length} weapons/spells).`,
+            result.warnings.length > 0 ? 'warn' : 'info'
+          );
+          result.warnings.forEach((w) => appendLog(`  PDF Warning: ${w}`, 'warn'));
+        });
       } catch (err) {
         appendLog(`PDF import failed: ${String(err)}`, 'warn');
       }
     },
-    [appendLog]
+    [appendLog, stageImport]
   );
 
   const importMarkdownHomebrew = useCallback(
@@ -112,17 +159,20 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
         ? parseFree5eMarkdownAuto(rawMarkdown, 'spell')
         : null;
       if (free5e) {
-        await upsertCompendiumEntities([free5e]);
-        setCompendium((prev) => [free5e, ...prev]);
-        persistCharacter((prev) => ({
-          ...prev,
-          items: [free5e, ...prev.items],
-        }));
-        appendLog(`Imported Free5e "${free5e.name}" (${free5e.category}) from Markdown.`, 'info');
+        stageImport(`Free5e "${free5e.name}" (Markdown)`, [free5e], 0, async () => {
+          await upsertCompendiumEntities([free5e]);
+          setCompendium((prev) => [free5e, ...prev]);
+          persistCharacter((prev) => ({
+            ...prev,
+            items: [free5e, ...prev.items],
+          }));
+          appendLog(`Imported Free5e "${free5e.name}" (${free5e.category}) from Markdown.`, 'info');
+        });
         return;
       }
 
       const result = parseHomebrewMarkdownBlock(rawMarkdown);
+      stageImport(`"${result.data.name}" (Markdown)`, [result.data], 0, async () => {
       await upsertCompendiumEntities([result.data]);
       setCompendium((prev) => [result.data, ...prev]);
 
@@ -152,8 +202,9 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
       result.warnings.forEach((w) =>
         appendLog(`  Line ${w.line}: ${w.reason} ("${w.raw}")`, 'warn')
       );
+      });
     },
-    [persistCharacter, addMonsterToEncounter, appendLog]
+    [persistCharacter, addMonsterToEncounter, appendLog, stageImport]
   );
 
   const importJsonFilePayload = useCallback(
@@ -161,6 +212,12 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
       try {
         const parsed: unknown = JSON.parse(rawText);
         if (typeof parsed === 'object' && parsed !== null && (parsed as { app?: string }).app === 'dnd-forge') {
+          const bundle = parsed as { compendium?: unknown; characters?: unknown };
+          const bundleEntities = Array.isArray(bundle.compendium)
+            ? (bundle.compendium as CompendiumEntity[]).filter((e) => e && typeof e.id === 'string' && typeof e.name === 'string')
+            : [];
+          const bundleChars = Array.isArray(bundle.characters) ? bundle.characters.length : 0;
+          stageImport('backup bundle', bundleEntities, bundleChars, async () => {
           const summary = await importBackupBundle(parsed, 'merge');
           const [refreshedChars, refreshedCompendium, refreshedEncounters, refreshedCampaigns, refreshedScenes] = await Promise.all([
             db.characters.toArray(),
@@ -187,43 +244,58 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
             `Merged backup bundle: ${summary.importedCharacters} character(s), ${summary.importedEntities} compendium item(s), ${summary.importedEncounters} encounter(s).`,
             'info'
           );
+          const refreshedDecisions = await db.dupDecisions.toArray();
+          setDupDecisions(refreshedDecisions);
+          });
           return;
         }
 
         const adapted = adapt5eToolsPayload(parsed);
         if (adapted.entities.length > 0) {
-          await upsertCompendiumEntities(adapted.entities);
-          setCompendium((prev) => [...adapted.entities, ...prev]);
-          appendLog(
-            `Imported ${adapted.entities.length} 5e.tools entities (${adapted.skipped} skipped).`,
-            'info'
-          );
+          stageImport(`5e.tools JSON (${adapted.skipped} skipped)`, adapted.entities, 0, async () => {
+            await upsertCompendiumEntities(adapted.entities);
+            setCompendium((prev) => [...adapted.entities, ...prev]);
+            appendLog(
+              `Imported ${adapted.entities.length} 5e.tools entities (${adapted.skipped} skipped).`,
+              'info'
+            );
+          });
           return;
         }
 
-        const customParsed = parseCustomContentJson(rawText);
+        const byId = new Map(compendium.map((e) => [e.id, e]));
+        const customParsed = parseCustomContentJson(rawText, (id) => byId.get(id), getClassDefinition);
+        customParsed.rejected.forEach((r) => appendLog(`  Not imported: "${r.name}": ${r.reason}.`, 'warn'));
+        customParsed.warnings.forEach((w) => appendLog(`  ${w}`, 'warn'));
         if (customParsed.entities.length > 0 || customParsed.characters.length > 0) {
-          if (customParsed.entities.length > 0) {
-            await upsertCompendiumEntities(customParsed.entities);
-            setCompendium((prev) => [...customParsed.entities, ...prev]);
-          }
-          for (const ch of customParsed.characters) {
-            await saveCharacter(ch);
-            setCharacterList((prev) => (prev.some((p) => p.id === ch.id) ? prev : [...prev, ch]));
-            setRawChar(ch);
-          }
-          appendLog(
-            `Imported ${customParsed.entities.length} custom entity(s) and ${customParsed.characters.length} character(s).`,
-            'info'
-          );
+          stageImport('custom content JSON', customParsed.entities, customParsed.characters.length, async () => {
+            if (customParsed.entities.length > 0) {
+              await upsertCompendiumEntities(customParsed.entities);
+              setCompendium((prev) => [...customParsed.entities, ...prev]);
+            }
+            for (const ch of customParsed.characters) {
+              await saveCharacter(ch);
+              setCharacterList((prev) => (prev.some((p) => p.id === ch.id) ? prev : [...prev, ch]));
+              setRawChar(ch);
+            }
+            appendLog(
+              `Imported ${customParsed.entities.length} custom entity(s) and ${customParsed.characters.length} character(s)${customParsed.rejected.length > 0 ? `; ${customParsed.rejected.length} rejected` : ''}.`,
+              'info'
+            );
+          });
         } else {
-          appendLog('JSON recognized, but no Sidereroll entities, characters, or 5e.tools arrays were found.', 'warn');
+          appendLog(
+            customParsed.rejected.length > 0
+              ? `JSON recognized, but all ${customParsed.rejected.length} entries were rejected (see above).`
+              : 'JSON recognized, but no Sidereroll entities, characters, or 5e.tools arrays were found.',
+            'warn'
+          );
         }
       } catch (err) {
         appendLog(`JSON import failed: ${String(err)}`, 'warn');
       }
     },
-    [appendLog]
+    [appendLog, stageImport, setDupDecisions, compendium]
   );
 
   const createHomebrewEntity = useCallback(
@@ -245,7 +317,34 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
   );
 
   // Search shows one entry per name (SRD copy wins over Free5e/duplicate pack copies); nothing is deleted.
-  const searchableCompendium = useMemo(() => dedupeCompendium(compendium), [compendium]);
+  const searchableCompendium = useMemo(
+    () => applyDuplicateDecisions(dedupeCompendium(compendium, sourcePriority), dupDecisions),
+    [compendium, sourcePriority, dupDecisions]
+  );
+
+  const resolveDuplicateGroup = useCallback(
+    async (group: NearDuplicateGroup, action: DuplicateAction, keepId?: string) => {
+      const decision: DuplicateDecision = {
+        id: group.id,
+        memberIds: group.members.map((m) => m.id),
+        action,
+        ...(action === 'keep-both' ? {} : { keepId: keepId ?? group.members[0]!.id }),
+        decidedAt: new Date().toISOString(),
+      };
+      await saveDuplicateDecision(decision);
+      setDupDecisions((prev) => [...prev.filter((d) => d.id !== decision.id), decision]);
+      appendLog(`Duplicates: ${action} for ${group.members.map((m) => m.name).join(' / ')}.`, 'info');
+    },
+    [appendLog]
+  );
+
+  const undoDuplicateDecision = useCallback(
+    async (groupId: string) => {
+      await deleteDuplicateDecision(groupId);
+      setDupDecisions((prev) => prev.filter((d) => d.id !== groupId));
+    },
+    []
+  );
   const searchCompendium = useCallback(
     (query: string): CompendiumEntity[] => {
       const rawQ = query.trim().toLowerCase();
@@ -289,6 +388,7 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
       const token = getStoredGithubPat();
       try {
         const result = await fetchCampaignPackFromGitHub(cfg, token || undefined);
+        stageImport(`${cfg.owner}/${cfg.repo}`, result.entities, result.characters.length, async () => {
         if (result.entities.length > 0) {
           await upsertCompendiumEntities(result.entities);
           setCompendium((prev) => {
@@ -323,13 +423,14 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
           'info'
         );
         pushToast(`Synced ${cfg.owner}/${cfg.repo} (${result.entities.length} items, ${result.characters.length} PCs)`, 'info');
+        });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         appendLog(`Campaign repo sync failed: ${msg}`, 'warn');
         pushToast(`Sync failed: ${msg}`, 'warn');
       }
     },
-    [campaign.externalRepo, persistCampaign, appendLog, pushToast]
+    [campaign.externalRepo, persistCampaign, appendLog, pushToast, stageImport]
   );
 
   const syncFree5ePack = useCallback(async () => {
@@ -436,6 +537,10 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
     importDdbPdfFile,
     importMarkdownHomebrew,
     importJsonFilePayload,
+    confirmPendingImport,
+    cancelPendingImport,
+    resolveDuplicateGroup,
+    undoDuplicateDecision,
     createHomebrewEntity,
     searchCompendium,
     importSingleCharacter,

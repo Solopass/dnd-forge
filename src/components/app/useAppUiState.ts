@@ -13,6 +13,7 @@ import { applyUiMode, readStoredUiMode, UiMode } from '../../engine/ui-mode';
 import { exportFullBundle } from '../../storage/db';
 import type { ThemeDefinition } from '../../types/theme';
 import type { WorkspaceLayoutConfig } from '../../types/layout';
+import type { ItemCategory } from '../../types/compendium';
 import type { SheetStore } from './types';
 
 /** All of App's UI state (modal flags, layout mode, role, selections), its effects and derived flags. */
@@ -43,7 +44,7 @@ export function useAppUiState(store: SheetStore) {
   const [levelUpOpen, setLevelUpOpen] = useState(false);
   const [shortRestOpen, setShortRestOpen] = useState(false);
   const [charManagerOpen, setCharManagerOpen] = useState(false);
-  const [paletteInitialCat, setPaletteInitialCat] = useState<'all' | 'weapon' | 'armor' | 'shield' | 'gear' | 'spell' | 'feature' | 'feat' | 'infusion' | 'monster'>('all');
+  const [paletteInitialCat, setPaletteInitialCat] = useState<'all' | ItemCategory>('all');
   const [paletteInitialRuleset, setPaletteInitialRuleset] = useState<'all' | '2014' | '2024'>('all');
   const [liveTableOpen, setLiveTableOpen] = useState(false);
   const [encounterBuilderOpen, setEncounterBuilderOpen] = useState(false);

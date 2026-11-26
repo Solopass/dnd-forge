@@ -33,7 +33,9 @@ export type ItemCategory =
   | 'feature'
   | 'feat'
   | 'infusion'
-  | 'monster';
+  | 'monster'
+  | 'background'
+  | 'species';
 
 export interface AcFormulaRule {
   base: number;
@@ -98,4 +100,6 @@ export interface CompendiumEntity {
   modifiers?: PassiveModifierRule[];
   activities: Activity[];
   entries: string[];
+  /** Derived by the duplicate folding (never stored): the other sources that carry this same entry. */
+  alsoIn?: string[];
 }

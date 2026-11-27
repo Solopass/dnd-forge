@@ -446,7 +446,12 @@ export function useContentImportActions(core: StoreCore, deps: ContentImportDeps
       const token = getStoredGithubPat();
       let installed: InstalledPack | undefined;
       try {
-        const fetched = await fetchPackFromGitHub(cfg, token || undefined, { fresh: true });
+        const compendiumById = new Map(compendium.map((e) => [e.id, e]));
+        const fetched = await fetchPackFromGitHub(cfg, token || undefined, {
+          fresh: true,
+          resolveEntity: (id) => compendiumById.get(id),
+          installedPackIds: new Set(packs.map((p) => p.id)),
+        });
         const packId = fetched.manifest.id;
         const repoName = `${cfg.owner}/${cfg.repo}`;
         const existing = packs.find((p) => p.id === packId);

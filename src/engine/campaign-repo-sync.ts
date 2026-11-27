@@ -237,6 +237,9 @@ export interface FetchedPack extends SyncedCampaignPackResult {
 export interface FetchPackOptions {
   /** Ignore the "this repo has no pack file" memory (an explicit install / update always looks again). */
   fresh?: boolean;
+  /** Entities already stored (the compendium) and the installed pack ids: characters' references resolve against them. */
+  resolveEntity?: (id: string) => CompendiumEntity | undefined;
+  installedPackIds?: ReadonlySet<string>;
 }
 
 function authHeaders(token: string | undefined, accept: string): Record<string, string> {
@@ -369,6 +372,8 @@ interface MaterializeInput {
   token?: string;
   sha?: string;
   legacy?: LegacyConversion;
+  resolveEntity?: (id: string) => CompendiumEntity | undefined;
+  installedPackIds?: ReadonlySet<string>;
 }
 
 const DEFAULT_SOURCE_LABELS = new Set(['Custom', 'Homebrew', 'Custom Repo']);
@@ -411,6 +416,11 @@ async function materializePack(input: MaterializeInput): Promise<FetchedPack> {
   };
   const processed = await processPackFiles({
     packId: manifest.id,
+    packVersion: manifest.version,
+    packRef: ref,
+    requires: manifest.requires,
+    ...(input.installedPackIds ? { installedPackIds: input.installedPackIds } : {}),
+    ...(input.resolveEntity ? { resolveEntity: input.resolveEntity } : {}),
     sourceLabel,
     ...(defaultRuleset ? { defaultRuleset } : {}),
     mapEntity,
@@ -461,6 +471,13 @@ async function materializePack(input: MaterializeInput): Promise<FetchedPack> {
   };
 }
 
+function resolveOpts(opts: FetchPackOptions): Pick<MaterializeInput, 'resolveEntity' | 'installedPackIds'> {
+  return {
+    ...(opts.resolveEntity ? { resolveEntity: opts.resolveEntity } : {}),
+    ...(opts.installedPackIds ? { installedPackIds: opts.installedPackIds } : {}),
+  };
+}
+
 /**
  * Reads a GitHub repo as a pack: `pack.json` (v1), else the old `campaign-pack.json` (v0), else the
  * built-in Free5e tree adapter. Every file is read from one commit (the sha the ref points to).
@@ -491,7 +508,7 @@ export async function fetchPackFromGitHub(
       if (!parsed.ok) {
         throw new Error(`pack.json in ${config.owner}/${config.repo} is not a valid pack:\n- ${parsed.errors.join('\n- ')}`);
       }
-      return materializePack({ manifest: parsed.manifest, pinned, token, sha });
+      return materializePack({ manifest: parsed.manifest, pinned, token, sha, ...resolveOpts(opts) });
     }
   }
 
@@ -512,7 +529,7 @@ export async function fetchPackFromGitHub(
     throw err;
   }
   const legacy = convertLegacyManifest(rawManifest, { owner: config.owner, repo: config.repo });
-  return materializePack({ manifest: legacy.manifest, pinned, token, sha, legacy });
+  return materializePack({ manifest: legacy.manifest, pinned, token, sha, legacy, ...resolveOpts(opts) });
 }
 
 /** The record kept in the `packs` table for a fetched pack. */

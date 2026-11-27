@@ -8,7 +8,7 @@ import { extractStatblocksFromText } from './statblock-extractor';
 import { splitMarkdownBlocks } from './content-converter';
 import { normalizeIncomingCharacter, type ClassLookup } from './character-adapter';
 import { buildCharacterFromDdbFields } from './ddb-pdf-importer';
-import { convertLegacyManifest, expandGlobs, guessCategoryFromPath, isGlob, parsePackManifest } from './pack-manifest';
+import { assignPackIdentity, convertLegacyManifest, expandGlobs, guessCategoryFromPath, isGlob, parsePackManifest } from './pack-manifest';
 import {
   dedupeProcessedIds,
   normalizeFormula,
@@ -57,6 +57,8 @@ export interface PipelineOptions {
   mapEntity?: (entity: CompendiumEntity) => CompendiumEntity;
   /** Looks up entities already in the compendium (for characters that list item ids). */
   resolveEntity?: (id: string) => CompendiumEntity | undefined;
+  /** Character references that are skipped without their own warning (the caller reports them once). */
+  quietMissing?: (id: string) => boolean;
   classLookup?: ClassLookup;
   /** Stamped on every entity as `packFile`. */
   packFile?: string;
@@ -407,7 +409,7 @@ function parseEntityJson(value: unknown, ctx: Ctx, format: DetectedFormat = 'ent
   const characters: RawCharacterState[] = [];
   const warnings: string[] = [];
   for (const obj of collected.characters) {
-    const res = normalizeIncomingCharacter(obj, (id) => local.get(id) ?? ctx.opts.resolveEntity?.(id), ctx.opts.classLookup);
+    const res = normalizeIncomingCharacter(obj, (id) => local.get(id) ?? ctx.opts.resolveEntity?.(id), ctx.opts.classLookup, ctx.opts.quietMissing);
     const label = typeof obj.name === 'string' && obj.name ? obj.name : 'unnamed character';
     if (res.character) {
       characters.push(res.character);
@@ -703,6 +705,15 @@ export interface PackFilesInput {
   defaultRuleset?: Ruleset;
   mapEntity?: (entity: CompendiumEntity) => CompendiumEntity;
   mapCharacter?: (character: RawCharacterState) => RawCharacterState;
+  /** Pack version / pinned ref, stamped on the entities characters receive (same values the install stamps). */
+  packVersion?: string;
+  packRef?: string;
+  /** Pack ids this pack builds on (manifest `requires`). */
+  requires?: readonly string[];
+  /** Ids of the required packs that are installed; refs into them resolve through `resolveEntity`. */
+  installedPackIds?: ReadonlySet<string>;
+  /** Looks up entities already stored (the compendium) for character references. */
+  resolveEntity?: (id: string) => CompendiumEntity | undefined;
   contentPaths: readonly string[];
   characterPaths: readonly string[];
   categoryHints?: Readonly<Record<string, ItemCategory>>;
@@ -781,17 +792,41 @@ export async function processPackFiles(input: PackFilesInput): Promise<PackFiles
   }
   const allFailed = unreadable.length > 0 && filesRead === 0 && results.length === 0;
 
+  // Characters resolve against this pack's own entities first (by the id in the file and by the id the install
+  // will store, `<packId>:<slug>` when the file gave none), then the compendium.
+  const contentMerge = mergePipelineResults(results);
+  const stored = assignPackIdentity(
+    contentMerge.items.map((i) => ({ entity: i.entity, hadId: i.explicitId })),
+    { packId: input.packId, packVersion: input.packVersion ?? '', ...(input.packRef ? { packRef: input.packRef } : {}) }
+  );
+  const ownById = new Map<string, CompendiumEntity>();
+  contentMerge.items.forEach((i, n) => {
+    const s = stored[n];
+    if (s) ownById.set(i.entity.id, s);
+  });
+  for (const s of stored) ownById.set(s.id, s);
+  const notInstalled = (input.requires ?? []).filter((r) => !input.installedPackIds?.has(r));
+  const missingByPack = new Map<string, number>(notInstalled.map((r) => [r, 0]));
+  const resolveEntity = (id: string): CompendiumEntity | undefined => ownById.get(id) ?? ownById.get(`${input.packId}:${id}`) ?? input.resolveEntity?.(id);
+  const quietMissing = (id: string): boolean => {
+    const owner = notInstalled.find((r) => id.startsWith(`${r}:`));
+    if (owner === undefined) return false;
+    missingByPack.set(owner, (missingByPack.get(owner) ?? 0) + 1);
+    return true;
+  };
+  const charOpts = { resolveEntity, quietMissing };
+
   const charResults: PipelineResult[] = [];
   const takeCharacters = (r: PipelineResult) => {
     charResults.push({ ...r, items: [] });
   };
   if (input.inlineCharacters && input.inlineCharacters.length > 0) {
-    takeCharacters(runImportPipeline(JSON.stringify(input.inlineCharacters), { name: 'campaign-pack.json (characters)' }));
+    takeCharacters(runImportPipeline(JSON.stringify(input.inlineCharacters), { name: 'campaign-pack.json (characters)', ...charOpts }));
   }
   for (const path of input.characterPaths) {
     const text = await readText(path);
     if (text === null) continue;
-    const r = prefixed(path, runImportPipeline(text, { name: path }));
+    const r = prefixed(path, runImportPipeline(text, { name: path, ...charOpts }));
     if (UNREADABLE_FORMATS.has(r.format)) {
       unreadable.push(path);
       warnings.push(r.format === 'invalid-json' ? `${path}: not valid JSON, skipped.` : `${path}: ${r.rejected[0]?.reason ?? 'could not be read'}; skipped.`);
@@ -800,6 +835,9 @@ export async function processPackFiles(input: PackFilesInput): Promise<PackFiles
     takeCharacters(r);
   }
 
+  for (const [pack, n] of missingByPack) {
+    if (n > 0) warnings.push(`Required pack "${pack}" is not installed: ${n} character reference${n === 1 ? '' : 's'} into it ${n === 1 ? 'was' : 'were'} skipped.`);
+  }
   const merged = mergePipelineResults([...results, ...charResults]);
   // characters can sit in content files, in character files or inline: they all come out of the merge
   const characters = input.mapCharacter ? merged.characters.map(input.mapCharacter) : merged.characters;
@@ -828,6 +866,7 @@ export async function analyzePackFiles(files: Readonly<Record<string, string>>, 
   let sourceLabel = fallbackName;
   let ruleset: Ruleset | undefined;
   let content: string[] = [];
+  let requires: string[] = [];
   let characterPatterns: string[] = [];
   let categoryHints: Record<string, ItemCategory> | undefined;
   let inlineEntities: unknown[] = [];
@@ -853,6 +892,7 @@ export async function analyzePackFiles(files: Readonly<Record<string, string>>, 
         sourceLabel = parsed.manifest.name;
         if (parsed.manifest.ruleset === '2014' || parsed.manifest.ruleset === '2024') ruleset = parsed.manifest.ruleset;
         content = parsed.manifest.content;
+        requires = parsed.manifest.requires;
         characterPatterns = parsed.manifest.characters;
       } else problems.push(...parsed.errors);
     }
@@ -893,6 +933,7 @@ export async function analyzePackFiles(files: Readonly<Record<string, string>>, 
   const out = await processPackFiles({
     packId,
     sourceLabel,
+    requires,
     ...(ruleset ? { defaultRuleset: ruleset } : {}),
     contentPaths: expand(content, 'content'),
     characterPaths: expand(characterPatterns, 'characters'),

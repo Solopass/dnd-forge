@@ -57,7 +57,9 @@ function parseHitDie(v: unknown): 6 | 8 | 10 | 12 | null {
 export function normalizeIncomingCharacter(
   raw: Obj,
   resolve: (id: string) => CompendiumEntity | undefined = () => undefined,
-  getClassDefinition: ClassLookup = () => undefined
+  getClassDefinition: ClassLookup = () => undefined,
+  /** Ids that are missing on purpose (they belong to a required pack that is not installed): skipped without a warning of their own. */
+  isQuietlyMissing: (id: string) => boolean = () => false
 ): IncomingCharacterResult {
   const problems: string[] = [];
   const warnings: string[] = [];
@@ -154,6 +156,7 @@ export function normalizeIncomingCharacter(
     for (const ref of Array.isArray(raw[key]) ? (raw[key] as unknown[]) : []) {
       const found = typeof ref === 'string' ? resolve(ref) : undefined;
       if (!found) {
+        if (typeof ref === 'string' && isQuietlyMissing(ref)) continue;
         warnings.push(`${key} "${String(ref)}" was not found in the compendium and was skipped`);
         continue;
       }

@@ -9,6 +9,8 @@ import {
 } from '../src/engine/content-converter';
 import { extractStatblocksFromText, summarizeExtraction } from '../src/engine/statblock-extractor';
 import { analyzePackFiles, formatPackDoctor } from '../src/engine/import-pipeline';
+import { buildQualityReport, summarizeQuality } from '../src/engine/content-quality';
+import { collectIds, fixPackJson, SAFE_REPAIR_CODES, type SafeRepairCode } from '../src/engine/pack-autofix';
 import { buildCharacterFromDdbFields } from '../src/engine/ddb-pdf-importer';
 import { CompendiumEntity, ItemCategory } from '../src/types/compendium';
 import { Ruleset } from '../src/types/core';
@@ -293,16 +295,112 @@ export async function runPackDoctor(dir: string): Promise<{ code: number; lines:
   return { code: failed ? 1 : 0, lines };
 }
 
+/** Everything `content:report` needs about a pack folder. */
+export async function loadPackFolder(dir: string) {
+  return analyzePackFiles(readPackFiles(dir), path.basename(path.resolve(dir)));
+}
+
+/** Builds the Markdown quality report of a pack folder. `againstDirs` are other packs to compare with, on top of the SRD built-ins. */
+export async function runPackReport(dir: string, againstDirs: readonly string[] = []): Promise<{ markdown: string; summary: string; analysis: Awaited<ReturnType<typeof loadPackFolder>>; againstCount: number }> {
+  const analysis = await loadPackFolder(dir);
+  const against = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities);
+  for (const other of againstDirs) against.push(...(await loadPackFolder(other)).result.accepted);
+  const r = analysis.report;
+  const markdown = buildQualityReport({
+    packName: analysis.packName,
+    entities: analysis.result.accepted,
+    characters: analysis.result.characters,
+    against,
+    doctor: { files: r.files, accepted: r.accepted, repaired: r.repaired.length, rejected: r.rejected, unreadable: r.unreadable },
+  });
+  return { markdown, summary: summarizeQuality(analysis.result.accepted), analysis, againstCount: against.length };
+}
+
+/**
+ * `content:validate --pack <dir> --fix`: applies the safe repairs listed in src/engine/pack-autofix.ts to the pack's JSON
+ * files. Markdown / CSV / text files are never touched; those with pending repairs are listed as "fixable by hand".
+ */
+export async function runPackFix(dir: string): Promise<{ changed: string[]; lines: string[] }> {
+  const files = readPackFiles(dir);
+  const analysis = await analyzePackFiles(files, path.basename(path.resolve(dir)));
+  const hasManifest = files['pack.json'] !== undefined || files['campaign-pack.json'] !== undefined;
+  const jsonFiles = Object.keys(files)
+    .filter((f) => f.toLowerCase().endsWith('.json') && f !== 'pack.json' && f !== 'campaign-pack.json' && !f.startsWith('characters/'))
+    .sort();
+  const usedIds = new Set<string>();
+  for (const f of jsonFiles) for (const id of collectIds(files[f] ?? '')) usedIds.add(id);
+  const totals: Partial<Record<SafeRepairCode, number>> = {};
+  const changed: string[] = [];
+  const lines: string[] = [];
+  for (const f of jsonFiles) {
+    const res = fixPackJson(files[f] ?? '', { ...(hasManifest ? { packId: analysis.packId } : {}), usedIds });
+    if (res.invalid) {
+      lines.push(`Skipped ${f}: not valid JSON (${res.invalid})`);
+      continue;
+    }
+    for (const name of res.skippedIds) lines.push(`${f}: no id added to "${name}" (the name clashes with another id); fix by hand`);
+    if (res.text === null) continue;
+    fs.writeFileSync(path.join(dir, f), res.text, 'utf8');
+    changed.push(f);
+    const parts = SAFE_REPAIR_CODES.filter((c) => res.counts[c]).map((c) => {
+      totals[c] = (totals[c] ?? 0) + (res.counts[c] ?? 0);
+      return `${c} x${res.counts[c]}`;
+    });
+    lines.push(`Fixed ${f}: ${parts.join(', ')}`);
+  }
+  const hand = new Map<string, number>();
+  for (const rep of analysis.result.repaired) {
+    const file = rep.entity.packFile;
+    if (file && !file.toLowerCase().endsWith('.json')) hand.set(file, (hand.get(file) ?? 0) + 1);
+  }
+  for (const [file, n] of [...hand].sort((a, b) => (a[0] < b[0] ? -1 : 1))) lines.push(`Fixable by hand (not a JSON file): ${file} (${n} entr${n === 1 ? 'y' : 'ies'} need repairs on import)`);
+  lines.push(
+    changed.length === 0
+      ? 'Auto-fix: no files changed.'
+      : `Auto-fix: ${changed.length} file(s) changed (${SAFE_REPAIR_CODES.filter((c) => totals[c]).map((c) => `${c} x${totals[c]}`).join(', ')}).`
+  );
+  return { changed, lines };
+}
+
 async function runCli() {
   const args = process.argv.slice(2);
   const cmd = args[0] ?? 'validate';
   const repoRoot = process.cwd();
 
+  if (cmd === 'report') {
+    const dir = args[args.indexOf('--pack') + 1];
+    if (!args.includes('--pack') || !dir || dir.startsWith('--')) {
+      console.error('Usage: bun run content:report --pack <folder> [--out <file>] [--against <folder>...]');
+      process.exit(1);
+    }
+    const outIdx = args.indexOf('--out');
+    const out = outIdx >= 0 ? args[outIdx + 1] : undefined;
+    const against: string[] = [];
+    for (let i = 0; i < args.length; i++) {
+      if (args[i] !== '--against') continue;
+      for (let j = i + 1; j < args.length && !args[j]!.startsWith('--'); j++) against.push(path.resolve(args[j]!));
+    }
+    const res = await runPackReport(path.resolve(dir), against);
+    if (out) {
+      fs.mkdirSync(path.dirname(path.resolve(out)), { recursive: true });
+      fs.writeFileSync(path.resolve(out), res.markdown, 'utf8');
+      console.log(`${res.analysis.packName}: ${res.summary}`);
+      console.log(`Report written to ${out}`);
+    } else {
+      process.stdout.write(res.markdown);
+    }
+    process.exit(0);
+  }
+
   if (cmd === 'validate' && args.includes('--pack')) {
     const dir = args[args.indexOf('--pack') + 1];
     if (!dir || dir.startsWith('--')) {
-      console.error('Usage: bun run content:validate --pack <folder>');
+      console.error('Usage: bun run content:validate --pack <folder> [--fix]');
       process.exit(1);
+    }
+    if (args.includes('--fix')) {
+      const fix = await runPackFix(path.resolve(dir));
+      for (const line of fix.lines) console.log(line);
     }
     const res = await runPackDoctor(path.resolve(dir));
     for (const line of res.lines) console.log(line);

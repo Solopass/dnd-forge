@@ -96,6 +96,17 @@ describe('content:validate --fix on a temp pack', () => {
     expect(snapshot(dir)).toEqual(after);
   });
 
+  it('reports a pack entry named like a bundled SRD JSON monster as a clash', async () => {
+    const srd = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'src', 'custom-content', 'monsters', 'srd-2014-monsters.json'), 'utf8')) as Array<{ name: string }>;
+    const name = srd[0]?.name ?? '';
+    expect(name).not.toBe('');
+    const dir = makePack();
+    fs.writeFileSync(path.join(dir, 'monsters', 'm.json'), JSON.stringify([{ id: 'synth:clash', name, category: 'monster', monsterMeta: { ac: 11, hp: 3, dexModifier: 0 }, entries: ['x'], activities: [] }]));
+    const res = await (await loadTool()).runPackReport(dir);
+    expect(res.againstCount).toBeGreaterThan(1000);
+    expect(res.markdown).toContain(`| exact | monster | ${name} |`);
+  });
+
   it('builds a deterministic report for the pack against the SRD built-ins', async () => {
     const dir = makePack();
     const res = await (await loadTool()).runPackReport(dir);

@@ -9,6 +9,7 @@ import {
 } from '../src/engine/content-converter';
 import { extractStatblocksFromText, summarizeExtraction } from '../src/engine/statblock-extractor';
 import { analyzePackFiles, formatPackDoctor } from '../src/engine/import-pipeline';
+import { normalizeCustomEntity } from '../src/engine/custom-content-loader';
 import { buildQualityReport, summarizeQuality } from '../src/engine/content-quality';
 import { collectIds, fixPackJson, SAFE_REPAIR_CODES, type SafeRepairCode } from '../src/engine/pack-autofix';
 import { buildCharacterFromDdbFields } from '../src/engine/ddb-pdf-importer';
@@ -300,10 +301,35 @@ export async function loadPackFolder(dir: string) {
   return analyzePackFiles(readPackFiles(dir), path.basename(path.resolve(dir)));
 }
 
+/** The bundled SRD JSON (src/custom-content/{monsters,spells,items,features}) read with fs and normalized like the app does (Bun has no import.meta.glob). */
+export function loadBundledSrdEntities(): CompendiumEntity[] {
+  const root = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')), '..', 'src', 'custom-content');
+  const out: CompendiumEntity[] = [];
+  for (const [folder, cat] of Object.entries(FOLDER_CATEGORY_MAP)) {
+    const dir = path.join(root, folder);
+    if (!fs.existsSync(dir)) continue;
+    for (const file of fs.readdirSync(dir).filter((f) => f.endsWith('.json')).sort()) {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
+      } catch {
+        continue;
+      }
+      for (const raw of Array.isArray(parsed) ? parsed : [parsed]) {
+        if (raw && typeof raw === 'object') {
+          const e = normalizeCustomEntity(raw as Record<string, unknown>, cat);
+          if (e) out.push(e);
+        }
+      }
+    }
+  }
+  return out;
+}
+
 /** Builds the Markdown quality report of a pack folder. `againstDirs` are other packs to compare with, on top of the SRD built-ins. */
 export async function runPackReport(dir: string, againstDirs: readonly string[] = []): Promise<{ markdown: string; summary: string; analysis: Awaited<ReturnType<typeof loadPackFolder>>; againstCount: number }> {
   const analysis = await loadPackFolder(dir);
-  const against = BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities);
+  const against = [...BUILTIN_CONTENT_PACKS.flatMap((p) => p.entities), ...loadBundledSrdEntities()];
   for (const other of againstDirs) against.push(...(await loadPackFolder(other)).result.accepted);
   const r = analysis.report;
   const markdown = buildQualityReport({
